@@ -1,9 +1,10 @@
 SHELL := /bin/bash
 
-BACKEND_DIR  := backend
-FRONTEND_DIR := frontend
-BACKEND_PORT := 8001
+BACKEND_DIR   := backend
+FRONTEND_DIR  := frontend
+BACKEND_PORT  := 8001
 FRONTEND_PORT := 4200
+DOCKER_BACKEND_PORT := 8001
 
 .PHONY: up down build logs ps restart \
         dev dev-backend dev-frontend kill-port \
@@ -13,6 +14,12 @@ FRONTEND_PORT := 4200
 
 up: ## Sobe todos os serviços em background (build automático na 1ª vez)
 	docker compose up -d --build
+	@echo ""
+	@echo "✅ Serviços disponíveis:"
+	@echo "   🅰️  Frontend  → http://localhost"
+	@echo "   🐍 Backend   → http://localhost:$(DOCKER_BACKEND_PORT)"
+	@echo "   📖 Swagger   → http://localhost:$(DOCKER_BACKEND_PORT)/docs"
+	@echo ""
 
 down: ## Para e remove os containers (mantém volumes)
 	docker compose down
@@ -41,6 +48,12 @@ kill-port: ## (interno) Mata o processo na porta PORT=XXXX
 dev: ## Inicia backend e frontend locais em paralelo (hot reload)
 	@$(MAKE) kill-port PORT=$(BACKEND_PORT)
 	@$(MAKE) kill-port PORT=$(FRONTEND_PORT)
+	@echo ""
+	@echo "✅ Serviços disponíveis (dev local):"
+	@echo "   🅰️  Frontend  → http://localhost:$(FRONTEND_PORT)"
+	@echo "   🐍 Backend   → http://localhost:$(BACKEND_PORT)"
+	@echo "   📖 Swagger   → http://localhost:$(BACKEND_PORT)/docs"
+	@echo ""
 	@trap 'kill 0' INT; \
 	$(MAKE) dev-backend & \
 	$(MAKE) dev-frontend & \
