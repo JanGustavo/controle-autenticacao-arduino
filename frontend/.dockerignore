@@ -1,0 +1,21 @@
+# Dependências locais (o contêiner deve instalar as suas próprias)
+node_modules/
+
+# Saídas de compilação e cache do Angular
+dist/
+.angular/
+
+# Logs do gerenciador de pacotes
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Controle de versão e IDEs
+.git
+.gitignore
+.vscode/
+.editorconfig
+
+# Segredos e variáveis locais
+.env
+.env.*

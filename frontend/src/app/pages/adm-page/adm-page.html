@@ -1,0 +1,40 @@
+<div class="adm-container">
+
+  <!-- Status da API -->
+  <div class="api-status">
+    @if (carregando()) {
+      <mat-spinner diameter="20" />
+      <span>Conectando ao servidor...</span>
+    } @else if (erro()) {
+      <mat-icon class="status-icon erro">cloud_off</mat-icon>
+      <span class="erro">{{ erro() }}</span>
+    } @else {
+      <mat-icon class="status-icon ok">cloud_done</mat-icon>
+      <span class="ok">{{ dados()?.message }}</span>
+    }
+  </div>
+
+  <!-- Menu de navegação -->
+  <div class="adm-grid">
+    <button mat-raised-button class="adm-btn btn-dashboard" routerLink="/dashboard">
+      <mat-icon>dashboard</mat-icon>
+      <span>Dashboard / Logs</span>
+    </button>
+
+    <button mat-raised-button class="adm-btn btn-cadastro" routerLink="/cadastrar-usuario">
+      <mat-icon>person_add</mat-icon>
+      <span>Cadastrar usuário</span>
+    </button>
+
+    <button mat-raised-button class="adm-btn btn-usuarios" routerLink="/usuarios">
+      <mat-icon>group</mat-icon>
+      <span>Usuários</span>
+    </button>
+
+    <button mat-raised-button class="adm-btn btn-permissoes" routerLink="/permissoes">
+      <mat-icon>schedule</mat-icon>
+      <span>Permissões / Horários</span>
+    </button>
+  </div>
+
+</div>

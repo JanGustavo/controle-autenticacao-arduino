@@ -1,0 +1,25 @@
+# Ambiente virtual
+venv/
+.venv/
+env/
+
+# Cachês e arquivos temporários
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+#logs  e arquivos de runtime
+*.log
+
+# Controle de versão e IDEs
+.git
+.gitignore
+.vscode/
+.idea/
+
+# Segredos locais (devem ser injetados via Compose ou CI/CD)
+.env
+.env.*
