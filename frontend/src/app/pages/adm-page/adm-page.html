@@ -1,40 +1,60 @@
-<div class="adm-container">
-
-  <!-- Status da API -->
-  <div class="api-status">
-    @if (carregando()) {
-      <mat-spinner diameter="20" />
-      <span>Conectando ao servidor...</span>
-    } @else if (erro()) {
-      <mat-icon class="status-icon erro">cloud_off</mat-icon>
-      <span class="erro">{{ erro() }}</span>
-    } @else {
-      <mat-icon class="status-icon ok">cloud_done</mat-icon>
-      <span class="ok">{{ dados()?.message }}</span>
-    }
+<div class="adm-wrapper">
+  <div class="adm-header">
+    <span class="eyebrow">Módulos do sistema</span>
+    <h2>Painel administrativo</h2>
   </div>
 
-  <!-- Menu de navegação -->
-  <div class="adm-grid">
-    <button mat-raised-button class="adm-btn btn-dashboard" routerLink="/dashboard">
-      <mat-icon>dashboard</mat-icon>
-      <span>Dashboard / Logs</span>
-    </button>
+  <div class="grid-menu">
+    <a routerLink="/dashboard" class="tile-card blue">
+      <div class="tile-top">
+        <div class="tile-icon">
+          <mat-icon>dashboard</mat-icon>
+        </div>
+        <mat-icon class="tile-arrow">arrow_forward</mat-icon>
+      </div>
+      <div class="tile-info">
+        <h3>Dashboard / Logs</h3>
+        <p>Métricas e histórico</p>
+      </div>
+    </a>
 
-    <button mat-raised-button class="adm-btn btn-cadastro" routerLink="/cadastrar-usuario">
-      <mat-icon>person_add</mat-icon>
-      <span>Cadastrar usuário</span>
-    </button>
+    <a routerLink="/cadastrar" class="tile-card green">
+      <div class="tile-top">
+        <div class="tile-icon">
+          <mat-icon>person_add</mat-icon>
+        </div>
+        <mat-icon class="tile-arrow">arrow_forward</mat-icon>
+      </div>
+      <div class="tile-info">
+        <h3>Cadastrar usuário</h3>
+        <p>Novas credenciais</p>
+      </div>
+    </a>
 
-    <button mat-raised-button class="adm-btn btn-usuarios" routerLink="/usuarios">
-      <mat-icon>group</mat-icon>
-      <span>Usuários</span>
-    </button>
+    <a routerLink="/usuarios" class="tile-card orange">
+      <div class="tile-top">
+        <div class="tile-icon">
+          <mat-icon>group</mat-icon>
+        </div>
+        <mat-icon class="tile-arrow">arrow_forward</mat-icon>
+      </div>
+      <div class="tile-info">
+        <h3>Usuários</h3>
+        <p>Gerenciar cadastros</p>
+      </div>
+    </a>
 
-    <button mat-raised-button class="adm-btn btn-permissoes" routerLink="/permissoes">
-      <mat-icon>schedule</mat-icon>
-      <span>Permissões / Horários</span>
-    </button>
+    <a routerLink="/permissoes" class="tile-card purple">
+      <div class="tile-top">
+        <div class="tile-icon">
+          <mat-icon>schedule</mat-icon>
+        </div>
+        <mat-icon class="tile-arrow">arrow_forward</mat-icon>
+      </div>
+      <div class="tile-info">
+        <h3>Permissões</h3>
+        <p>Janelas de acesso</p>
+      </div>
+    </a>
   </div>
-
 </div>
