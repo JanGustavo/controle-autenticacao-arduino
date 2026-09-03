@@ -5,33 +5,42 @@
   --muted: #6b7280;
   --line: rgba(20, 24, 31, 0.08);
 
-  padding: 20px 16px;
-  max-width: 800px;
+  padding: 48px 40px;
+  max-width: 1400px;
+  width: 100%;
   margin: 0 auto;
+  min-height: 100vh;
   background: var(--canvas);
+  box-sizing: border-box;
 
   .adm-header {
-    margin-bottom: 18px;
+    margin-bottom: 36px;
 
     .eyebrow {
-      font-size: 0.8rem;
+      font-size: 1rem;
       color: var(--muted);
-      font-weight: 500;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
 
     h2 {
-      margin: 2px 0 0 0;
-      font-size: 1.35rem;
-      font-weight: 700;
+      margin: 6px 0 0 0;
+      font-size: 2.2rem;
+      font-weight: 800;
       color: var(--ink);
-      letter-spacing: -0.01em;
+      letter-spacing: -0.02em;
     }
   }
 
   .grid-menu {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    grid-template-columns: 1fr;
+    gap: 24px;
+
+    @media (min-width: 640px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
   }
 
   .tile-card {
@@ -39,41 +48,41 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    gap: 14px;
-    height: 116px;
-    padding: 14px 16px 14px 18px;
+    gap: 20px;
+    min-height: 190px;
+    padding: 28px 32px;
     background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: 12px;
+    border-radius: 16px;
     text-decoration: none;
     box-sizing: border-box;
     overflow: hidden;
-    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 
-    // Faixa de identidade do módulo — carrega a cor, não o cartão inteiro
+    // Faixa de identidade do módulo
     &::before {
       content: "";
       position: absolute;
       left: 0;
       top: 0;
       bottom: 0;
-      width: 3px;
+      width: 6px;
       background: var(--accent);
     }
 
     &:hover {
-      border-color: rgba(20, 24, 31, 0.14);
-      box-shadow: 0 4px 14px rgba(20, 24, 31, 0.07);
-      transform: translateY(-1px);
+      border-color: rgba(20, 24, 31, 0.18);
+      box-shadow: 0 8px 24px rgba(20, 24, 31, 0.09);
+      transform: translateY(-3px);
 
       .tile-arrow {
-        transform: translateX(2px);
+        transform: translateX(6px);
         opacity: 1;
       }
     }
 
     &:active {
-      transform: scale(0.98);
+      transform: scale(0.99);
     }
 
     .tile-top {
@@ -83,48 +92,48 @@
     }
 
     .tile-icon {
-      width: 34px;
-      height: 34px;
-      border-radius: 9px;
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
       background: color-mix(in srgb, var(--accent) 12%, white);
 
       mat-icon {
-        font-size: 18px;
-        width: 18px;
-        height: 18px;
+        font-size: 32px;
+        width: 32px;
+        height: 32px;
         color: var(--accent);
       }
     }
 
     .tile-arrow {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
       color: var(--muted);
-      opacity: 0.5;
-      transition: transform 0.15s ease, opacity 0.15s ease;
+      opacity: 0.4;
+      transition: transform 0.2s ease, opacity 0.2s ease;
     }
 
     .tile-info {
       h3 {
         margin: 0;
-        font-size: 0.92rem;
-        font-weight: 600;
+        font-size: 1.35rem;
+        font-weight: 700;
         color: var(--ink);
-        line-height: 1.25;
+        line-height: 1.3;
       }
 
       p {
-        margin: 2px 0 0 0;
-        font-size: 0.78rem;
+        margin: 6px 0 0 0;
+        font-size: 1.02rem;
         color: var(--muted);
       }
     }
 
-    // Identidade de cor por módulo — só a faixa lateral e o ícone
+    // Identidade de cor por módulo
     &.blue {
       --accent: #2563eb;
     }

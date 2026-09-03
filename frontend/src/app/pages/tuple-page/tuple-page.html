@@ -1,0 +1,63 @@
+<div class="tuple-wrapper" *ngIf="config as cfg">
+  <!-- HEADER DO COMPONENTE -->
+  <header class="tuple-header" [class]="cfg.accentColor">
+    <div class="header-top">
+      <a routerLink="/adm-page" class="back-link">
+        <mat-icon>arrow_back</mat-icon>
+        <span>Voltar ao Painel</span>
+      </a>
+      <span class="eyebrow">Módulo / Tuplas</span>
+    </div>
+
+    <div class="header-main">
+      <div class="module-icon">
+        <mat-icon>{{ cfg.icon }}</mat-icon>
+      </div>
+      <div class="title-group">
+        <h2>{{ cfg.title }}</h2>
+        <p>{{ cfg.subtitle }}</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTEÚDO PRINCIPAL (TABELA DE TUPLAS) -->
+  <main class="tuple-content">
+    <div class="table-card">
+      <table class="tuple-table">
+        <thead>
+          <tr>
+            <th *ngFor="let col of cfg.columns">{{ col.label }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of cfg.rows">
+            <td *ngFor="let col of cfg.columns">
+              <ng-container *ngIf="isBadgeStatus(row[col.key]); else plainText">
+                <span class="badge" [ngClass]="getStatusClass(row[col.key])">
+                  {{ row[col.key] }}
+                </span>
+              </ng-container>
+              <ng-template #plainText>
+                <span class="cell-value">{{ row[col.key] }}</span>
+              </ng-template>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- FOOTER DO COMPONENTE -->
+  <footer class="tuple-footer">
+    <div class="footer-info">
+      <mat-icon>info</mat-icon>
+      <span>Exibindo <strong>{{ cfg.rows.length }}</strong> tuplas (Modo Mock)</span>
+    </div>
+    <div class="footer-actions">
+      <a routerLink="/adm-page" mat-stroked-button>
+        <mat-icon>arrow_back</mat-icon>
+        Painel ADM
+      </a>
+    </div>
+  </footer>
+</div>

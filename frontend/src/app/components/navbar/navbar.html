@@ -1,0 +1,28 @@
+<header class="app-header">
+  <div class="header-container">
+    <!-- NOME DO APP / BRAND -->
+    <a routerLink="/adm-page" class="brand">
+      <div class="brand-icon">
+        <mat-icon>lock</mat-icon>
+      </div>
+      <div class="brand-text">
+        <h1>ArdLock</h1>
+        <span class="brand-tag">Controle de Acesso</span>
+      </div>
+    </a>
+
+    <!-- USUÁRIO LOGADO (MOCK) -->
+    <div class="user-profile">
+      <div class="user-avatar">
+        <mat-icon>account_circle</mat-icon>
+      </div>
+      <div class="user-info">
+        <span class="user-name">{{ mockUser.name }}</span>
+        <span class="user-meta">
+          <span class="status-dot"></span>
+          {{ mockUser.status }}
+        </span>
+      </div>
+    </div>
+  </div>
+</header>

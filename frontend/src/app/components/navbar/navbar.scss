@@ -1,0 +1,123 @@
+.app-header {
+  --surface: #ffffff;
+  --ink: #1c2128;
+  --muted: #6b7280;
+  --line: rgba(20, 24, 31, 0.08);
+  --accent: #2563eb;
+
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+
+  .header-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 12px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-sizing: border-box;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    text-decoration: none;
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 3px 8px rgba(37, 99, 235, 0.25);
+
+      mat-icon {
+        color: #ffffff;
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
+      }
+    }
+
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+
+      h1 {
+        margin: 0;
+        font-size: 1.45rem;
+        font-weight: 800;
+        color: var(--ink);
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+      }
+
+      .brand-tag {
+        font-size: 0.76rem;
+        color: var(--muted);
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+    }
+  }
+
+  .user-profile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 14px 6px 10px;
+    background: #f8fafc;
+    border: 1px solid var(--line);
+    border-radius: 24px;
+
+    .user-avatar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #2563eb;
+
+      mat-icon {
+        font-size: 32px;
+        width: 32px;
+        height: 32px;
+      }
+    }
+
+    .user-info {
+      display: flex;
+      flex-direction: column;
+
+      .user-name {
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: var(--ink);
+        line-height: 1.2;
+      }
+
+      .user-meta {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.78rem;
+        color: var(--muted);
+        font-weight: 500;
+
+        .status-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #16a34a;
+          box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.2);
+        }
+      }
+    }
+  }
+}
