@@ -12,6 +12,7 @@
   min-height: 100vh;
   background: var(--canvas);
   box-sizing: border-box;
+  transition: background-color 0.3s ease;
 
   .adm-header {
     margin-bottom: 36px;
@@ -57,7 +58,7 @@
     text-decoration: none;
     box-sizing: border-box;
     overflow: hidden;
-    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease;
 
     // Faixa de identidade do módulo
     &::before {
@@ -98,7 +99,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: color-mix(in srgb, var(--accent) 12%, white);
+      background: var(--icon-bg, rgba(37, 99, 235, 0.12));
 
       mat-icon {
         font-size: 32px;
@@ -148,6 +149,60 @@
 
     &.purple {
       --accent: #7c3aed;
+    }
+  }
+}
+
+// Suporte direto para dark mode no componente
+:host-context(body.dark-mode) {
+  .adm-wrapper {
+    background-color: #0f172a !important;
+
+    .eyebrow {
+      color: #cbd5e1 !important;
+    }
+
+    h2 {
+      color: #f8fafc !important;
+    }
+
+    .tile-card {
+      background-color: #1e293b !important;
+      border-color: rgba(255, 255, 255, 0.1) !important;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important;
+
+      .tile-icon {
+        background-color: rgba(255, 255, 255, 0.08) !important;
+      }
+
+      .tile-info h3 {
+        color: #f8fafc !important;
+      }
+
+      .tile-info p {
+        color: #94a3b8 !important;
+      }
+
+      .tile-arrow {
+        color: #94a3b8 !important;
+      }
+
+      &.blue {
+        --accent: #60a5fa;
+        .tile-icon mat-icon { color: #60a5fa !important; }
+      }
+      &.green {
+        --accent: #4ade80;
+        .tile-icon mat-icon { color: #4ade80 !important; }
+      }
+      &.orange {
+        --accent: #fbbf24;
+        .tile-icon mat-icon { color: #fbbf24 !important; }
+      }
+      &.purple {
+        --accent: #c084fc;
+        .tile-icon mat-icon { color: #c084fc !important; }
+      }
     }
   }
 }

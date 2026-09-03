@@ -69,6 +69,30 @@
     }
   }
 
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .action-btn {
+      color: var(--ink);
+      
+      &.theme-btn {
+        transition: transform 0.2s ease;
+        &:hover {
+          transform: rotate(15deg);
+        }
+      }
+
+      &.logoff-btn {
+        color: #ef4444;
+        &:hover {
+          background-color: rgba(239, 68, 68, 0.1);
+        }
+      }
+    }
+  }
+
   .user-profile {
     display: flex;
     align-items: center;

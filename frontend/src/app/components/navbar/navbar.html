@@ -11,18 +11,41 @@
       </div>
     </a>
 
-    <!-- USUÁRIO LOGADO (MOCK) -->
-    <div class="user-profile">
-      <div class="user-avatar">
-        <mat-icon>account_circle</mat-icon>
-      </div>
-      <div class="user-info">
-        <span class="user-name">{{ mockUser.name }}</span>
-        <span class="user-meta">
-          <span class="status-dot"></span>
-          {{ mockUser.status }}
-        </span>
-      </div>
+    <!-- ACOES HEADER (DARK MODE & LOGOFF) -->
+    <div class="header-actions">
+      <button
+        mat-icon-button
+        class="action-btn theme-btn"
+        (click)="toggleDarkMode()"
+        [matTooltip]="darkMode() ? 'Modo Claro' : 'Modo Escuro'"
+      >
+        <mat-icon>{{ darkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+      </button>
+
+      @if (isLoggedIn()) {
+        <div class="user-profile">
+          <div class="user-avatar">
+            <mat-icon>account_circle</mat-icon>
+          </div>
+          <div class="user-info">
+            <span class="user-name">{{ mockUser.name }}</span>
+            <span class="user-meta">
+              <span class="status-dot"></span>
+              {{ mockUser.status }}
+            </span>
+          </div>
+        </div>
+
+        <button
+          mat-icon-button
+          color="warn"
+          class="action-btn logoff-btn"
+          (click)="logoff()"
+          matTooltip="Sair / Logoff"
+        >
+          <mat-icon>logout</mat-icon>
+        </button>
+      }
     </div>
   </div>
 </header>

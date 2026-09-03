@@ -20,20 +20,112 @@ html {
 }
 
 body {
-  // Default the application to a light color theme. This can be changed to
-  // `dark` to enable the dark color theme, or to `light dark` to defer to the
-  // user's system settings.
   color-scheme: light;
-
-  // Set a default background, font and text colors for the application using
-  // Angular Material's system-level CSS variables. Learn more about these
-  // variables at https://material.angular.dev/guide/system-variables
-  background-color: var(--mat-sys-surface);
-  color: var(--mat-sys-on-surface);
+  background-color: var(--mat-sys-surface, #f8fafc);
+  color: var(--mat-sys-on-surface, #1e293b);
   font: var(--mat-sys-body-medium);
-
-  // Reset the user agent margin.
   margin: 0;
   height: 100%;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
-/* You can add global styles to this file, and also import other style files */
+
+body.dark-mode {
+  color-scheme: dark;
+  background-color: #0f172a !important;
+  color: #f1f5f9 !important;
+
+  .app-header {
+    --surface: #1e293b;
+    --ink: #f8fafc;
+    --muted: #94a3b8;
+    --line: rgba(255, 255, 255, 0.1);
+    background: var(--surface) !important;
+    border-bottom: 1px solid var(--line) !important;
+
+    .user-profile {
+      background: #0f172a !important;
+      border-color: var(--line) !important;
+    }
+  }
+
+  .adm-wrapper {
+    --canvas: #0f172a;
+    --surface: #1e293b;
+    --ink: #f8fafc;
+    --muted: #94a3b8;
+    --line: rgba(255, 255, 255, 0.1);
+    background: #0f172a !important;
+
+    .adm-header {
+      h2 { color: #f8fafc !important; }
+      .eyebrow { color: #cbd5e1 !important; }
+    }
+
+    .tile-card {
+      background: #1e293b !important;
+      border-color: rgba(255, 255, 255, 0.1) !important;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+
+      .tile-icon {
+        background: rgba(255, 255, 255, 0.08) !important;
+      }
+
+      .tile-info h3 { color: #f8fafc !important; }
+      .tile-info p { color: #94a3b8 !important; }
+      .tile-arrow { color: #94a3b8 !important; }
+
+      &.blue {
+        --accent: #60a5fa;
+        .tile-icon mat-icon { color: #60a5fa !important; }
+      }
+      &.green {
+        --accent: #4ade80;
+        .tile-icon mat-icon { color: #4ade80 !important; }
+      }
+      &.orange {
+        --accent: #fbbf24;
+        .tile-icon mat-icon { color: #fbbf24 !important; }
+      }
+      &.purple {
+        --accent: #c084fc;
+        .tile-icon mat-icon { color: #c084fc !important; }
+      }
+    }
+  }
+
+  .login-card {
+    background: #1e293b !important;
+    color: #f8fafc !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+
+    mat-card-title { color: #f8fafc !important; }
+    mat-card-subtitle { color: #94a3b8 !important; }
+  }
+
+  .tuple-page-container {
+    .tuple-header {
+      h2 { color: #f8fafc !important; }
+      p { color: #94a3b8 !important; }
+    }
+
+    .tuple-card {
+      background: #1e293b !important;
+      border-color: rgba(255, 255, 255, 0.1) !important;
+    }
+
+    .tuple-table {
+      th {
+        background: #0f172a !important;
+        color: #94a3b8 !important;
+        border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+      }
+      td {
+        color: #f8fafc !important;
+        border-bottom-color: rgba(255, 255, 255, 0.05) !important;
+      }
+      tr:hover td {
+        background: rgba(255, 255, 255, 0.03) !important;
+      }
+    }
+  }
+}

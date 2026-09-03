@@ -1,0 +1,76 @@
+<div class="login-container">
+  <mat-card class="login-card">
+    <mat-card-header class="login-header">
+      <div class="header-icon">
+        <mat-icon>admin_panel_settings</mat-icon>
+      </div>
+      <mat-card-title>Acesso Administrativo</mat-card-title>
+      <mat-card-subtitle>Digite suas credenciais para acessar o painel</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <form (ngSubmit)="onSubmit()" class="login-form">
+        @if (erro()) {
+          <div class="error-banner">
+            <mat-icon>error_outline</mat-icon>
+            <span>{{ erro() }}</span>
+          </div>
+        }
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Usuário</mat-label>
+          <input
+            matInput
+            type="text"
+            [(ngModel)]="usuario"
+            name="usuario"
+            placeholder="Digite seu usuário"
+            required
+            autocomplete="username"
+          />
+          <mat-icon matSuffix>person</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Senha</mat-label>
+          <input
+            matInput
+            [type]="hidePassword() ? 'password' : 'text'"
+            [(ngModel)]="senha"
+            name="senha"
+            placeholder="Digite sua senha"
+            required
+            autocomplete="current-password"
+          />
+          <button
+            type="button"
+            mat-icon-button
+            matSuffix
+            (click)="togglePassword($event)"
+            [attr.aria-label]="'Ocultar senha'"
+            [attr.aria-pressed]="hidePassword()"
+          >
+            <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+        </mat-form-field>
+
+        <button
+          mat-raised-button
+          color="primary"
+          type="submit"
+          class="login-btn"
+          [disabled]="carregando()"
+        >
+          @if (carregando()) {
+            <mat-spinner diameter="24" class="btn-spinner"></mat-spinner>
+          } @else {
+            <ng-container>
+              <span>Entrar no Sistema</span>
+              <mat-icon>login</mat-icon>
+            </ng-container>
+          }
+        </button>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>
