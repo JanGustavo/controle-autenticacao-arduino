@@ -63,6 +63,16 @@ make dev-frontend # dev local — só Angular
 
 Consulte [`docs/BUILDS.md`](docs/BUILDS.md) para o guia completo de builds.
 
+## Modelo de dados
+
+O histórico de acessos possui um índice composto em `(usuario_id, data_hora DESC)`,
+otimizando a consulta dos acessos de um usuário do mais recente para o mais antigo.
+
+Os vetores faciais são armazenados em `JSONB` no MVP, adequado para a comparação 1:1.
+Como evolução, o projeto pode adotar a extensão `pgvector` para armazenar embeddings e
+executar buscas por similaridade diretamente no PostgreSQL quando houver necessidade de
+comparações em lote.
+
 ## Variáveis de ambiente
 
 | Variável | Padrão | Descrição |

@@ -1,0 +1,137 @@
+<main class="entities-page">
+  <header class="page-header">
+    <a routerLink="/adm-page" class="back-link">
+      <mat-icon>arrow_back</mat-icon>
+      Painel administrativo
+    </a>
+    <span class="eyebrow">Debug / banco de dados</span>
+    <h1>Modelo de entidades</h1>
+    <p>Visão das tabelas principais e dos relacionamentos definidos no banco de dados.</p>
+  </header>
+
+  <section class="diagram" aria-label="Diagrama de relacionamento entre entidades">
+    <article class="entity-card user-entity">
+      <header class="entity-header">
+        <div class="entity-icon"><mat-icon>person</mat-icon></div>
+        <div>
+          <span class="entity-kind">Entidade principal</span>
+          <h2>usuario</h2>
+        </div>
+      </header>
+      <ul class="field-list">
+        <li>
+          <mat-icon>key</mat-icon><span><strong>user_id</strong><small>SERIAL · PK</small></span>
+        </li>
+        <li>
+          <mat-icon>badge</mat-icon
+          ><span><strong>nome</strong><small>VARCHAR(255) · NOT NULL</small></span>
+        </li>
+        <li>
+          <mat-icon>contactless</mat-icon
+          ><span><strong>uid_card</strong><small>VARCHAR(100) · UNIQUE</small></span>
+        </li>
+        <li>
+          <mat-icon>face</mat-icon
+          ><span><strong>vetor_facial</strong><small>JSONB · MVP 1:1</small></span>
+        </li>
+        <li>
+          <mat-icon>toggle_on</mat-icon
+          ><span><strong>ativo</strong><small>BOOLEAN · DEFAULT TRUE</small></span>
+        </li>
+        <li>
+          <mat-icon>calendar_today</mat-icon
+          ><span><strong>criado_em</strong><small>TIMESTAMP</small></span>
+        </li>
+      </ul>
+    </article>
+
+    <div class="relationship relationship-permission">
+      <span>1</span>
+      <div class="relationship-line"></div>
+      <span>N</span>
+      <strong>possui</strong>
+    </div>
+
+    <article class="entity-card permission-entity">
+      <header class="entity-header">
+        <div class="entity-icon"><mat-icon>schedule</mat-icon></div>
+        <div>
+          <span class="entity-kind">Regra de acesso</span>
+          <h2>permissao</h2>
+        </div>
+      </header>
+      <ul class="field-list">
+        <li>
+          <mat-icon>key</mat-icon><span><strong>permissao_id</strong><small>SERIAL · PK</small></span>
+        </li>
+        <li class="foreign-key">
+          <mat-icon>link</mat-icon
+          ><span><strong>usuario_id</strong><small>INT · FK → usuario.id</small></span>
+        </li>
+        <li>
+          <mat-icon>schedule</mat-icon
+          ><span><strong>horario_inicio</strong><small>TIME · NOT NULL</small></span>
+        </li>
+        <li>
+          <mat-icon>schedule</mat-icon
+          ><span><strong>horario_fim</strong><small>TIME · NOT NULL</small></span>
+        </li>
+        <li>
+          <mat-icon>date_range</mat-icon
+          ><span><strong>dias_semana</strong><small>VARCHAR(50) · NOT NULL</small></span>
+        </li>
+      </ul>
+    </article>
+
+    <div class="relationship relationship-history">
+      <span>1</span>
+      <div class="relationship-line"></div>
+      <span>N</span>
+      <strong>registra</strong>
+    </div>
+
+    <article class="entity-card history-entity">
+      <header class="entity-header">
+        <div class="entity-icon"><mat-icon>history</mat-icon></div>
+        <div>
+          <span class="entity-kind">Auditoria de acessos</span>
+          <h2>historico_acesso</h2>
+        </div>
+      </header>
+      <ul class="field-list">
+        <li>
+          <mat-icon>key</mat-icon><span><strong>id</strong><small>SERIAL · PK</small></span>
+        </li>
+        <li class="foreign-key">
+          <mat-icon>link</mat-icon
+          ><span><strong>usuario_id</strong><small>INT · FK → usuario.id · SET NULL</small></span>
+        </li>
+        <li>
+          <mat-icon>contactless</mat-icon
+          ><span><strong>uid_card_lido</strong><small>VARCHAR(100)</small></span>
+        </li>
+        <li>
+          <mat-icon>event</mat-icon><span><strong>data_hora</strong><small>TIMESTAMP</small></span>
+        </li>
+        <li>
+          <mat-icon>verified</mat-icon
+          ><span><strong>autorizado</strong><small>BOOLEAN · NOT NULL</small></span>
+        </li>
+        <li>
+          <mat-icon>percent</mat-icon
+          ><span><strong>percentual_similaridade</strong><small>FLOAT</small></span>
+        </li>
+        <li>
+          <mat-icon>block</mat-icon
+          ><span><strong>motivo_recusa</strong><small>VARCHAR(255)</small></span>
+        </li>
+      </ul>
+    </article>
+  </section>
+
+  <footer class="diagram-legend">
+    <span><i class="pk-dot"></i> Chave primária</span>
+    <span><i class="fk-dot"></i> Chave estrangeira</span>
+    <span><strong>1 : N</strong> Um para muitos</span>
+  </footer>
+</main>

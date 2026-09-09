@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { Login } from './pages/login/login';
 import { AdmPage } from './pages/adm-page/adm-page';
 import { TuplePage } from './pages/tuple-page/tuple-page';
+import { EntidadesPage } from './pages/entidades/entidades';
 import { authGuard } from './guards/auth.guard';
 import {
   DASHBOARD_MOCK,
@@ -14,6 +15,7 @@ export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: 'login', component: Login },
   { path: 'adm-page', component: AdmPage, canActivate: [authGuard] },
+  { path: 'entidades', component: EntidadesPage, canActivate: [authGuard] },
   {
     path: 'dashboard',
     component: TuplePage,

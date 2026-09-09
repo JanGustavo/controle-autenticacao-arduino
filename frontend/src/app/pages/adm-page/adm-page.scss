@@ -150,6 +150,10 @@
     &.purple {
       --accent: #7c3aed;
     }
+
+    &.teal {
+      --accent: #0f766e;
+    }
   }
 }
 
@@ -202,6 +206,10 @@
       &.purple {
         --accent: #c084fc;
         .tile-icon mat-icon { color: #c084fc !important; }
+      }
+      &.teal {
+        --accent: #2dd4bf;
+        .tile-icon mat-icon { color: #2dd4bf !important; }
       }
     }
   }
