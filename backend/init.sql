@@ -19,7 +19,7 @@ CREATE TABLE permissao (
     horario_fim TIME NOT NULL,
     dias_semana INT [] NOT NULL,
     -- Exemplo: ARRAY[1,2,3,4,5] para Seg-Sex (1=Dom, 7=Sáb ou 1=Seg, 7=Dom)
-    CONSTRAINT fk_permissao_usuario FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE CASCADE
+    CONSTRAINT fk_permissao_usuario FOREIGN KEY (usuario_id) REFERENCES usuario(user_id) ON DELETE CASCADE
 );
 -- Criar a tabela HISTORICO_ACESSO
 CREATE TABLE historico_acesso (
@@ -30,7 +30,7 @@ CREATE TABLE historico_acesso (
     autorizado BOOLEAN NOT NULL,
     percentual_similaridade FLOAT,
     motivo_recusa VARCHAR(255),
-    CONSTRAINT fk_historico_usuario FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE
+    CONSTRAINT fk_historico_usuario FOREIGN KEY (usuario_id) REFERENCES usuario(user_id) ON DELETE
     SET NULL
 );
 -- Acelera a consulta do histórico de um usuário em ordem cronológica.

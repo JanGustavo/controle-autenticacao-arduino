@@ -62,12 +62,7 @@ export class Login {
       },
       error: () => {
         this.carregando.set(false);
-        if (this.usuario === 'admin' && this.senha === 'admin') {
-          localStorage.setItem('adm_token', 'mock_token_123');
-          this.router.navigate(['/adm-page']);
-        } else {
-          this.erro.set('Usuário ou senha incorretos (Use admin / admin).');
-        }
+        this.erro.set('Não foi possível autenticar. Verifique o usuário e a senha.');
       },
     });
   }

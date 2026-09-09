@@ -22,7 +22,7 @@ export const DASHBOARD_MOCK: TuplePageConfig = {
   icon: 'dashboard',
   accentColor: 'blue',
   columns: [
-    { key: 'id', label: 'ID' },
+    { key: 'user_id', label: 'ID Usuário' },
     { key: 'usuario_id', label: 'ID Usuário' },
     { key: 'uid_card_lido', label: 'UID Card Lido' },
     { key: 'data_hora', label: 'Data / Hora' },
@@ -71,10 +71,10 @@ export const USUARIOS_MOCK: TuplePageConfig = {
     { key: 'criado_em', label: 'Criado Em' },
   ],
   rows: [
-    { id: 1, nome: 'João Silva', uid_card: 'A1:B2:C3:D4', vetor_facial: 'Cadastrado (JSONB)', ativo: 'Sim', criado_em: '2026-09-01 08:00:00' },
-    { id: 2, nome: 'Maria Souza', uid_card: 'E5:F6:G7:H8', vetor_facial: 'Cadastrado (JSONB)', ativo: 'Sim', criado_em: '2026-09-01 09:15:00' },
-    { id: 3, nome: 'Carlos Lima', uid_card: '12:34:56:78', vetor_facial: 'Não Cadastrado', ativo: 'Sim', criado_em: '2026-09-01 10:30:00' },
-    { id: 4, nome: 'Ana Oliveira', uid_card: 'AA:BB:CC:DD', vetor_facial: 'Cadastrado (JSONB)', ativo: 'Não', criado_em: '2026-09-02 14:20:00' },
+    { user_id: 1, nome: 'João Silva', uid_card: 'A1:B2:C3:D4', vetor_facial: 'Cadastrado (JSONB)', ativo: 'Sim', criado_em: '2026-09-01 08:00:00' },
+    { user_id: 2, nome: 'Maria Souza', uid_card: 'E5:F6:G7:H8', vetor_facial: 'Cadastrado (JSONB)', ativo: 'Sim', criado_em: '2026-09-01 09:15:00' },
+    { user_id: 3, nome: 'Carlos Lima', uid_card: '12:34:56:78', vetor_facial: 'Não Cadastrado', ativo: 'Sim', criado_em: '2026-09-01 10:30:00' },
+    { user_id: 4, nome: 'Ana Oliveira', uid_card: 'AA:BB:CC:DD', vetor_facial: 'Cadastrado (JSONB)', ativo: 'Não', criado_em: '2026-09-02 14:20:00' },
   ],
 };
 
@@ -84,15 +84,15 @@ export const PERMISSOES_MOCK: TuplePageConfig = {
   icon: 'schedule',
   accentColor: 'purple',
   columns: [
-    { key: 'id', label: 'ID' },
+    { key: 'permissao_id', label: 'ID Permissão' },
     { key: 'usuario_id', label: 'ID Usuário' },
     { key: 'horario_inicio', label: 'Horário Início' },
     { key: 'horario_fim', label: 'Horário Fim' },
     { key: 'dias_semana', label: 'Dias Semana (INT[])' },
   ],
   rows: [
-    { id: 1, usuario_id: 1, horario_inicio: '08:00:00', horario_fim: '18:00:00', dias_semana: '[1, 2, 3, 4, 5]' },
-    { id: 2, usuario_id: 2, horario_inicio: '00:00:00', horario_fim: '23:59:59', dias_semana: '[1, 2, 3, 4, 5, 6, 7]' },
-    { id: 3, usuario_id: 3, horario_inicio: '07:00:00', horario_fim: '13:00:00', dias_semana: '[1, 2, 3, 4, 5]' },
+    { permissao_id: 1, usuario_id: 1, horario_inicio: '08:00:00', horario_fim: '18:00:00', dias_semana: '[1, 2, 3, 4, 5]' },
+    { permissao_id: 2, usuario_id: 2, horario_inicio: '00:00:00', horario_fim: '23:59:59', dias_semana: '[1, 2, 3, 4, 5, 6, 7]' },
+    { permissao_id: 3, usuario_id: 3, horario_inicio: '07:00:00', horario_fim: '13:00:00', dias_semana: '[1, 2, 3, 4, 5]' },
   ],
 };

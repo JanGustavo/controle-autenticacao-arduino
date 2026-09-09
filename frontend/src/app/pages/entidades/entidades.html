@@ -62,11 +62,12 @@
       </header>
       <ul class="field-list">
         <li>
-          <mat-icon>key</mat-icon><span><strong>permissao_id</strong><small>SERIAL · PK</small></span>
+          <mat-icon>key</mat-icon
+          ><span><strong>permissao_id</strong><small>SERIAL · PK</small></span>
         </li>
         <li class="foreign-key">
           <mat-icon>link</mat-icon
-          ><span><strong>usuario_id</strong><small>INT · FK → usuario.id</small></span>
+          ><span><strong>usuario_id</strong><small>INT · FK → usuario.user_id</small></span>
         </li>
         <li>
           <mat-icon>schedule</mat-icon
@@ -78,7 +79,7 @@
         </li>
         <li>
           <mat-icon>date_range</mat-icon
-          ><span><strong>dias_semana</strong><small>VARCHAR(50) · NOT NULL</small></span>
+          ><span><strong>dias_semana</strong><small>INT[] · NOT NULL</small></span>
         </li>
       </ul>
     </article>
@@ -104,7 +105,9 @@
         </li>
         <li class="foreign-key">
           <mat-icon>link</mat-icon
-          ><span><strong>usuario_id</strong><small>INT · FK → usuario.id · SET NULL</small></span>
+          ><span
+            ><strong>usuario_id</strong><small>INT · FK → usuario.user_id · SET NULL</small></span
+          >
         </li>
         <li>
           <mat-icon>contactless</mat-icon

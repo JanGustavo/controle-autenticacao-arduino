@@ -1,0 +1,1 @@
+"""Autenticacao do painel administrativo."""
