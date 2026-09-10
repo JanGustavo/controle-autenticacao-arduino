@@ -23,24 +23,24 @@
           <mat-icon>key</mat-icon><span><strong>user_id</strong><small>SERIAL · PK</small></span>
         </li>
         <li>
-          <mat-icon>badge</mat-icon
-          ><span><strong>nome</strong><small>VARCHAR(255) · NOT NULL</small></span>
+          <mat-icon>badge</mat-icon>
+          <span><strong>nome</strong><small>VARCHAR(255) · NOT NULL</small></span>
         </li>
         <li>
-          <mat-icon>contactless</mat-icon
-          ><span><strong>uid_card</strong><small>VARCHAR(100) · UNIQUE</small></span>
+          <mat-icon>contactless</mat-icon>
+          <span><strong>uid_card</strong><small>VARCHAR(100) · UNIQUE</small></span>
         </li>
         <li>
-          <mat-icon>face</mat-icon
-          ><span><strong>vetor_facial</strong><small>JSONB · MVP 1:1</small></span>
+          <mat-icon>face</mat-icon>
+          <span><strong>vetor_facial</strong><small>JSONB · MVP 1:1</small></span>
         </li>
         <li>
-          <mat-icon>toggle_on</mat-icon
-          ><span><strong>ativo</strong><small>BOOLEAN · DEFAULT TRUE</small></span>
+          <mat-icon>toggle_on</mat-icon>
+          <span><strong>ativo</strong><small>BOOLEAN · DEFAULT TRUE</small></span>
         </li>
         <li>
-          <mat-icon>calendar_today</mat-icon
-          ><span><strong>criado_em</strong><small>TIMESTAMP</small></span>
+          <mat-icon>calendar_today</mat-icon>
+          <span><strong>criado_em</strong><small>TIMESTAMP</small></span>
         </li>
       </ul>
     </article>
@@ -62,24 +62,28 @@
       </header>
       <ul class="field-list">
         <li>
-          <mat-icon>key</mat-icon
-          ><span><strong>permissao_id</strong><small>SERIAL · PK</small></span>
+          <mat-icon>key</mat-icon>
+          <span><strong>permissao_id</strong><small>SERIAL · PK</small></span>
+        </li>
+        <li>
+          <mat-icon>link</mat-icon>
+          <span><strong>usuario_id</strong><small>INT · FK → usuario.user_id</small></span>
         </li>
         <li class="foreign-key">
-          <mat-icon>link</mat-icon
-          ><span><strong>usuario_id</strong><small>INT · FK → usuario.user_id</small></span>
+          <mat-icon>link</mat-icon>
+          <span><strong>local_id</strong><small>INT · FK → local.local_id</small></span>
         </li>
         <li>
-          <mat-icon>schedule</mat-icon
-          ><span><strong>horario_inicio</strong><small>TIME · NOT NULL</small></span>
+          <mat-icon>schedule</mat-icon>
+          <span><strong>horario_inicio</strong><small>TIME · NOT NULL</small></span>
         </li>
         <li>
-          <mat-icon>schedule</mat-icon
-          ><span><strong>horario_fim</strong><small>TIME · NOT NULL</small></span>
+          <mat-icon>schedule</mat-icon>
+          <span><strong>horario_fim</strong><small>TIME · NOT NULL</small></span>
         </li>
         <li>
-          <mat-icon>date_range</mat-icon
-          ><span><strong>dias_semana</strong><small>INT[] · NOT NULL</small></span>
+          <mat-icon>date_range</mat-icon>
+          <span><strong>dias_semana</strong><small>INT[] · NOT NULL</small></span>
         </li>
       </ul>
     </article>
@@ -104,29 +108,122 @@
           <mat-icon>key</mat-icon><span><strong>id</strong><small>SERIAL · PK</small></span>
         </li>
         <li class="foreign-key">
-          <mat-icon>link</mat-icon
-          ><span
+          <mat-icon>link</mat-icon>
+          <span
             ><strong>usuario_id</strong><small>INT · FK → usuario.user_id · SET NULL</small></span
           >
         </li>
+        <li class="foreign-key">
+          <mat-icon>link</mat-icon>
+          <span><strong>local_id</strong><small>INT · FK → local.local_id · SET NULL</small></span>
+        </li>
         <li>
-          <mat-icon>contactless</mat-icon
-          ><span><strong>uid_card_lido</strong><small>VARCHAR(100)</small></span>
+          <mat-icon>contactless</mat-icon>
+          <span><strong>uid_card_lido</strong><small>VARCHAR(100)</small></span>
         </li>
         <li>
           <mat-icon>event</mat-icon><span><strong>data_hora</strong><small>TIMESTAMP</small></span>
         </li>
         <li>
-          <mat-icon>verified</mat-icon
-          ><span><strong>autorizado</strong><small>BOOLEAN · NOT NULL</small></span>
+          <mat-icon>verified</mat-icon>
+          <span><strong>autorizado</strong><small>BOOLEAN · NOT NULL</small></span>
         </li>
         <li>
-          <mat-icon>percent</mat-icon
-          ><span><strong>percentual_similaridade</strong><small>FLOAT</small></span>
+          <mat-icon>percent</mat-icon>
+          <span><strong>percentual_similaridade</strong><small>FLOAT</small></span>
         </li>
         <li>
-          <mat-icon>block</mat-icon
-          ><span><strong>motivo_recusa</strong><small>VARCHAR(255)</small></span>
+          <mat-icon>block</mat-icon>
+          <span><strong>motivo_recusa</strong><small>VARCHAR(255)</small></span>
+        </li>
+      </ul>
+    </article>
+
+    <div class="relationship local-relationship local-relationship-permission">
+      <span>N</span>
+      <div class="relationship-line"></div>
+      <span>1</span>
+      <strong>autoriza</strong>
+    </div>
+
+    <div class="relationship local-relationship local-relationship-history">
+      <span>N</span>
+      <div class="relationship-line"></div>
+      <span>1</span>
+      <strong>registra</strong>
+    </div>
+
+    <article class="entity-card local-entity">
+      <header class="entity-header">
+        <div class="entity-icon"><mat-icon>location_on</mat-icon></div>
+        <div>
+          <span class="entity-kind">Ponto de acesso</span>
+          <h2>local</h2>
+        </div>
+      </header>
+      <ul class="field-list">
+        <li>
+          <mat-icon>key</mat-icon>
+          <span><strong>local_id</strong><small>SERIAL · PK</small></span>
+        </li>
+        <li>
+          <mat-icon>place</mat-icon>
+          <span><strong>nome</strong><small>VARCHAR(255) · NOT NULL</small></span>
+        </li>
+        <li>
+          <mat-icon>memory</mat-icon>
+          <span
+            ><strong>identificador_dispositivo</strong
+            ><small>VARCHAR(100) · UNIQUE · NOT NULL</small></span
+          >
+        </li>
+        <li>
+          <mat-icon>toggle_on</mat-icon>
+          <span><strong>ativo</strong><small>BOOLEAN · DEFAULT TRUE</small></span>
+        </li>
+        <li>
+          <mat-icon>calendar_today</mat-icon>
+          <span><strong>criado_em</strong><small>TIMESTAMP</small></span>
+        </li>
+      </ul>
+      <div class="entity-relations" aria-label="Relacionamentos de local">
+        <span><strong>1 : N</strong> permissao</span>
+        <span><strong>1 : N</strong> historico_acesso</span>
+      </div>
+    </article>
+
+    <article class="entity-card admin-entity">
+      <header class="entity-header">
+        <div class="entity-icon"><mat-icon>admin_panel_settings</mat-icon></div>
+        <div>
+          <span class="entity-kind">Acesso ao painel</span>
+          <h2>administrador</h2>
+        </div>
+      </header>
+      <ul class="field-list">
+        <li>
+          <mat-icon>key</mat-icon>
+          <span><strong>admin_id</strong><small>SERIAL · PK</small></span>
+        </li>
+        <li>
+          <mat-icon>badge</mat-icon>
+          <span><strong>nome</strong><small>VARCHAR(255) · NOT NULL</small></span>
+        </li>
+        <li>
+          <mat-icon>mail</mat-icon>
+          <span><strong>email</strong><small>VARCHAR(255) · UNIQUE · NOT NULL</small></span>
+        </li>
+        <li>
+          <mat-icon>lock</mat-icon>
+          <span><strong>senha_hash</strong><small>VARCHAR(255) · NOT NULL</small></span>
+        </li>
+        <li>
+          <mat-icon>toggle_on</mat-icon>
+          <span><strong>ativo</strong><small>BOOLEAN · DEFAULT TRUE</small></span>
+        </li>
+        <li>
+          <mat-icon>calendar_today</mat-icon>
+          <span><strong>criado_em</strong><small>TIMESTAMP</small></span>
         </li>
       </ul>
     </article>

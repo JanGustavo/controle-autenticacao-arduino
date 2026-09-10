@@ -7,7 +7,7 @@ FRONTEND_PORT := 4200
 DOCKER_BACKEND_PORT := 8001
 
 .PHONY: up down build logs ps restart \
-        dev dev-backend dev-frontend kill-port \
+	dev db-local dev-backend dev-frontend kill-port \
         help
 
 # ── Docker Compose (produção / integração) ─────────────────────────────────────
@@ -45,7 +45,18 @@ kill-port: ## (interno) Mata o processo na porta PORT=XXXX
 		echo "✅ Porta $(PORT) liberada."; \
 	fi
 
-dev: ## Inicia backend e frontend locais em paralelo (hot reload)
+db-local: ## Prepara PostgreSQL local para o desenvolvimento
+	@echo "🗄️  Preparando PostgreSQL local..."
+	@sudo -u postgres psql -v ON_ERROR_STOP=1 -c "ALTER ROLE postgres WITH PASSWORD 'JGustavo2106';"
+	@if ! sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname = 'controle_acesso'" | grep -q 1; then \
+		sudo -u postgres createdb controle_acesso; \
+	fi
+	@if ! sudo -u postgres psql -d controle_acesso -tAc "SELECT 1 FROM information_schema.tables WHERE table_name = 'administrador'" | grep -q 1; then \
+		sudo -u postgres psql -v ON_ERROR_STOP=1 -d controle_acesso -f backend/init.sql; \
+	fi
+	@echo "✅ PostgreSQL local pronto."
+
+dev: db-local ## Inicia backend e frontend locais em paralelo (hot reload)
 	@$(MAKE) kill-port PORT=$(BACKEND_PORT)
 	@$(MAKE) kill-port PORT=$(FRONTEND_PORT)
 	@echo ""
@@ -59,9 +70,15 @@ dev: ## Inicia backend e frontend locais em paralelo (hot reload)
 	$(MAKE) dev-frontend & \
 	wait
 
-dev-backend: ## Inicia o FastAPI com uvicorn (hot reload) — requer venv ativo
+dev-backend: ## Inicia o FastAPI com uvicorn (hot reload) — prepara a venv automaticamente
 	@echo "🐍 Iniciando backend na porta $(BACKEND_PORT)..."
-	@cd $(BACKEND_DIR) && source venv/bin/activate && uvicorn app.main:app --reload --port $(BACKEND_PORT)
+	@cd $(BACKEND_DIR) && \
+	if [[ ! -x venv/bin/python ]]; then \
+		echo "📦 Criando ambiente virtual e instalando dependências..."; \
+		python3 -m venv venv && venv/bin/pip install -r requirements.txt; \
+	fi; \
+	DATABASE_URL="$${DATABASE_URL:-postgresql://postgres:JGustavo2106@localhost:5432/controle_acesso}" \
+	venv/bin/uvicorn app.main:app --reload --port $(BACKEND_PORT)
 
 dev-frontend: ## Inicia o Angular dev server (hot reload)
 	@echo "🅰️  Iniciando frontend na porta $(FRONTEND_PORT)..."

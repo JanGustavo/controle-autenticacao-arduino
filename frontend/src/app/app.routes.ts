@@ -3,10 +3,10 @@ import { Login } from './pages/login/login';
 import { AdmPage } from './pages/adm-page/adm-page';
 import { TuplePage } from './pages/tuple-page/tuple-page';
 import { EntidadesPage } from './pages/entidades/entidades';
+import { CadastrarPage } from './pages/cadastrar/cadastrar';
 import { authGuard } from './guards/auth.guard';
 import {
   DASHBOARD_MOCK,
-  CADASTRAR_MOCK,
   USUARIOS_MOCK,
   PERMISSOES_MOCK,
 } from './models/tuple-page.model';
@@ -24,9 +24,8 @@ export const routes: Routes = [
   },
   {
     path: 'cadastrar',
-    component: TuplePage,
+    component: CadastrarPage,
     canActivate: [authGuard],
-    data: { config: CADASTRAR_MOCK },
   },
   {
     path: 'usuarios',

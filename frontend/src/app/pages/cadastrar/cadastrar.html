@@ -1,0 +1,98 @@
+<main class="register-page">
+  <header class="page-header">
+    <a routerLink="/adm-page" class="back-link">
+      <mat-icon>arrow_back</mat-icon>
+      Painel administrativo
+    </a>
+    <span class="eyebrow">Novo registro · usuario</span>
+    <h1>Cadastrar usuário</h1>
+    <p>Preencha os dados que serão usados no controle de acesso.</p>
+  </header>
+
+  <form class="register-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <section class="form-section">
+      <div class="section-heading">
+        <span class="section-number">01</span>
+        <div>
+          <h2>Identificação</h2>
+          <p>Dados básicos do usuário e do cartão.</p>
+        </div>
+      </div>
+
+      <div class="field-grid">
+        <label class="field full-width">
+          <span>Nome <b>*</b></span>
+          <input formControlName="nome" type="text" maxlength="255" placeholder="João Silva" />
+          @if (hasError('nome', 'required')) {
+            <small>Informe o nome do usuário.</small>
+          } @else if (hasError('nome', 'maxlength')) {
+            <small>O nome deve ter no máximo 255 caracteres.</small>
+          }
+        </label>
+
+        <label class="field">
+          <span>UID do cartão</span>
+          <input formControlName="uid_card" type="text" maxlength="100" placeholder="A1:B2:C3:D4" />
+          <small>Opcional. Deve ser único quando informado.</small>
+        </label>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <div class="section-heading">
+        <span class="section-number">02</span>
+        <div>
+          <h2>Vetor facial <em>JSONB</em></h2>
+          <p>Capture o rosto para preencher o vetor facial.</p>
+        </div>
+      </div>
+
+      <div class="camera-capture" [class.ready]="cameraOpened">
+        <div class="camera-icon"><mat-icon>face</mat-icon></div>
+        <div class="camera-copy">
+          <strong>{{
+            cameraOpened ? 'Câmera pronta para captura' : 'Nenhum vetor facial capturado'
+          }}</strong>
+          <small>{{
+            cameraOpened ? 'A captura será integrada nesta etapa.' : 'Campo opcional no cadastro.'
+          }}</small>
+        </div>
+        <button type="button" mat-stroked-button (click)="openCamera()">
+          <mat-icon>photo_camera</mat-icon>
+          Abrir câmera
+        </button>
+      </div>
+    </section>
+
+    <section class="form-section status-section">
+      <div class="section-heading">
+        <span class="section-number">03</span>
+        <div>
+          <h2>Status</h2>
+          <p>Novos usuários começam ativos.</p>
+        </div>
+      </div>
+
+      <label class="switch-field">
+        <input formControlName="ativo" type="checkbox" />
+        <span class="switch"></span>
+        <span><strong>Usuário ativo</strong><small>Permitir o acesso após o cadastro.</small></span>
+      </label>
+    </section>
+
+    @if (submitted && form.valid) {
+      <p class="success-message" role="status">
+        <mat-icon>check_circle</mat-icon>
+        Dados validados. A persistência será conectada ao endpoint de usuários.
+      </p>
+    }
+
+    <footer class="form-actions">
+      <button type="button" mat-button (click)="reset()">Limpar</button>
+      <button type="submit" mat-flat-button color="primary">
+        <mat-icon>person_add</mat-icon>
+        Validar cadastro
+      </button>
+    </footer>
+  </form>
+</main>

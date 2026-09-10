@@ -43,7 +43,7 @@ export class Login {
 
   onSubmit() {
     if (!this.usuario || !this.senha) {
-      this.erro.set('Por favor, preencha o usuário e a senha.');
+      this.erro.set('Por favor, preencha o e-mail e a senha.');
       return;
     }
 
@@ -60,9 +60,11 @@ export class Login {
           this.erro.set(res.mensagem || 'Credenciais inválidas.');
         }
       },
-      error: () => {
+      error: (error) => {
         this.carregando.set(false);
-        this.erro.set('Não foi possível autenticar. Verifique o usuário e a senha.');
+        this.erro.set(
+          error.error?.detail || 'Não foi possível autenticar. Verifique o usuário e a senha.',
+        );
       },
     });
   }
