@@ -1,59 +1,232 @@
-# ControleAcesso
+# Frontend — ArdLock
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.6.
+Interface web administrativa do **ArdLock**, construída com Angular. O frontend consome a API REST do backend FastAPI para autenticação, gerenciamento de usuários, locais, permissões e histórico de acessos.
 
-## Development server
+## Stack
 
-To start a local development server, run:
+- Angular 22
+- TypeScript 6
+- Angular Material 22
+- Angular CDK 22
+- RxJS 7.8
+- npm 11
 
-```bash
-ng serve
+As versões e scripts oficiais do projeto estão definidos no `package.json`. fileciteturn10file0L2-L2
+
+## Estrutura
+
+```text
+frontend/
+├── src/
+│   └── app/
+│       ├── components/   # Componentes reutilizáveis
+│       │   └── navbar/
+│       ├── guards/       # Proteção de rotas
+│       │   └── auth.guard.ts
+│       ├── models/       # Modelos e configurações da interface
+│       ├── pages/        # Páginas da aplicação
+│       │   ├── adm-page/
+│       │   ├── cadastrar/
+│       │   ├── entidades/
+│       │   ├── locais/
+│       │   ├── login/
+│       │   ├── permissoes/
+│       │   ├── tuple-page/
+│       │   └── usuarios/
+│       ├── services/     # Comunicação com a API
+│       ├── app.config.ts
+│       ├── app.routes.ts
+│       └── app.ts
+├── public/
+├── angular.json
+├── package.json
+├── package-lock.json
+├── Dockerfile
+└── README.md
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## Pré-requisitos
 
-## Code scaffolding
+- Node.js compatível com Angular 22
+- npm 11+
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+O projeto utiliza `npm@11.12.1` como package manager. fileciteturn10file0L2-L2
 
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Instalação
 
 ```bash
-ng generate --help
+cd frontend
+npm install
 ```
 
-## Building
-
-To build the project run:
+## Desenvolvimento
 
 ```bash
-ng build
+npm start
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+A aplicação ficará disponível em:
 
-## Running unit tests
+```text
+http://localhost:4200
+```
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+O Angular CLI recarrega a aplicação automaticamente durante alterações no código.
+
+## Comunicação com o backend
+
+O `ApiService` centraliza as chamadas HTTP e utiliza, no ambiente local:
+
+```text
+http://localhost:8001/api/v1
+```
+
+Ele disponibiliza operações para autenticação, usuários, locais, permissões e histórico de acesso. fileciteturn20file0L2-L2
+
+### Autenticação
+
+```http
+POST /api/v1/auth/login
+```
+
+O login envia o usuário e a senha para o backend. Em caso de sucesso, o token retornado é armazenado no `localStorage` com a chave `adm_token`, e o usuário é direcionado para o painel administrativo. fileciteturn19file0L2-L2
+
+> **Nota de segurança:** o backend ainda retorna um token aleatório de sessão, não um JWT. O armazenamento no `localStorage` é adequado apenas para o MVP/desenvolvimento atual e deve ser revisado antes de uma versão de produção.
+
+## Rotas
+
+As rotas administrativas utilizam `authGuard`.
+
+| Rota | Acesso | Função |
+|---|---|---|
+| `/login` | Público | Autenticação administrativa |
+| `/adm-page` | Protegido | Página administrativa |
+| `/dashboard` | Protegido | Dashboard |
+| `/usuarios` | Protegido | Gerenciamento de usuários |
+| `/permissoes` | Protegido | Gerenciamento de permissões |
+| `/locais` | Protegido | Gerenciamento de locais |
+| `/entidades` | Protegido | Visualização de entidades |
+| `/cadastrar` | Protegido | Cadastro |
+
+A rota raiz redireciona para `/login` e qualquer rota desconhecida também retorna ao login. fileciteturn18file0L2-L2
+
+## Funcionalidades
+
+### Login
+
+- Login por e-mail e senha
+- Validação de campos obrigatórios
+- Estado de carregamento
+- Exibição de erros retornados pela API
+- Controle de visibilidade da senha
+- Persistência do token de sessão no navegador
+
+### Usuários
+
+- Listagem
+- Cadastro
+- Atualização
+- Exclusão
+- Associação de cartão RFID
+- Associação de vetor facial
+- Ativação/desativação
+
+### Locais
+
+- Listagem
+- Cadastro
+- Atualização
+- Exclusão
+- Identificador do dispositivo
+- Ativação/desativação
+
+### Permissões
+
+- Associação entre usuário e local
+- Horário inicial e final
+- Dias da semana
+- Criação, edição e exclusão
+
+### Histórico
+
+- Registro das tentativas de acesso
+- Usuário e local
+- UID do cartão lido
+- Data/hora
+- Resultado da autorização
+- Percentual de similaridade facial
+- Motivo da recusa
+
+## Build de produção
 
 ```bash
-ng test
+npm run build
 ```
 
-## Running end-to-end tests
+Os artefatos são gerados no diretório `dist/`.
 
-For end-to-end (e2e) testing, run:
+## Testes
 
 ```bash
-ng e2e
+npm test
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+O projeto utiliza o runner de testes configurado pelo Angular CLI.
 
-## Additional Resources
+## Docker
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+O frontend possui um `Dockerfile` próprio e é servido pelo ambiente Docker Compose do projeto. Na execução completa:
+
+```bash
+cd ..
+docker compose up -d --build
+```
+
+A interface fica disponível em:
+
+```text
+http://localhost
+```
+
+## Fluxo da aplicação
+
+```text
+                 ┌──────────────┐
+                 │    Login     │
+                 └──────┬───────┘
+                        │ POST /auth/login
+                        ▼
+                 ┌──────────────┐
+                 │   FastAPI    │
+                 └──────┬───────┘
+                        │ token
+                        ▼
+                 ┌──────────────┐
+                 │  authGuard   │
+                 └──────┬───────┘
+                        │
+            ┌───────────┼───────────┐
+            ▼           ▼           ▼
+        Usuários      Locais    Permissões
+            │           │           │
+            └───────────┼───────────┘
+                        ▼
+                 Histórico de acesso
+```
+
+## Estado atual
+
+O frontend já está estruturado como painel administrativo integrado à API, com autenticação, navegação protegida e telas para as principais entidades do domínio.
+
+A integração com o fluxo físico **ESP32 → RFID → câmera → biometria → decisão de acesso** ainda será incorporada à aplicação.
+
+## Próximas evoluções
+
+- [ ] Configurar URL da API por ambiente (`development` / `production`)
+- [ ] Interceptor HTTP para autenticação
+- [ ] Melhorar expiração/renovação da sessão
+- [ ] Integrar fluxo de autenticação física em tempo real
+- [ ] Exibir estado dos dispositivos ESP32
+- [ ] Dashboard com métricas reais de acessos
+- [ ] Filtros e paginação do histórico
+- [ ] Testes unitários e de integração das páginas
