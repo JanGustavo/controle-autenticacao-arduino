@@ -1,0 +1,1 @@
+'''Lógica para validar a leitura da porta serial (Arduino) ou aceitar requisições de teste mockadas/fallbacks '''

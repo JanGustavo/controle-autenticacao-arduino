@@ -1,0 +1,1 @@
+'''Responsável por pegar os bytes da foto, aplicar OpenCV/Dlib/DeepFace, extrair os 128 vetores numéricos e efetuar o cálculo de distância/similaridade.'''

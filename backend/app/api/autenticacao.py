@@ -1,0 +1,1 @@
+'''Endpoint responsável por receber a tentativa de acesso e unir a checagem do RFID com o vetor facial cadastrado.'''
