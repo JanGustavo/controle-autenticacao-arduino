@@ -1,24 +1,240 @@
-import { Component, inject, input } from '@angular/core';
+import { Component, inject, input, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TuplePageConfig } from '../../models/tuple-page.model';
+import { ApiService, HistoricoAcessoResponse, LocalResponse, PermissaoRequest, PermissaoResponse, UsuarioResponse } from '../../services/api.service';
 
 @Component({
   selector: 'app-tuple-page',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatIconModule, RouterLink],
+  imports: [CommonModule, FormsModule, MatButtonModule, MatIconModule, RouterLink],
   templateUrl: './tuple-page.html',
   styleUrl: './tuple-page.scss',
 })
-export class TuplePage {
+export class TuplePage implements OnInit {
   private route = inject(ActivatedRoute);
+  private api = inject(ApiService);
 
   configInput = input<TuplePageConfig | undefined>(undefined, { alias: 'config' });
+  rowsFromApi = signal<Record<string, unknown>[] | null>(null);
+  usingMock = signal(false);
+  dataNotice = signal<string | null>(null);
+  usuarios: UsuarioResponse[] = [];
+  locais: LocalResponse[] = [];
+  editandoPermissaoId: number | null = null;
+  permissaoForm: PermissaoRequest = this.novaPermissaoForm();
+  acaoNotice = '';
+  private historico: HistoricoAcessoResponse[] = [];
 
   get config(): TuplePageConfig | undefined {
     return this.configInput() || (this.route.snapshot.data['config'] as TuplePageConfig);
+  }
+
+  get displayedRows(): TuplePageConfig['rows'] {
+    return this.rowsFromApi() ?? this.config?.rows ?? [];
+  }
+
+  ngOnInit(): void {
+    if (this.config?.resource === 'historico') {
+      this.api.getUsuarios().subscribe({
+        next: (usuarios) => {
+          this.usuarios = usuarios;
+          this.atualizarLinhasHistorico();
+        },
+      });
+      this.api.getLocais().subscribe({
+        next: (locais) => {
+          this.locais = locais;
+          this.atualizarLinhasHistorico();
+        },
+      });
+      this.api.getHistoricoAcesso().subscribe({
+        next: (historico) => {
+          this.historico = historico;
+          this.atualizarLinhasHistorico();
+          this.dataNotice.set(null);
+        },
+        error: () => {
+          this.usingMock.set(true);
+          this.dataNotice.set('Não foi possível carregar o histórico. Exibindo dados de demonstração.');
+        },
+      });
+      return;
+    }
+
+    if (this.config?.resource === 'permissoes') {
+      this.api.getUsuarios().subscribe({
+        next: (usuarios) => {
+          this.usuarios = usuarios;
+          this.atualizarLinhasPermissoes();
+        },
+      });
+      this.api.getLocais().subscribe({
+        next: (locais) => {
+          this.locais = locais;
+          this.atualizarLinhasPermissoes();
+        },
+      });
+      this.api.getPermissoes().subscribe({
+        next: (permissoes) => {
+          this.permissoes = permissoes;
+          this.atualizarLinhasPermissoes();
+          this.dataNotice.set(null);
+        },
+        error: () => {
+          this.usingMock.set(true);
+          this.dataNotice.set('Não foi possível carregar as permissões. Exibindo dados de demonstração.');
+        },
+      });
+      return;
+    }
+
+    if (this.config?.resource !== 'usuarios') return;
+
+    this.api.getUsuarios().subscribe({
+      next: (usuarios) => {
+        this.rowsFromApi.set(usuarios.map((usuario) => this.toTableRow(usuario)));
+        this.dataNotice.set(null);
+      },
+      error: () => {
+        this.usingMock.set(true);
+        this.dataNotice.set('Não foi possível carregar os usuários. Exibindo dados de demonstração.');
+      },
+    });
+  }
+
+  private toTableRow(usuario: UsuarioResponse): Record<string, unknown> {
+    return {
+      user_id: usuario.user_id,
+      nome: usuario.nome,
+      uid_card: usuario.uid_card ?? '-',
+      vetor_facial: usuario.vetor_facial ? 'Cadastrado (JSONB)' : 'Não Cadastrado',
+      ativo: usuario.ativo ? 'Sim' : 'Não',
+      criado_em: usuario.criado_em,
+    };
+  }
+
+  private toPermissionRow(permissao: PermissaoResponse): Record<string, unknown> {
+    return {
+      permissao_id: permissao.permissao_id,
+      usuario_id: this.nomeUsuario(permissao.usuario_id),
+      local_id: this.nomeLocal(permissao.local_id),
+      horario_inicio: permissao.horario_inicio,
+      horario_fim: permissao.horario_fim,
+      dias_semana: this.formatarDias(permissao.dias_semana),
+    };
+  }
+
+  private formatarDias(dias: number[]): string {
+    const nomes = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    return dias.length ? dias.map((dia) => nomes[dia - 1] ?? `Dia ${dia}`).join(', ') : 'Nenhum dia definido';
+  }
+
+  private atualizarLinhasPermissoes(): void {
+    if (this.permissoes.length) {
+      this.rowsFromApi.set(this.permissoes.map((permissao) => this.toPermissionRow(permissao)));
+    }
+  }
+
+  private atualizarLinhasHistorico(): void {
+    if (this.historico.length) {
+      this.rowsFromApi.set(this.historico.map((registro) => this.toHistoryRow(registro)));
+    }
+  }
+
+  private toHistoryRow(registro: HistoricoAcessoResponse): Record<string, unknown> {
+    return {
+      usuario_id: registro.usuario_id === null ? 'Não identificado' : this.nomeUsuario(registro.usuario_id),
+      local_id: registro.local_id === null ? 'Não identificado' : this.nomeLocal(registro.local_id),
+      uid_card_lido: registro.uid_card_lido ?? '-',
+      data_hora: registro.data_hora,
+      autorizado: registro.autorizado ? 'Sim' : 'Não',
+      percentual_similaridade: registro.percentual_similaridade ?? '-',
+      motivo_recusa: registro.motivo_recusa ?? '-',
+    };
+  }
+
+  nomeUsuario(id: number): string {
+    return this.usuarios.find((usuario) => usuario.user_id === id)?.nome ?? `ID ${id}`;
+  }
+
+  nomeLocal(id: number): string {
+    return this.locais.find((local) => local.local_id === id)?.nome ?? `ID ${id}`;
+  }
+
+  iniciarEdicao(row: Record<string, unknown>): void {
+    const permissaoId = Number(row['permissao_id']);
+    const original = this.permissoes.find((permissao) => permissao.permissao_id === permissaoId);
+    if (!original) return;
+    this.editandoPermissaoId = permissaoId;
+    this.permissaoForm = { ...original, dias_semana: [...original.dias_semana] };
+    this.acaoNotice = '';
+  }
+
+  cancelarEdicao(): void {
+    this.editandoPermissaoId = null;
+    this.permissaoForm = this.novaPermissaoForm();
+  }
+
+  salvarPermissao(): void {
+    this.acaoNotice = '';
+    const request = { ...this.permissaoForm, dias_semana: this.permissaoForm.dias_semana };
+    const chamada = this.editandoPermissaoId === null
+      ? this.api.criarPermissao(request)
+      : this.api.atualizarPermissao(this.editandoPermissaoId, request);
+
+    chamada.subscribe({
+      next: (permissao) => {
+        const permissoes = this.permissoes.filter((item) => item.permissao_id !== permissao.permissao_id);
+        this.permissoes = [...permissoes, permissao].sort((a, b) => a.permissao_id - b.permissao_id);
+        this.rowsFromApi.set(this.permissoes.map((item) => this.toPermissionRow(item)));
+        this.acaoNotice = 'Permissão salva com sucesso.';
+        this.cancelarEdicao();
+      },
+      error: (error) => {
+        this.acaoNotice = error.status === 409
+          ? 'Já existe uma permissão para este usuário e local.'
+          : 'Não foi possível salvar a permissão.';
+      },
+    });
+  }
+
+  excluirPermissao(row: Record<string, unknown>): void {
+    const id = Number(row['permissao_id']);
+    if (!confirm('Excluir esta permissão?')) return;
+    this.api.deletarPermissao(id).subscribe({
+      next: () => {
+        this.permissoes = this.permissoes.filter((item) => item.permissao_id !== id);
+        this.rowsFromApi.set(this.permissoes.map((item) => this.toPermissionRow(item)));
+        this.acaoNotice = 'Permissão excluída com sucesso.';
+      },
+      error: () => (this.acaoNotice = 'Não foi possível excluir a permissão.'),
+    });
+  }
+
+  private permissoes: PermissaoResponse[] = [];
+
+  private novaPermissaoForm(): PermissaoRequest {
+    return {
+      usuario_id: 0,
+      local_id: 0,
+      horario_inicio: '08:00',
+      horario_fim: '18:00',
+      dias_semana: [2, 3, 4, 5, 6],
+    };
+  }
+
+  togglePermissaoDia(dia: number): void {
+    this.permissaoForm.dias_semana = this.permissaoForm.dias_semana.includes(dia)
+      ? this.permissaoForm.dias_semana.filter((item) => item !== dia)
+      : [...this.permissaoForm.dias_semana, dia].sort();
+  }
+
+  nomeDia(dia: number): string {
+    return ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'][dia - 1] ?? `Dia ${dia}`;
   }
 
   isBadgeStatus(val: any): boolean {

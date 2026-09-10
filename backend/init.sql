@@ -64,6 +64,125 @@ VALUES (
         'admin@ardlock.local',
         'pbkdf2_sha256$600000$koFOu6NXaKwtDolxq2RFQw$1e08a4d346ea95108daeda3442b71565fc6bda843563ce6d64ec3b9af54c26d8'
     ) ON CONFLICT (email) DO NOTHING;
+-- Dados iniciais para desenvolvimento local.
+INSERT INTO local (nome, identificador_dispositivo)
+VALUES ('Entrada principal', 'ESP32-ENTRADA-01'),
+    ('Laboratório de redes', 'ESP32-LAB-01'),
+    ('Sala administrativa', 'ESP32-ADM-01') ON CONFLICT (identificador_dispositivo) DO NOTHING;
+INSERT INTO usuario (nome, uid_card, vetor_facial, ativo)
+VALUES (
+        'João Silva',
+        'A1B2C3D4',
+        '[0.12, -0.34, 0.56, -0.78]',
+        TRUE
+    ),
+    (
+        'Maria Souza',
+        'E5F6G7H8',
+        '[0.21, 0.43, -0.65, 0.87]',
+        TRUE
+    ),
+    (
+        'Carlos Lima',
+        '12345678',
+        '[0.11, 0.22, 0.33, 0.44]',
+        TRUE
+    ) ON CONFLICT (uid_card) DO NOTHING;
+INSERT INTO permissao (
+        usuario_id,
+        local_id,
+        horario_inicio,
+        horario_fim,
+        dias_semana
+    )
+SELECT usuario.user_id,
+    local.local_id,
+    '08:00',
+    '18:00',
+    ARRAY [2, 3, 4, 5, 6]
+FROM usuario
+    JOIN local ON local.identificador_dispositivo = 'ESP32-ENTRADA-01'
+WHERE usuario.uid_card = 'A1B2C3D4' ON CONFLICT (usuario_id, local_id) DO NOTHING;
+INSERT INTO permissao (
+        usuario_id,
+        local_id,
+        horario_inicio,
+        horario_fim,
+        dias_semana
+    )
+SELECT usuario.user_id,
+    local.local_id,
+    '07:00',
+    '22:00',
+    ARRAY [2, 3, 4, 5, 6, 7]
+FROM usuario
+    JOIN local ON local.identificador_dispositivo IN ('ESP32-ENTRADA-01', 'ESP32-LAB-01')
+WHERE usuario.uid_card = 'E5F6G7H8' ON CONFLICT (usuario_id, local_id) DO NOTHING;
+INSERT INTO permissao (
+        usuario_id,
+        local_id,
+        horario_inicio,
+        horario_fim,
+        dias_semana
+    )
+SELECT usuario.user_id,
+    local.local_id,
+    '08:00',
+    '17:00',
+    ARRAY [2, 3, 4, 5, 6]
+FROM usuario
+    JOIN local ON local.identificador_dispositivo = 'ESP32-ADM-01'
+WHERE usuario.uid_card = '12345678' ON CONFLICT (usuario_id, local_id) DO NOTHING;
+INSERT INTO historico_acesso (
+        usuario_id,
+        local_id,
+        uid_card_lido,
+        autorizado,
+        percentual_similaridade,
+        motivo_recusa
+    )
+SELECT usuario.user_id,
+    local.local_id,
+    usuario.uid_card,
+    TRUE,
+    97.5,
+    NULL
+FROM usuario
+    JOIN local ON local.identificador_dispositivo = 'ESP32-ENTRADA-01'
+WHERE usuario.uid_card = 'A1B2C3D4';
+INSERT INTO historico_acesso (
+        usuario_id,
+        local_id,
+        uid_card_lido,
+        autorizado,
+        percentual_similaridade,
+        motivo_recusa
+    )
+SELECT usuario.user_id,
+    local.local_id,
+    usuario.uid_card,
+    FALSE,
+    48.2,
+    'Vetor facial incompatível'
+FROM usuario
+    JOIN local ON local.identificador_dispositivo = 'ESP32-LAB-01'
+WHERE usuario.uid_card = 'E5F6G7H8';
+INSERT INTO historico_acesso (
+        usuario_id,
+        local_id,
+        uid_card_lido,
+        autorizado,
+        percentual_similaridade,
+        motivo_recusa
+    )
+SELECT NULL,
+    local.local_id,
+    'FFFFFFFF',
+    FALSE,
+    NULL,
+    'Cartão não cadastrado'
+FROM local
+WHERE local.identificador_dispositivo = 'ESP32-ENTRADA-01';
 -- Acelera a consulta do histórico de um usuário específico em ordem cronológica.
 CREATE INDEX idx_historico_acesso_usuario_data_hora ON historico_acesso (usuario_id, data_hora DESC);
 -- Acelera a consulta do histórico de um local específico em ordem cronológica.

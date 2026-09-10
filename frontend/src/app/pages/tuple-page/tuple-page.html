@@ -20,6 +20,79 @@
     </div>
   </header>
 
+  <div class="data-notice" *ngIf="dataNotice() as notice" role="status">
+    <mat-icon>info</mat-icon>
+    <span>{{ notice }}</span>
+  </div>
+
+  <section class="permission-editor" *ngIf="cfg.resource === 'permissoes'">
+    <div class="editor-heading">
+      <div>
+        <span class="eyebrow">{{
+          editandoPermissaoId === null ? 'Nova regra' : 'Editando regra'
+        }}</span>
+        <h3>{{ editandoPermissaoId === null ? 'Criar permissão' : 'Editar permissão' }}</h3>
+      </div>
+      <span class="editor-notice" *ngIf="acaoNotice" role="status">{{ acaoNotice }}</span>
+    </div>
+    <div class="permission-form">
+      <label
+        >Usuário
+        <select [(ngModel)]="permissaoForm.usuario_id" [disabled]="editandoPermissaoId !== null">
+          <option [ngValue]="0" disabled>Selecione...</option>
+          <option *ngFor="let usuario of usuarios" [ngValue]="usuario.user_id">
+            {{ usuario.nome }}
+          </option>
+        </select>
+      </label>
+      <label
+        >Local
+        <select [(ngModel)]="permissaoForm.local_id">
+          <option [ngValue]="0" disabled>Selecione...</option>
+          <option *ngFor="let local of locais" [ngValue]="local.local_id">{{ local.nome }}</option>
+        </select>
+      </label>
+      <label>Início <input type="time" [(ngModel)]="permissaoForm.horario_inicio" /></label>
+      <label>Fim <input type="time" [(ngModel)]="permissaoForm.horario_fim" /></label>
+      <div class="permission-days">
+        <span>Dias</span>
+        <button
+          type="button"
+          *ngFor="let dia of [1, 2, 3, 4, 5, 6, 7]"
+          [attr.title]="nomeDia(dia)"
+          [attr.aria-label]="nomeDia(dia)"
+          [class.selected]="permissaoForm.dias_semana.includes(dia)"
+          (click)="togglePermissaoDia(dia)"
+        >
+          {{ dia }}
+        </button>
+      </div>
+      <div class="editor-actions">
+        <button
+          type="button"
+          mat-flat-button
+          color="primary"
+          [disabled]="
+            !permissaoForm.usuario_id ||
+            !permissaoForm.local_id ||
+            !permissaoForm.dias_semana.length
+          "
+          (click)="salvarPermissao()"
+        >
+          <mat-icon>save</mat-icon> Salvar
+        </button>
+        <button
+          type="button"
+          mat-button
+          *ngIf="editandoPermissaoId !== null"
+          (click)="cancelarEdicao()"
+        >
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </section>
+
   <!-- CONTEÚDO PRINCIPAL (TABELA DE TUPLAS) -->
   <main class="tuple-content">
     <div class="table-card">
@@ -27,10 +100,11 @@
         <thead>
           <tr>
             <th *ngFor="let col of cfg.columns">{{ col.label }}</th>
+            <th *ngIf="cfg.resource === 'permissoes'">Ações</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let row of cfg.rows">
+          <tr *ngFor="let row of displayedRows">
             <td *ngFor="let col of cfg.columns">
               <ng-container *ngIf="isBadgeStatus(row[col.key]); else plainText">
                 <span class="badge" [ngClass]="getStatusClass(row[col.key])">
@@ -40,6 +114,14 @@
               <ng-template #plainText>
                 <span class="cell-value">{{ row[col.key] }}</span>
               </ng-template>
+            </td>
+            <td class="row-actions" *ngIf="cfg.resource === 'permissoes'">
+              <button type="button" mat-icon-button title="Editar" (click)="iniciarEdicao(row)">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button type="button" mat-icon-button title="Excluir" (click)="excluirPermissao(row)">
+                <mat-icon>delete</mat-icon>
+              </button>
             </td>
           </tr>
         </tbody>
@@ -51,7 +133,11 @@
   <footer class="tuple-footer">
     <div class="footer-info">
       <mat-icon>info</mat-icon>
-      <span>Exibindo <strong>{{ cfg.rows.length }}</strong> tuplas (Modo Mock)</span>
+      <span>
+        Exibindo <strong>{{ displayedRows.length }}</strong> tuplas
+        <ng-container *ngIf="usingMock(); else apiMode">(Modo Mock)</ng-container>
+        <ng-template #apiMode>(API)</ng-template>
+      </span>
     </div>
     <div class="footer-actions">
       <a routerLink="/adm-page" mat-stroked-button>

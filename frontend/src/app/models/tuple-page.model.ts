@@ -14,6 +14,7 @@ export interface TuplePageConfig {
   accentColor: 'blue' | 'green' | 'orange' | 'purple';
   columns: TupleColumn[];
   rows: TupleRow[];
+  resource?: 'usuarios' | 'permissoes' | 'historico';
 }
 
 export const DASHBOARD_MOCK: TuplePageConfig = {
@@ -21,9 +22,10 @@ export const DASHBOARD_MOCK: TuplePageConfig = {
   subtitle: 'Métricas e log de entradas (historico_acesso)',
   icon: 'dashboard',
   accentColor: 'blue',
+  resource: 'historico',
   columns: [
-    { key: 'user_id', label: 'ID Usuário' },
     { key: 'usuario_id', label: 'ID Usuário' },
+    { key: 'local_id', label: 'Local' },
     { key: 'uid_card_lido', label: 'UID Card Lido' },
     { key: 'data_hora', label: 'Data / Hora' },
     { key: 'autorizado', label: 'Autorizado' },
@@ -62,6 +64,7 @@ export const USUARIOS_MOCK: TuplePageConfig = {
   subtitle: 'Gerenciar registros da tabela usuario',
   icon: 'group',
   accentColor: 'orange',
+  resource: 'usuarios',
   columns: [
     { key: 'id', label: 'ID' },
     { key: 'nome', label: 'Nome' },
@@ -83,6 +86,7 @@ export const PERMISSOES_MOCK: TuplePageConfig = {
   subtitle: 'Regras da tabela permissao',
   icon: 'schedule',
   accentColor: 'purple',
+  resource: 'permissoes',
   columns: [
     { key: 'permissao_id', label: 'ID Permissão' },
     { key: 'usuario_id', label: 'ID Usuário' },

@@ -25,6 +25,8 @@
           <input formControlName="nome" type="text" maxlength="255" placeholder="João Silva" />
           @if (hasError('nome', 'required')) {
             <small>Informe o nome do usuário.</small>
+          } @else if (hasError('nome', 'minlength')) {
+            <small>Informe pelo menos 2 caracteres.</small>
           } @else if (hasError('nome', 'maxlength')) {
             <small>O nome deve ter no máximo 255 caracteres.</small>
           }
@@ -48,18 +50,37 @@
       </div>
 
       <div class="camera-capture" [class.ready]="cameraOpened">
-        <div class="camera-icon"><mat-icon>face</mat-icon></div>
+        @if (fotoPreviewUrl) {
+          <img class="photo-preview" [src]="fotoPreviewUrl" alt="Prévia da captura facial" />
+        } @else {
+          <div class="camera-icon"><mat-icon>face</mat-icon></div>
+        }
         <div class="camera-copy">
           <strong>{{
-            cameraOpened ? 'Câmera pronta para captura' : 'Nenhum vetor facial capturado'
+            usingFallbackVector
+              ? 'Vetor facial aleatório de teste'
+              : fotoPreviewUrl
+                ? 'Captura selecionada'
+                : 'Nenhum vetor facial capturado'
           }}</strong>
           <small>{{
-            cameraOpened ? 'A captura será integrada nesta etapa.' : 'Campo opcional no cadastro.'
+            usingFallbackVector
+              ? 'Modo temporário: este vetor não corresponde ao rosto capturado.'
+              : fotoPreviewUrl
+                ? 'A imagem será validada e vetorizada antes do cadastro.'
+                : 'A vetorização real será integrada depois; um vetor de teste será usado por enquanto.'
           }}</small>
         </div>
+        <input
+          id="foto-captura"
+          type="file"
+          accept="image/*"
+          (change)="onPhotoSelected($event)"
+          hidden
+        />
         <button type="button" mat-stroked-button (click)="openCamera()">
           <mat-icon>photo_camera</mat-icon>
-          Abrir câmera
+          Selecionar captura
         </button>
       </div>
     </section>
@@ -80,18 +101,98 @@
       </label>
     </section>
 
-    @if (submitted && form.valid) {
+    <section class="form-section access-section">
+      <div class="section-heading">
+        <span class="section-number">04</span>
+        <div>
+          <h2>Locais e permissão</h2>
+          <p>Defina onde e quando este usuário poderá acessar.</p>
+        </div>
+      </div>
+
+      @if (locaisCarregando) {
+        <p class="inline-message">Carregando locais disponíveis...</p>
+      } @else if (locaisErro) {
+        <p class="error-message inline-message" role="alert">
+          <mat-icon>error</mat-icon>{{ locaisErro }}
+        </p>
+      } @else if (!locais.length) {
+        <p class="warning-message" role="alert">
+          <mat-icon>warning</mat-icon>
+          Nenhum local ativo foi cadastrado. Cadastre um local antes de criar usuários.
+        </p>
+      } @else {
+        <div class="local-list">
+          @for (local of locais; track local.local_id) {
+            <button
+              type="button"
+              class="local-option"
+              [class.selected]="isLocalSelected(local.local_id)"
+              (click)="toggleLocal(local.local_id)"
+            >
+              <mat-icon>{{
+                isLocalSelected(local.local_id) ? 'check_circle' : 'radio_button_unchecked'
+              }}</mat-icon>
+              <span
+                ><strong>{{ local.nome }}</strong
+                ><small>{{ local.identificador_dispositivo }}</small></span
+              >
+            </button>
+          }
+        </div>
+
+        <div class="schedule-grid">
+          <label class="field"
+            ><span>Início</span><input [(ngModel)]="horarioInicio" type="time"
+          /></label>
+          <label class="field"
+            ><span>Fim</span><input [(ngModel)]="horarioFim" type="time"
+          /></label>
+        </div>
+        <div class="days-list" aria-label="Dias permitidos">
+          @for (
+            dia of [
+              { id: 1, label: 'Dom' },
+              { id: 2, label: 'Seg' },
+              { id: 3, label: 'Ter' },
+              { id: 4, label: 'Qua' },
+              { id: 5, label: 'Qui' },
+              { id: 6, label: 'Sex' },
+              { id: 7, label: 'Sáb' },
+            ];
+            track dia.id
+          ) {
+            <button
+              type="button"
+              [class.selected]="diasSelecionados.includes(dia.id)"
+              (click)="toggleDia(dia.id)"
+            >
+              {{ dia.label }}
+            </button>
+          }
+        </div>
+      }
+    </section>
+
+    @if (successMessage) {
       <p class="success-message" role="status">
         <mat-icon>check_circle</mat-icon>
-        Dados validados. A persistência será conectada ao endpoint de usuários.
+        {{ successMessage }}
+      </p>
+    }
+
+    @if (errorMessage) {
+      <p class="error-message" role="alert">
+        <mat-icon>error</mat-icon>
+        {{ errorMessage }}
       </p>
     }
 
     <footer class="form-actions">
       <button type="button" mat-button (click)="reset()">Limpar</button>
-      <button type="submit" mat-flat-button color="primary">
+      <button type="submit" mat-flat-button color="primary" [disabled]="saving">
         <mat-icon>person_add</mat-icon>
-        Validar cadastro
+        {{ saving ? 'Salvando...' : 'Criar usuário' }}
       </button>
     </footer>
   </form>

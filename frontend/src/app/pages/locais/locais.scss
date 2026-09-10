@@ -1,0 +1,49 @@
+:host { display: block; }
+
+.locations-page {
+  --canvas: #f5f6f8;
+  --surface: #fff;
+  --ink: #1c2128;
+  --muted: #6b7280;
+  --line: #e3e6ea;
+  --accent: #2563eb;
+  min-height: 100vh;
+  padding: 36px 40px 48px;
+  box-sizing: border-box;
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+.page-header, .editor, .table-card { width: min(1100px, 100%); margin: 0 auto; }
+.back-link { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 34px; color: var(--accent); font-weight: 700; text-decoration: none; }
+.back-link mat-icon { width: 20px; height: 20px; font-size: 20px; }
+.eyebrow { color: var(--accent); font-size: .76rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+h1 { margin: 8px 0; font-size: clamp(2rem, 4vw, 3.1rem); }
+.page-header p { color: var(--muted); }
+.editor, .table-card { margin-top: 32px; padding: 24px; box-sizing: border-box; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.editor-heading { display: flex; justify-content: space-between; gap: 20px; align-items: center; }
+h2 { margin: 5px 0 20px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+label { display: grid; gap: 7px; color: var(--muted); font-size: .85rem; font-weight: 700; }
+input:not([type=checkbox]) { padding: 11px; border: 1px solid #cfd5dc; border-radius: 6px; background: var(--surface); color: var(--ink); font: inherit; }
+.status { display: flex; align-items: center; gap: 8px; }
+.status input { width: 18px; height: 18px; }
+.actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+.error { color: #b91c1c; font-weight: 600; }
+.loading, .empty { color: var(--muted); text-align: center; }
+table { width: 100%; border-collapse: collapse; text-align: left; }
+th { color: var(--muted); font-size: .8rem; text-transform: uppercase; }
+th, td { padding: 16px; border-bottom: 1px solid var(--line); }
+code { color: var(--accent); }
+.status-badge { padding: 5px 10px; border-radius: 14px; background: #dcfce7; color: #15803d; font-weight: 700; }
+.status-badge.inactive { background: #fee2e2; color: #b91c1c; }
+.row-actions { white-space: nowrap; }
+
+:host-context(body.dark-mode) .locations-page { --canvas: #0f172a; --surface: #1e293b; --ink: #f8fafc; --muted: #94a3b8; --line: rgba(255,255,255,.1); }
+
+@media (max-width: 700px) {
+  .locations-page { padding: 24px 16px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .table-card { overflow-x: auto; }
+  table { min-width: 700px; }
+}

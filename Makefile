@@ -8,6 +8,7 @@ DOCKER_BACKEND_PORT := 8001
 
 .PHONY: up down build logs ps restart \
 	dev db-local dev-backend dev-frontend kill-port \
+	db-reset \
         help
 
 # ── Docker Compose (produção / integração) ─────────────────────────────────────
@@ -55,6 +56,14 @@ db-local: ## Prepara PostgreSQL local para o desenvolvimento
 		sudo -u postgres psql -v ON_ERROR_STOP=1 -d controle_acesso -f backend/init.sql; \
 	fi
 	@echo "✅ PostgreSQL local pronto."
+
+db-reset: ## Apaga e recria o banco local com as tabelas e dados iniciais
+	@echo "⚠️  Isso apagará todos os dados do banco controle_acesso."
+	@sudo -u postgres psql -v ON_ERROR_STOP=1 -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'controle_acesso' AND pid <> pg_backend_pid();"
+	@sudo -u postgres dropdb --if-exists controle_acesso
+	@sudo -u postgres createdb controle_acesso
+	@sudo -u postgres psql -v ON_ERROR_STOP=1 -d controle_acesso -f backend/init.sql
+	@echo "✅ Banco recriado com dados iniciais."
 
 dev: db-local ## Inicia backend e frontend locais em paralelo (hot reload)
 	@$(MAKE) kill-port PORT=$(BACKEND_PORT)

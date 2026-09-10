@@ -4,6 +4,7 @@ import { AdmPage } from './pages/adm-page/adm-page';
 import { TuplePage } from './pages/tuple-page/tuple-page';
 import { EntidadesPage } from './pages/entidades/entidades';
 import { CadastrarPage } from './pages/cadastrar/cadastrar';
+import { LocaisPage } from './pages/locais/locais';
 import { authGuard } from './guards/auth.guard';
 import {
   DASHBOARD_MOCK,
@@ -16,6 +17,7 @@ export const routes: Routes = [
   { path: 'login', component: Login },
   { path: 'adm-page', component: AdmPage, canActivate: [authGuard] },
   { path: 'entidades', component: EntidadesPage, canActivate: [authGuard] },
+  { path: 'locais', component: LocaisPage, canActivate: [authGuard] },
   {
     path: 'dashboard',
     component: TuplePage,

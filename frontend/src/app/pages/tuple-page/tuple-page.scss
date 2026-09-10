@@ -164,6 +164,87 @@
     }
   }
 
+  .data-notice {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    border: 1px solid #f59e0b;
+    border-radius: 10px;
+    background: #fffbeb;
+    color: #92400e;
+    font-weight: 600;
+
+    mat-icon {
+      color: #d97706;
+    }
+  }
+
+  .permission-editor {
+    padding: 20px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+  }
+
+  .editor-heading,
+  .permission-form,
+  .permission-days {
+    display: flex;
+    gap: 10px;
+  }
+
+  .editor-heading { align-items: center; margin-bottom: 18px; }
+
+  .permission-form {
+    flex-wrap: wrap;
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    select,
+    input {
+      min-width: 150px;
+      padding: 9px 10px;
+      border: 1px solid #cfd5dc;
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--ink);
+      font: inherit;
+    }
+  }
+
+  .permission-days {
+    align-self: end;
+
+    button {
+      width: 30px;
+      height: 30px;
+      border: 1px solid #cfd5dc;
+      border-radius: 50%;
+      background: #fff;
+      color: var(--muted);
+      cursor: pointer;
+      transition: transform .15s ease, background-color .15s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        background: #ede9fe;
+        color: #6d28d9;
+      }
+    }
+
+    button.selected {
+      border-color: #7c3aed;
+      background: #ede9fe;
+      color: #6d28d9;
+    }
+  }
+
   .badge {
     display: inline-block;
     padding: 6px 14px;
@@ -190,6 +271,11 @@
       background: #f3f4f6;
       color: #4b5563;
     }
+  }
+
+  ::selection {
+    background: rgba(124, 58, 237, 0.25);
+    color: inherit;
   }
 
   .tuple-footer {
@@ -300,6 +386,41 @@
         tr:hover td {
           background-color: rgba(255, 255, 255, 0.03) !important;
         }
+      }
+    }
+
+    .permission-editor {
+      background-color: #1e293b !important;
+      border-color: rgba(255, 255, 255, 0.1) !important;
+      color: #f8fafc !important;
+
+      .eyebrow,
+      label,
+      .permission-days span {
+        color: #cbd5e1 !important;
+      }
+
+      h3 {
+        color: #f8fafc !important;
+      }
+
+      select,
+      input {
+        border-color: #475569 !important;
+        background: #0f172a !important;
+        color: #f8fafc !important;
+      }
+
+      .permission-days button {
+        border-color: #64748b;
+        background: #0f172a;
+        color: #cbd5e1;
+      }
+
+      .permission-days button.selected {
+        border-color: #c084fc;
+        background: rgba(192, 132, 252, 0.2);
+        color: #e9d5ff;
       }
     }
 
