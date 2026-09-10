@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-const API_BASE = 'http://localhost:8001/api';
+const API_BASE = 'http://localhost:8001/api/v1';
 
 export interface AdmPageResponse {
   message: string;
@@ -19,7 +19,7 @@ export class ApiService {
   private http = inject(HttpClient);
 
   getAdmPage(): Observable<AdmPageResponse> {
-    return this.http.get<AdmPageResponse>(`${API_BASE}/adm-page`);
+    return this.http.get<AdmPageResponse>(`${API_BASE}/adm/adm-page`);
   }
 
   loginAdm(usuario: string, senha: string): Observable<LoginResponse> {

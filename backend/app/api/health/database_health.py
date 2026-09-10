@@ -5,7 +5,7 @@ from app.database.connection import get_connection
 router = APIRouter()
 
 
-@router.get("/health/db")
+@router.get("/db")
 def database_health():
     try:
         with get_connection() as connection:
