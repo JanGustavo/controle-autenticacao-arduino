@@ -49,40 +49,77 @@
         </div>
       </div>
 
-      <div class="camera-capture" [class.ready]="cameraOpened">
-        @if (fotoPreviewUrl) {
-          <img class="photo-preview" [src]="fotoPreviewUrl" alt="Prévia da captura facial" />
-        } @else {
-          <div class="camera-icon"><mat-icon>face</mat-icon></div>
-        }
-        <div class="camera-copy">
-          <strong>{{
-            usingFallbackVector
-              ? 'Vetor facial aleatório de teste'
-              : fotoPreviewUrl
-                ? 'Captura selecionada'
-                : 'Nenhum vetor facial capturado'
-          }}</strong>
-          <small>{{
-            usingFallbackVector
-              ? 'Modo temporário: este vetor não corresponde ao rosto capturado.'
-              : fotoPreviewUrl
-                ? 'A imagem será validada e vetorizada antes do cadastro.'
-                : 'A vetorização real será integrada depois; um vetor de teste será usado por enquanto.'
-          }}</small>
+      @if (webcamAtiva) {
+        <div class="webcam-viewport">
+          <video #videoElement autoplay playsinline muted class="camera-feed"></video>
+          <div class="scanner-overlay active">
+            <div class="face-guide">
+              <div class="laser-line"></div>
+            </div>
+          </div>
+          <div class="webcam-actions">
+            <button type="button" mat-flat-button color="primary" (click)="capturarFrameWebcam()">
+              <mat-icon>camera</mat-icon>
+              Capturar Foto
+            </button>
+            <button type="button" mat-button (click)="pararWebcam()">
+              Cancelar Webcam
+            </button>
+          </div>
         </div>
-        <input
-          id="foto-captura"
-          type="file"
-          accept="image/*"
-          (change)="onPhotoSelected($event)"
-          hidden
-        />
-        <button type="button" mat-stroked-button (click)="openCamera()">
-          <mat-icon>photo_camera</mat-icon>
-          Selecionar captura
-        </button>
-      </div>
+      } @else {
+        <div
+          class="camera-capture"
+          [class.ready]="capturaPronta"
+          [class.scanning]="scanning"
+          (animationend)="onScanFinished($event)"
+        >
+          @if (fotoPreviewUrl) {
+            <img class="photo-preview" [src]="fotoPreviewUrl" alt="Prévia da captura facial" />
+          } @else {
+            <div class="camera-icon"><mat-icon>face</mat-icon></div>
+          }
+          <div class="camera-copy">
+            <strong>{{
+              capturaPronta
+                ? 'Captura pronta para validação'
+                : fotoPreviewUrl
+                  ? 'Captura selecionada'
+                  : 'Nenhum vetor facial capturado'
+            }}</strong>
+            <small>{{
+              capturaPronta
+                ? 'A imagem será enviada e convertida em um vetor de 128 números ao salvar.'
+                : fotoPreviewUrl
+                  ? 'A imagem será validada e vetorizada antes do cadastro.'
+                  : 'Ative a webcam ou selecione um arquivo de imagem com um rosto visível.'
+            }}</small>
+          </div>
+          <input
+            id="foto-captura"
+            type="file"
+            accept="image/*"
+            (change)="onPhotoSelected($event)"
+            hidden
+          />
+          <div class="capture-buttons">
+            <button type="button" mat-flat-button color="primary" (click)="iniciarWebcam()">
+              <mat-icon>videocam</mat-icon>
+              Abrir Webcam
+            </button>
+            <button type="button" mat-stroked-button (click)="openFileInput()">
+              <mat-icon>file_upload</mat-icon>
+              Carregar Imagem
+            </button>
+          </div>
+        </div>
+      }
+
+      @if (webcamErro) {
+        <p class="error-message inline-message" role="alert">
+          <mat-icon>error</mat-icon>{{ webcamErro }}
+        </p>
+      }
     </section>
 
     <section class="form-section status-section">

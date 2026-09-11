@@ -4,6 +4,17 @@ FROM python:3.12-slim AS builder
 WORKDIR /install
 
 COPY requirements.txt .
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    libopenblas-dev \
+    liblapack-dev \
+    libx11-dev \
+    libgl1 \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN pip install --upgrade pip \
  && pip install --prefix=/install/deps --no-cache-dir -r requirements.txt
 
@@ -14,6 +25,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 WORKDIR /app
+
+RUN apt-get update && apt-get install -y \
+    libopenblas0-pthread \
+    libgl1 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copia as dependências instaladas no stage anterior
 COPY --from=builder /install/deps /usr/local

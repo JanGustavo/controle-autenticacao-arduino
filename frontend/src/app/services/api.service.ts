@@ -80,6 +80,11 @@ export interface LoginResponse {
   mensagem?: string;
 }
 
+export interface BiometriaResponse {
+  message: string;
+  vector_length: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private http = inject(HttpClient);
@@ -130,6 +135,13 @@ export class ApiService {
 
   criarUsuario(usuario: UsuarioCreateRequest): Observable<UsuarioResponse> {
     return this.http.post<UsuarioResponse>(`${API_BASE}/usuarios`, usuario);
+  }
+
+  cadastrarBiometria(usuarioId: number, foto: File | Blob): Observable<BiometriaResponse> {
+    const dados = new FormData();
+    const nomeArquivo = foto instanceof File ? foto.name : `biometria_${usuarioId}.jpg`;
+    dados.append('file', foto, nomeArquivo);
+    return this.http.post<BiometriaResponse>(`${API_BASE}/biometria/cadastrar/${usuarioId}`, dados);
   }
 
   loginAdm(usuario: string, senha: string): Observable<LoginResponse> {

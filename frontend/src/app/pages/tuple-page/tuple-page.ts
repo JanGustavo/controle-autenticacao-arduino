@@ -107,11 +107,12 @@ export class TuplePage implements OnInit {
   }
 
   private toTableRow(usuario: UsuarioResponse): Record<string, unknown> {
+    const qtdVetor = Array.isArray(usuario.vetor_facial) ? usuario.vetor_facial.length : 0;
     return {
       user_id: usuario.user_id,
       nome: usuario.nome,
       uid_card: usuario.uid_card ?? '-',
-      vetor_facial: usuario.vetor_facial ? 'Cadastrado (JSONB)' : 'Não Cadastrado',
+      vetor_facial: usuario.vetor_facial && qtdVetor > 0 ? `${qtdVetor} dimensões` : 'Não Cadastrado',
       ativo: usuario.ativo ? 'Sim' : 'Não',
       criado_em: usuario.criado_em,
     };
