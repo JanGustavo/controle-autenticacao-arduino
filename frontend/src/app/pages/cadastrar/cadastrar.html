@@ -4,7 +4,7 @@
       <mat-icon>arrow_back</mat-icon>
       Painel administrativo
     </a>
-    <span class="eyebrow">Novo registro · usuario</span>
+    <span class="eyebrow"></span>
     <h1>Cadastrar usuário</h1>
     <p>Preencha os dados que serão usados no controle de acesso.</p>
   </header>
@@ -51,26 +51,43 @@
 
       @if (webcamAtiva) {
         <div class="webcam-viewport">
-          <video #videoElement autoplay playsinline muted class="camera-feed"></video>
-          <div class="scanner-overlay active">
-            <div class="face-guide">
-              <div class="laser-line"></div>
-            </div>
+          <video #videoElement autoplay playsinline muted></video>
+
+          <!-- Badge Visual Dinâmico de IA -->
+          <div class="status-badge" [ngClass]="tipoStatus()">
+            <mat-icon>{{ tipoStatus() === 'success' ? 'check_circle' : 'warning' }}</mat-icon>
+            <span>{{ statusValidacao() }}</span>
           </div>
-          <div class="webcam-actions">
-            <button type="button" mat-flat-button color="primary" (click)="capturarFrameWebcam()">
-              <mat-icon>camera</mat-icon>
-              Capturar Foto
-            </button>
-            <button type="button" mat-button (click)="pararWebcam()">
-              Cancelar Webcam
-            </button>
+
+          <!-- Guia Oval de Centralização Facial -->
+          <div class="face-overlay">
+            <div class="face-oval"></div>
+            <span class="guide-text">Centralize o rosto no círculo</span>
           </div>
+
+          <div *ngIf="scanning" class="scan-line"></div>
+        </div>
+
+        <div class="webcam-controls">
+          <button
+            type="button"
+            mat-flat-button
+            color="primary"
+            (click)="capturarFrameWebcam()"
+            [disabled]="!capturaPronta()"
+          >
+            <mat-icon>camera</mat-icon>
+            Capturar Foto
+          </button>
+          <button type="button" mat-button color="warn" (click)="pararWebcam()">
+            <mat-icon>close</mat-icon>
+            Cancelar Webcam
+          </button>
         </div>
       } @else {
         <div
           class="camera-capture"
-          [class.ready]="capturaPronta"
+          [class.ready]="capturaPronta()"
           [class.scanning]="scanning"
           (animationend)="onScanFinished($event)"
         >
@@ -81,14 +98,14 @@
           }
           <div class="camera-copy">
             <strong>{{
-              capturaPronta
+              capturaPronta()
                 ? 'Captura pronta para validação'
                 : fotoPreviewUrl
                   ? 'Captura selecionada'
                   : 'Nenhum vetor facial capturado'
             }}</strong>
             <small>{{
-              capturaPronta
+              capturaPronta()
                 ? 'A imagem será enviada e convertida em um vetor de 128 números ao salvar.'
                 : fotoPreviewUrl
                   ? 'A imagem será validada e vetorizada antes do cadastro.'
@@ -177,14 +194,19 @@
             </button>
           }
         </div>
-
         <div class="schedule-grid">
-          <label class="field"
-            ><span>Início</span><input [(ngModel)]="horarioInicio" type="time"
-          /></label>
-          <label class="field"
-            ><span>Fim</span><input [(ngModel)]="horarioFim" type="time"
-          /></label>
+          <label class="field">
+            <span>Início</span>
+            <input
+              [(ngModel)]="horarioInicio"
+              [ngModelOptions]="{ standalone: true }"
+              type="time"
+            />
+          </label>
+          <label class="field">
+            <span>Fim</span>
+            <input [(ngModel)]="horarioFim" [ngModelOptions]="{ standalone: true }" type="time" />
+          </label>
         </div>
         <div class="days-list" aria-label="Dias permitidos">
           @for (

@@ -5,7 +5,11 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
+import * as faceapi from '@vladmandic/face-api';
 import { ApiService, AdmPageResponse } from '../../services/api.service';
+import { SpeechService } from '../../services/speech.service';
+
+type EstadoEnquadramento = 'ok' | 'sem_rosto' | 'sorriso' | null;
 
 @Component({
   imports: [
@@ -23,6 +27,7 @@ import { ApiService, AdmPageResponse } from '../../services/api.service';
 export class AdmPage implements OnInit, OnDestroy {
   private api = inject(ApiService);
   private snackBar = inject(MatSnackBar);
+  private speech = inject(SpeechService);
 
   @ViewChild('videoElement') videoElement?: ElementRef<HTMLVideoElement>;
 
@@ -37,8 +42,18 @@ export class AdmPage implements OnInit, OnDestroy {
   sucesso = signal(false);
   similaridade = signal(0);
   aprovado = signal(false);
+  usuarioEncontrado = signal<string | null>(null);
 
-  ngOnInit(): void {
+  // Indicators para o Badge Visual
+  statusValidacao = signal<string>('Centralize o rosto');
+  tipoStatus = signal<'info' | 'warn' | 'success'>('info');
+
+  private intervalValidacao: ReturnType<typeof setInterval> | null = null;
+  private modelosCarregados = false;
+  private ultimoEstadoEnquadramento: EstadoEnquadramento = null;
+  private processandoDeteccao = false;
+
+  async ngOnInit(): Promise<void> {
     this.api.getAdmPage().subscribe({
       next: (res) => {
         this.dados.set(res);
@@ -49,6 +64,14 @@ export class AdmPage implements OnInit, OnDestroy {
         this.carregando.set(false);
       },
     });
+
+    try {
+      await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+      await faceapi.nets.faceExpressionNet.loadFromUri('/models');
+      this.modelosCarregados = true;
+    } catch (e) {
+      console.warn('Não foi possível carregar os modelos locais do face-api:', e);
+    }
   }
 
   ngOnDestroy(): void {
@@ -57,24 +80,93 @@ export class AdmPage implements OnInit, OnDestroy {
 
   async iniciarWebcam(): Promise<void> {
     this.webcamErro.set('');
+    this.statusValidacao.set('Centralize o rosto');
+    this.tipoStatus.set('info');
+
     try {
       this.stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 1280, height: 720, facingMode: 'user' },
       });
       this.webcamAtiva.set(true);
+      this.speech.falar('Centralize o rosto e mantenha uma expressão séria.');
+
       setTimeout(() => {
         if (this.videoElement?.nativeElement) {
           this.videoElement.nativeElement.srcObject = this.stream;
-          this.capturaPronta.set(true);
+          this.iniciarLoopValidacao();
         }
-      }, 50);
+      }, 100);
     } catch (err) {
       this.webcamAtiva.set(false);
-      this.webcamErro.set('Erro ao acessar a webcam. Verifique se a câmera está conectada e com permissão concedida.');
+      this.webcamErro.set('Erro ao acessar a webcam. Verifique as permissões.');
+      this.speech.falar('Erro ao acessar a câmera.');
+    }
+  }
+
+  private iniciarLoopValidacao(): void {
+    this.pararLoopValidacao();
+    this.ultimoEstadoEnquadramento = null;
+
+    this.intervalValidacao = setInterval(async () => {
+      if (this.processandoDeteccao) return;
+      if (!this.webcamAtiva() || !this.videoElement?.nativeElement || !this.modelosCarregados) {
+        return;
+      }
+
+      const video = this.videoElement.nativeElement;
+      if (video.paused || video.ended || !video.videoWidth) return;
+
+      this.processandoDeteccao = true;
+      try {
+        const detection = await faceapi
+          .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224 }))
+          .withFaceExpressions();
+
+        if (!detection) {
+          this.capturaPronta.set(false);
+          this.statusValidacao.set('Rosto não detectado');
+          this.tipoStatus.set('warn');
+
+          if (this.ultimoEstadoEnquadramento !== 'sem_rosto') {
+            this.speech.falar('Rosto não detectado. Centralize-se na câmera.');
+            this.ultimoEstadoEnquadramento = 'sem_rosto';
+          }
+          return;
+        }
+
+        const ehSorriso = detection.expressions.happy > 0.6;
+
+        if (ehSorriso) {
+          this.capturaPronta.set(false);
+          this.statusValidacao.set('Sorriso detectado! Fique sério');
+          this.tipoStatus.set('warn');
+
+          if (this.ultimoEstadoEnquadramento !== 'sorriso') {
+            this.speech.falar('Por favor, mantenha uma expressão neutra e fique sério.');
+            this.ultimoEstadoEnquadramento = 'sorriso';
+          }
+        } else {
+          this.capturaPronta.set(true);
+          this.statusValidacao.set('Rosto enquadrado - Pronto!');
+          this.tipoStatus.set('success');
+          this.ultimoEstadoEnquadramento = 'ok';
+        }
+      } finally {
+        this.processandoDeteccao = false;
+      }
+    }, 500);
+  }
+
+  private pararLoopValidacao(): void {
+    if (this.intervalValidacao) {
+      clearInterval(this.intervalValidacao);
+      this.intervalValidacao = null;
     }
   }
 
   pararWebcam(): void {
+    this.pararLoopValidacao();
+    this.speech.parar();
     if (this.stream) {
       this.stream.getTracks().forEach((track) => track.stop());
       this.stream = null;
@@ -85,9 +177,9 @@ export class AdmPage implements OnInit, OnDestroy {
   }
 
   capturarFrameWebcam(): void {
-    if (!this.videoElement?.nativeElement) {
-      return;
-    }
+    if (!this.videoElement?.nativeElement || !this.capturaPronta()) return;
+
+    this.pararLoopValidacao();
 
     const video = this.videoElement.nativeElement;
     const canvas = document.createElement('canvas');
@@ -109,28 +201,40 @@ export class AdmPage implements OnInit, OnDestroy {
         this.scanning.set(true);
 
         this.api.testarBiometria(formData).subscribe({
-          next: (res: { status: string; similaridade: number; aprovado: boolean; mensagem?: string }) => {
+          next: (res: {
+            status: string;
+            similaridade: number;
+            aprovado: boolean;
+            mensagem?: string;
+            usuario?: { user_id: number; nome: string };
+          }) => {
             this.scanning.set(false);
 
             if (res.status === 'COMPARADO') {
               this.similaridade.set(res.similaridade);
               this.aprovado.set(res.aprovado);
+              this.usuarioEncontrado.set(res.usuario?.nome ?? null);
               this.sucesso.set(true);
 
-              const msg = res.aprovado
-                ? 'Aprovado! Similaridade: ' + res.similaridade + '% (mínimo 70%)'
-                : 'Negado. Similaridade: ' + res.similaridade + '% (mínimo 70%)';
-              this.snackBar.open(msg, 'Fechar', { duration: 4000 });
+              if (res.aprovado) {
+                this.speech.falar(`Acesso liberado. Seja bem-vindo, ${res.usuario?.nome ?? 'usuário'}.`, true);
+              } else {
+                this.speech.falar('Acesso negado. Biometria não corresponde ao cadastro.', true);
+              }
+
+              setTimeout(() => this.pararWebcam(), 3500);
             } else if (res.status === 'SEM_REGISTROS') {
-              this.snackBar.open(res.mensagem || 'Nenhum usuário com biometria cadastrado.', 'Fechar', { duration: 4000 });
+              this.speech.falar('Nenhum usuário cadastrado no banco de dados.');
+            } else if (res.status === 'ERRO') {
+              this.speech.falar(res.mensagem || 'Rosto não detectado. Tente novamente.');
             } else {
-              this.snackBar.open('Erro na comparação facial.', 'Fechar', { duration: 4000 });
+              this.speech.falar('Erro ao processar biometria.');
             }
           },
           error: (err: any) => {
             this.scanning.set(false);
-            this.snackBar.open(err.error?.detail || 'Erro ao testar biometria.', 'Fechar', { duration: 4000 });
-          }
+            this.speech.falar(err.error?.detail || 'Erro ao processar biometria.');
+          },
         });
       },
       'image/jpeg',
@@ -142,6 +246,7 @@ export class AdmPage implements OnInit, OnDestroy {
     this.pararWebcam();
     this.similaridade.set(0);
     this.aprovado.set(false);
+    this.usuarioEncontrado.set(null);
     this.sucesso.set(false);
   }
 }
