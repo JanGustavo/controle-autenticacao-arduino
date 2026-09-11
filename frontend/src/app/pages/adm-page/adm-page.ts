@@ -1,4 +1,5 @@
 import { Component, inject, OnInit, OnDestroy, ViewChild, ElementRef, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -7,17 +8,23 @@ import { RouterLink } from '@angular/router';
 import { ApiService, AdmPageResponse } from '../../services/api.service';
 
 @Component({
-  imports: [MatButtonModule, MatIconModule, MatProgressSpinnerModule, MatSnackBarModule, RouterLink],
+  imports: [
+    CommonModule,
+    MatButtonModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+    MatSnackBarModule,
+    RouterLink,
+  ],
   selector: 'app-adm-page',
   styleUrl: './adm-page.scss',
   templateUrl: './adm-page.html',
 })
 export class AdmPage implements OnInit, OnDestroy {
   private api = inject(ApiService);
-  // MatSnackBar e um servico, nao um elemento de template -> inject(), nunca @ViewChild.
   private snackBar = inject(MatSnackBar);
 
-  @ViewChild('videoElement') videoElement!: ElementRef<HTMLVideoElement>;
+  @ViewChild('videoElement') videoElement?: ElementRef<HTMLVideoElement>;
 
   dados = signal<AdmPageResponse | null>(null);
   carregando = signal(true);
@@ -28,9 +35,6 @@ export class AdmPage implements OnInit, OnDestroy {
   scanning = signal(false);
   capturaPronta = signal(false);
   sucesso = signal(false);
-  // Renomeado de "similarity" para "similaridade" -- o template chama similaridade(),
-  // nome divergente quebraria o type-check do template assim que os outros erros
-  // de import fossem corrigidos.
   similaridade = signal(0);
   aprovado = signal(false);
 
@@ -59,8 +63,9 @@ export class AdmPage implements OnInit, OnDestroy {
       });
       this.webcamAtiva.set(true);
       setTimeout(() => {
-        if (this.videoElement.nativeElement) {
+        if (this.videoElement?.nativeElement) {
           this.videoElement.nativeElement.srcObject = this.stream;
+          this.capturaPronta.set(true);
         }
       }, 50);
     } catch (err) {
@@ -80,7 +85,7 @@ export class AdmPage implements OnInit, OnDestroy {
   }
 
   capturarFrameWebcam(): void {
-    if (!this.videoElement.nativeElement) {
+    if (!this.videoElement?.nativeElement) {
       return;
     }
 
@@ -102,7 +107,6 @@ export class AdmPage implements OnInit, OnDestroy {
         formData.append('file', blob, 'biometria_teste.jpg');
 
         this.scanning.set(true);
-        this.capturaPronta.set(true);
 
         this.api.testarBiometria(formData).subscribe({
           next: (res: { status: string; similaridade: number; aprovado: boolean; mensagem?: string }) => {

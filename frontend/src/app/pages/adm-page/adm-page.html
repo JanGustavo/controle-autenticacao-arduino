@@ -82,37 +82,50 @@
         <p>Modelo de dados</p>
       </div>
     </a>
+
+    <!-- CARD: Comparar Biometria Facial -->
+    <div class="tile-card teal" (click)="iniciarWebcam()" style="cursor: pointer;">
+      <div class="tile-top">
+        <div class="tile-icon">
+          <mat-icon>face</mat-icon>
+        </div>
+        <mat-icon class="tile-arrow">arrow_forward</mat-icon>
+      </div>
+      <div class="tile-info">
+        <h3>Comparar Biometria</h3>
+        <p>Validar foto contra o banco</p>
+      </div>
+    </div>
   </div>
 
-  <div class="biometria-test" *ngIf="!webcamAtiva()">
-    <button mat-raised-button color="primary" (click)="iniciarWebcam()">
-      <mat-icon>camera_alt</mat-icon>
-      Testar Biometria Facial
-    </button>
-    <p class="subtle">Tire uma foto da webcam para comparar com os registros faciais cadastrados</p>
-  </div>
-
+  <!-- Modal / Contêiner da Webcam com Oval de Enquadramento -->
   <div class="biometria-test" *ngIf="webcamAtiva()">
-    <video #videoElement width="1280" height="720" autoplay muted></video>
+    <div class="webcam-viewport">
+      <video #videoElement width="1280" height="720" autoplay muted></video>
+
+      <!-- Guia de Centralização Facial -->
+      <div class="face-overlay">
+        <div class="face-oval"></div>
+        <span class="guide-text">Centralize o rosto no círculo</span>
+      </div>
+
+      <div *ngIf="scanning()" class="scan-line"></div>
+    </div>
+
     <div class="webcam-controls">
-      <!-- capturaPronta e um Signal: precisa ser chamado como funcao (). -->
-      <button mat-button (click)="capturarFrameWebcam()" [disabled]="!capturaPronta()">
-        <mat-icon>photo</mat-icon>
-        Capturar
+      <button mat-raised-button color="primary" (click)="capturarFrameWebcam()" [disabled]="!capturaPronta()">
+        <mat-icon>photo_camera</mat-icon>
+        Capturar e Comparar
       </button>
-      <button mat-button color="primary" (click)="pararWebcam()">
+      <button mat-button color="warn" (click)="pararWebcam()">
         <mat-icon>close</mat-icon>
         Cancelar
       </button>
     </div>
-    <div *ngIf="scanning()" class="scan-line"></div>
   </div>
 
+  <!-- Resultado da Comparação Facial -->
   <div class="resultado-biometria" *ngIf="similaridade() > 0">
-    <!--
-      Cor dinamica movida do <style> (onde {{ }} nao e processado -- style e CSS
-      puro, nunca template) para um binding direto no elemento.
-    -->
     <mat-icon [style.color]="aprovado() ? '#22c55e' : '#ef4444'">
       {{ aprovado() ? 'check_circle' : 'face_unrecognized' }}
     </mat-icon>
@@ -212,6 +225,77 @@
     position: relative;
   }
 
+  /* Viewport e Animação do Óval Facial */
+  .webcam-viewport {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #090d16;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  }
+
+  .webcam-viewport video {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .face-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .face-oval {
+    width: 220px;
+    height: 290px;
+    border: 2px dashed #00d2ff;
+    border-radius: 50%;
+    box-shadow: 0 0 20px rgba(0, 210, 255, 0.4), inset 0 0 20px rgba(0, 210, 255, 0.2);
+    animation: pulse-oval 2s ease-in-out infinite;
+  }
+
+  .guide-text {
+    margin-top: 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #ffffff;
+    background: rgba(0, 0, 0, 0.65);
+    padding: 6px 16px;
+    border-radius: 20px;
+    backdrop-filter: blur(4px);
+    letter-spacing: 0.3px;
+  }
+
+  @keyframes pulse-oval {
+    0% {
+      transform: scale(1);
+      border-color: #00d2ff;
+      box-shadow: 0 0 15px rgba(0, 210, 255, 0.4), inset 0 0 15px rgba(0, 210, 255, 0.2);
+    }
+    50% {
+      transform: scale(1.03);
+      border-color: #38ef7d;
+      box-shadow: 0 0 25px rgba(56, 239, 125, 0.6), inset 0 0 20px rgba(56, 239, 125, 0.3);
+    }
+    100% {
+      transform: scale(1);
+      border-color: #00d2ff;
+      box-shadow: 0 0 15px rgba(0, 210, 255, 0.4), inset 0 0 15px rgba(0, 210, 255, 0.2);
+    }
+  }
+
   .webcam-controls {
     display: flex;
     gap: 8px;
@@ -230,8 +314,9 @@
     left: 0;
     right: 0;
     height: 4px;
-    background: linear-gradient(90deg, transparent, rgba(0, 150, 136, 0.3), transparent);
+    background: linear-gradient(90deg, transparent, rgba(0, 210, 255, 0.8), transparent);
     animation: scan 2s linear infinite;
+    z-index: 3;
   }
 
   @keyframes scan {
@@ -251,7 +336,6 @@
   .resultado-biometria mat-icon {
     font-size: 48px;
     margin-bottom: 16px;
-    /* cor dinamica agora via [style.color] no template, nao aqui */
   }
 
   .resultado-biometria h3 {

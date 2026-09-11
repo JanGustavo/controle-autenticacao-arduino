@@ -63,32 +63,33 @@ export class CadastrarPage implements OnInit, OnDestroy {
     this.pararWebcam();
   }
 
-  async iniciarWebcam(): Promise<void> {
-    this.webcamErro = '';
-    try {
-      this.stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 1280, height: 720, facingMode: 'user' },
-      });
-      this.webcamAtiva = true;
-      this.cameraOpened = true;
-      setTimeout(() => {
-        if (this.videoElement?.nativeElement) {
-          this.videoElement.nativeElement.srcObject = this.stream;
-        }
-      }, 50);
-    } catch (err) {
-      this.webcamAtiva = false;
-      this.webcamErro = 'Erro ao acessar a webcam. Verifique se a câmera está conectada e com permissão concedida.';
-    }
-  }
-
-  pararWebcam(): void {
-    if (this.stream) {
-      this.stream.getTracks().forEach((track) => track.stop());
-      this.stream = null;
-    }
+async iniciarWebcam(): Promise<void> {
+  this.webcamErro = '';
+  try {
+    this.stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: 1280, height: 720, facingMode: 'user' },
+    });
+    this.webcamAtiva = true;
+    setTimeout(() => {
+      if (this.videoElement?.nativeElement) {
+        this.videoElement.nativeElement.srcObject = this.stream;
+        this.capturaPronta = true;
+      }
+    }, 50);
+  } catch (err) {
     this.webcamAtiva = false;
+    this.webcamErro = 'Erro ao acessar a webcam. Verifique permissões.';
   }
+}
+
+pararWebcam(): void {
+  if (this.stream) {
+    this.stream.getTracks().forEach((track) => track.stop());
+    this.stream = null;
+  }
+  this.webcamAtiva = false;
+  this.capturaPronta = false;
+}
 
   capturarFrameWebcam(): void {
     if (!this.videoElement?.nativeElement) {
