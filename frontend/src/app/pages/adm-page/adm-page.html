@@ -83,4 +83,192 @@
       </div>
     </a>
   </div>
+
+  <div class="biometria-test" *ngIf="!webcamAtiva()">
+    <button mat-raised-button color="primary" (click)="iniciarWebcam()">
+      <mat-icon>camera_alt</mat-icon>
+      Testar Biometria Facial
+    </button>
+    <p class="subtle">Tire uma foto da webcam para comparar com os registros faciais cadastrados</p>
+  </div>
+
+  <div class="biometria-test" *ngIf="webcamAtiva()">
+    <video #videoElement width="1280" height="720" autoplay muted></video>
+    <div class="webcam-controls">
+      <!-- capturaPronta e um Signal: precisa ser chamado como funcao (). -->
+      <button mat-button (click)="capturarFrameWebcam()" [disabled]="!capturaPronta()">
+        <mat-icon>photo</mat-icon>
+        Capturar
+      </button>
+      <button mat-button color="primary" (click)="pararWebcam()">
+        <mat-icon>close</mat-icon>
+        Cancelar
+      </button>
+    </div>
+    <div *ngIf="scanning()" class="scan-line"></div>
+  </div>
+
+  <div class="resultado-biometria" *ngIf="similaridade() > 0">
+    <!--
+      Cor dinamica movida do <style> (onde {{ }} nao e processado -- style e CSS
+      puro, nunca template) para um binding direto no elemento.
+    -->
+    <mat-icon [style.color]="aprovado() ? '#22c55e' : '#ef4444'">
+      {{ aprovado() ? 'check_circle' : 'face_unrecognized' }}
+    </mat-icon>
+    <h3>{{ aprovado() ? 'Aprovado' : 'Negado' }}</h3>
+    <p>Similaridade: {{ similaridade() }}%</p>
+    <p>Mínimo necessário: 70%</p>
+    <p *ngIf="aprovado()">Acesso liberado para o usuário correspondente.</p>
+    <p *ngIf="!aprovado()">Acesso negado - rosto não corresponde ao cadastro.</p>
+  </div>
 </div>
+
+<style>
+  .adm-wrapper {
+    min-height: 100vh;
+    background: #f5f7fa;
+  }
+
+  .adm-header {
+    padding: 24px 24px 0;
+  }
+
+  .eyebrow {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #64748b;
+    margin-bottom: 4px;
+  }
+
+  h2 {
+    font-size: 28px;
+    font-weight: 600;
+    color: #1e293b;
+  }
+
+  .grid-menu {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+    padding: 0 24px 24px;
+  }
+
+  .tile-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    text-decoration: none;
+    color: #1e293b;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .tile-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+
+  .tile-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .tile-icon {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .tile-arrow {
+    margin-left: auto;
+    opacity: 0.4;
+    font-size: 16px;
+  }
+
+  .tile-info h3 {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+
+  .tile-info p {
+    font-size: 12px;
+    color: #64748b;
+  }
+
+  .biometria-test {
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  .webcam-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .webcam-controls button {
+    min-width: 120px;
+  }
+
+  .scan-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, rgba(0, 150, 136, 0.3), transparent);
+    animation: scan 2s linear infinite;
+  }
+
+  @keyframes scan {
+    0% { top: 0; }
+    100% { top: 100%; }
+  }
+
+  .resultado-biometria {
+    padding: 24px;
+    max-width: 1200px;
+    margin: 32px auto;
+    text-align: center;
+    border-radius: 12px;
+    background: white;
+  }
+
+  .resultado-biometria mat-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    /* cor dinamica agora via [style.color] no template, nao aqui */
+  }
+
+  .resultado-biometria h3 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .resultado-biometria p {
+    font-size: 14px;
+    color: #64748b;
+    margin: 4px 0;
+  }
+
+  .subtle {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 8px;
+  }
+</style>

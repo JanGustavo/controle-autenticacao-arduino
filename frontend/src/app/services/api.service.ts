@@ -144,6 +144,24 @@ export class ApiService {
     return this.http.post<BiometriaResponse>(`${API_BASE}/biometria/cadastrar/${usuarioId}`, dados);
   }
 
+  testarBiometria(foto: FormData): Observable<{
+    status: string;
+    usuario_id?: number;
+    nome?: string;
+    similaridade: number;
+    aprovado: boolean;
+    mensagem: string;
+  }> {
+    return this.http.post<{
+      status: string;
+      usuario_id?: number;
+      nome?: string;
+      similaridade: number;
+      aprovado: boolean;
+      mensagem: string;
+    }>(`${API_BASE}/autenticacao/testar-biometria`, foto);
+  }
+
   loginAdm(usuario: string, senha: string): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${API_BASE}/auth/login`, { usuario, senha });
   }
