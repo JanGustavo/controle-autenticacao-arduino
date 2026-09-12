@@ -160,7 +160,7 @@
         <span class="section-number">04</span>
         <div>
           <h2>Locais e permissão</h2>
-          <p>Defina onde e quando este usuário poderá acessar.</p>
+          <p>Selecione os locais e configure os horários de acesso específicos de cada um.</p>
         </div>
       </div>
 
@@ -170,64 +170,74 @@
         <p class="error-message inline-message" role="alert">
           <mat-icon>error</mat-icon>{{ locaisErro }}
         </p>
-      } @else if (!locais.length) {
+      } @else if (!locaisPermissao.length) {
         <p class="warning-message" role="alert">
           <mat-icon>warning</mat-icon>
           Nenhum local ativo foi cadastrado. Cadastre um local antes de criar usuários.
         </p>
       } @else {
-        <div class="local-list">
-          @for (local of locais; track local.local_id) {
-            <button
-              type="button"
-              class="local-option"
-              [class.selected]="isLocalSelected(local.local_id)"
-              (click)="toggleLocal(local.local_id)"
-            >
-              <mat-icon>{{
-                isLocalSelected(local.local_id) ? 'check_circle' : 'radio_button_unchecked'
-              }}</mat-icon>
-              <span
-                ><strong>{{ local.nome }}</strong
-                ><small>{{ local.identificador_dispositivo }}</small></span
-              >
-            </button>
-          }
-        </div>
-        <div class="schedule-grid">
-          <label class="field">
-            <span>Início</span>
-            <input
-              [(ngModel)]="horarioInicio"
-              [ngModelOptions]="{ standalone: true }"
-              type="time"
-            />
-          </label>
-          <label class="field">
-            <span>Fim</span>
-            <input [(ngModel)]="horarioFim" [ngModelOptions]="{ standalone: true }" type="time" />
-          </label>
-        </div>
-        <div class="days-list" aria-label="Dias permitidos">
-          @for (
-            dia of [
-              { id: 1, label: 'Dom' },
-              { id: 2, label: 'Seg' },
-              { id: 3, label: 'Ter' },
-              { id: 4, label: 'Qua' },
-              { id: 5, label: 'Qui' },
-              { id: 6, label: 'Sex' },
-              { id: 7, label: 'Sáb' },
-            ];
-            track dia.id
-          ) {
-            <button
-              type="button"
-              [class.selected]="diasSelecionados.includes(dia.id)"
-              (click)="toggleDia(dia.id)"
-            >
-              {{ dia.label }}
-            </button>
+        <div class="locais-config-list">
+          @for (item of locaisPermissao; track item.local_id) {
+            <div class="local-card-config" [class.selected]="item.selecionado">
+              <div class="local-header" (click)="toggleLocal(item)">
+                <mat-icon class="check-icon">{{
+                  item.selecionado ? 'check_box' : 'check_box_outline_blank'
+                }}</mat-icon>
+                <div class="local-title">
+                  <strong>{{ item.nome_local }}</strong>
+                  <small>{{ item.identificador }}</small>
+                </div>
+              </div>
+
+              @if (item.selecionado) {
+                <div class="local-body">
+                  <div class="schedule-grid">
+                    <label class="field">
+                      <span>Início</span>
+                      <input
+                        [(ngModel)]="item.horario_inicio"
+                        [ngModelOptions]="{ standalone: true }"
+                        type="time"
+                      />
+                    </label>
+                    <label class="field">
+                      <span>Fim</span>
+                      <input
+                        [(ngModel)]="item.horario_fim"
+                        [ngModelOptions]="{ standalone: true }"
+                        type="time"
+                      />
+                    </label>
+                  </div>
+
+                  <div class="days-section">
+                    <span class="field-label">Dias de acesso permitidos:</span>
+                    <div class="days-list" aria-label="Dias permitidos">
+                      @for (
+                        dia of [
+                          { id: 1, label: 'Dom' },
+                          { id: 2, label: 'Seg' },
+                          { id: 3, label: 'Ter' },
+                          { id: 4, label: 'Qua' },
+                          { id: 5, label: 'Qui' },
+                          { id: 6, label: 'Sex' },
+                          { id: 7, label: 'Sáb' },
+                        ];
+                        track dia.id
+                      ) {
+                        <button
+                          type="button"
+                          [class.selected]="item.dias_semana.includes(dia.id)"
+                          (click)="toggleDiaLocal(item, dia.id)"
+                        >
+                          {{ dia.label }}
+                        </button>
+                      }
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
           }
         </div>
       }

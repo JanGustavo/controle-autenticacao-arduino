@@ -5,9 +5,19 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
-import { ApiService, LocalResponse } from '../../services/api.service';
+import { ApiService, LocalResponse, PermissaoCreateRequest } from '../../services/api.service';
 import { SpeechService } from '../../services/speech.service';
 import { WebcamService } from '../../services/webcam.service';
+
+export interface LocalPermissaoItem {
+  local_id: number;
+  nome_local: string;
+  identificador: string;
+  selecionado: boolean;
+  horario_inicio: string;
+  horario_fim: string;
+  dias_semana: number[];
+}
 
 @Component({
   selector: 'app-cadastrar-page',
@@ -39,13 +49,9 @@ export class CadastrarPage implements OnInit, OnDestroy {
   saving = false;
   successMessage = '';
   errorMessage = '';
-  locais: LocalResponse[] = [];
+  locaisPermissao: LocalPermissaoItem[] = [];
   locaisCarregando = true;
   locaisErro = '';
-  selectedLocalIds: number[] = [];
-  horarioInicio = '08:00';
-  horarioFim = '18:00';
-  diasSelecionados = [1, 2, 3, 4, 5];
   fotoPreviewUrl: string | null = null;
   private fotoCapturada: Blob | File | null = null;
 
@@ -58,7 +64,15 @@ export class CadastrarPage implements OnInit, OnDestroy {
   async ngOnInit(): Promise<void> {
     this.api.getLocais().subscribe({
       next: (locais) => {
-        this.locais = locais;
+        this.locaisPermissao = locais.map((local) => ({
+          local_id: local.local_id,
+          nome_local: local.nome,
+          identificador: local.identificador_dispositivo,
+          selecionado: false,
+          horario_inicio: '08:00',
+          horario_fim: '18:00',
+          dias_semana: [1, 2, 3, 4, 5], // Padrão Seg-Sex
+        }));
         this.locaisCarregando = false;
       },
       error: () => {
@@ -107,8 +121,10 @@ export class CadastrarPage implements OnInit, OnDestroy {
       return;
     }
 
-    if (!this.selectedLocalIds.length) {
-      this.errorMessage = 'Selecione pelo menos um local e configure o horário de acesso.';
+    const locaisSelecionados = this.locaisPermissao.filter((item) => item.selecionado);
+
+    if (!locaisSelecionados.length) {
+      this.errorMessage = 'Selecione pelo menos um local e configure seu horário de acesso.';
       return;
     }
 
@@ -119,23 +135,26 @@ export class CadastrarPage implements OnInit, OnDestroy {
 
     this.saving = true;
     const { nome, uid_card, ativo } = this.form.getRawValue();
+
+    const permissoesPayload: PermissaoCreateRequest[] = locaisSelecionados.map((item) => ({
+      local_id: item.local_id,
+      horario_inicio: item.horario_inicio,
+      horario_fim: item.horario_fim,
+      dias_semana: item.dias_semana,
+    }));
+
     this.api.criarUsuario({
       nome,
       uid_card: this.normalizarUid(uid_card),
       vetor_facial: null,
       ativo,
-      permissoes: this.selectedLocalIds.map((local_id) => ({
-        local_id,
-        horario_inicio: this.horarioInicio,
-        horario_fim: this.horarioFim,
-        dias_semana: this.diasSelecionados,
-      })),
+      permissoes: permissoesPayload,
     }).subscribe({
       next: (usuario) => {
         this.api.cadastrarBiometria(usuario.user_id, this.fotoCapturada!).subscribe({
           next: ({ vector_length }) => {
             this.saving = false;
-            this.successMessage = `Usuário ${usuario.nome} criado com sucesso (vetor facial de ${vector_length} dimensões).`;
+            this.successMessage = `Usuário ${usuario.nome} criado com sucesso (${locaisSelecionados.length} permissões e vetor facial de ${vector_length} dims).`;
             this.snackBar.open(this.successMessage, 'Fechar', { duration: 6000 });
             this.speech.falar('Usuário cadastrado com sucesso.');
           },
@@ -166,8 +185,13 @@ export class CadastrarPage implements OnInit, OnDestroy {
     this.successMessage = '';
     this.errorMessage = '';
     this.fotoCapturada = null;
-    this.selectedLocalIds = [];
     this.fotoPreviewUrl = null;
+    this.locaisPermissao.forEach((item) => {
+      item.selecionado = false;
+      item.horario_inicio = '08:00';
+      item.horario_fim = '18:00';
+      item.dias_semana = [1, 2, 3, 4, 5];
+    });
   }
 
   openFileInput(): void {
@@ -201,20 +225,14 @@ export class CadastrarPage implements OnInit, OnDestroy {
     this.webcam.capturaPronta.set(true);
   }
 
-  toggleLocal(localId: number): void {
-    this.selectedLocalIds = this.selectedLocalIds.includes(localId)
-      ? this.selectedLocalIds.filter((id) => id !== localId)
-      : [...this.selectedLocalIds, localId];
+  toggleLocal(item: LocalPermissaoItem): void {
+    item.selecionado = !item.selecionado;
   }
 
-  isLocalSelected(localId: number): boolean {
-    return this.selectedLocalIds.includes(localId);
-  }
-
-  toggleDia(dia: number): void {
-    this.diasSelecionados = this.diasSelecionados.includes(dia)
-      ? this.diasSelecionados.filter((item) => item !== dia)
-      : [...this.diasSelecionados, dia].sort();
+  toggleDiaLocal(item: LocalPermissaoItem, dia: number): void {
+    item.dias_semana = item.dias_semana.includes(dia)
+      ? item.dias_semana.filter((d) => d !== dia)
+      : [...item.dias_semana, dia].sort();
   }
 
   private normalizarUid(uid: string): string | null {

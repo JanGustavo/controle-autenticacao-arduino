@@ -220,60 +220,112 @@ textarea:focus {
   border-radius: 8px;
 }
 
-.local-list,
-.days-list {
+/* Estilos dos Cartões de Local por Permissão Individual */
+.locais-config-list {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.local-option,
-.days-list button {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid #cfd5dc;
-  border-radius: 6px;
-  background: #fff;
-  color: var(--ink);
-  cursor: pointer;
-  font: inherit;
-}
-
-.local-option {
-  min-width: 210px;
-  padding: 12px;
-  text-align: left;
-}
-
-.local-option span {
-  display: grid;
-  gap: 3px;
-}
-
-.local-option small {
-  color: var(--muted);
-  font-size: 0.76rem;
-}
-
-.local-option.selected,
-.days-list button.selected {
-  border-color: var(--accent);
-  background: #eff6ff;
-  color: var(--accent);
-}
-
-.schedule-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 180px));
+  flex-direction: column;
   gap: 16px;
-  margin: 22px 0 16px;
 }
 
-.days-list button {
-  min-width: 52px;
-  justify-content: center;
-  padding: 8px 10px;
+.local-card-config {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  overflow: hidden;
+  transition: all 0.2s ease;
+
+  &.selected {
+    border-color: var(--accent);
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.08);
+
+    .local-header {
+      background: #eff6ff;
+      border-bottom: 1px solid #dbeafe;
+    }
+  }
+
+  .local-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    cursor: pointer;
+    user-select: none;
+
+    .check-icon {
+      color: var(--muted);
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+    }
+
+    .local-title {
+      display: flex;
+      flex-direction: column;
+
+      strong {
+        font-size: 1rem;
+        color: var(--ink);
+      }
+
+      small {
+        font-size: 0.8rem;
+        color: var(--muted);
+      }
+    }
+  }
+
+  &.selected .check-icon {
+    color: var(--accent);
+  }
+
+  .local-body {
+    padding: 20px;
+    background: #fafafa;
+
+    .schedule-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 180px));
+      gap: 16px;
+      margin: 0 0 16px 0;
+    }
+
+    .days-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      .field-label {
+        font-size: 0.84rem;
+        font-weight: 700;
+        color: var(--ink);
+      }
+
+      .days-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+
+        button {
+          min-width: 48px;
+          padding: 8px 12px;
+          border: 1px solid #cbd5e1;
+          border-radius: 6px;
+          background: #ffffff;
+          color: var(--ink);
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.15s ease;
+
+          &.selected {
+            border-color: var(--accent);
+            background: var(--accent);
+            color: #ffffff;
+          }
+        }
+      }
+    }
+  }
 }
 
 .inline-message,
