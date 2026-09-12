@@ -49,14 +49,14 @@
         </div>
       </div>
 
-      @if (webcamAtiva) {
+      @if (webcam.webcamAtiva()) {
         <div class="webcam-viewport">
           <video #videoElement autoplay playsinline muted></video>
 
           <!-- Badge Visual Dinâmico de IA -->
-          <div class="status-badge" [ngClass]="tipoStatus()">
-            <mat-icon>{{ tipoStatus() === 'success' ? 'check_circle' : 'warning' }}</mat-icon>
-            <span>{{ statusValidacao() }}</span>
+          <div class="status-badge" [ngClass]="webcam.tipoStatus()">
+            <mat-icon>{{ webcam.tipoStatus() === 'success' ? 'check_circle' : 'warning' }}</mat-icon>
+            <span>{{ webcam.statusValidacao() }}</span>
           </div>
 
           <!-- Guia Oval de Centralização Facial -->
@@ -74,7 +74,7 @@
             mat-flat-button
             color="primary"
             (click)="capturarFrameWebcam()"
-            [disabled]="!capturaPronta()"
+            [disabled]="!webcam.capturaPronta()"
           >
             <mat-icon>camera</mat-icon>
             Capturar Foto
@@ -87,7 +87,7 @@
       } @else {
         <div
           class="camera-capture"
-          [class.ready]="capturaPronta()"
+          [class.ready]="webcam.capturaPronta()"
           [class.scanning]="scanning"
           (animationend)="onScanFinished($event)"
         >
@@ -98,14 +98,14 @@
           }
           <div class="camera-copy">
             <strong>{{
-              capturaPronta()
+              webcam.capturaPronta()
                 ? 'Captura pronta para validação'
                 : fotoPreviewUrl
                   ? 'Captura selecionada'
                   : 'Nenhum vetor facial capturado'
             }}</strong>
             <small>{{
-              capturaPronta()
+              webcam.capturaPronta()
                 ? 'A imagem será enviada e convertida em um vetor de 128 números ao salvar.'
                 : fotoPreviewUrl
                   ? 'A imagem será validada e vetorizada antes do cadastro.'
@@ -132,9 +132,9 @@
         </div>
       }
 
-      @if (webcamErro) {
+      @if (webcam.webcamErro()) {
         <p class="error-message inline-message" role="alert">
-          <mat-icon>error</mat-icon>{{ webcamErro }}
+          <mat-icon>error</mat-icon>{{ webcam.webcamErro() }}
         </p>
       }
     </section>

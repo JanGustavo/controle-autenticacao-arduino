@@ -1,87 +1,148 @@
+@use '../../styles/webcam';
+
 .comparar-wrapper {
-    max-width: 800px;
-    margin: 32px auto;
-    padding: 0 24px;
+  max-width: 1200px;
+  margin: 32px auto;
+  padding: 0 24px;
 
-    .header {
-        margin-bottom: 24px;
+  .header {
+    margin-bottom: 24px;
 
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            text-decoration: none;
-            color: #64748b;
-            margin-bottom: 12px;
-        }
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+
+      .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        text-decoration: none;
+        color: #64748b;
+        font-weight: 500;
+      }
+    }
+  }
+
+  .totem-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+
+    @media (min-width: 900px) {
+      grid-template-columns: 2fr 1fr;
+    }
+  }
+
+  .card-cam {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    text-align: center;
+
+    .preview-cam,
+    .placeholder-cam {
+      width: 100%;
+      max-width: 800px;
+      height: 380px;
+      margin: 0 auto 20px;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #0f172a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      position: relative;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      mat-icon {
+        font-size: 64px;
+        width: 64px;
+        height: 64px;
+      }
+    }
+  }
+
+  .card-logs {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+    h3 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 0;
+      font-size: 1.1rem;
+      color: #1e293b;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 12px;
     }
 
-    .card-cam {
-        background: white;
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        text-align: center;
-
-        .webcam-container,
-        .preview-cam,
-        .placeholder-cam {
-            width: 100%;
-            max-width: 640px;
-            height: 360px;
-            margin: 0 auto 20px;
-            border-radius: 12px;
-            overflow: hidden;
-            background: #0f172a;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: #94a3b8;
-            position: relative;
-
-            video,
-            img {
-                width: 100%;
-                height: 100%;
-                object-fit: cover;
-            }
-
-            mat-icon {
-                font-size: 64px;
-                width: 64px;
-                height: 64px;
-            }
-        }
-
-        .actions {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-        }
+    .logs-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
 
-    .resultado-card {
-        margin-top: 24px;
-        background: white;
-        border-radius: 16px;
-        padding: 24px;
-        text-align: center;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    .log-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px;
+      border-radius: 8px;
+      background: #f8fafc;
 
+      mat-icon {
+        color: #ef4444;
+      }
+
+      &.autorizado {
         mat-icon {
-            font-size: 56px;
-            width: 56px;
-            height: 56px;
+          color: #22c55e;
+        }
+      }
+
+      .log-info {
+        display: flex;
+        flex-direction: column;
+
+        strong {
+          font-size: 0.9rem;
         }
 
-        .info-detalhes {
-            margin: 16px 0;
-
-            p {
-                margin: 4px 0;
-                font-size: 16px;
-            }
+        small {
+          color: #64748b;
+          font-size: 0.75rem;
         }
+
+        p {
+          margin: 2px 0 0 0;
+          font-size: 0.8rem;
+          color: #475569;
+        }
+
+        .recusa {
+          color: #dc2626;
+        }
+      }
     }
+
+    .no-logs {
+      color: #94a3b8;
+      font-size: 0.9rem;
+      text-align: center;
+      padding: 20px 0;
+    }
+  }
 }
