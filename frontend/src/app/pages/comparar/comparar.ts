@@ -122,9 +122,15 @@ export class CompararPage implements OnInit, OnDestroy {
           this.exibirOverlayTotem.set(true);
           this.timeoutOverlay = setTimeout(() => {
             this.exibirOverlayTotem.set(false);
-            // Ativa cooldown pós-acesso para a mesma pessoa não disparar em loop
-            this.webcam.ativarCooldownPosAcesso(5000);
-          }, 3500);
+
+            if (this.aprovado()) {
+              // Somente ativa cooldown longo (5s) se foi Aprovado/Liberado
+              this.webcam.ativarCooldownPosAcesso(5000);
+            } else {
+              // Quando Negado / Não Identificado, faz apenas uma pequena pausa (1.5s) e retoma o loop
+              this.webcam.ativarCooldownPosAcesso(1500);
+            }
+          }, 3000);
         }
       },
       error: (err) => {
@@ -137,8 +143,8 @@ export class CompararPage implements OnInit, OnDestroy {
           this.exibirOverlayTotem.set(true);
           this.timeoutOverlay = setTimeout(() => {
             this.exibirOverlayTotem.set(false);
-            this.webcam.ativarCooldownPosAcesso(5000);
-          }, 3500);
+            this.webcam.ativarCooldownPosAcesso(1500);
+          }, 3000);
         }
       },
     });
@@ -151,7 +157,6 @@ export class CompararPage implements OnInit, OnDestroy {
     }
   }
 
-  /** Alterna o modo Kiosk limpo em tela cheia */
   toggleKioskFullscreen(): void {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().then(() => {
