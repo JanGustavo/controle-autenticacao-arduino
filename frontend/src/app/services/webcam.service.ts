@@ -121,6 +121,8 @@ export class WebcamService {
       this.statusValidacao.set('Centralize o rosto');
       this.tipoStatus.set('info');
       this.ultimoEstadoEnquadramento = null;
+      // Garante reativação expressa do loop de IA
+      this.iniciarLoopValidacao();
     }, duracaoMs);
   }
 
