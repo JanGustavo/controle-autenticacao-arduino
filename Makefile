@@ -87,7 +87,7 @@ dev-backend: ## Inicia o FastAPI com uvicorn (hot reload) — prepara a venv aut
 		python3 -m venv venv && venv/bin/pip install -r requirements.txt; \
 	fi; \
 	DATABASE_URL="$${DATABASE_URL:-postgresql://postgres:JGustavo2106@localhost:5432/controle_acesso}" \
-	venv/bin/uvicorn app.main:app --reload --port $(BACKEND_PORT)
+	venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port $(BACKEND_PORT)
 
 dev-frontend: ## Inicia o Angular dev server (hot reload)
 	@echo "🅰️  Iniciando frontend na porta $(FRONTEND_PORT)..."

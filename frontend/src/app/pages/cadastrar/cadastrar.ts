@@ -1,27 +1,47 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, ElementRef, inject, OnDestroy, OnInit, ViewChild, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormsModule, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
+import * as faceapi from '@vladmandic/face-api';
 import { ApiService, LocalResponse } from '../../services/api.service';
+import { SpeechService } from '../../services/speech.service';
+
+type EstadoEnquadramento = 'ok' | 'sem_rosto' | 'sorriso' | null;
 
 @Component({
   selector: 'app-cadastrar-page',
   standalone: true,
-  imports: [FormsModule, MatButtonModule, MatIconModule, MatSnackBarModule, ReactiveFormsModule, RouterLink],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatButtonModule,
+    MatIconModule,
+    MatSnackBarModule,
+    ReactiveFormsModule,
+    RouterLink,
+  ],
   templateUrl: './cadastrar.html',
   styleUrl: './cadastrar.scss',
 })
-export class CadastrarPage implements OnInit {
+export class CadastrarPage implements OnInit, OnDestroy {
+  @ViewChild('videoElement') videoElement?: ElementRef<HTMLVideoElement>;
+
   private formBuilder = inject(FormBuilder);
   private api = inject(ApiService);
   private snackBar = inject(MatSnackBar);
+  private speech = inject(SpeechService);
 
+  stream: MediaStream | null = null;
+  webcamAtiva = false;
+  webcamErro = '';
   cameraOpened = false;
+  scanning = false;
+  capturaPronta = signal(false);
   submitted = false;
   saving = false;
-  usingFallbackVector = false;
   successMessage = '';
   errorMessage = '';
   locais: LocalResponse[] = [];
@@ -32,7 +52,16 @@ export class CadastrarPage implements OnInit {
   horarioFim = '18:00';
   diasSelecionados = [1, 2, 3, 4, 5];
   fotoPreviewUrl: string | null = null;
-  private vetorFacial: number[] | null = null;
+  private fotoCapturada: Blob | File | null = null;
+
+  // Status visual para a webcam
+  statusValidacao = signal<string>('Centralize o rosto');
+  tipoStatus = signal<'info' | 'warn' | 'success'>('info');
+
+  private intervalValidacao: ReturnType<typeof setInterval> | null = null;
+  private modelosCarregados = false;
+  private ultimoEstadoEnquadramento: EstadoEnquadramento = null;
+  private processandoDeteccao = false;
 
   form = this.formBuilder.nonNullable.group({
     nome: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(255)]],
@@ -40,7 +69,7 @@ export class CadastrarPage implements OnInit {
     ativo: [true],
   });
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     this.api.getLocais().subscribe({
       next: (locais) => {
         this.locais = locais;
@@ -51,6 +80,146 @@ export class CadastrarPage implements OnInit {
         this.locaisErro = 'Não foi possível carregar os locais disponíveis.';
       },
     });
+
+    try {
+      await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+      await faceapi.nets.faceExpressionNet.loadFromUri('/models');
+      this.modelosCarregados = true;
+    } catch (e) {
+      console.warn('Não foi possível carregar os modelos locais do face-api:', e);
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.pararWebcam();
+  }
+
+  async iniciarWebcam(): Promise<void> {
+    this.webcamErro = '';
+    this.statusValidacao.set('Centralize o rosto');
+    this.tipoStatus.set('info');
+
+    try {
+      this.stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 1280, height: 720, facingMode: 'user' },
+      });
+      this.webcamAtiva = true;
+      this.speech.falar('Centralize o rosto e mantenha uma expressão séria.');
+
+      setTimeout(() => {
+        if (this.videoElement?.nativeElement) {
+          this.videoElement.nativeElement.srcObject = this.stream;
+          this.iniciarLoopValidacao();
+        }
+      }, 100);
+    } catch (err) {
+      this.webcamAtiva = false;
+      this.webcamErro = 'Erro ao acessar a webcam. Verifique as permissões.';
+      this.speech.falar('Erro ao acessar a câmera.');
+    }
+  }
+
+  private iniciarLoopValidacao(): void {
+    this.pararLoopValidacao();
+    this.ultimoEstadoEnquadramento = null;
+
+    this.intervalValidacao = setInterval(async () => {
+      if (this.processandoDeteccao) return;
+      if (!this.webcamAtiva || !this.videoElement?.nativeElement || !this.modelosCarregados) {
+        return;
+      }
+
+      const video = this.videoElement.nativeElement;
+      if (video.paused || video.ended || !video.videoWidth) return;
+
+      this.processandoDeteccao = true;
+      try {
+        const detection = await faceapi
+          .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224 }))
+          .withFaceExpressions();
+
+        if (!detection) {
+          this.capturaPronta.set(false);
+          this.statusValidacao.set('Rosto não detectado');
+          this.tipoStatus.set('warn');
+
+          if (this.ultimoEstadoEnquadramento !== 'sem_rosto') {
+            this.speech.falar('Rosto não detectado. Centralize-se na câmera.');
+            this.ultimoEstadoEnquadramento = 'sem_rosto';
+          }
+          return;
+        }
+
+        const ehSorriso = detection.expressions.happy > 0.6;
+
+        if (ehSorriso) {
+          this.capturaPronta.set(false);
+          this.statusValidacao.set('Sorriso detectado! Fique sério');
+          this.tipoStatus.set('warn');
+
+          if (this.ultimoEstadoEnquadramento !== 'sorriso') {
+            this.speech.falar('Por favor, mantenha uma expressão neutra e fique sério.');
+            this.ultimoEstadoEnquadramento = 'sorriso';
+          }
+        } else {
+          this.capturaPronta.set(true);
+          this.statusValidacao.set('Rosto enquadrado - Pronto!');
+          this.tipoStatus.set('success');
+          this.ultimoEstadoEnquadramento = 'ok';
+        }
+      } finally {
+        this.processandoDeteccao = false;
+      }
+    }, 500);
+  }
+
+  private pararLoopValidacao(): void {
+    if (this.intervalValidacao) {
+      clearInterval(this.intervalValidacao);
+      this.intervalValidacao = null;
+    }
+  }
+
+  pararWebcam(): void {
+    this.pararLoopValidacao();
+    this.speech.parar();
+    if (this.stream) {
+      this.stream.getTracks().forEach((track) => track.stop());
+      this.stream = null;
+    }
+    this.webcamAtiva = false;
+    this.scanning = false;
+    this.capturaPronta.set(false);
+  }
+
+  capturarFrameWebcam(): void {
+    if (!this.videoElement?.nativeElement || !this.capturaPronta()) return;
+
+    this.pararLoopValidacao();
+
+    const video = this.videoElement.nativeElement;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    this.fotoPreviewUrl = canvas.toDataURL('image/jpeg', 0.95);
+
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) return;
+        this.fotoCapturada = blob;
+        this.scanning = true;
+        this.errorMessage = '';
+        this.pararWebcam();
+        this.speech.falar('Foto capturada com sucesso.');
+      },
+      'image/jpeg',
+      0.95
+    );
   }
 
   submit(): void {
@@ -68,9 +237,9 @@ export class CadastrarPage implements OnInit {
       return;
     }
 
-    if (!this.vetorFacial) {
-      this.vetorFacial = this.gerarVetorFacialFallback();
-      this.usingFallbackVector = true;
+    if (!this.fotoCapturada) {
+      this.errorMessage = 'Conclua a captura facial antes de criar o usuário.';
+      return;
     }
 
     this.saving = true;
@@ -78,7 +247,7 @@ export class CadastrarPage implements OnInit {
     this.api.criarUsuario({
       nome,
       uid_card: this.normalizarUid(uid_card),
-      vetor_facial: this.vetorFacial,
+      vetor_facial: null,
       ativo,
       permissoes: this.selectedLocalIds.map((local_id) => ({
         local_id,
@@ -88,11 +257,19 @@ export class CadastrarPage implements OnInit {
       })),
     }).subscribe({
       next: (usuario) => {
-        this.saving = false;
-        this.successMessage = this.usingFallbackVector
-          ? `Usuário ${usuario.nome} criado com sucesso (ID ${usuario.user_id}). Atenção: vetor facial aleatório de teste.`
-          : `Usuário ${usuario.nome} criado com sucesso (ID ${usuario.user_id}).`;
-        this.snackBar.open(this.successMessage, 'Fechar', { duration: 6000 });
+        this.api.cadastrarBiometria(usuario.user_id, this.fotoCapturada!).subscribe({
+          next: ({ vector_length }) => {
+            this.saving = false;
+            this.successMessage = `Usuário ${usuario.nome} criado com sucesso (vetor facial de ${vector_length} dimensões).`;
+            this.snackBar.open(this.successMessage, 'Fechar', { duration: 6000 });
+            this.speech.falar('Usuário cadastrado com sucesso.');
+          },
+          error: (error) => {
+            this.saving = false;
+            this.errorMessage = error.error?.detail || 'Usuário criado, mas não foi possível cadastrar a biometria.';
+            this.snackBar.open(this.errorMessage, 'Fechar', { duration: 6000 });
+          },
+        });
       },
       error: (error) => {
         this.saving = false;
@@ -105,19 +282,23 @@ export class CadastrarPage implements OnInit {
   }
 
   reset(): void {
+    this.pararWebcam();
     this.form.reset({ nome: '', uid_card: '', ativo: true });
     this.cameraOpened = false;
+    this.scanning = false;
+    this.capturaPronta.set(false);
     this.submitted = false;
     this.saving = false;
-    this.usingFallbackVector = false;
     this.successMessage = '';
     this.errorMessage = '';
-    this.vetorFacial = null;
+    this.fotoCapturada = null;
     this.selectedLocalIds = [];
     this.fotoPreviewUrl = null;
+    this.webcamErro = '';
   }
 
-  openCamera(): void {
+  openFileInput(): void {
+    this.pararWebcam();
     document.getElementById('foto-captura')?.click();
   }
 
@@ -133,9 +314,18 @@ export class CadastrarPage implements OnInit {
     reader.onload = () => {
       this.fotoPreviewUrl = reader.result as string;
       this.cameraOpened = true;
+      this.scanning = true;
+      this.capturaPronta.set(true);
       this.errorMessage = '';
     };
+    this.fotoCapturada = file;
     reader.readAsDataURL(file);
+  }
+
+  onScanFinished(event: AnimationEvent): void {
+    if (event.animationName !== 'scan-line') return;
+    this.scanning = false;
+    this.capturaPronta.set(true);
   }
 
   toggleLocal(localId: number): void {
@@ -157,10 +347,6 @@ export class CadastrarPage implements OnInit {
   private normalizarUid(uid: string): string | null {
     const normalizado = uid.replace(/[\s:-]/g, '').toUpperCase();
     return normalizado || null;
-  }
-
-  private gerarVetorFacialFallback(): number[] {
-    return Array.from({ length: 128 }, () => Number((Math.random() * 2 - 1).toFixed(6)));
   }
 
   hasError(field: string, error: string): boolean {

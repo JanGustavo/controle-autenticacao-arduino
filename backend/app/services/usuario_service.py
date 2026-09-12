@@ -143,6 +143,24 @@ class UsuarioService:
 			raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado.")
 		return self._row_to_dict(atualizado)
 
+	def atualizar_vetor_facial(self, usuario_id: int, vetor_facial: list[float]):
+		with get_connection() as connection:
+			with connection.cursor() as cursor:
+				cursor.execute(
+					"""
+					UPDATE usuario
+					SET vetor_facial = %s
+					WHERE user_id = %s
+					RETURNING user_id
+					""",
+					(Jsonb(vetor_facial), usuario_id),
+				)
+				atualizado = cursor.fetchone()
+
+		if atualizado is None:
+			raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado.")
+		return atualizado[0]
+
 	def deletar_usuario(self, usuario_id: int):
 		with get_connection() as connection:
 			with connection.cursor() as cursor:

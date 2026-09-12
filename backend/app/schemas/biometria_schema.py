@@ -1,0 +1,1 @@
+'''Schemas Pydantic para validação do payload enviado (ex: card_uid, facial_vector ou image_base64).'''

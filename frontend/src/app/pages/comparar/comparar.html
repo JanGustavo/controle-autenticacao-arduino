@@ -1,0 +1,56 @@
+<div class="comparar-wrapper">
+  <div class="header">
+    <a routerLink="/adm" class="back-link">
+      <mat-icon>arrow_back</mat-icon> Voltar ao Painel
+    </a>
+    <h2>Reconhecimento Facial (Biometria)</h2>
+    <p>Capture a foto para identificar o usuário no banco de dados.</p>
+  </div>
+
+  <div class="card-cam">
+    <div class="webcam-container" *ngIf="webcamAtiva()">
+      <video #videoElement width="1280" height="720" autoplay muted></video>
+      <div *ngIf="scanning()" class="scan-line"></div>
+    </div>
+
+    <div class="placeholder-cam" *ngIf="!webcamAtiva() && !fotoPreviewUrl">
+      <mat-icon>face</mat-icon>
+      <p>Câmera desligada</p>
+    </div>
+
+    <div class="preview-cam" *ngIf="fotoPreviewUrl && !webcamAtiva()">
+      <img [src]="fotoPreviewUrl" alt="Foto capturada" />
+    </div>
+
+    <div class="actions">
+      <button mat-raised-button color="primary" *ngIf="!webcamAtiva()" (click)="iniciarWebcam()">
+        <mat-icon>videocam</mat-icon> Abrir Câmera
+      </button>
+
+      <button mat-raised-button color="accent" *ngIf="webcamAtiva()" (click)="capturarEComparar()" [disabled]="scanning()">
+        <mat-icon>photo_camera</mat-icon> Tirar Foto e Comparar
+      </button>
+
+      <button mat-button color="warn" *ngIf="webcamAtiva()" (click)="pararWebcam()">
+        <mat-icon>close</mat-icon> Cancelar
+      </button>
+    </div>
+  </div>
+
+  <!-- Resultado da Comparação -->
+  <div class="resultado-card" *ngIf="similaridade() > 0">
+    <mat-icon [style.color]="aprovado() ? '#22c55e' : '#ef4444'">
+      {{ aprovado() ? 'check_circle' : 'cancel' }}
+    </mat-icon>
+
+    <h3>{{ aprovado() ? 'Acesso Liberado' : 'Acesso Negado' }}</h3>
+    
+    <div class="info-detalhes">
+      <p *ngIf="usuarioEncontrado()"><strong>Usuário:</strong> {{ usuarioEncontrado() }}</p>
+      <p><strong>Similaridade:</strong> {{ similaridade() }}%</p>
+      <p><strong>Mínimo exigido:</strong> 70%</p>
+    </div>
+
+    <button mat-stroked-button (click)="resetar()">Comparar Novamente</button>
+  </div>
+</div>

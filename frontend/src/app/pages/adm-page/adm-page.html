@@ -82,5 +82,318 @@
         <p>Modelo de dados</p>
       </div>
     </a>
+
+    <!-- CARD: Comparar Biometria Facial -->
+    <div class="tile-card teal" (click)="iniciarWebcam()" style="cursor: pointer;">
+      <div class="tile-top">
+        <div class="tile-icon">
+          <mat-icon>face</mat-icon>
+        </div>
+        <mat-icon class="tile-arrow">arrow_forward</mat-icon>
+      </div>
+      <div class="tile-info">
+        <h3>Comparar Biometria</h3>
+        <p>Validar foto contra o banco</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal / Contêiner da Webcam com Oval de Enquadramento -->
+  <div class="biometria-test" *ngIf="webcamAtiva()">
+    <div class="webcam-viewport">
+      <video #videoElement width="1280" height="720" autoplay muted></video>
+
+      <!-- Badge Visual Dinâmico da IA -->
+      <div class="status-badge" [ngClass]="tipoStatus()">
+        <mat-icon>{{ tipoStatus() === 'success' ? 'check_circle' : 'warning' }}</mat-icon>
+        <span>{{ statusValidacao() }}</span>
+      </div>
+
+      <!-- Guia de Centralização Facial -->
+      <div class="face-overlay">
+        <div class="face-oval"></div>
+        <span class="guide-text">Centralize o rosto no círculo</span>
+      </div>
+
+      <div *ngIf="scanning()" class="scan-line"></div>
+    </div>
+
+    <div class="webcam-controls">
+      <button mat-raised-button color="primary" (click)="capturarFrameWebcam()" [disabled]="!capturaPronta()">
+        <mat-icon>photo_camera</mat-icon>
+        Capturar e Comparar
+      </button>
+      <button mat-button color="warn" (click)="pararWebcam()">
+        <mat-icon>close</mat-icon>
+        Cancelar
+      </button>
+    </div>
+  </div>
+
+  <!-- Resultado da Comparação Facial -->
+  <div class="resultado-biometria" *ngIf="similaridade() > 0">
+    <mat-icon [style.color]="aprovado() ? '#22c55e' : '#ef4444'">
+      {{ aprovado() ? 'check_circle' : 'face_unrecognized' }}
+    </mat-icon>
+    <h3>{{ aprovado() ? 'Aprovado' : 'Negado' }}</h3>
+    <p *ngIf="usuarioEncontrado()"><strong>Usuário Identificado:</strong> {{ usuarioEncontrado() }}</p>
+    <p>Similaridade: {{ similaridade() }}%</p>
+    <p>Mínimo necessário: 70%</p>
+    <p *ngIf="aprovado()">Acesso liberado para o usuário correspondente.</p>
+    <p *ngIf="!aprovado()">Acesso negado - rosto não corresponde ao cadastro.</p>
   </div>
 </div>
+
+<style>
+  .adm-wrapper {
+    min-height: 100vh;
+    background: #f5f7fa;
+  }
+
+  .adm-header {
+    padding: 24px 24px 0;
+  }
+
+  .eyebrow {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #64748b;
+    margin-bottom: 4px;
+  }
+
+  h2 {
+    font-size: 28px;
+    font-weight: 600;
+    color: #1e293b;
+  }
+
+  .grid-menu {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+    padding: 0 24px 24px;
+  }
+
+  .tile-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    text-decoration: none;
+    color: #1e293b;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .tile-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+
+  .tile-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .tile-icon {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .tile-arrow {
+    margin-left: auto;
+    opacity: 0.4;
+    font-size: 16px;
+  }
+
+  .tile-info h3 {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+
+  .tile-info p {
+    font-size: 12px;
+    color: #64748b;
+  }
+
+  .biometria-test {
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  /* Viewport e Animação do Óval Facial */
+  .webcam-viewport {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #090d16;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  }
+
+  .webcam-viewport video {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  /* Badge Dinâmico de Status */
+  .status-badge {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 4;
+    backdrop-filter: blur(6px);
+    color: white;
+    transition: all 0.3s ease;
+  }
+
+  .status-badge.info {
+    background: rgba(30, 41, 59, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .status-badge.warn {
+    background: rgba(220, 38, 38, 0.85);
+    border: 1px solid #f87171;
+  }
+
+  .status-badge.success {
+    background: rgba(22, 163, 74, 0.85);
+    border: 1px solid #4ade80;
+  }
+
+  .face-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .face-oval {
+    width: 220px;
+    height: 290px;
+    border: 2px dashed #00d2ff;
+    border-radius: 50%;
+    box-shadow: 0 0 20px rgba(0, 210, 255, 0.4), inset 0 0 20px rgba(0, 210, 255, 0.2);
+    animation: pulse-oval 2s ease-in-out infinite;
+  }
+
+  .guide-text {
+    margin-top: 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #ffffff;
+    background: rgba(0, 0, 0, 0.65);
+    padding: 6px 16px;
+    border-radius: 20px;
+    backdrop-filter: blur(4px);
+    letter-spacing: 0.3px;
+  }
+
+  @keyframes pulse-oval {
+    0% {
+      transform: scale(1);
+      border-color: #00d2ff;
+      box-shadow: 0 0 15px rgba(0, 210, 255, 0.4), inset 0 0 15px rgba(0, 210, 255, 0.2);
+    }
+    50% {
+      transform: scale(1.03);
+      border-color: #38ef7d;
+      box-shadow: 0 0 25px rgba(56, 239, 125, 0.6), inset 0 0 20px rgba(56, 239, 125, 0.3);
+    }
+    100% {
+      transform: scale(1);
+      border-color: #00d2ff;
+      box-shadow: 0 0 15px rgba(0, 210, 255, 0.4), inset 0 0 15px rgba(0, 210, 255, 0.2);
+    }
+  }
+
+  .webcam-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .webcam-controls button {
+    min-width: 120px;
+  }
+
+  .scan-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, rgba(0, 210, 255, 0.8), transparent);
+    animation: scan 2s linear infinite;
+    z-index: 3;
+  }
+
+  @keyframes scan {
+    0% { top: 0; }
+    100% { top: 100%; }
+  }
+
+  .resultado-biometria {
+    padding: 24px;
+    max-width: 1200px;
+    margin: 32px auto;
+    text-align: center;
+    border-radius: 12px;
+    background: white;
+  }
+
+  .resultado-biometria mat-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+  }
+
+  .resultado-biometria h3 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .resultado-biometria p {
+    font-size: 14px;
+    color: #64748b;
+    margin: 4px 0;
+  }
+
+  .subtle {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 8px;
+  }
+</style>
