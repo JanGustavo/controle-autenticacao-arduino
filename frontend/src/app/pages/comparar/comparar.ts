@@ -5,9 +5,11 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { ApiService, HistoricoAcessoResponse } from '../../services/api.service';
 import { SpeechService } from '../../services/speech.service';
 import { WebcamService } from '../../services/webcam.service';
+import { WebSocketLogsService } from '../../services/websocket-logs.service';
 
 @Component({
   selector: 'app-comparar-page',
@@ -28,6 +30,7 @@ export class CompararPage implements OnInit, OnDestroy {
   private snackBar = inject(MatSnackBar);
   private speech = inject(SpeechService);
   public webcam = inject(WebcamService);
+  public wsLogs = inject(WebSocketLogsService);
 
   @ViewChild('videoElement') videoElement?: ElementRef<HTMLVideoElement>;
 
@@ -45,10 +48,30 @@ export class CompararPage implements OnInit, OnDestroy {
   historicoRecente = signal<HistoricoAcessoResponse[]>([]);
 
   private timeoutOverlay: ReturnType<typeof setTimeout> | null = null;
+  private wsSubscription: Subscription | null = null;
 
   async ngOnInit(): Promise<void> {
     await this.webcam.carregarModelos();
     this.carregarHistorico();
+
+    // Inscrição no evento WebSocket de tempo real
+    this.wsSubscription = this.wsLogs.obterLogsEmTempoReal().subscribe({
+      next: (evento) => {
+        if (evento.type === 'NOVO_ACESSO') {
+          const novoItem: HistoricoAcessoResponse = {
+            id: evento.data.id || Date.now(),
+            usuario_id: evento.data.usuario_id,
+            local_id: null,
+            uid_card_lido: null,
+            data_hora: evento.data.data_hora,
+            autorizado: evento.data.autorizado,
+            percentual_similaridade: evento.data.percentual_similaridade,
+            motivo_recusa: evento.data.motivo_recusa,
+          };
+          this.historicoRecente.update((lista) => [novoItem, ...lista.slice(0, 4)]);
+        }
+      },
+    });
   }
 
   carregarHistorico(): void {
@@ -116,18 +139,14 @@ export class CompararPage implements OnInit, OnDestroy {
           this.speech.falar(res.mensagem || 'Erro ao processar biometria.');
         }
 
-        this.carregarHistorico();
-
         if (this.modoTotem()) {
           this.exibirOverlayTotem.set(true);
           this.timeoutOverlay = setTimeout(() => {
             this.exibirOverlayTotem.set(false);
 
             if (this.aprovado()) {
-              // Somente ativa cooldown longo (5s) se foi Aprovado/Liberado
               this.webcam.ativarCooldownPosAcesso(5000);
             } else {
-              // Quando Negado / Não Identificado, faz apenas uma pequena pausa (1.5s) e retoma o loop
               this.webcam.ativarCooldownPosAcesso(1500);
             }
           }, 3000);
@@ -197,5 +216,8 @@ export class CompararPage implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.pararWebcam();
+    if (this.wsSubscription) {
+      this.wsSubscription.unsubscribe();
+    }
   }
 }
