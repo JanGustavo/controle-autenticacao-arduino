@@ -147,7 +147,9 @@ export class CompararPage implements OnInit, OnDestroy {
             if (this.aprovado()) {
               this.webcam.ativarCooldownPosAcesso(5000);
             } else {
-              this.webcam.ativarCooldownPosAcesso(1500);
+              // Se deu negado, limpa prévia e retoma o loop de validação imediatamente
+              this.fotoPreviewUrl = null;
+              this.webcam.iniciarLoopValidacao();
             }
           }, 3000);
         }
@@ -162,7 +164,8 @@ export class CompararPage implements OnInit, OnDestroy {
           this.exibirOverlayTotem.set(true);
           this.timeoutOverlay = setTimeout(() => {
             this.exibirOverlayTotem.set(false);
-            this.webcam.ativarCooldownPosAcesso(1500);
+            this.fotoPreviewUrl = null;
+            this.webcam.iniciarLoopValidacao();
           }, 3000);
         }
       },

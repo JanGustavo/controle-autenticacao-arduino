@@ -11,7 +11,7 @@ export class WebcamService {
   // ── Signals públicos ──────────────────────────────────────────────
   webcamAtiva = signal(false);
   webcamErro = signal('');
-  carregandoHardware = signal(false); // Skeleton Loading
+  carregandoHardware = signal(false);
   statusValidacao = signal<string>('Centralize o rosto');
   tipoStatus = signal<'info' | 'warn' | 'success'>('info');
   capturaPronta = signal(false);
@@ -119,10 +119,12 @@ export class WebcamService {
     this.cooldownTimer = setTimeout(() => {
       this.emCooldown.set(false);
       this.statusValidacao.set('Centralize o rosto');
+      this.tipoStatus.set('info');
+      this.ultimoEstadoEnquadramento = null;
     }, duracaoMs);
   }
 
-  private iniciarLoopValidacao(): void {
+  iniciarLoopValidacao(): void {
     this.pararLoopValidacao();
     this.ultimoEstadoEnquadramento = null;
 
@@ -137,7 +139,6 @@ export class WebcamService {
 
       this.processandoDeteccao = true;
       try {
-        // Se estiver em cooldown pós-acesso, ignora nova captura até expirar ou pessoa sair
         if (this.emCooldown()) {
           this.resetAutoCaptura();
           return;
