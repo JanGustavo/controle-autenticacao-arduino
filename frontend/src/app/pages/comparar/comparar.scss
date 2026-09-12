@@ -121,6 +121,21 @@
           font-size: 0.9rem;
         }
 
+        .log-meta {
+          font-size: 0.82rem;
+          margin: 2px 0;
+
+          .user-name {
+            font-weight: 600;
+            color: #334155;
+          }
+
+          .local-name {
+            color: #64748b;
+            font-size: 0.78rem;
+          }
+        }
+
         small {
           color: #64748b;
           font-size: 0.75rem;

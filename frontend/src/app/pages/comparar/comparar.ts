@@ -6,7 +6,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { ApiService, HistoricoAcessoResponse } from '../../services/api.service';
+import { ApiService, HistoricoAcessoResponse, LocalResponse, UsuarioResponse } from '../../services/api.service';
 import { SpeechService } from '../../services/speech.service';
 import { WebcamService } from '../../services/webcam.service';
 import { WebSocketLogsService } from '../../services/websocket-logs.service';
@@ -46,6 +46,8 @@ export class CompararPage implements OnInit, OnDestroy {
   modoKioskFullscreen = signal(false);
   exibirOverlayTotem = signal(false);
   historicoRecente = signal<HistoricoAcessoResponse[]>([]);
+  usuarios: UsuarioResponse[] = [];
+  locais: LocalResponse[] = [];
 
   private timeoutOverlay: ReturnType<typeof setTimeout> | null = null;
   private wsSubscription: Subscription | null = null;
@@ -53,6 +55,7 @@ export class CompararPage implements OnInit, OnDestroy {
   async ngOnInit(): Promise<void> {
     await this.webcam.carregarModelos();
     this.carregarHistorico();
+    this.carregarAuxiliares();
 
     // Inscrição no evento WebSocket de tempo real
     this.wsSubscription = this.wsLogs.obterLogsEmTempoReal().subscribe({
@@ -67,11 +70,35 @@ export class CompararPage implements OnInit, OnDestroy {
             autorizado: evento.data.autorizado,
             percentual_similaridade: evento.data.percentual_similaridade,
             motivo_recusa: evento.data.motivo_recusa,
+            nome_usuario: evento.data.nome_usuario || null,
           };
           this.historicoRecente.update((lista) => [novoItem, ...lista.slice(0, 4)]);
         }
       },
     });
+  }
+
+  carregarAuxiliares(): void {
+    this.api.getUsuarios().subscribe({ next: (u) => (this.usuarios = u) });
+    this.api.getLocais().subscribe({ next: (l) => (this.locais = l) });
+  }
+
+  obterNomeUsuario(log: HistoricoAcessoResponse): string {
+    if (log.nome_usuario) return log.nome_usuario;
+    if (log.usuario_id) {
+      const u = this.usuarios.find((item) => item.user_id === log.usuario_id);
+      if (u) return u.nome;
+    }
+    return 'Não identificado';
+  }
+
+  obterNomeLocal(log: HistoricoAcessoResponse): string {
+    if (log.nome_local) return log.nome_local;
+    if (log.local_id) {
+      const l = this.locais.find((item) => item.local_id === log.local_id);
+      if (l) return l.nome;
+    }
+    return 'Arduino ESP32 (Leitor)';
   }
 
   carregarHistorico(): void {

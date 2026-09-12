@@ -6,8 +6,8 @@ from app.services.usuario_service import usuario_service
 router = APIRouter()
 
 @router.get("/usuarios", response_model=list[UsuarioResponse])
-def listar_usuarios():
-    return usuario_service.listar_usuarios()
+def listar_usuarios(q: str | None = None, ativo: bool | None = None):
+    return usuario_service.listar_usuarios(q=q, ativo=ativo)
 
 
 @router.get("/locais")

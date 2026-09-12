@@ -45,6 +45,40 @@
   </section>
 
   <section class="table-card">
+    <div class="filter-bar">
+      <div class="search-box">
+        <mat-icon>search</mat-icon>
+        <input
+          type="text"
+          [(ngModel)]="filtroTexto"
+          (ngModelChange)="carregar()"
+          placeholder="Pesquisar por nome ou dispositivo..."
+        />
+        <button
+          type="button"
+          mat-icon-button
+          *ngIf="filtroTexto"
+          (click)="filtroTexto = ''; carregar()"
+          title="Limpar pesquisa"
+        >
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <div class="filter-group">
+        <label for="filtro-ativo-select">Status</label>
+        <select
+          id="filtro-ativo-select"
+          [(ngModel)]="filtroAtivo"
+          (ngModelChange)="carregar()"
+        >
+          <option value="todos">Todos</option>
+          <option value="ativo">Ativos</option>
+          <option value="inativo">Inativos</option>
+        </select>
+      </div>
+    </div>
+
     <p class="loading" *ngIf="carregando">Carregando locais...</p>
     <table *ngIf="!carregando">
       <thead>
@@ -57,7 +91,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let local of locais">
+        <tr *ngFor="let local of displayedLocais">
           <td>{{ local.local_id }}</td>
           <td>{{ local.nome }}</td>
           <td>
@@ -77,8 +111,8 @@
             </button>
           </td>
         </tr>
-        <tr *ngIf="!locais.length">
-          <td colspan="5" class="empty">Nenhum local cadastrado.</td>
+        <tr *ngIf="!displayedLocais.length">
+          <td colspan="5" class="empty">Nenhum local encontrado.</td>
         </tr>
       </tbody>
     </table>

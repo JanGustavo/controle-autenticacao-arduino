@@ -11,8 +11,15 @@ def criar_historico(registro: HistoricoAcessoCreate):
     return historico_acesso_service.criar_historico(registro)
 
 @router.get("/historico-acesso", response_model=list[HistoricoAcessoResponse])
-def listar_historico():
-    return historico_acesso_service.listar_historico()
+def listar_historico(
+    q: str | None = None,
+    usuario_id: int | None = None,
+    local_id: int | None = None,
+    autorizado: bool | None = None,
+):
+    return historico_acesso_service.listar_historico(
+        q=q, usuario_id=usuario_id, local_id=local_id, autorizado=autorizado
+    )
 
 
 @router.get("/historico-acesso/{historico_id}", response_model=HistoricoAcessoResponse)

@@ -25,6 +25,93 @@
     <span>{{ notice }}</span>
   </div>
 
+  <!-- BARRA DE FILTRO / PESQUISA DINÂMICA -->
+  <section class="filter-bar">
+    <div class="search-box">
+      <mat-icon>search</mat-icon>
+      <input
+        type="text"
+        [ngModel]="filtroTexto()"
+        (ngModelChange)="filtroTexto.set($event); carregarDados()"
+        placeholder="Pesquisar em {{ cfg.title.toLowerCase() }}..."
+      />
+      <button
+        type="button"
+        mat-icon-button
+        *ngIf="filtroTexto()"
+        (click)="filtroTexto.set(''); carregarDados()"
+        title="Limpar pesquisa"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <!-- Filtro de Status para Usuários -->
+    <div class="filter-group" *ngIf="cfg.resource === 'usuarios'">
+      <label>Status</label>
+      <select
+        [ngModel]="filtroAtivo()"
+        (ngModelChange)="filtroAtivo.set($event); carregarDados()"
+      >
+        <option value="todos">Todos</option>
+        <option value="ativo">Ativos</option>
+        <option value="inativo">Inativos</option>
+      </select>
+    </div>
+
+    <!-- Filtros de Usuário e Local para Permissões -->
+    <div class="filter-group" *ngIf="cfg.resource === 'permissoes'">
+      <label>Usuário</label>
+      <select
+        [ngModel]="filtroUsuarioId()"
+        (ngModelChange)="filtroUsuarioId.set($event); carregarDados()"
+      >
+        <option [ngValue]="null">Todos os usuários</option>
+        <option *ngFor="let u of usuarios" [ngValue]="u.user_id">{{ u.nome }}</option>
+      </select>
+
+      <label>Local</label>
+      <select
+        [ngModel]="filtroLocalId()"
+        (ngModelChange)="filtroLocalId.set($event); carregarDados()"
+      >
+        <option [ngValue]="null">Todos os locais</option>
+        <option *ngFor="let l of locais" [ngValue]="l.local_id">{{ l.nome }}</option>
+      </select>
+    </div>
+
+    <!-- Filtros para Histórico (Logs) -->
+    <div class="filter-group" *ngIf="cfg.resource === 'historico'">
+      <label>Usuário</label>
+      <select
+        [ngModel]="filtroUsuarioId()"
+        (ngModelChange)="filtroUsuarioId.set($event); carregarDados()"
+      >
+        <option [ngValue]="null">Todos os usuários</option>
+        <option *ngFor="let u of usuarios" [ngValue]="u.user_id">{{ u.nome }}</option>
+      </select>
+
+      <label>Local</label>
+      <select
+        [ngModel]="filtroLocalId()"
+        (ngModelChange)="filtroLocalId.set($event); carregarDados()"
+      >
+        <option [ngValue]="null">Todos os locais</option>
+        <option *ngFor="let l of locais" [ngValue]="l.local_id">{{ l.nome }}</option>
+      </select>
+
+      <label>Autorização</label>
+      <select
+        [ngModel]="filtroAutorizado()"
+        (ngModelChange)="filtroAutorizado.set($event); carregarDados()"
+      >
+        <option value="todos">Todos</option>
+        <option value="autorizado">Autorizado</option>
+        <option value="negado">Negado</option>
+      </select>
+    </div>
+  </section>
+
   <section class="permission-editor" *ngIf="cfg.resource === 'permissoes'">
     <div class="editor-heading">
       <div>
@@ -124,6 +211,11 @@
               </button>
             </td>
           </tr>
+          <tr *ngIf="!displayedRows.length">
+            <td [attr.colspan]="cfg.columns.length + (cfg.resource === 'permissoes' ? 1 : 0)" class="empty">
+              Nenhum registro encontrado para "{{ filtroTexto() }}".
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -134,7 +226,7 @@
     <div class="footer-info">
       <mat-icon>info</mat-icon>
       <span>
-        Exibindo <strong>{{ displayedRows.length }}</strong> tuplas
+        Exibindo <strong>{{ displayedRows.length }}</strong> de <strong>{{ allRows.length }}</strong> tuplas
         <ng-container *ngIf="usingMock(); else apiMode">(Modo Mock)</ng-container>
         <ng-template #apiMode>(API)</ng-template>
       </span>

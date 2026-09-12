@@ -16,15 +16,29 @@ class LocalService:
     def _normalizar_dispositivo(identificador: str) -> str:
         return identificador.strip().upper()
 
-    def listar_locais(self):
+    def listar_locais(self, q: str | None = None, ativo: bool | None = None):
+        conditions = []
+        params = []
+        if q is not None and q.strip():
+            term = f"%{q.strip().lower()}%"
+            conditions.append("(LOWER(nome) LIKE %s OR LOWER(identificador_dispositivo) LIKE %s)")
+            params.extend([term, term])
+        if ativo is not None:
+            conditions.append("ativo = %s")
+            params.append(ativo)
+
+        where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+
         with get_connection() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
-                    """
+                    f"""
                     SELECT local_id, nome, identificador_dispositivo, ativo, criado_em
                     FROM local
+                    {where_clause}
                     ORDER BY local_id
-                    """
+                    """,
+                    params if params else None,
                 )
                 return [self._row_to_dict(row) for row in cursor.fetchall()]
 

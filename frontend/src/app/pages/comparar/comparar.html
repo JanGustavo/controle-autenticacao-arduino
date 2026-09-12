@@ -103,6 +103,10 @@
           <mat-icon>{{ log.autorizado ? 'check_circle' : 'cancel' }}</mat-icon>
           <div class="log-info">
             <strong>{{ log.autorizado ? 'Acesso Liberado' : 'Acesso Negado' }}</strong>
+            <div class="log-meta">
+              <span class="user-name">{{ obterNomeUsuario(log) }}</span>
+              <span class="local-name"> &bull; {{ obterNomeLocal(log) }}</span>
+            </div>
             <small>{{ log.data_hora | date: 'HH:mm:ss dd/MM' }}</small>
             <p *ngIf="log.percentual_similaridade">Similaridade: {{ log.percentual_similaridade }}%</p>
             <p *ngIf="log.motivo_recusa" class="recusa">{{ log.motivo_recusa }}</p>

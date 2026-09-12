@@ -28,73 +28,154 @@ export class TuplePage implements OnInit {
   permissaoForm: PermissaoRequest = this.novaPermissaoForm();
   acaoNotice = '';
   private historico: HistoricoAcessoResponse[] = [];
+  private permissoes: PermissaoResponse[] = [];
+
+  // Filtros de busca
+  filtroTexto = signal('');
+  filtroAtivo = signal('todos'); // 'todos' | 'ativo' | 'inativo'
+  filtroUsuarioId = signal<number | null>(null);
+  filtroLocalId = signal<number | null>(null);
+  filtroAutorizado = signal('todos'); // 'todos' | 'autorizado' | 'negado'
 
   get config(): TuplePageConfig | undefined {
     return this.configInput() || (this.route.snapshot.data['config'] as TuplePageConfig);
   }
 
-  get displayedRows(): TuplePageConfig['rows'] {
+  get allRows(): TuplePageConfig['rows'] {
     return this.rowsFromApi() ?? this.config?.rows ?? [];
   }
 
-  ngOnInit(): void {
+  get displayedRows(): TuplePageConfig['rows'] {
+    let rows = this.allRows;
+
+    const termo = this.filtroTexto().trim().toLowerCase();
+    if (termo) {
+      rows = rows.filter((row) =>
+        Object.values(row).some((val) =>
+          val !== null && val !== undefined && String(val).toLowerCase().includes(termo)
+        )
+      );
+    }
+
+    if (this.config?.resource === 'usuarios') {
+      const st = this.filtroAtivo();
+      if (st === 'ativo') rows = rows.filter((r) => r['ativo'] === 'Sim');
+      if (st === 'inativo') rows = rows.filter((r) => r['ativo'] === 'Não');
+    }
+
+    if (this.config?.resource === 'permissoes') {
+      const uId = this.filtroUsuarioId();
+      if (uId) {
+        const nomeU = this.nomeUsuario(uId);
+        rows = rows.filter((r) => r['usuario_id'] === nomeU);
+      }
+      const lId = this.filtroLocalId();
+      if (lId) {
+        const nomeL = this.nomeLocal(lId);
+        rows = rows.filter((r) => r['local_id'] === nomeL);
+      }
+    }
+
     if (this.config?.resource === 'historico') {
+      const uId = this.filtroUsuarioId();
+      if (uId) {
+        const nomeU = this.nomeUsuario(uId);
+        rows = rows.filter((r) => r['usuario_id'] === nomeU);
+      }
+      const lId = this.filtroLocalId();
+      if (lId) {
+        const nomeL = this.nomeLocal(lId);
+        rows = rows.filter((r) => r['local_id'] === nomeL);
+      }
+      const aut = this.filtroAutorizado();
+      if (aut === 'autorizado') rows = rows.filter((r) => r['autorizado'] === 'Sim');
+      if (aut === 'negado') rows = rows.filter((r) => r['autorizado'] === 'Não');
+    }
+
+    return rows;
+  }
+
+  limparFiltros(): void {
+    this.filtroTexto.set('');
+    this.filtroAtivo.set('todos');
+    this.filtroUsuarioId.set(null);
+    this.filtroLocalId.set(null);
+    this.filtroAutorizado.set('todos');
+    this.carregarDados();
+  }
+
+  ngOnInit(): void {
+    if (this.config?.resource === 'historico' || this.config?.resource === 'permissoes') {
       this.api.getUsuarios().subscribe({
         next: (usuarios) => {
           this.usuarios = usuarios;
-          this.atualizarLinhasHistorico();
+          if (this.config?.resource === 'historico') this.atualizarLinhasHistorico();
+          if (this.config?.resource === 'permissoes') this.atualizarLinhasPermissoes();
         },
       });
       this.api.getLocais().subscribe({
         next: (locais) => {
           this.locais = locais;
-          this.atualizarLinhasHistorico();
+          if (this.config?.resource === 'historico') this.atualizarLinhasHistorico();
+          if (this.config?.resource === 'permissoes') this.atualizarLinhasPermissoes();
         },
       });
-      this.api.getHistoricoAcesso().subscribe({
-        next: (historico) => {
-          this.historico = historico;
-          this.atualizarLinhasHistorico();
-          this.dataNotice.set(null);
-        },
-        error: () => {
-          this.usingMock.set(true);
-          this.dataNotice.set('Não foi possível carregar o histórico. Exibindo dados de demonstração.');
-        },
-      });
+    }
+
+    this.carregarDados();
+  }
+
+  carregarDados(): void {
+    const termo = this.filtroTexto().trim() || undefined;
+
+    if (this.config?.resource === 'historico') {
+      const autBool = this.filtroAutorizado() === 'todos' ? undefined : this.filtroAutorizado() === 'autorizado';
+      this.api
+        .getHistoricoAcesso({
+          q: termo,
+          usuario_id: this.filtroUsuarioId() ?? undefined,
+          local_id: this.filtroLocalId() ?? undefined,
+          autorizado: autBool,
+        })
+        .subscribe({
+          next: (historico) => {
+            this.historico = historico;
+            this.atualizarLinhasHistorico();
+            this.dataNotice.set(null);
+          },
+          error: () => {
+            this.usingMock.set(true);
+            this.dataNotice.set('Não foi possível carregar o histórico. Exibindo dados de demonstração.');
+          },
+        });
       return;
     }
 
     if (this.config?.resource === 'permissoes') {
-      this.api.getUsuarios().subscribe({
-        next: (usuarios) => {
-          this.usuarios = usuarios;
-          this.atualizarLinhasPermissoes();
-        },
-      });
-      this.api.getLocais().subscribe({
-        next: (locais) => {
-          this.locais = locais;
-          this.atualizarLinhasPermissoes();
-        },
-      });
-      this.api.getPermissoes().subscribe({
-        next: (permissoes) => {
-          this.permissoes = permissoes;
-          this.atualizarLinhasPermissoes();
-          this.dataNotice.set(null);
-        },
-        error: () => {
-          this.usingMock.set(true);
-          this.dataNotice.set('Não foi possível carregar as permissões. Exibindo dados de demonstração.');
-        },
-      });
+      this.api
+        .getPermissoes({
+          q: termo,
+          usuario_id: this.filtroUsuarioId() ?? undefined,
+          local_id: this.filtroLocalId() ?? undefined,
+        })
+        .subscribe({
+          next: (permissoes) => {
+            this.permissoes = permissoes;
+            this.atualizarLinhasPermissoes();
+            this.dataNotice.set(null);
+          },
+          error: () => {
+            this.usingMock.set(true);
+            this.dataNotice.set('Não foi possível carregar as permissões. Exibindo dados de demonstração.');
+          },
+        });
       return;
     }
 
     if (this.config?.resource !== 'usuarios') return;
 
-    this.api.getUsuarios().subscribe({
+    const ativoBool = this.filtroAtivo() === 'todos' ? undefined : this.filtroAtivo() === 'ativo';
+    this.api.getUsuarios({ q: termo, ativo: ativoBool }).subscribe({
       next: (usuarios) => {
         this.rowsFromApi.set(usuarios.map((usuario) => this.toTableRow(usuario)));
         this.dataNotice.set(null);
@@ -215,8 +296,6 @@ export class TuplePage implements OnInit {
       error: () => (this.acaoNotice = 'Não foi possível excluir a permissão.'),
     });
   }
-
-  private permissoes: PermissaoResponse[] = [];
 
   private novaPermissaoForm(): PermissaoRequest {
     return {

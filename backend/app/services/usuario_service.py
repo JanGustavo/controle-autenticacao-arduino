@@ -37,15 +37,29 @@ class UsuarioService:
 					for row in cursor.fetchall()
 				]
 
-	def listar_usuarios(self):
+	def listar_usuarios(self, q: str | None = None, ativo: bool | None = None):
+		conditions = []
+		params = []
+		if q is not None and q.strip():
+			term = f"%{q.strip().lower()}%"
+			conditions.append("(LOWER(nome) LIKE %s OR LOWER(COALESCE(uid_card, '')) LIKE %s)")
+			params.extend([term, term])
+		if ativo is not None:
+			conditions.append("ativo = %s")
+			params.append(ativo)
+
+		where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+
 		with get_connection() as connection:
 			with connection.cursor() as cursor:
 				cursor.execute(
-					"""
+					f"""
 					SELECT user_id, nome, uid_card, vetor_facial, ativo, criado_em
 					FROM usuario
+					{where_clause}
 					ORDER BY user_id
-					"""
+					""",
+					params if params else None,
 				)
 				return [self._row_to_dict(row) for row in cursor.fetchall()]
 
