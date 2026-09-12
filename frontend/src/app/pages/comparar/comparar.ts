@@ -143,13 +143,14 @@ export class CompararPage implements OnInit, OnDestroy {
           this.exibirOverlayTotem.set(true);
           this.timeoutOverlay = setTimeout(() => {
             this.exibirOverlayTotem.set(false);
+            this.fotoPreviewUrl = null;
 
             if (this.aprovado()) {
+              // Ativa cooldown de 5s para o liberado
               this.webcam.ativarCooldownPosAcesso(5000);
             } else {
-              // Se deu negado, limpa prévia e retoma o loop de validação imediatamente
-              this.fotoPreviewUrl = null;
-              this.webcam.iniciarLoopValidacao();
+              // Quando negado, ativa um cooldown curto de 1.5s antes de liberar o sensor
+              this.webcam.ativarCooldownPosAcesso(1500);
             }
           }, 3000);
         }
@@ -165,7 +166,7 @@ export class CompararPage implements OnInit, OnDestroy {
           this.timeoutOverlay = setTimeout(() => {
             this.exibirOverlayTotem.set(false);
             this.fotoPreviewUrl = null;
-            this.webcam.iniciarLoopValidacao();
+            this.webcam.ativarCooldownPosAcesso(1500);
           }, 3000);
         }
       },
