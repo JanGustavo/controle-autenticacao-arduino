@@ -1,241 +1,283 @@
-<div class="tuple-wrapper" *ngIf="config as cfg">
-  <!-- HEADER DO COMPONENTE -->
-  <header class="tuple-header" [class]="cfg.accentColor">
-    <div class="header-top">
-      <a routerLink="/adm-page" class="back-link">
-        <mat-icon>arrow_back</mat-icon>
-        <span>Voltar ao Painel</span>
-      </a>
-      <span class="eyebrow">Módulo / Tuplas</span>
-    </div>
-
-    <div class="header-main">
-      <div class="module-icon">
-        <mat-icon>{{ cfg.icon }}</mat-icon>
+@if (config; as cfg) {
+  <div class="tuple-wrapper">
+    <!-- HEADER DO COMPONENTE -->
+    <header class="tuple-header" [class]="cfg.accentColor">
+      <div class="header-top">
+        <a routerLink="/adm-page" class="back-link">
+          <mat-icon>arrow_back</mat-icon>
+          <span>Voltar ao Painel</span>
+        </a>
+        <span class="eyebrow">Módulo / Tuplas</span>
       </div>
-      <div class="title-group">
-        <h2>{{ cfg.title }}</h2>
-        <p>{{ cfg.subtitle }}</p>
-      </div>
-    </div>
-  </header>
 
-  <div class="data-notice" *ngIf="dataNotice() as notice" role="status">
-    <mat-icon>info</mat-icon>
-    <span>{{ notice }}</span>
+      <div class="header-main">
+        <div class="module-icon">
+          <mat-icon>{{ cfg.icon }}</mat-icon>
+        </div>
+        <div class="title-group">
+          <h2>{{ cfg.title }}</h2>
+          <p>{{ cfg.subtitle }}</p>
+        </div>
+      </div>
+    </header>
+
+    @if (dataNotice(); as notice) {
+      <div class="data-notice" role="status">
+        <mat-icon>info</mat-icon>
+        <span>{{ notice }}</span>
+      </div>
+    }
+
+    <!-- BARRA DE FILTRO / PESQUISA DINÂMICA -->
+    <section class="filter-bar">
+      <div class="search-box">
+        <mat-icon>search</mat-icon>
+        <input
+          type="text"
+          [ngModel]="filtroTexto()"
+          (ngModelChange)="filtroTexto.set($event); carregarDados()"
+          placeholder="Pesquisar em {{ cfg.title.toLowerCase() }}..."
+        />
+        @if (filtroTexto()) {
+          <button
+            type="button"
+            mat-icon-button
+            (click)="filtroTexto.set(''); carregarDados()"
+            title="Limpar pesquisa"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </div>
+
+      <!-- Filtro de Status para Usuários -->
+      @if (cfg.resource === 'usuarios') {
+        <div class="filter-group">
+          <label>Status</label>
+          <select
+            [ngModel]="filtroAtivo()"
+            (ngModelChange)="filtroAtivo.set($event); carregarDados()"
+          >
+            <option value="todos">Todos</option>
+            <option value="ativo">Ativos</option>
+            <option value="inativo">Inativos</option>
+          </select>
+        </div>
+      }
+
+      <!-- Filtros de Usuário e Local para Permissões -->
+      @if (cfg.resource === 'permissoes') {
+        <div class="filter-group">
+          <label>Usuário</label>
+          <select
+            [ngModel]="filtroUsuarioId()"
+            (ngModelChange)="filtroUsuarioId.set($event); carregarDados()"
+          >
+            <option [ngValue]="null">Todos os usuários</option>
+            @for (u of usuarios; track u.user_id) {
+              <option [ngValue]="u.user_id">{{ u.nome }}</option>
+            }
+          </select>
+
+          <label>Local</label>
+          <select
+            [ngModel]="filtroLocalId()"
+            (ngModelChange)="filtroLocalId.set($event); carregarDados()"
+          >
+            <option [ngValue]="null">Todos os locais</option>
+            @for (l of locais; track l.local_id) {
+              <option [ngValue]="l.local_id">{{ l.nome }}</option>
+            }
+          </select>
+        </div>
+      }
+
+      <!-- Filtros para Histórico (Logs) -->
+      @if (cfg.resource === 'historico') {
+        <div class="filter-group">
+          <label>Usuário</label>
+          <select
+            [ngModel]="filtroUsuarioId()"
+            (ngModelChange)="filtroUsuarioId.set($event); carregarDados()"
+          >
+            <option [ngValue]="null">Todos os usuários</option>
+            @for (u of usuarios; track u.user_id) {
+              <option [ngValue]="u.user_id">{{ u.nome }}</option>
+            }
+          </select>
+
+          <label>Local</label>
+          <select
+            [ngModel]="filtroLocalId()"
+            (ngModelChange)="filtroLocalId.set($event); carregarDados()"
+          >
+            <option [ngValue]="null">Todos os locais</option>
+            @for (l of locais; track l.local_id) {
+              <option [ngValue]="l.local_id">{{ l.nome }}</option>
+            }
+          </select>
+
+          <label>Autorização</label>
+          <select
+            [ngModel]="filtroAutorizado()"
+            (ngModelChange)="filtroAutorizado.set($event); carregarDados()"
+          >
+            <option value="todos">Todos</option>
+            <option value="autorizado">Autorizado</option>
+            <option value="negado">Negado</option>
+          </select>
+        </div>
+      }
+    </section>
+
+    @if (cfg.resource === 'permissoes') {
+      <section class="permission-editor">
+        <div class="editor-heading">
+          <div>
+            <span class="eyebrow">{{
+              editandoPermissaoId === null ? 'Nova regra' : 'Editando regra'
+            }}</span>
+            <h3>{{ editandoPermissaoId === null ? 'Criar permissão' : 'Editar permissão' }}</h3>
+          </div>
+          @if (acaoNotice) {
+            <span class="editor-notice" role="status">{{ acaoNotice }}</span>
+          }
+        </div>
+        <div class="permission-form">
+          <label>
+            Usuário
+            <select [(ngModel)]="permissaoForm.usuario_id" [disabled]="editandoPermissaoId !== null">
+              <option [ngValue]="0" disabled>Selecione...</option>
+              @for (usuario of usuarios; track usuario.user_id) {
+                <option [ngValue]="usuario.user_id">
+                  {{ usuario.nome }}
+                </option>
+              }
+            </select>
+          </label>
+          <label>
+            Local
+            <select [(ngModel)]="permissaoForm.local_id">
+              <option [ngValue]="0" disabled>Selecione...</option>
+              @for (local of locais; track local.local_id) {
+                <option [ngValue]="local.local_id">{{ local.nome }}</option>
+              }
+            </select>
+          </label>
+          <label>Início <input type="time" [(ngModel)]="permissaoForm.horario_inicio" /></label>
+          <label>Fim <input type="time" [(ngModel)]="permissaoForm.horario_fim" /></label>
+          <div class="permission-days">
+            <span>Dias</span>
+            @for (dia of [1, 2, 3, 4, 5, 6, 7]; track dia) {
+              <button
+                type="button"
+                [attr.title]="nomeDia(dia)"
+                [attr.aria-label]="nomeDia(dia)"
+                [class.selected]="permissaoForm.dias_semana.includes(dia)"
+                (click)="togglePermissaoDia(dia)"
+              >
+                {{ dia }}
+              </button>
+            }
+          </div>
+          <div class="editor-actions">
+            <button
+              type="button"
+              mat-flat-button
+              color="primary"
+              [disabled]="
+                !permissaoForm.usuario_id ||
+                !permissaoForm.local_id ||
+                !permissaoForm.dias_semana.length
+              "
+              (click)="salvarPermissao()"
+            >
+              <mat-icon>save</mat-icon> Salvar
+            </button>
+            @if (editandoPermissaoId !== null) {
+              <button
+                type="button"
+                mat-button
+                (click)="cancelarEdicao()"
+              >
+                Cancelar
+              </button>
+            }
+          </div>
+        </div>
+      </section>
+    }
+
+    <!-- CONTEÚDO PRINCIPAL (TABELA DE TUPLAS) -->
+    <main class="tuple-content">
+      <div class="table-card">
+        <table class="tuple-table">
+          <thead>
+            <tr>
+              @for (col of cfg.columns; track col.key) {
+                <th>{{ col.label }}</th>
+              }
+              @if (cfg.resource === 'permissoes') {
+                <th>Ações</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of displayedRows; track $index) {
+              <tr>
+                @for (col of cfg.columns; track col.key) {
+                  <td>
+                    @if (isBadgeStatus(row[col.key])) {
+                      <span class="badge" [ngClass]="getStatusClass(row[col.key])">
+                        {{ row[col.key] }}
+                      </span>
+                    } @else {
+                      <span class="cell-value">{{ row[col.key] }}</span>
+                    }
+                  </td>
+                }
+                @if (cfg.resource === 'permissoes') {
+                  <td class="row-actions">
+                    <button type="button" mat-icon-button title="Editar" (click)="iniciarEdicao(row)">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button type="button" mat-icon-button title="Excluir" (click)="excluirPermissao(row)">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </td>
+                }
+              </tr>
+            } @empty {
+              <tr>
+                <td [attr.colspan]="cfg.columns.length + (cfg.resource === 'permissoes' ? 1 : 0)" class="empty">
+                  Nenhum registro encontrado para "{{ filtroTexto() }}".
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </main>
+
+    <!-- FOOTER DO COMPONENTE -->
+    <footer class="tuple-footer">
+      <div class="footer-info">
+        <mat-icon>info</mat-icon>
+        <span>
+          Exibindo <strong>{{ displayedRows.length }}</strong> de <strong>{{ allRows.length }}</strong> tuplas
+          @if (usingMock()) {
+            (Modo Mock)
+          } @else {
+            (API)
+          }
+        </span>
+      </div>
+      <div class="footer-actions">
+        <a routerLink="/adm-page" mat-stroked-button>
+          <mat-icon>arrow_back</mat-icon>
+          Painel ADM
+        </a>
+      </div>
+    </footer>
   </div>
-
-  <!-- BARRA DE FILTRO / PESQUISA DINÂMICA -->
-  <section class="filter-bar">
-    <div class="search-box">
-      <mat-icon>search</mat-icon>
-      <input
-        type="text"
-        [ngModel]="filtroTexto()"
-        (ngModelChange)="filtroTexto.set($event); carregarDados()"
-        placeholder="Pesquisar em {{ cfg.title.toLowerCase() }}..."
-      />
-      <button
-        type="button"
-        mat-icon-button
-        *ngIf="filtroTexto()"
-        (click)="filtroTexto.set(''); carregarDados()"
-        title="Limpar pesquisa"
-      >
-        <mat-icon>close</mat-icon>
-      </button>
-    </div>
-
-    <!-- Filtro de Status para Usuários -->
-    <div class="filter-group" *ngIf="cfg.resource === 'usuarios'">
-      <label>Status</label>
-      <select
-        [ngModel]="filtroAtivo()"
-        (ngModelChange)="filtroAtivo.set($event); carregarDados()"
-      >
-        <option value="todos">Todos</option>
-        <option value="ativo">Ativos</option>
-        <option value="inativo">Inativos</option>
-      </select>
-    </div>
-
-    <!-- Filtros de Usuário e Local para Permissões -->
-    <div class="filter-group" *ngIf="cfg.resource === 'permissoes'">
-      <label>Usuário</label>
-      <select
-        [ngModel]="filtroUsuarioId()"
-        (ngModelChange)="filtroUsuarioId.set($event); carregarDados()"
-      >
-        <option [ngValue]="null">Todos os usuários</option>
-        <option *ngFor="let u of usuarios" [ngValue]="u.user_id">{{ u.nome }}</option>
-      </select>
-
-      <label>Local</label>
-      <select
-        [ngModel]="filtroLocalId()"
-        (ngModelChange)="filtroLocalId.set($event); carregarDados()"
-      >
-        <option [ngValue]="null">Todos os locais</option>
-        <option *ngFor="let l of locais" [ngValue]="l.local_id">{{ l.nome }}</option>
-      </select>
-    </div>
-
-    <!-- Filtros para Histórico (Logs) -->
-    <div class="filter-group" *ngIf="cfg.resource === 'historico'">
-      <label>Usuário</label>
-      <select
-        [ngModel]="filtroUsuarioId()"
-        (ngModelChange)="filtroUsuarioId.set($event); carregarDados()"
-      >
-        <option [ngValue]="null">Todos os usuários</option>
-        <option *ngFor="let u of usuarios" [ngValue]="u.user_id">{{ u.nome }}</option>
-      </select>
-
-      <label>Local</label>
-      <select
-        [ngModel]="filtroLocalId()"
-        (ngModelChange)="filtroLocalId.set($event); carregarDados()"
-      >
-        <option [ngValue]="null">Todos os locais</option>
-        <option *ngFor="let l of locais" [ngValue]="l.local_id">{{ l.nome }}</option>
-      </select>
-
-      <label>Autorização</label>
-      <select
-        [ngModel]="filtroAutorizado()"
-        (ngModelChange)="filtroAutorizado.set($event); carregarDados()"
-      >
-        <option value="todos">Todos</option>
-        <option value="autorizado">Autorizado</option>
-        <option value="negado">Negado</option>
-      </select>
-    </div>
-  </section>
-
-  <section class="permission-editor" *ngIf="cfg.resource === 'permissoes'">
-    <div class="editor-heading">
-      <div>
-        <span class="eyebrow">{{
-          editandoPermissaoId === null ? 'Nova regra' : 'Editando regra'
-        }}</span>
-        <h3>{{ editandoPermissaoId === null ? 'Criar permissão' : 'Editar permissão' }}</h3>
-      </div>
-      <span class="editor-notice" *ngIf="acaoNotice" role="status">{{ acaoNotice }}</span>
-    </div>
-    <div class="permission-form">
-      <label
-        >Usuário
-        <select [(ngModel)]="permissaoForm.usuario_id" [disabled]="editandoPermissaoId !== null">
-          <option [ngValue]="0" disabled>Selecione...</option>
-          <option *ngFor="let usuario of usuarios" [ngValue]="usuario.user_id">
-            {{ usuario.nome }}
-          </option>
-        </select>
-      </label>
-      <label
-        >Local
-        <select [(ngModel)]="permissaoForm.local_id">
-          <option [ngValue]="0" disabled>Selecione...</option>
-          <option *ngFor="let local of locais" [ngValue]="local.local_id">{{ local.nome }}</option>
-        </select>
-      </label>
-      <label>Início <input type="time" [(ngModel)]="permissaoForm.horario_inicio" /></label>
-      <label>Fim <input type="time" [(ngModel)]="permissaoForm.horario_fim" /></label>
-      <div class="permission-days">
-        <span>Dias</span>
-        <button
-          type="button"
-          *ngFor="let dia of [1, 2, 3, 4, 5, 6, 7]"
-          [attr.title]="nomeDia(dia)"
-          [attr.aria-label]="nomeDia(dia)"
-          [class.selected]="permissaoForm.dias_semana.includes(dia)"
-          (click)="togglePermissaoDia(dia)"
-        >
-          {{ dia }}
-        </button>
-      </div>
-      <div class="editor-actions">
-        <button
-          type="button"
-          mat-flat-button
-          color="primary"
-          [disabled]="
-            !permissaoForm.usuario_id ||
-            !permissaoForm.local_id ||
-            !permissaoForm.dias_semana.length
-          "
-          (click)="salvarPermissao()"
-        >
-          <mat-icon>save</mat-icon> Salvar
-        </button>
-        <button
-          type="button"
-          mat-button
-          *ngIf="editandoPermissaoId !== null"
-          (click)="cancelarEdicao()"
-        >
-          Cancelar
-        </button>
-      </div>
-    </div>
-  </section>
-
-  <!-- CONTEÚDO PRINCIPAL (TABELA DE TUPLAS) -->
-  <main class="tuple-content">
-    <div class="table-card">
-      <table class="tuple-table">
-        <thead>
-          <tr>
-            <th *ngFor="let col of cfg.columns">{{ col.label }}</th>
-            <th *ngIf="cfg.resource === 'permissoes'">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let row of displayedRows">
-            <td *ngFor="let col of cfg.columns">
-              <ng-container *ngIf="isBadgeStatus(row[col.key]); else plainText">
-                <span class="badge" [ngClass]="getStatusClass(row[col.key])">
-                  {{ row[col.key] }}
-                </span>
-              </ng-container>
-              <ng-template #plainText>
-                <span class="cell-value">{{ row[col.key] }}</span>
-              </ng-template>
-            </td>
-            <td class="row-actions" *ngIf="cfg.resource === 'permissoes'">
-              <button type="button" mat-icon-button title="Editar" (click)="iniciarEdicao(row)">
-                <mat-icon>edit</mat-icon>
-              </button>
-              <button type="button" mat-icon-button title="Excluir" (click)="excluirPermissao(row)">
-                <mat-icon>delete</mat-icon>
-              </button>
-            </td>
-          </tr>
-          <tr *ngIf="!displayedRows.length">
-            <td [attr.colspan]="cfg.columns.length + (cfg.resource === 'permissoes' ? 1 : 0)" class="empty">
-              Nenhum registro encontrado para "{{ filtroTexto() }}".
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </main>
-
-  <!-- FOOTER DO COMPONENTE -->
-  <footer class="tuple-footer">
-    <div class="footer-info">
-      <mat-icon>info</mat-icon>
-      <span>
-        Exibindo <strong>{{ displayedRows.length }}</strong> de <strong>{{ allRows.length }}</strong> tuplas
-        <ng-container *ngIf="usingMock(); else apiMode">(Modo Mock)</ng-container>
-        <ng-template #apiMode>(API)</ng-template>
-      </span>
-    </div>
-    <div class="footer-actions">
-      <a routerLink="/adm-page" mat-stroked-button>
-        <mat-icon>arrow_back</mat-icon>
-        Painel ADM
-      </a>
-    </div>
-  </footer>
-</div>
+}

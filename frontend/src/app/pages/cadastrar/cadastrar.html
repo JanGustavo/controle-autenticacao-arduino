@@ -65,7 +65,9 @@
             <span class="guide-text">Centralize o rosto no círculo</span>
           </div>
 
-          <div *ngIf="scanning" class="scan-line"></div>
+          @if (scanning) {
+            <div class="scan-line"></div>
+          }
         </div>
 
         <div class="webcam-controls">

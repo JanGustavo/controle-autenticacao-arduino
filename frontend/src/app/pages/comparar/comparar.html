@@ -1,151 +1,190 @@
 <div class="comparar-wrapper" [class.kiosk-mode]="modoKioskFullscreen()">
-  <div class="header" *ngIf="!modoKioskFullscreen()">
-    <div class="header-top">
-      <a routerLink="/adm-page" class="back-link">
-        <mat-icon>arrow_back</mat-icon> Painel Administrativo
-      </a>
-      <div class="header-actions">
-        <button mat-stroked-button (click)="toggleKioskFullscreen()" title="Atalho: F11">
-          <mat-icon>{{ modoKioskFullscreen() ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
-          Modo Kiosk (F11)
-        </button>
-        <button mat-stroked-button [color]="modoTotem() ? 'accent' : 'primary'" (click)="toggleModoTotem()">
-          <mat-icon>{{ modoTotem() ? 'touch_app' : 'center_focus_strong' }}</mat-icon>
-          {{ modoTotem() ? 'Modo Totem (Auto)' : 'Modo Manual' }}
-        </button>
+  @if (!modoKioskFullscreen()) {
+    <div class="header">
+      <div class="header-top">
+        <a routerLink="/adm-page" class="back-link">
+          <mat-icon>arrow_back</mat-icon> Painel Administrativo
+        </a>
+        <div class="header-actions">
+          <button mat-stroked-button (click)="toggleKioskFullscreen()" title="Atalho: F11">
+            <mat-icon>{{ modoKioskFullscreen() ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+            Modo Kiosk (F11)
+          </button>
+          <button mat-stroked-button [color]="modoTotem() ? 'accent' : 'primary'" (click)="toggleModoTotem()">
+            <mat-icon>{{ modoTotem() ? 'touch_app' : 'center_focus_strong' }}</mat-icon>
+            {{ modoTotem() ? 'Modo Totem (Auto)' : 'Modo Manual' }}
+          </button>
+        </div>
       </div>
+      <h2>Catraca Facial & Biometria</h2>
+      <p>Aproxime o rosto para validação automática em tempo real.</p>
     </div>
-    <h2>Catraca Facial & Biometria</h2>
-    <p>Aproxime o rosto para validação automática em tempo real.</p>
-  </div>
+  }
 
   <div class="totem-grid">
     <div class="card-cam">
       <!-- Skeleton Loading de Inicialização de Câmera/IA -->
-      <div class="skeleton-viewport" *ngIf="webcam.carregandoHardware()">
-        <mat-spinner diameter="48"></mat-spinner>
-        <p>Iniciando sensores e modelos biométricos...</p>
-      </div>
-
-      <div class="webcam-viewport" *ngIf="webcam.webcamAtiva() && !webcam.carregandoHardware()">
-        <!-- Efeito Flash de Obturador -->
-        <div class="camera-flash-overlay" *ngIf="webcam.dispararFlash()"></div>
-
-        <video #videoElement width="1280" height="720" autoplay muted></video>
-
-        <!-- Badge Visual Dinâmico da IA -->
-        <div class="status-badge" [ngClass]="webcam.tipoStatus()">
-          <mat-icon>{{ webcam.tipoStatus() === 'success' ? 'check_circle' : 'warning' }}</mat-icon>
-          <span>{{ webcam.statusValidacao() }}</span>
+      @if (webcam.carregandoHardware()) {
+        <div class="skeleton-viewport">
+          <mat-spinner diameter="48"></mat-spinner>
+          <p>Iniciando sensores e modelos biométricos...</p>
         </div>
+      }
 
-        <!-- Guia de Centralização Facial com Progresso de Auto-captura -->
-        <div class="face-overlay">
-          <div class="face-oval" [class.valid]="webcam.tipoStatus() === 'success'">
-            <svg class="progress-ring" *ngIf="webcam.progressoAutoCaptura() > 0">
-              <circle
-                r="48%"
-                cx="50%"
-                cy="50%"
-                [style.strokeDashoffset]="600 - (600 * webcam.progressoAutoCaptura()) / 100"
-              />
-            </svg>
+      @if (webcam.webcamAtiva() && !webcam.carregandoHardware()) {
+        <div class="webcam-viewport">
+          <!-- Efeito Flash de Obturador -->
+          @if (webcam.dispararFlash()) {
+            <div class="camera-flash-overlay"></div>
+          }
+
+          <video #videoElement width="1280" height="720" autoplay muted></video>
+
+          <!-- Badge Visual Dinâmico da IA -->
+          <div class="status-badge" [ngClass]="webcam.tipoStatus()">
+            <mat-icon>{{ webcam.tipoStatus() === 'success' ? 'check_circle' : 'warning' }}</mat-icon>
+            <span>{{ webcam.statusValidacao() }}</span>
           </div>
-          <span class="guide-text">
-            {{
-              webcam.emCooldown()
-                ? 'Catraca liberada — Aguardando passagem'
-                : modoTotem()
-                  ? 'Mantenha a posição para auto-captura'
-                  : 'Centralize o rosto no círculo'
-            }}
-          </span>
+
+          <!-- Guia de Centralização Facial com Progresso de Auto-captura -->
+          <div class="face-overlay">
+            <div class="face-oval" [class.valid]="webcam.tipoStatus() === 'success'">
+              @if (webcam.progressoAutoCaptura() > 0) {
+                <svg class="progress-ring">
+                  <circle
+                    r="48%"
+                    cx="50%"
+                    cy="50%"
+                    [style.strokeDashoffset]="600 - (600 * webcam.progressoAutoCaptura()) / 100"
+                  />
+                </svg>
+              }
+            </div>
+            <span class="guide-text">
+              {{
+                webcam.emCooldown()
+                  ? 'Catraca liberada — Aguardando passagem'
+                  : modoTotem()
+                    ? 'Mantenha a posição para auto-captura'
+                    : 'Centralize o rosto no círculo'
+              }}
+            </span>
+          </div>
+
+          @if (scanning()) {
+            <div class="scan-line"></div>
+          }
         </div>
+      }
 
-        <div *ngIf="scanning()" class="scan-line"></div>
-      </div>
+      @if (!webcam.webcamAtiva() && !fotoPreviewUrl && !webcam.carregandoHardware()) {
+        <div class="placeholder-cam">
+          <mat-icon>face</mat-icon>
+          <p>Câmera pronta para validação</p>
+        </div>
+      }
 
-      <div class="placeholder-cam" *ngIf="!webcam.webcamAtiva() && !fotoPreviewUrl && !webcam.carregandoHardware()">
-        <mat-icon>face</mat-icon>
-        <p>Câmera pronta para validação</p>
-      </div>
+      @if (fotoPreviewUrl && !webcam.webcamAtiva() && !exibirOverlayTotem()) {
+        <div class="preview-cam">
+          <img [src]="fotoPreviewUrl" alt="Foto capturada" />
+        </div>
+      }
 
-      <div class="preview-cam" *ngIf="fotoPreviewUrl && !webcam.webcamAtiva() && !exibirOverlayTotem()">
-        <img [src]="fotoPreviewUrl" alt="Foto capturada" />
-      </div>
+      @if (!modoKioskFullscreen()) {
+        <div class="webcam-controls">
+          @if (!webcam.webcamAtiva()) {
+            <button mat-raised-button color="primary" (click)="iniciarWebcam()">
+              <mat-icon>videocam</mat-icon> Iniciar Totem / Câmera
+            </button>
+          }
 
-      <div class="webcam-controls" *ngIf="!modoKioskFullscreen()">
-        <button mat-raised-button color="primary" *ngIf="!webcam.webcamAtiva()" (click)="iniciarWebcam()">
-          <mat-icon>videocam</mat-icon> Iniciar Totem / Câmera
-        </button>
+          @if (webcam.webcamAtiva() && !modoTotem()) {
+            <button
+              mat-raised-button
+              color="accent"
+              (click)="capturarEComparar()"
+              [disabled]="!webcam.capturaPronta() || scanning()"
+            >
+              <mat-icon>photo_camera</mat-icon> Capturar e Comparar
+            </button>
+          }
 
-        <button
-          mat-raised-button
-          color="accent"
-          *ngIf="webcam.webcamAtiva() && !modoTotem()"
-          (click)="capturarEComparar()"
-          [disabled]="!webcam.capturaPronta() || scanning()"
-        >
-          <mat-icon>photo_camera</mat-icon> Capturar e Comparar
-        </button>
-
-        <button mat-button color="warn" *ngIf="webcam.webcamAtiva()" (click)="pararWebcam()">
-          <mat-icon>close</mat-icon> Encerrar
-        </button>
-      </div>
+          @if (webcam.webcamAtiva()) {
+            <button mat-button color="warn" (click)="pararWebcam()">
+              <mat-icon>close</mat-icon> Encerrar
+            </button>
+          }
+        </div>
+      }
     </div>
 
     <!-- Painel Lateral de Histórico e Logs -->
     <div class="card-logs">
       <h3><mat-icon>history</mat-icon> Últimos Acessos</h3>
       <div class="logs-list">
-        <div *ngFor="let log of historicoRecente()" class="log-item" [class.autorizado]="log.autorizado">
-          <mat-icon>{{ log.autorizado ? 'check_circle' : 'cancel' }}</mat-icon>
-          <div class="log-info">
-            <strong>{{ log.autorizado ? 'Acesso Liberado' : 'Acesso Negado' }}</strong>
-            <div class="log-meta">
-              <span class="user-name">{{ obterNomeUsuario(log) }}</span>
-              <span class="local-name"> &bull; {{ obterNomeLocal(log) }}</span>
+        @for (log of historicoRecente(); track log.id) {
+          <div class="log-item" [class.autorizado]="log.autorizado">
+            <mat-icon>{{ log.autorizado ? 'check_circle' : 'cancel' }}</mat-icon>
+            <div class="log-info">
+              <strong>{{ log.autorizado ? 'Acesso Liberado' : 'Acesso Negado' }}</strong>
+              <div class="log-meta">
+                <span class="user-name">{{ obterNomeUsuario(log) }}</span>
+                <span class="local-name"> &bull; {{ obterNomeLocal(log) }}</span>
+              </div>
+              <small>{{ log.data_hora | date: 'HH:mm:ss dd/MM' }}</small>
+              @if (log.percentual_similaridade) {
+                <p>Similaridade: {{ log.percentual_similaridade }}%</p>
+              }
+              @if (log.motivo_recusa) {
+                <p class="recusa">{{ log.motivo_recusa }}</p>
+              }
             </div>
-            <small>{{ log.data_hora | date: 'HH:mm:ss dd/MM' }}</small>
-            <p *ngIf="log.percentual_similaridade">Similaridade: {{ log.percentual_similaridade }}%</p>
-            <p *ngIf="log.motivo_recusa" class="recusa">{{ log.motivo_recusa }}</p>
           </div>
-        </div>
-        <div *ngIf="!historicoRecente().length" class="no-logs">
-          Nenhum registro recente
-        </div>
+        } @empty {
+          <div class="no-logs">
+            Nenhum registro recente
+          </div>
+        }
       </div>
     </div>
   </div>
 
   <!-- OVERLAY / MODAL EM TELA CHEIA PARA MODO TOTEM -->
-  <div
-    class="totem-overlay"
-    *ngIf="exibirOverlayTotem()"
-    [class.liberado]="aprovado()"
-    [class.negado]="!aprovado()"
-  >
-    <div class="totem-card">
-      <mat-icon class="totem-icon">
-        {{ aprovado() ? 'check_circle' : 'cancel' }}
-      </mat-icon>
+  @if (exibirOverlayTotem()) {
+    <div
+      class="totem-overlay"
+      [class.liberado]="aprovado()"
+      [class.negado]="!aprovado()"
+    >
+      <div class="totem-card">
+        <mat-icon class="totem-icon">
+          {{ aprovado() ? 'check_circle' : 'cancel' }}
+        </mat-icon>
 
-      <img
-        *ngIf="fotoPreviewUrl"
-        [src]="fotoPreviewUrl"
-        class="totem-avatar"
-        alt="Avatar Capturado"
-      />
+        @if (fotoPreviewUrl) {
+          <img
+            [src]="fotoPreviewUrl"
+            class="totem-avatar"
+            alt="Avatar Capturado"
+          />
+        }
 
-      <h1>{{ aprovado() ? 'ACESSO LIBERADO' : 'ACESSO NEGADO' }}</h1>
-      <h2 *ngIf="usuarioEncontrado()">{{ usuarioEncontrado() }}</h2>
-      <h2 *ngIf="!usuarioEncontrado() && !aprovado()">Vetor não cadastrado</h2>
+        <h1>{{ aprovado() ? 'ACESSO LIBERADO' : 'ACESSO NEGADO' }}</h1>
+        @if (usuarioEncontrado()) {
+          <h2>{{ usuarioEncontrado() }}</h2>
+        } @else if (!aprovado()) {
+          <h2>Vetor não cadastrado</h2>
+        }
 
-      <div class="totem-details">
-        <span *ngIf="similaridade() > 0">Similaridade: {{ similaridade() }}% (Min: 70%)</span>
-        <span *ngIf="mensagemStatus() && !aprovado()">{{ mensagemStatus() }}</span>
+        <div class="totem-details">
+          @if (similaridade() > 0) {
+            <span>Similaridade: {{ similaridade() }}% (Min: 70%)</span>
+          }
+          @if (mensagemStatus() && !aprovado()) {
+            <span>{{ mensagemStatus() }}</span>
+          }
+        </div>
       </div>
     </div>
-  </div>
+  }
 </div>
