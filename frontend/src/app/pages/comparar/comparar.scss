@@ -21,7 +21,24 @@
         text-decoration: none;
         color: #64748b;
         font-weight: 500;
+        transition: color 0.15s ease;
+
+        &:hover {
+          color: #1e293b;
+        }
       }
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #1e293b;
+    }
+
+    p {
+      margin: 6px 0 0 0;
+      color: #64748b;
     }
   }
 
@@ -37,6 +54,7 @@
 
   .card-cam {
     background: white;
+    border: 1px solid #e2e8f0;
     border-radius: 16px;
     padding: 24px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -74,6 +92,7 @@
 
   .card-logs {
     background: white;
+    border: 1px solid #e2e8f0;
     border-radius: 16px;
     padding: 20px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -99,17 +118,29 @@
       display: flex;
       align-items: flex-start;
       gap: 12px;
-      padding: 10px;
-      border-radius: 8px;
-      background: #f8fafc;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
 
       mat-icon {
-        color: #ef4444;
+        color: #dc2626;
+      }
+
+      strong {
+        color: #b91c1c;
       }
 
       &.autorizado {
+        background: #f0fdf4;
+        border-color: #bbf7d0;
+
         mat-icon {
-          color: #22c55e;
+          color: #16a34a;
+        }
+
+        strong {
+          color: #15803d;
         }
       }
 
@@ -118,37 +149,39 @@
         flex-direction: column;
 
         strong {
-          font-size: 0.9rem;
+          font-size: 0.92rem;
+          font-weight: 700;
         }
 
         .log-meta {
-          font-size: 0.82rem;
-          margin: 2px 0;
+          font-size: 0.84rem;
+          margin: 3px 0;
 
           .user-name {
-            font-weight: 600;
-            color: #334155;
+            font-weight: 700;
+            color: #1e293b;
           }
 
           .local-name {
             color: #64748b;
-            font-size: 0.78rem;
+            font-size: 0.8rem;
           }
         }
 
         small {
           color: #64748b;
-          font-size: 0.75rem;
+          font-size: 0.76rem;
         }
 
         p {
-          margin: 2px 0 0 0;
-          font-size: 0.8rem;
+          margin: 3px 0 0 0;
+          font-size: 0.82rem;
           color: #475569;
         }
 
         .recusa {
           color: #dc2626;
+          font-weight: 500;
         }
       }
     }
@@ -158,6 +191,91 @@
       font-size: 0.9rem;
       text-align: center;
       padding: 20px 0;
+    }
+  }
+}
+
+// Suporte completo para Dark Mode
+:host-context(body.dark-mode) {
+  .comparar-wrapper {
+    color: #f8fafc;
+
+    .header {
+      .header-top {
+        .back-link {
+          color: #94a3b8;
+          &:hover { color: #f8fafc; }
+        }
+      }
+
+      h2 { color: #f8fafc; }
+      p { color: #94a3b8; }
+    }
+
+    .card-cam,
+    .card-logs {
+      background-color: #1e293b !important;
+      border-color: rgba(255, 255, 255, 0.1) !important;
+    }
+
+    .card-logs {
+      h3 {
+        color: #f8fafc !important;
+        border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+      }
+
+      .log-item {
+        background-color: rgba(239, 68, 68, 0.12) !important;
+        border-color: rgba(239, 68, 68, 0.25) !important;
+
+        mat-icon {
+          color: #f87171 !important;
+        }
+
+        strong {
+          color: #f87171 !important;
+        }
+
+        &.autorizado {
+          background-color: rgba(34, 197, 94, 0.12) !important;
+          border-color: rgba(34, 197, 94, 0.25) !important;
+
+          mat-icon {
+            color: #4ade80 !important;
+          }
+
+          strong {
+            color: #4ade80 !important;
+          }
+        }
+
+        .log-info {
+          .log-meta {
+            .user-name {
+              color: #f8fafc !important;
+            }
+            .local-name {
+              color: #94a3b8 !important;
+            }
+          }
+
+          small {
+            color: #94a3b8 !important;
+          }
+
+          p {
+            color: #cbd5e1 !important;
+          }
+
+          .recusa {
+            color: #fca5a5 !important;
+          }
+        }
+      }
+
+      .no-logs {
+        color: #64748b !important;
+      }
     }
   }
 }
