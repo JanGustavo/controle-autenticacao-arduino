@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="300 40 620 360" fill="none">
+  <defs>
+    <linearGradient id="blue-icon" x1="300" y1="50" x2="900" y2="400" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0B2A68"/>
+      <stop offset="0.52" stop-color="#0756C9"/>
+      <stop offset="1" stop-color="#00A8E8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ARD Lock symbol: angular A + lock + dynamic security band -->
+  <path d="M600 52 L350 370 L445 370 L600 166 L755 370 L850 370 Z"
+        fill="url(#blue-icon)"/>
+
+  <!-- Lock keyhole -->
+  <path d="M600 238
+           C571 238 548 261 548 290
+           C548 309 558 326 574 336
+           L566 382
+           L634 382
+           L626 336
+           C642 326 652 309 652 290
+           C652 261 629 238 600 238 Z"
+        fill="#071B42"/>
+
+  <!-- Dynamic band crossing the A -->
+  <path d="M338 319
+           C430 260 515 222 626 195
+           C713 174 793 174 865 201
+           C892 211 910 226 920 245
+           L920 302
+           C899 279 876 266 846 259
+           C784 244 711 247 642 264
+           C532 291 441 330 368 383
+           L316 383
+           C322 359 329 338 338 319 Z"
+        fill="url(#blue-icon)"/>
+</svg>
