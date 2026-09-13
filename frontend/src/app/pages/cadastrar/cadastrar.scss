@@ -436,3 +436,244 @@ textarea:focus {
   font-size: 18px;
   vertical-align: middle;
 }
+
+// ═══════════════════════════════════════════════
+// DARK MODE – Cadastrar Usuário
+// ═══════════════════════════════════════════════
+:host-context(body.dark-mode) {
+  .register-page {
+    --canvas: #0f172a;
+    --surface: #1e293b;
+    --ink: #f8fafc;
+    --muted: #94a3b8;
+    --line: rgba(255, 255, 255, 0.1);
+    --accent: #60a5fa;
+  }
+
+  // ── Page header ──
+  h1 {
+    color: #f8fafc !important;
+  }
+
+  .back-link {
+    color: #60a5fa !important;
+    &:hover {
+      color: #93bbfd !important;
+    }
+  }
+
+  .eyebrow,
+  .section-number {
+    color: #60a5fa !important;
+  }
+
+  // ── Form card ──
+  .register-form {
+    background: #1e293b !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  .form-section {
+    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  h2 {
+    color: #f8fafc !important;
+
+    em {
+      color: #94a3b8 !important;
+    }
+  }
+
+  .section-heading p {
+    color: #94a3b8 !important;
+  }
+
+  // ── Input fields ──
+  .field {
+    color: #f8fafc !important;
+
+    b {
+      color: #f87171 !important;
+    }
+
+    small {
+      color: #64748b !important;
+    }
+  }
+
+  input:not([type='checkbox']),
+  textarea {
+    background: #0f172a !important;
+    border-color: #475569 !important;
+    color: #f8fafc !important;
+
+    &::placeholder {
+      color: #64748b !important;
+    }
+
+    &:focus {
+      border-color: #60a5fa !important;
+      box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2) !important;
+    }
+  }
+
+  // ── Camera capture area ──
+  .camera-capture {
+    border-color: #475569 !important;
+    background: #0f172a !important;
+
+    &.ready {
+      border-color: #60a5fa !important;
+      background: rgba(96, 165, 250, 0.08) !important;
+    }
+  }
+
+  .camera-icon {
+    background: rgba(96, 165, 250, 0.15) !important;
+    color: #60a5fa !important;
+  }
+
+  .camera-copy {
+    strong {
+      color: #f8fafc !important;
+    }
+    small {
+      color: #94a3b8 !important;
+    }
+  }
+
+  .photo-preview {
+    border-color: #60a5fa !important;
+  }
+
+  // ── Webcam viewport ──
+  .webcam-viewport {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .webcam-controls {
+    button[mat-button] {
+      color: #f87171 !important;
+    }
+  }
+
+  // ── Local cards ──
+  .local-card-config {
+    border-color: #334155 !important;
+    background: #1e293b !important;
+
+    &.selected {
+      border-color: #60a5fa !important;
+      box-shadow: 0 4px 14px rgba(96, 165, 250, 0.15) !important;
+
+      .local-header {
+        background: rgba(96, 165, 250, 0.1) !important;
+        border-bottom-color: rgba(96, 165, 250, 0.2) !important;
+      }
+    }
+
+    .local-header {
+      .check-icon {
+        color: #64748b !important;
+      }
+
+      .local-title {
+        strong {
+          color: #f8fafc !important;
+        }
+        small {
+          color: #94a3b8 !important;
+        }
+      }
+    }
+
+    &.selected .check-icon {
+      color: #60a5fa !important;
+    }
+
+    .local-body {
+      background: #0f172a !important;
+
+      .field-label {
+        color: #cbd5e1 !important;
+      }
+
+      .days-list button {
+        border-color: #475569 !important;
+        background: #1e293b !important;
+        color: #cbd5e1 !important;
+
+        &.selected {
+          border-color: #60a5fa !important;
+          background: #60a5fa !important;
+          color: #ffffff !important;
+        }
+
+        &:hover:not(.selected) {
+          background: rgba(96, 165, 250, 0.1) !important;
+          color: #60a5fa !important;
+        }
+      }
+    }
+  }
+
+  // ── Switch toggle ──
+  .switch {
+    background: #475569 !important;
+  }
+
+  .switch-field input:checked + .switch {
+    background: #60a5fa !important;
+  }
+
+  .switch-field {
+    span:last-child {
+      strong {
+        color: #f8fafc !important;
+      }
+      small {
+        color: #94a3b8 !important;
+      }
+    }
+  }
+
+  // ── Messages ──
+  .inline-message {
+    color: #94a3b8 !important;
+  }
+
+  .warning-message {
+    color: #fbbf24 !important;
+
+    mat-icon {
+      color: #fbbf24 !important;
+    }
+  }
+
+  .success-message {
+    color: #4ade80 !important;
+
+    mat-icon {
+      color: #4ade80 !important;
+    }
+  }
+
+  .error-message {
+    color: #f87171 !important;
+
+    mat-icon {
+      color: #f87171 !important;
+    }
+  }
+
+  // ── Form actions footer ──
+  .form-actions {
+    border-top-color: rgba(255, 255, 255, 0.08) !important;
+
+    button[mat-button] {
+      color: #94a3b8 !important;
+    }
+  }
+}
