@@ -25,7 +25,8 @@ class PermissaoService:
 				cursor.execute(
 					"""
 					SELECT permissao_id, usuario_id, local_id,
-						   horario_inicio, horario_fim, dias_semana
+						  c
+						  horario_inicio, horario_fim, dias_semana
 					FROM permissao
 					ORDER BY permissao_id
 					"""
