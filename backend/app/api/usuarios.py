@@ -10,10 +10,6 @@ def listar_usuarios(q: str | None = None, ativo: bool | None = None):
     return usuario_service.listar_usuarios(q=q, ativo=ativo)
 
 
-@router.get("/locais")
-def listar_locais():
-    return usuario_service.listar_locais()
-
 @router.get("/usuarios/{usuario_id}", response_model=UsuarioResponse)
 def obter_usuario(usuario_id: int):
     return usuario_service.obter_usuario(usuario_id)

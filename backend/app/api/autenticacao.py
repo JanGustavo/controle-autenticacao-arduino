@@ -1,6 +1,5 @@
 from datetime import datetime
 import json
-import asyncio
 from fastapi import APIRouter, UploadFile, File, HTTPException, status
 from app.services.face_service import FaceService
 from app.database.connection import get_connection

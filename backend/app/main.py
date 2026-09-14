@@ -9,7 +9,7 @@ from app.api import permissoes
 from app.api import usuarios
 from app.api import ws_router
 from app.api.health import database_health, health
-from app.auth import biometria
+from app.api.biometria import router as biometria
 from app.auth import router as auth
 
 app = FastAPI(
@@ -34,7 +34,7 @@ app.include_router(database_health.router, prefix="/api/v1/health/db", tags=["da
 app.include_router(adm_page.router, prefix="/api/v1/adm", tags=["adm"])
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(autenticacao.router, prefix="/api/v1", tags=["autenticacao"])
-app.include_router(biometria.router, prefix="/api/v1", tags=["Biometria"])
+app.include_router(biometria, prefix="/api/v1", tags=["Biometria"])
 app.include_router(usuarios.router, prefix="/api/v1", tags=["usuarios"])
 app.include_router(permissoes.router, prefix="/api/v1", tags=["permissoes"])
 app.include_router(historico_acesso.router, prefix="/api/v1", tags=["historico_acesso"])

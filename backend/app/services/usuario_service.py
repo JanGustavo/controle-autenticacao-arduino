@@ -21,22 +21,6 @@ class UsuarioService:
 			return None
 		return re.sub(r"[\s:-]", "", uid_card).upper() or None
 
-	def listar_locais(self):
-		with get_connection() as connection:
-			with connection.cursor() as cursor:
-				cursor.execute(
-					"""
-					SELECT local_id, nome, identificador_dispositivo
-					FROM local
-					WHERE ativo = TRUE
-					ORDER BY nome
-					"""
-				)
-				return [
-					{"local_id": row[0], "nome": row[1], "identificador_dispositivo": row[2]}
-					for row in cursor.fetchall()
-				]
-
 	def listar_usuarios(self, q: str | None = None, ativo: bool | None = None):
 		conditions = []
 		params = []
