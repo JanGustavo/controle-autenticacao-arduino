@@ -19,7 +19,22 @@ class PermissaoService:
 	def _row_to_dict(cls, row):
 		return dict(zip(cls._campos, row, strict=True))
 
-	def listar_permissoes(self):
+	def listar_permissoes(self, q: str | None = None, usuario_id: int | None = None, local_id: int | None = None):
+		conditions = []
+		params = []
+		if q is not None and q.strip():
+			term = f"%{q.strip().lower()}%"
+			conditions.append("(LOWER(u.nome) LIKE %s OR LOWER(l.nome) LIKE %s)")
+			params.extend([term, term])
+		if usuario_id is not None:
+			conditions.append("p.usuario_id = %s")
+			params.append(usuario_id)
+		if local_id is not None:
+			conditions.append("p.local_id = %s")
+			params.append(local_id)
+
+		where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+
 		with get_connection() as connection:
 			with connection.cursor() as cursor:
 				cursor.execute(

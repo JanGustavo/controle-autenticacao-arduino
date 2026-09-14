@@ -1,15 +1,23 @@
-import { Component, ElementRef, inject, OnDestroy, OnInit, ViewChild, signal } from '@angular/core';
+import { Component, ElementRef, inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
-import * as faceapi from '@vladmandic/face-api';
-import { ApiService, LocalResponse } from '../../services/api.service';
+import { ApiService, LocalResponse, PermissaoCreateRequest } from '../../services/api.service';
 import { SpeechService } from '../../services/speech.service';
+import { WebcamService } from '../../services/webcam.service';
 
-type EstadoEnquadramento = 'ok' | 'sem_rosto' | 'sorriso' | null;
+export interface LocalPermissaoItem {
+  local_id: number;
+  nome_local: string;
+  identificador: string;
+  selecionado: boolean;
+  horario_inicio: string;
+  horario_fim: string;
+  dias_semana: number[];
+}
 
 @Component({
   selector: 'app-cadastrar-page',
@@ -33,35 +41,19 @@ export class CadastrarPage implements OnInit, OnDestroy {
   private api = inject(ApiService);
   private snackBar = inject(MatSnackBar);
   private speech = inject(SpeechService);
+  public webcam = inject(WebcamService);
 
-  stream: MediaStream | null = null;
-  webcamAtiva = false;
-  webcamErro = '';
   cameraOpened = false;
   scanning = false;
-  capturaPronta = signal(false);
   submitted = false;
   saving = false;
   successMessage = '';
   errorMessage = '';
-  locais: LocalResponse[] = [];
+  locaisPermissao: LocalPermissaoItem[] = [];
   locaisCarregando = true;
   locaisErro = '';
-  selectedLocalIds: number[] = [];
-  horarioInicio = '08:00';
-  horarioFim = '18:00';
-  diasSelecionados = [1, 2, 3, 4, 5];
   fotoPreviewUrl: string | null = null;
   private fotoCapturada: Blob | File | null = null;
-
-  // Status visual para a webcam
-  statusValidacao = signal<string>('Centralize o rosto');
-  tipoStatus = signal<'info' | 'warn' | 'success'>('info');
-
-  private intervalValidacao: ReturnType<typeof setInterval> | null = null;
-  private modelosCarregados = false;
-  private ultimoEstadoEnquadramento: EstadoEnquadramento = null;
-  private processandoDeteccao = false;
 
   form = this.formBuilder.nonNullable.group({
     nome: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(255)]],
@@ -72,7 +64,15 @@ export class CadastrarPage implements OnInit, OnDestroy {
   async ngOnInit(): Promise<void> {
     this.api.getLocais().subscribe({
       next: (locais) => {
-        this.locais = locais;
+        this.locaisPermissao = locais.map((local) => ({
+          local_id: local.local_id,
+          nome_local: local.nome,
+          identificador: local.identificador_dispositivo,
+          selecionado: false,
+          horario_inicio: '08:00',
+          horario_fim: '18:00',
+          dias_semana: [1, 2, 3, 4, 5], // Padrão Seg-Sex
+        }));
         this.locaisCarregando = false;
       },
       error: () => {
@@ -81,13 +81,7 @@ export class CadastrarPage implements OnInit, OnDestroy {
       },
     });
 
-    try {
-      await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
-      await faceapi.nets.faceExpressionNet.loadFromUri('/models');
-      this.modelosCarregados = true;
-    } catch (e) {
-      console.warn('Não foi possível carregar os modelos locais do face-api:', e);
-    }
+    await this.webcam.carregarModelos();
   }
 
   ngOnDestroy(): void {
@@ -95,131 +89,26 @@ export class CadastrarPage implements OnInit, OnDestroy {
   }
 
   async iniciarWebcam(): Promise<void> {
-    this.webcamErro = '';
-    this.statusValidacao.set('Centralize o rosto');
-    this.tipoStatus.set('info');
-
-    try {
-      this.stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 1280, height: 720, facingMode: 'user' },
-      });
-      this.webcamAtiva = true;
-      this.speech.falar('Centralize o rosto e mantenha uma expressão séria.');
-
-      setTimeout(() => {
-        if (this.videoElement?.nativeElement) {
-          this.videoElement.nativeElement.srcObject = this.stream;
-          this.iniciarLoopValidacao();
-        }
-      }, 100);
-    } catch (err) {
-      this.webcamAtiva = false;
-      this.webcamErro = 'Erro ao acessar a webcam. Verifique as permissões.';
-      this.speech.falar('Erro ao acessar a câmera.');
-    }
-  }
-
-  private iniciarLoopValidacao(): void {
-    this.pararLoopValidacao();
-    this.ultimoEstadoEnquadramento = null;
-
-    this.intervalValidacao = setInterval(async () => {
-      if (this.processandoDeteccao) return;
-      if (!this.webcamAtiva || !this.videoElement?.nativeElement || !this.modelosCarregados) {
-        return;
-      }
-
-      const video = this.videoElement.nativeElement;
-      if (video.paused || video.ended || !video.videoWidth) return;
-
-      this.processandoDeteccao = true;
-      try {
-        const detection = await faceapi
-          .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224 }))
-          .withFaceExpressions();
-
-        if (!detection) {
-          this.capturaPronta.set(false);
-          this.statusValidacao.set('Rosto não detectado');
-          this.tipoStatus.set('warn');
-
-          if (this.ultimoEstadoEnquadramento !== 'sem_rosto') {
-            this.speech.falar('Rosto não detectado. Centralize-se na câmera.');
-            this.ultimoEstadoEnquadramento = 'sem_rosto';
-          }
-          return;
-        }
-
-        const ehSorriso = detection.expressions.happy > 0.6;
-
-        if (ehSorriso) {
-          this.capturaPronta.set(false);
-          this.statusValidacao.set('Sorriso detectado! Fique sério');
-          this.tipoStatus.set('warn');
-
-          if (this.ultimoEstadoEnquadramento !== 'sorriso') {
-            this.speech.falar('Por favor, mantenha uma expressão neutra e fique sério.');
-            this.ultimoEstadoEnquadramento = 'sorriso';
-          }
-        } else {
-          this.capturaPronta.set(true);
-          this.statusValidacao.set('Rosto enquadrado - Pronto!');
-          this.tipoStatus.set('success');
-          this.ultimoEstadoEnquadramento = 'ok';
-        }
-      } finally {
-        this.processandoDeteccao = false;
-      }
-    }, 500);
-  }
-
-  private pararLoopValidacao(): void {
-    if (this.intervalValidacao) {
-      clearInterval(this.intervalValidacao);
-      this.intervalValidacao = null;
-    }
+    await this.webcam.iniciarWebcam(() => this.videoElement);
   }
 
   pararWebcam(): void {
-    this.pararLoopValidacao();
-    this.speech.parar();
-    if (this.stream) {
-      this.stream.getTracks().forEach((track) => track.stop());
-      this.stream = null;
-    }
-    this.webcamAtiva = false;
+    this.webcam.pararWebcam();
     this.scanning = false;
-    this.capturaPronta.set(false);
   }
 
-  capturarFrameWebcam(): void {
-    if (!this.videoElement?.nativeElement || !this.capturaPronta()) return;
+  async capturarFrameWebcam(): Promise<void> {
+    if (!this.webcam.capturaPronta()) return;
 
-    this.pararLoopValidacao();
+    const res = await this.webcam.capturarFrameComPreview();
+    if (!res) return;
 
-    const video = this.videoElement.nativeElement;
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    this.fotoPreviewUrl = canvas.toDataURL('image/jpeg', 0.95);
-
-    canvas.toBlob(
-      (blob) => {
-        if (!blob) return;
-        this.fotoCapturada = blob;
-        this.scanning = true;
-        this.errorMessage = '';
-        this.pararWebcam();
-        this.speech.falar('Foto capturada com sucesso.');
-      },
-      'image/jpeg',
-      0.95
-    );
+    this.fotoCapturada = res.blob;
+    this.fotoPreviewUrl = res.previewUrl;
+    this.scanning = true;
+    this.errorMessage = '';
+    this.pararWebcam();
+    this.speech.falar('Foto capturada com sucesso.');
   }
 
   submit(): void {
@@ -232,8 +121,10 @@ export class CadastrarPage implements OnInit, OnDestroy {
       return;
     }
 
-    if (!this.selectedLocalIds.length) {
-      this.errorMessage = 'Selecione pelo menos um local e configure o horário de acesso.';
+    const locaisSelecionados = this.locaisPermissao.filter((item) => item.selecionado);
+
+    if (!locaisSelecionados.length) {
+      this.errorMessage = 'Selecione pelo menos um local e configure seu horário de acesso.';
       return;
     }
 
@@ -244,23 +135,26 @@ export class CadastrarPage implements OnInit, OnDestroy {
 
     this.saving = true;
     const { nome, uid_card, ativo } = this.form.getRawValue();
+
+    const permissoesPayload: PermissaoCreateRequest[] = locaisSelecionados.map((item) => ({
+      local_id: item.local_id,
+      horario_inicio: item.horario_inicio,
+      horario_fim: item.horario_fim,
+      dias_semana: item.dias_semana,
+    }));
+
     this.api.criarUsuario({
       nome,
       uid_card: this.normalizarUid(uid_card),
       vetor_facial: null,
       ativo,
-      permissoes: this.selectedLocalIds.map((local_id) => ({
-        local_id,
-        horario_inicio: this.horarioInicio,
-        horario_fim: this.horarioFim,
-        dias_semana: this.diasSelecionados,
-      })),
+      permissoes: permissoesPayload,
     }).subscribe({
       next: (usuario) => {
         this.api.cadastrarBiometria(usuario.user_id, this.fotoCapturada!).subscribe({
           next: ({ vector_length }) => {
             this.saving = false;
-            this.successMessage = `Usuário ${usuario.nome} criado com sucesso (vetor facial de ${vector_length} dimensões).`;
+            this.successMessage = `Usuário ${usuario.nome} criado com sucesso (${locaisSelecionados.length} permissões e vetor facial de ${vector_length} dims).`;
             this.snackBar.open(this.successMessage, 'Fechar', { duration: 6000 });
             this.speech.falar('Usuário cadastrado com sucesso.');
           },
@@ -286,15 +180,18 @@ export class CadastrarPage implements OnInit, OnDestroy {
     this.form.reset({ nome: '', uid_card: '', ativo: true });
     this.cameraOpened = false;
     this.scanning = false;
-    this.capturaPronta.set(false);
     this.submitted = false;
     this.saving = false;
     this.successMessage = '';
     this.errorMessage = '';
     this.fotoCapturada = null;
-    this.selectedLocalIds = [];
     this.fotoPreviewUrl = null;
-    this.webcamErro = '';
+    this.locaisPermissao.forEach((item) => {
+      item.selecionado = false;
+      item.horario_inicio = '08:00';
+      item.horario_fim = '18:00';
+      item.dias_semana = [1, 2, 3, 4, 5];
+    });
   }
 
   openFileInput(): void {
@@ -315,7 +212,7 @@ export class CadastrarPage implements OnInit, OnDestroy {
       this.fotoPreviewUrl = reader.result as string;
       this.cameraOpened = true;
       this.scanning = true;
-      this.capturaPronta.set(true);
+      this.webcam.capturaPronta.set(true);
       this.errorMessage = '';
     };
     this.fotoCapturada = file;
@@ -325,23 +222,17 @@ export class CadastrarPage implements OnInit, OnDestroy {
   onScanFinished(event: AnimationEvent): void {
     if (event.animationName !== 'scan-line') return;
     this.scanning = false;
-    this.capturaPronta.set(true);
+    this.webcam.capturaPronta.set(true);
   }
 
-  toggleLocal(localId: number): void {
-    this.selectedLocalIds = this.selectedLocalIds.includes(localId)
-      ? this.selectedLocalIds.filter((id) => id !== localId)
-      : [...this.selectedLocalIds, localId];
+  toggleLocal(item: LocalPermissaoItem): void {
+    item.selecionado = !item.selecionado;
   }
 
-  isLocalSelected(localId: number): boolean {
-    return this.selectedLocalIds.includes(localId);
-  }
-
-  toggleDia(dia: number): void {
-    this.diasSelecionados = this.diasSelecionados.includes(dia)
-      ? this.diasSelecionados.filter((item) => item !== dia)
-      : [...this.diasSelecionados, dia].sort();
+  toggleDiaLocal(item: LocalPermissaoItem, dia: number): void {
+    item.dias_semana = item.dias_semana.includes(dia)
+      ? item.dias_semana.filter((d) => d !== dia)
+      : [...item.dias_semana, dia].sort();
   }
 
   private normalizarUid(uid: string): string | null {

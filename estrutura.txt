@@ -1,0 +1,183 @@
+.
+├── backend
+│   ├── app
+│   │   ├── api
+│   │   │   ├── adm_page.py
+│   │   │   ├── autenticacao.py
+│   │   │   ├── health
+│   │   │   │   ├── database_health.py
+│   │   │   │   └── health.py
+│   │   │   ├── historico_acesso.py
+│   │   │   ├── __init__.py
+│   │   │   ├── locais.py
+│   │   │   ├── permissoes.py
+│   │   │   ├── usuarios.py
+│   │   │   ├── websocket_manager.py
+│   │   │   └── ws_router.py
+│   │   ├── auth
+│   │   │   ├── biometria.py
+│   │   │   ├── __init__.py
+│   │   │   ├── router.py
+│   │   │   ├── schemas.py
+│   │   │   └── service.py
+│   │   ├── database
+│   │   │   └── connection.py
+│   │   ├── __init__.py
+│   │   ├── main.py
+│   │   ├── schemas
+│   │   │   ├── biometria_schema.py
+│   │   │   ├── historico_acesso_schema.py
+│   │   │   ├── local_schema.py
+│   │   │   ├── permissao_schema.py
+│   │   │   ├── usuario.py
+│   │   │   └── usuario_schema.py
+│   │   └── services
+│   │       ├── face_service.py
+│   │       ├── historico_acesso_service.py
+│   │       ├── local_service.py
+│   │       ├── permissao_service.py
+│   │       ├── rfid_service.py
+│   │       └── usuario_service.py
+│   ├── dockerfile
+│   ├── init.sql
+│   ├── README.md
+│   ├── requirements.txt
+│   └── tests
+│       ├── test_auth.py
+│       ├── test_health.py
+│       └── test_usuarios.py
+├── docker-compose.yml
+├── docs
+│   ├── Arduino-acess-control.md
+│   └── BUILDS.md
+├── estrutura.txt
+├── firmware
+│   └── blink
+│       └── blink.ino
+├── frontend
+│   ├── angular.json
+│   ├── Dockerfile
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── public
+│   │   ├── ard-lock-icon.svg
+│   │   ├── ard-lock-logo.svg
+│   │   ├── favicon.ico
+│   │   ├── favicon.png
+│   │   ├── models
+│   │   │   ├── face_expression_model.bin
+│   │   │   ├── face_expression_model-weights_manifest.json
+│   │   │   ├── face_landmark_68_model.bin
+│   │   │   ├── face_landmark_68_model-weights_manifest.json
+│   │   │   ├── face_landmark_68_tiny_model.bin
+│   │   │   ├── face_landmark_68_tiny_model-weights_manifest.json
+│   │   │   ├── tiny_face_detector_model.bin
+│   │   │   └── tiny_face_detector_model-weights_manifest.json
+│   │   └── sounds
+│   │       ├── acesso-liberado.mp3
+│   │       ├── acesso-negado.mp3
+│   │       ├── centralize-rosto.mp3
+│   │       ├── mantenha-expressao-neutra.mp3
+│   │       ├── olhos-fechados.mp3
+│   │       ├── rosto-nao-detectado.mp3
+│   │       └── sorriso-detectado.mp3
+│   ├── README.md
+│   ├── src
+│   │   ├── app
+│   │   │   ├── app.config.ts
+│   │   │   ├── app.html
+│   │   │   ├── app.routes.ts
+│   │   │   ├── app.scss
+│   │   │   ├── app.ts
+│   │   │   ├── components
+│   │   │   │   └── navbar
+│   │   │   │       ├── navbar.html
+│   │   │   │       ├── navbar.scss
+│   │   │   │       └── navbar.ts
+│   │   │   ├── guards
+│   │   │   │   └── auth.guard.ts
+│   │   │   ├── models
+│   │   │   │   ├── tiny_face_detector_model.ts
+│   │   │   │   └── tuple-page.model.ts
+│   │   │   ├── pages
+│   │   │   │   ├── adm-page
+│   │   │   │   │   ├── adm-page.html
+│   │   │   │   │   ├── adm-page.scss
+│   │   │   │   │   └── adm-page.ts
+│   │   │   │   ├── cadastrar
+│   │   │   │   │   ├── cadastrar.html
+│   │   │   │   │   ├── cadastrar.scss
+│   │   │   │   │   └── cadastrar.ts
+│   │   │   │   ├── comparar
+│   │   │   │   │   ├── comparar.html
+│   │   │   │   │   ├── comparar.scss
+│   │   │   │   │   └── comparar.ts
+│   │   │   │   ├── entidades
+│   │   │   │   │   ├── entidades.html
+│   │   │   │   │   ├── entidades.scss
+│   │   │   │   │   └── entidades.ts
+│   │   │   │   ├── locais
+│   │   │   │   │   ├── locais.html
+│   │   │   │   │   ├── locais.scss
+│   │   │   │   │   └── locais.ts
+│   │   │   │   ├── login
+│   │   │   │   │   ├── login.html
+│   │   │   │   │   ├── login.scss
+│   │   │   │   │   └── login.ts
+│   │   │   │   └── tuple-page
+│   │   │   │       ├── tuple-page.html
+│   │   │   │       ├── tuple-page.scss
+│   │   │   │       └── tuple-page.ts
+│   │   │   ├── services
+│   │   │   │   ├── api.service.ts
+│   │   │   │   ├── speech.service.ts
+│   │   │   │   ├── webcam.service.ts
+│   │   │   │   └── websocket-logs.service.ts
+│   │   │   └── styles
+│   │   │       └── _webcam.scss
+│   │   ├── index.html
+│   │   ├── main.ts
+│   │   └── styles.scss
+│   ├── tsconfig.app.json
+│   ├── tsconfig.json
+│   └── tsconfig.spec.json
+├── Makefile
+├── package.json
+├── package-lock.json
+└── README.md
+
+33 directories, 114 files
+
+                         ARDLOCK
+                            │
+              ┌─────────────┴─────────────┐
+              │                           │
+              ▼                           ▼
+        FRONTEND ANGULAR            BACKEND FASTAPI
+              │                           │
+      ┌───────┼────────┐          ┌───────┼─────────┐
+      │       │        │          │       │         │
+    Pages  Guards   Services      API    Auth    Services
+      │       │        │          │       │         │
+      │       │        ├── API ───┤       │         │
+      │       │        ├── Face ──────────┘         │
+      │       │        └── WS ────────────────┐     │
+      │       │                               │     │
+      └───────┴───────────────────────────────┘     │
+                                                    ▼
+                                                 Schemas
+                                                    │
+                                                    ▼
+                                                 Database
+                                                    │
+                                                    ▼
+                                               PostgreSQL
+
+        ───────────────────────────────────────────────
+
+                    INTEGRAÇÃO FÍSICA
+                         (evolução)
+                            │
+                       ESP32 / RFID
+                            │
+                         Firmware

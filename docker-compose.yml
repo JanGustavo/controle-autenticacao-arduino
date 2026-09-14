@@ -6,21 +6,21 @@ services:
     container_name: controle-acesso-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB:       ${POSTGRES_DB:-ardlock}
+      POSTGRES_DB:       ${POSTGRES_DB:-controle_acesso}
       POSTGRES_USER:     ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-JGustavo2106}
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
-      - "5433:5432"
+      - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-ardlock}"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-controle_acesso}"]
+      interval: 5s
       timeout: 5s
       retries: 5
 
-  # ── Backend (FastAPI + Uvicorn) ───────────────────────────────────────────────
+  # ── Backend (FastAPI + Uvicorn + WebSockets) ──────────────────────────────────
   backend:
     build:
       context: ./backend
@@ -28,16 +28,16 @@ services:
     container_name: controle-acesso-backend
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-admin}@db:5432/${POSTGRES_DB:-ardlock}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-JGustavo2106}@db:5432/${POSTGRES_DB:-controle_acesso}
     volumes:
-      - ./backend/app:/app/app   # hot reload: sincroniza código ao vivo
+      - ./backend/app:/app/app   # Hot-reload ao vivo em ambiente de dev
     ports:
       - "8001:8000"
     depends_on:
       db:
         condition: service_healthy
 
-  # ── Frontend (Angular → Nginx) ────────────────────────────────────────────────
+  # ── Frontend (Angular Totem → Nginx com Reverse Proxy p/ WebSocket) ───────────
   frontend:
     build:
       context: ./frontend
@@ -46,6 +46,7 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
+      - "4200:80"
     depends_on:
       - backend
 

@@ -1,3 +1,5 @@
+@use '../../styles/webcam';
+
 :host {
   display: block;
 }
@@ -158,121 +160,6 @@ textarea:focus {
   font-weight: 400;
 }
 
-/* Webcam Viewport Padronizado */
-.webcam-viewport {
-  position: relative;
-  width: 100%;
-  max-width: 640px;
-  margin: 0 auto;
-  border-radius: 16px;
-  overflow: hidden;
-  background: #090d16;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-
-  video {
-    width: 100%;
-    height: auto;
-    display: block;
-  }
-}
-
-/* Badge Visual Dinâmico da IA */
-.status-badge {
-  position: absolute;
-  top: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
-  z-index: 4;
-  backdrop-filter: blur(6px);
-  color: white;
-  transition: all 0.3s ease;
-}
-
-.status-badge.info {
-  background: rgba(30, 41, 59, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.status-badge.warn {
-  background: rgba(220, 38, 38, 0.85);
-  border: 1px solid #f87171;
-}
-
-.status-badge.success {
-  background: rgba(22, 163, 74, 0.85);
-  border: 1px solid #4ade80;
-}
-
-/* Guia Oval de Centralização */
-.face-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  z-index: 2;
-}
-
-.face-oval {
-  width: 200px;
-  height: 260px;
-  border: 2px dashed #00d2ff;
-  border-radius: 50%;
-  box-shadow: 0 0 20px rgba(0, 210, 255, 0.4), inset 0 0 20px rgba(0, 210, 255, 0.2);
-  animation: pulse-oval 2s ease-in-out infinite;
-}
-
-.guide-text {
-  margin-top: 16px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #ffffff;
-  background: rgba(0, 0, 0, 0.65);
-  padding: 6px 16px;
-  border-radius: 20px;
-  backdrop-filter: blur(4px);
-  letter-spacing: 0.3px;
-}
-
-@keyframes pulse-oval {
-  0% {
-    transform: scale(1);
-    border-color: #00d2ff;
-    box-shadow: 0 0 15px rgba(0, 210, 255, 0.4), inset 0 0 15px rgba(0, 210, 255, 0.2);
-  }
-
-  50% {
-    transform: scale(1.03);
-    border-color: #38ef7d;
-    box-shadow: 0 0 25px rgba(56, 239, 125, 0.6), inset 0 0 20px rgba(56, 239, 125, 0.3);
-  }
-
-  100% {
-    transform: scale(1);
-    border-color: #00d2ff;
-    box-shadow: 0 0 15px rgba(0, 210, 255, 0.4), inset 0 0 15px rgba(0, 210, 255, 0.2);
-  }
-}
-
-.webcam-controls {
-  display: flex;
-  gap: 12px;
-  margin-top: 16px;
-  justify-content: center;
-}
-
 .camera-capture {
   position: relative;
   overflow: hidden;
@@ -333,60 +220,112 @@ textarea:focus {
   border-radius: 8px;
 }
 
-.local-list,
-.days-list {
+/* Estilos dos Cartões de Local por Permissão Individual */
+.locais-config-list {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.local-option,
-.days-list button {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid #cfd5dc;
-  border-radius: 6px;
-  background: #fff;
-  color: var(--ink);
-  cursor: pointer;
-  font: inherit;
-}
-
-.local-option {
-  min-width: 210px;
-  padding: 12px;
-  text-align: left;
-}
-
-.local-option span {
-  display: grid;
-  gap: 3px;
-}
-
-.local-option small {
-  color: var(--muted);
-  font-size: 0.76rem;
-}
-
-.local-option.selected,
-.days-list button.selected {
-  border-color: var(--accent);
-  background: #eff6ff;
-  color: var(--accent);
-}
-
-.schedule-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 180px));
+  flex-direction: column;
   gap: 16px;
-  margin: 22px 0 16px;
 }
 
-.days-list button {
-  min-width: 52px;
-  justify-content: center;
-  padding: 8px 10px;
+.local-card-config {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  overflow: hidden;
+  transition: all 0.2s ease;
+
+  &.selected {
+    border-color: var(--accent);
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.08);
+
+    .local-header {
+      background: #eff6ff;
+      border-bottom: 1px solid #dbeafe;
+    }
+  }
+
+  .local-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    cursor: pointer;
+    user-select: none;
+
+    .check-icon {
+      color: var(--muted);
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+    }
+
+    .local-title {
+      display: flex;
+      flex-direction: column;
+
+      strong {
+        font-size: 1rem;
+        color: var(--ink);
+      }
+
+      small {
+        font-size: 0.8rem;
+        color: var(--muted);
+      }
+    }
+  }
+
+  &.selected .check-icon {
+    color: var(--accent);
+  }
+
+  .local-body {
+    padding: 20px;
+    background: #fafafa;
+
+    .schedule-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 180px));
+      gap: 16px;
+      margin: 0 0 16px 0;
+    }
+
+    .days-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      .field-label {
+        font-size: 0.84rem;
+        font-weight: 700;
+        color: var(--ink);
+      }
+
+      .days-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+
+        button {
+          min-width: 48px;
+          padding: 8px 12px;
+          border: 1px solid #cbd5e1;
+          border-radius: 6px;
+          background: #ffffff;
+          color: var(--ink);
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.15s ease;
+
+          &.selected {
+            border-color: var(--accent);
+            background: var(--accent);
+            color: #ffffff;
+          }
+        }
+      }
+    }
+  }
 }
 
 .inline-message,
@@ -496,4 +435,245 @@ textarea:focus {
   margin-right: 5px;
   font-size: 18px;
   vertical-align: middle;
+}
+
+// ═══════════════════════════════════════════════
+// DARK MODE – Cadastrar Usuário
+// ═══════════════════════════════════════════════
+:host-context(body.dark-mode) {
+  .register-page {
+    --canvas: #0f172a;
+    --surface: #1e293b;
+    --ink: #f8fafc;
+    --muted: #94a3b8;
+    --line: rgba(255, 255, 255, 0.1);
+    --accent: #60a5fa;
+  }
+
+  // ── Page header ──
+  h1 {
+    color: #f8fafc !important;
+  }
+
+  .back-link {
+    color: #60a5fa !important;
+    &:hover {
+      color: #93bbfd !important;
+    }
+  }
+
+  .eyebrow,
+  .section-number {
+    color: #60a5fa !important;
+  }
+
+  // ── Form card ──
+  .register-form {
+    background: #1e293b !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  .form-section {
+    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  h2 {
+    color: #f8fafc !important;
+
+    em {
+      color: #94a3b8 !important;
+    }
+  }
+
+  .section-heading p {
+    color: #94a3b8 !important;
+  }
+
+  // ── Input fields ──
+  .field {
+    color: #f8fafc !important;
+
+    b {
+      color: #f87171 !important;
+    }
+
+    small {
+      color: #64748b !important;
+    }
+  }
+
+  input:not([type='checkbox']),
+  textarea {
+    background: #0f172a !important;
+    border-color: #475569 !important;
+    color: #f8fafc !important;
+
+    &::placeholder {
+      color: #64748b !important;
+    }
+
+    &:focus {
+      border-color: #60a5fa !important;
+      box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2) !important;
+    }
+  }
+
+  // ── Camera capture area ──
+  .camera-capture {
+    border-color: #475569 !important;
+    background: #0f172a !important;
+
+    &.ready {
+      border-color: #60a5fa !important;
+      background: rgba(96, 165, 250, 0.08) !important;
+    }
+  }
+
+  .camera-icon {
+    background: rgba(96, 165, 250, 0.15) !important;
+    color: #60a5fa !important;
+  }
+
+  .camera-copy {
+    strong {
+      color: #f8fafc !important;
+    }
+    small {
+      color: #94a3b8 !important;
+    }
+  }
+
+  .photo-preview {
+    border-color: #60a5fa !important;
+  }
+
+  // ── Webcam viewport ──
+  .webcam-viewport {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .webcam-controls {
+    button[mat-button] {
+      color: #f87171 !important;
+    }
+  }
+
+  // ── Local cards ──
+  .local-card-config {
+    border-color: #334155 !important;
+    background: #1e293b !important;
+
+    &.selected {
+      border-color: #60a5fa !important;
+      box-shadow: 0 4px 14px rgba(96, 165, 250, 0.15) !important;
+
+      .local-header {
+        background: rgba(96, 165, 250, 0.1) !important;
+        border-bottom-color: rgba(96, 165, 250, 0.2) !important;
+      }
+    }
+
+    .local-header {
+      .check-icon {
+        color: #64748b !important;
+      }
+
+      .local-title {
+        strong {
+          color: #f8fafc !important;
+        }
+        small {
+          color: #94a3b8 !important;
+        }
+      }
+    }
+
+    &.selected .check-icon {
+      color: #60a5fa !important;
+    }
+
+    .local-body {
+      background: #0f172a !important;
+
+      .field-label {
+        color: #cbd5e1 !important;
+      }
+
+      .days-list button {
+        border-color: #475569 !important;
+        background: #1e293b !important;
+        color: #cbd5e1 !important;
+
+        &.selected {
+          border-color: #60a5fa !important;
+          background: #60a5fa !important;
+          color: #ffffff !important;
+        }
+
+        &:hover:not(.selected) {
+          background: rgba(96, 165, 250, 0.1) !important;
+          color: #60a5fa !important;
+        }
+      }
+    }
+  }
+
+  // ── Switch toggle ──
+  .switch {
+    background: #475569 !important;
+  }
+
+  .switch-field input:checked + .switch {
+    background: #60a5fa !important;
+  }
+
+  .switch-field {
+    span:last-child {
+      strong {
+        color: #f8fafc !important;
+      }
+      small {
+        color: #94a3b8 !important;
+      }
+    }
+  }
+
+  // ── Messages ──
+  .inline-message {
+    color: #94a3b8 !important;
+  }
+
+  .warning-message {
+    color: #fbbf24 !important;
+
+    mat-icon {
+      color: #fbbf24 !important;
+    }
+  }
+
+  .success-message {
+    color: #4ade80 !important;
+
+    mat-icon {
+      color: #4ade80 !important;
+    }
+  }
+
+  .error-message {
+    color: #f87171 !important;
+
+    mat-icon {
+      color: #f87171 !important;
+    }
+  }
+
+  // ── Form actions footer ──
+  .form-actions {
+    border-top-color: rgba(255, 255, 255, 0.08) !important;
+
+    button[mat-button] {
+      color: #94a3b8 !important;
+    }
+  }
 }

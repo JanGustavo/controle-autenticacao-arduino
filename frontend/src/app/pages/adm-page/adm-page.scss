@@ -214,3 +214,8 @@
     }
   }
 }
+
+.webcam-viewport video {
+  transform: scaleX(-1);
+  /* Espelha a imagem da webcam para navegação natural */
+}

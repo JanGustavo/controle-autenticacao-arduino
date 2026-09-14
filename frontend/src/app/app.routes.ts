@@ -4,6 +4,7 @@ import { AdmPage } from './pages/adm-page/adm-page';
 import { TuplePage } from './pages/tuple-page/tuple-page';
 import { EntidadesPage } from './pages/entidades/entidades';
 import { CadastrarPage } from './pages/cadastrar/cadastrar';
+import { CompararPage } from './pages/comparar/comparar';
 import { LocaisPage } from './pages/locais/locais';
 import { authGuard } from './guards/auth.guard';
 import {
@@ -27,6 +28,11 @@ export const routes: Routes = [
   {
     path: 'cadastrar',
     component: CadastrarPage,
+    canActivate: [authGuard],
+  },
+  {
+    path: 'comparar',
+    component: CompararPage,
     canActivate: [authGuard],
   },
   {
