@@ -5,6 +5,7 @@ temp/
 .env
 .env.*
 !.env.example
+firmware/blink/secrets.h
 
 # ── Python ────────────────────────────────────────────────────────────────────
 venv/

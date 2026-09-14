@@ -38,16 +38,13 @@ class PermissaoService:
 		with get_connection() as connection:
 			with connection.cursor() as cursor:
 				cursor.execute(
-					f"""
-					SELECT p.permissao_id, p.usuario_id, p.local_id,
-						   p.horario_inicio, p.horario_fim, p.dias_semana
-					FROM permissao p
-					LEFT JOIN usuario u ON p.usuario_id = u.user_id
-					LEFT JOIN local l ON p.local_id = l.local_id
-					{where_clause}
-					ORDER BY p.permissao_id
-					""",
-					params if params else None,
+					"""
+					SELECT permissao_id, usuario_id, local_id,
+						  c
+						  horario_inicio, horario_fim, dias_semana
+					FROM permissao
+					ORDER BY permissao_id
+					"""
 				)
 				return [self._row_to_dict(row) for row in cursor.fetchall()]
 

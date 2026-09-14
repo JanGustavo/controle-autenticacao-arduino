@@ -51,14 +51,16 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/styles.scss"]
+            "styles": [
+              "src/styles.scss"
+            ]
           },
           "configurations": {
             "production": {
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "3mb",
+                  "maximumWarning": "3mB",
                   "maximumError": "5mb"
                 },
                 {

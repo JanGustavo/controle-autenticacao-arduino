@@ -1,17 +1,34 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 
-const char* ssid = "NOME_DA_REDE"; // talvez usar .env, n sei dizer
-const char* password = "SENHA_DA_REDE";
+// isso aqui e tipo o .env do python
+#include <secrets.h>
 
-const char* api = "http://192.168.1.X:5000/access"; // mudar x pro ip real do pc
+#define LED_VERDE 4
+#define LED_VERMELHO 16
+#define LED_AMARELO 2
+
+enum TipoLed {
+    L_AMARELO, 
+    L_VERDE, 
+    L_VERMELHO
+};
+
+// essas vars estao dentro do .h acima
+const char* ssid = WIFI_SSID; // talvez usar .env, n sei dizer
+const char* password = WIFI_PASSWORD;
+
+const char* api = API_URL;
 
 void setup() {
-    delay(4000);
-    Serial.begin(115200);
+    //delay(5000); // pra dar tempo abrir o monitor do esp
 
-    //pinMode(4, OUTPUT);
-    //digitalWrite(4, LOW);
+    // led de debug
+    pinMode(LED_VERDE, OUTPUT);
+    pinMode(LED_AMARELO, OUTPUT);
+    pinMode(LED_VERMELHO, OUTPUT);
+    
+    Serial.begin(115200);
 
     // Conecta ao Wi-Fi
     WiFi.begin(ssid, password);
@@ -33,59 +50,70 @@ void setup() {
     Serial.println();
     Serial.println("Teste da API");
 
-    HTTPClient http;
+    while (1) {
+        HTTPClient http;
 
-    Serial.println("Criando requisicao...");
+        Serial.println("Criando requisicao...");
 
-    if (!http.begin(api)) {
-        Serial.println("ERRO: nao foi possivel iniciar HTTPClient");
-        return;
-    }
-
-    http.addHeader("Content-Type", "application/json");
-
-    String body = "{\"rfid\":\"123456789\"}";
-
-    Serial.print("Enviando: ");
-    Serial.println(body);
-
-    int httpCode = http.POST(body);
-
-    Serial.print("HTTP status: ");
-    Serial.println(httpCode);
-
-    if (httpCode > 0) {
-
-        String response = http.getString();
-
-        Serial.print("Resposta da API: ");
-        Serial.println(response);
-
-        if (response.indexOf("\"veredito\":1") >= 0) {
-
-            Serial.println("ACESSO LIBERADO!");
-
-            digitalWrite(4, HIGH);
-            delay(500);
-            digitalWrite(4, LOW);
-
-        } else {
-            Serial.println("ACESSO NEGADO!");
-
+        if (!http.begin(api)) {
+            Serial.println("ERRO: nao foi possivel iniciar HTTPClient");
+            return;
         }
+        
+        downAll();
+        justOn(L_AMARELO);
+        int httpCode = http.GET();
+        downAll();
 
-    } else {
-
-        Serial.print("Erro HTTP: ");
-        Serial.println(http.errorToString(httpCode));
-
+        Serial.print("HTTP status: ");
+        Serial.println(httpCode);
+        
+        if (httpCode > 0) {
+            String response = http.getString();
+            
+            downAll();
+            justOn(L_VERDE);
+            Serial.print("Resposta da API: ");
+            
+            Serial.println(response);
+            
+        } else {
+            downAll();
+            justOn(L_VERMELHO);
+            Serial.print("Erro HTTP: ");
+            
+            Serial.println(http.errorToString(httpCode));
+        }
+        
+        http.end();
+        delay(2000);
     }
-
-    http.end();
-
-    Serial.println();
-    Serial.println("Teste finalizado");
 }
 
 void loop() {
+}
+
+void justOn(TipoLed led) {
+    if (led == L_AMARELO) {
+        digitalWrite(LED_VERDE, LOW);
+        digitalWrite(LED_VERMELHO, LOW);
+
+        digitalWrite(LED_AMARELO, HIGH);
+    } else if (led == L_VERDE) {
+        digitalWrite(LED_AMARELO, LOW);
+        digitalWrite(LED_VERMELHO, LOW);
+        
+        digitalWrite(LED_VERDE, HIGH);
+    } else {
+        digitalWrite(LED_VERDE, LOW);
+        digitalWrite(LED_AMARELO, LOW);
+        
+        digitalWrite(LED_VERMELHO, HIGH);
+    }
+}
+
+void downAll() {
+    digitalWrite(LED_VERDE, LOW);
+    digitalWrite(LED_VERMELHO, LOW);
+    digitalWrite(LED_AMARELO, LOW);
 }
