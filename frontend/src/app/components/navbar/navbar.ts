@@ -25,6 +25,8 @@ function isTokenValido(token: string | null): boolean {
   }
 }
 
+import { AuthService } from '../../services/auth.service';
+
 @Component({
   selector: 'app-navbar',
   standalone: true,
@@ -34,6 +36,7 @@ function isTokenValido(token: string | null): boolean {
 })
 export class NavbarComponent implements OnInit {
   private router = inject(Router);
+  private authService = inject(AuthService);
 
   darkMode = signal<boolean>(false);
 
@@ -46,24 +49,16 @@ export class NavbarComponent implements OnInit {
   }
 
   isLoggedIn(): boolean {
-    const token = localStorage.getItem('adm_token');
-    return isTokenValido(token);
+    return this.authService.isLoggedIn();
   }
 
   get userDisplay(): { name: string; email: string } {
-    const token = localStorage.getItem('adm_token');
-    if (token && isTokenValido(token)) {
-      try {
-        const payloadJson = atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'));
-        const payload = JSON.parse(payloadJson);
-        const email = payload.email || 'admin@ardlock.local';
-        const name = payload.nome || email.split('@')[0];
-        return { name, email };
-      } catch {
-        // fallback
-      }
-    }
-    return { name: 'Administrador', email: 'admin@ardlock.local' };
+    return this.authService.userSession() || { name: 'Administrador', email: 'admin@ardlock.local' };
+  }
+
+  get avatarInitial(): string {
+    const name = this.userDisplay.name;
+    return name ? name.trim().charAt(0).toUpperCase() : 'A';
   }
 
   toggleDarkMode(): void {
@@ -79,8 +74,9 @@ export class NavbarComponent implements OnInit {
   }
 
   logoff(): void {
-    localStorage.removeItem('adm_token');
+    this.authService.clearToken();
     this.router.navigate(['/login']);
   }
 }
+
 

@@ -69,7 +69,13 @@ db-local: ## Prepara o banco de dados PostgreSQL local com schema e dados inicia
 	@if ! sudo -u postgres psql -d controle_acesso -tAc "SELECT 1 FROM information_schema.tables WHERE table_name = 'administrador'" | grep -q 1; then \
 		sudo -u postgres psql -v ON_ERROR_STOP=1 -d controle_acesso -f backend/init.sql; \
 	fi
+	@for mig in backend/migrations/*.sql; do \
+		if [ -f "$$mig" ]; then \
+			sudo -u postgres psql -v ON_ERROR_STOP=1 -d controle_acesso -f "$$mig" >/dev/null 2>&1 || true; \
+		fi \
+	done
 	@echo "✅ Banco PostgreSQL local pronto."
+
 
 db-reset: ## Restaura o banco de dados local para os dados padrão iniciais
 	@echo "⚠️  Apagando e recriando banco controle_acesso..."
@@ -101,6 +107,7 @@ dev-backend: ## Inicia o servidor FastAPI local com Uvicorn (hot reload)
 		echo "📦 Criando venv e instalando dependências..."; \
 		python3 -m venv venv && venv/bin/pip install -r requirements.txt; \
 	fi; \
+	set -a && [ -f ../.env ] && . ../.env; set +a; \
 	DATABASE_URL="$${DATABASE_URL:-postgresql://postgres:JGustavo2106@localhost:5432/controle_acesso}" \
 	venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port $(BACKEND_PORT)
 

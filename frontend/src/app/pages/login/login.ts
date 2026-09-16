@@ -9,6 +9,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ApiService } from '../../services/api.service';
+import { AuthService } from '../../services/auth.service';
+
 
 @Component({
   selector: 'app-login',
@@ -28,7 +30,9 @@ import { ApiService } from '../../services/api.service';
 })
 export class Login {
   private api = inject(ApiService);
+  private authService = inject(AuthService);
   private router = inject(Router);
+
 
   usuario = '';
   senha = '';
@@ -54,9 +58,10 @@ export class Login {
       next: (res) => {
         this.carregando.set(false);
         if (res.sucesso && res.token) {
-          localStorage.setItem('adm_token', res.token);
+          this.authService.setToken(res.token);
           this.router.navigate(['/adm-page']);
         } else {
+
           this.erro.set(res.mensagem || 'Credenciais inválidas.');
         }
       },

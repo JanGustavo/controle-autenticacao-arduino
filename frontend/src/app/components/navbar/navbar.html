@@ -25,9 +25,10 @@
       @if (isLoggedIn()) {
         <div class="user-profile">
           <div class="user-avatar">
-            <mat-icon>account_circle</mat-icon>
+            <span class="avatar-initial">{{ avatarInitial }}</span>
           </div>
           <div class="user-info">
+
             <span class="user-name">{{ userDisplay.name }}</span>
             <span class="user-meta">
               <span class="status-dot"></span>

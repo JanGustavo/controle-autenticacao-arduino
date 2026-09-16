@@ -114,14 +114,20 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #2563eb;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #2563eb;
+      color: #ffffff;
 
-      mat-icon {
-        font-size: 32px;
-        width: 32px;
-        height: 32px;
+      .avatar-initial {
+        font-size: 0.95rem;
+        font-weight: 800;
+        line-height: 1;
+        text-transform: uppercase;
       }
     }
+
 
     .user-info {
       display: flex;
