@@ -35,16 +35,22 @@ class PermissaoService:
 
 		where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
 
+		if conditions:
+			join_clause = "p JOIN usuario u ON p.usuario_id = u.user_id JOIN local l ON p.local_id = l.local_id"
+		else:
+			join_clause = "p"
+
 		with get_connection() as connection:
 			with connection.cursor() as cursor:
 				cursor.execute(
-					"""
-					SELECT permissao_id, usuario_id, local_id,
-						  c
-						  horario_inicio, horario_fim, dias_semana
-					FROM permissao
-					ORDER BY permissao_id
-					"""
+					f"""
+					SELECT p.permissao_id, p.usuario_id, p.local_id,
+						   p.horario_inicio, p.horario_fim, p.dias_semana
+					FROM permissao {join_clause}
+					{where_clause}
+					ORDER BY p.permissao_id
+					""",
+					params if params else None,
 				)
 				return [self._row_to_dict(row) for row in cursor.fetchall()]
 

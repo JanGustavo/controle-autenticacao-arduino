@@ -54,13 +54,14 @@ export class AdministradoresPage implements OnInit {
     return this.administradores.filter((admin) => {
       const matchTexto =
         !this.filtroTexto ||
-        admin.nome.toLowerCase().includes(this.filtroTexto.trim().toLowerCase()) ||
-        admin.email.toLowerCase().includes(this.filtroTexto.trim().toLowerCase());
+        (admin.nome && admin.nome.toLowerCase().includes(this.filtroTexto.trim().toLowerCase())) ||
+        (admin.email && admin.email.toLowerCase().includes(this.filtroTexto.trim().toLowerCase()));
 
+      const isAtivo = Boolean(admin.ativo);
       const matchAtivo =
         this.filtroAtivo === 'todos' ||
-        (this.filtroAtivo === 'ativo' && admin.ativo) ||
-        (this.filtroAtivo === 'inativo' && !admin.ativo);
+        (this.filtroAtivo === 'ativo' && isAtivo) ||
+        (this.filtroAtivo === 'inativo' && !isAtivo);
 
       return matchTexto && matchAtivo;
     });
@@ -72,10 +73,10 @@ export class AdministradoresPage implements OnInit {
 
   carregar(): void {
     this.carregando = true;
-    const ativoParam = this.filtroAtivo === 'todos' ? undefined : this.filtroAtivo === 'ativo';
-    this.api.getAdministradores({ q: this.filtroTexto.trim() || undefined, ativo: ativoParam }).subscribe({
+    this.api.getAdministradores().subscribe({
       next: (admins) => {
         this.administradores = admins;
+        this.erro = '';
         this.carregando = false;
       },
       error: () => {

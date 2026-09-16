@@ -100,12 +100,11 @@
             type="text"
             [(ngModel)]="filtroTexto"
             placeholder="Buscar por nome ou e-mail..."
-            (input)="carregar()"
           />
         </div>
 
         <div class="filter-box">
-          <select [(ngModel)]="filtroAtivo" (change)="carregar()">
+          <select [(ngModel)]="filtroAtivo">
             <option value="todos">Todos os status</option>
             <option value="ativo">Somente Ativos</option>
             <option value="inativo">Somente Inativos</option>
@@ -113,15 +112,25 @@
         </div>
       </div>
 
-      @if (carregando) {
+      @if (erro) {
+        <div class="error-banner" style="margin: 24px;">
+          <mat-icon>error_outline</mat-icon>
+          <span>{{ erro }}</span>
+        </div>
+      } @else if (carregando) {
         <div class="loading-state">
           <mat-icon class="spinning">sync</mat-icon>
           <span>Carregando administradores...</span>
         </div>
-      } @else if (displayedAdmins.length === 0) {
+      } @else if (administradores.length === 0) {
         <div class="empty-state">
           <mat-icon>admin_panel_settings</mat-icon>
-          <p>Nenhum administrador encontrado com os filtros aplicados.</p>
+          <p>Nenhum administrador cadastrado no sistema.</p>
+        </div>
+      } @else if (displayedAdmins.length === 0) {
+        <div class="empty-state">
+          <mat-icon>search_off</mat-icon>
+          <p>Nenhum administrador corresponde ao filtro aplicado.</p>
         </div>
       } @else {
         <div class="table-container">

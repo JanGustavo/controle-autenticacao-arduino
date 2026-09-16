@@ -32,12 +32,7 @@ export const DASHBOARD_MOCK: TuplePageConfig = {
     { key: 'percentual_similaridade', label: '% Similaridade' },
     { key: 'motivo_recusa', label: 'Motivo Recusa' },
   ],
-  rows: [
-    { id: 1, usuario_id: 1, local_id: 'Entrada Principal', uid_card_lido: 'A1:B2:C3:D4', data_hora: '2026-09-02 10:14:02', autorizado: 'Sim', percentual_similaridade: 98.5, motivo_recusa: '-' },
-    { id: 2, usuario_id: 2, local_id: 'Laboratório de Redes', uid_card_lido: 'E5:F6:G7:H8', data_hora: '2026-09-02 10:20:45', autorizado: 'Não', percentual_similaridade: 42.0, motivo_recusa: 'Facial incompatível' },
-    { id: 3, usuario_id: 3, local_id: 'Entrada Principal', uid_card_lido: '12:34:56:78', data_hora: '2026-09-02 11:05:12', autorizado: 'Sim', percentual_similaridade: 95.1, motivo_recusa: '-' },
-    { id: 4, usuario_id: null, local_id: 'Sala Administrativa', uid_card_lido: '99:99:99:99', data_hora: '2026-09-02 11:30:00', autorizado: 'Não', percentual_similaridade: null, motivo_recusa: 'Cartão não cadastrado' },
-  ],
+  rows: [],
 };
 
 export const CADASTRAR_MOCK: TuplePageConfig = {
@@ -66,19 +61,14 @@ export const USUARIOS_MOCK: TuplePageConfig = {
   accentColor: 'orange',
   resource: 'usuarios',
   columns: [
-    { key: 'id', label: 'ID' },
+    { key: 'user_id', label: 'ID' },
     { key: 'nome', label: 'Nome' },
     { key: 'uid_card', label: 'UID Card' },
     { key: 'vetor_facial', label: 'Vetor Facial' },
     { key: 'ativo', label: 'Ativo' },
     { key: 'criado_em', label: 'Criado Em' },
   ],
-  rows: [
-    { user_id: 1, nome: 'João Silva', uid_card: 'A1:B2:C3:D4', vetor_facial: '128 dimensões', ativo: 'Sim', criado_em: '2026-09-01 08:00:00' },
-    { user_id: 2, nome: 'Maria Souza', uid_card: 'E5:F6:G7:H8', vetor_facial: '128 dimensões', ativo: 'Sim', criado_em: '2026-09-01 09:15:00' },
-    { user_id: 3, nome: 'Carlos Lima', uid_card: '12:34:56:78', vetor_facial: 'Não Cadastrado', ativo: 'Sim', criado_em: '2026-09-01 10:30:00' },
-    { user_id: 4, nome: 'Ana Oliveira', uid_card: 'AA:BB:CC:DD', vetor_facial: '128 dimensões', ativo: 'Não', criado_em: '2026-09-02 14:20:00' },
-  ],
+  rows: [],
 };
 
 export const PERMISSOES_MOCK: TuplePageConfig = {
@@ -95,9 +85,5 @@ export const PERMISSOES_MOCK: TuplePageConfig = {
     { key: 'horario_fim', label: 'Horário Fim' },
     { key: 'dias_semana', label: 'Dias Permitidos' },
   ],
-  rows: [
-    { permissao_id: 1, usuario_id: 'João Silva', local_id: 'Entrada Principal', horario_inicio: '08:00:00', horario_fim: '18:00:00', dias_semana: 'Segunda, Terça, Quarta, Quinta, Sexta' },
-    { permissao_id: 2, usuario_id: 'Maria Souza', local_id: 'Laboratório de Redes', horario_inicio: '00:00:00', horario_fim: '23:59:59', dias_semana: 'Domingo, Segunda, Terça, Quarta, Quinta, Sexta, Sábado' },
-    { permissao_id: 3, usuario_id: 'Carlos Lima', local_id: 'Sala Administrativa', horario_inicio: '07:00:00', horario_fim: '13:00:00', dias_semana: 'Segunda, Terça, Quarta, Quinta, Sexta' },
-  ],
+  rows: [],
 };

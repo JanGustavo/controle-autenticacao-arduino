@@ -55,14 +55,13 @@
         <input
           type="text"
           [(ngModel)]="filtroTexto"
-          (ngModelChange)="carregar()"
           placeholder="Pesquisar por nome ou dispositivo..."
         />
         @if (filtroTexto) {
           <button
             type="button"
             mat-icon-button
-            (click)="filtroTexto = ''; carregar()"
+            (click)="filtroTexto = ''"
             title="Limpar pesquisa"
           >
             <mat-icon>close</mat-icon>
@@ -75,7 +74,6 @@
         <select
           id="filtro-ativo-select"
           [(ngModel)]="filtroAtivo"
-          (ngModelChange)="carregar()"
         >
           <option value="todos">Todos</option>
           <option value="ativo">Ativos</option>
@@ -84,7 +82,9 @@
       </div>
     </div>
 
-    @if (carregando) {
+    @if (erro) {
+      <p class="error" style="margin: 16px;">{{ erro }}</p>
+    } @else if (carregando) {
       <p class="loading">Carregando locais...</p>
     } @else {
       <table>
@@ -121,7 +121,9 @@
             </tr>
           } @empty {
             <tr>
-              <td colspan="5" class="empty">Nenhum local encontrado.</td>
+              <td colspan="5" class="empty">
+                {{ locais.length === 0 ? 'Nenhum local cadastrado no sistema.' : 'Nenhum local corresponde ao filtro aplicado.' }}
+              </td>
             </tr>
           }
         </tbody>
