@@ -1,9 +1,11 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from app.auth.dependencies import obter_administrador_atual
 from app.schemas.historico_acesso_schema import HistoricoAcessoCreate, HistoricoAcessoResponse
 from app.services.historico_acesso_service import historico_acesso_service
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(obter_administrador_atual)])
+
 
 
 @router.post("/historico-acesso", response_model=HistoricoAcessoResponse, status_code=201)

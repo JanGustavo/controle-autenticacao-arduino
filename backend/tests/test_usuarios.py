@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
+from app.auth.security import criar_token_jwt
 from app.main import app
 
 
@@ -18,9 +19,14 @@ USUARIO = {
 }
 
 
+def auth_headers():
+	token = criar_token_jwt(sub="1", email="admin@ardlock.local")
+	return {"Authorization": f"Bearer {token}"}
+
+
 def test_listar_usuarios():
 	with patch("app.api.usuarios.usuario_service.listar_usuarios", return_value=[USUARIO]) as listar:
-		response = client.get("/api/v1/usuarios")
+		response = client.get("/api/v1/usuarios", headers=auth_headers())
 
 	assert response.status_code == 200
 	assert response.json() == [USUARIO]
@@ -29,7 +35,7 @@ def test_listar_usuarios():
 
 def test_listar_usuarios_com_filtros():
 	with patch("app.api.usuarios.usuario_service.listar_usuarios", return_value=[USUARIO]) as listar:
-		response = client.get("/api/v1/usuarios?q=maria&ativo=true")
+		response = client.get("/api/v1/usuarios?q=maria&ativo=true", headers=auth_headers())
 
 	assert response.status_code == 200
 	assert response.json() == [USUARIO]
@@ -38,7 +44,7 @@ def test_listar_usuarios_com_filtros():
 
 def test_obter_usuario():
 	with patch("app.api.usuarios.usuario_service.obter_usuario", return_value=USUARIO) as obter:
-		response = client.get("/api/v1/usuarios/1")
+		response = client.get("/api/v1/usuarios/1", headers=auth_headers())
 
 	assert response.status_code == 200
 	assert response.json() == USUARIO
@@ -55,7 +61,7 @@ def test_criar_usuario():
 	}
 
 	with patch("app.api.usuarios.usuario_service.criar_usuario", return_value=USUARIO) as criar:
-		response = client.post("/api/v1/usuarios", json=payload)
+		response = client.post("/api/v1/usuarios", json=payload, headers=auth_headers())
 
 	assert response.status_code == 200
 	assert response.json() == USUARIO
@@ -71,7 +77,7 @@ def test_atualizar_usuario():
 		"app.api.usuarios.usuario_service.atualizar_usuario",
 		return_value=usuario_atualizado,
 	) as atualizar:
-		response = client.patch("/api/v1/usuarios/1", json=payload)
+		response = client.patch("/api/v1/usuarios/1", json=payload, headers=auth_headers())
 
 	assert response.status_code == 200
 	assert response.json() == usuario_atualizado
@@ -85,8 +91,9 @@ def test_deletar_usuario():
 		"app.api.usuarios.usuario_service.deletar_usuario",
 		return_value={"mensagem": "Usuário excluído com sucesso."},
 	) as deletar:
-		response = client.delete("/api/v1/usuarios/1")
+		response = client.delete("/api/v1/usuarios/1", headers=auth_headers())
 
 	assert response.status_code == 200
 	assert response.json() == {"mensagem": "Usuário excluído com sucesso."}
 	deletar.assert_called_once_with(1)
+

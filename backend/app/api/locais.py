@@ -1,9 +1,11 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from app.auth.dependencies import obter_administrador_atual
 from app.schemas.local_schema import LocalCreate, LocalResponse, LocalUpdate
 from app.services.local_service import local_service
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(obter_administrador_atual)])
+
 
 
 @router.get("/locais", response_model=list[LocalResponse])
