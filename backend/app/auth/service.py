@@ -19,7 +19,7 @@ def autenticar(credenciais: LoginRequest) -> LoginResponse:
             with connection.cursor() as cursor:
                 cursor.execute(
                     """
-                    SELECT admin_id, nome, email, senha_hash, ativo
+                    SELECT admin_id, nome, email, senha_hash, ativo, foto_url
                     FROM administrador
                     WHERE LOWER(email) = LOWER(%s)
                        OR (LOWER(email) = LOWER(%s || '@ardlock.local'))
@@ -41,7 +41,7 @@ def autenticar(credenciais: LoginRequest) -> LoginResponse:
             detail="Usuário ou senha incorretos.",
         )
 
-    admin_id, nome, email, senha_hash, ativo = administrador
+    admin_id, nome, email, senha_hash, ativo, foto_url = administrador
     senha_valida = verificar_senha(credenciais.senha, senha_hash)
 
     # Resposta genérica para não revelar se o usuário existe, está desativado ou errou a senha
@@ -51,7 +51,7 @@ def autenticar(credenciais: LoginRequest) -> LoginResponse:
             detail="Usuário ou senha incorretos.",
         )
 
-    token = criar_token_jwt(sub=str(admin_id), email=email, extra_claims={"nome": nome})
+    token = criar_token_jwt(sub=str(admin_id), email=email, extra_claims={"nome": nome, "foto_url": foto_url})
     expires_in = obter_expiracao_segundos()
 
 

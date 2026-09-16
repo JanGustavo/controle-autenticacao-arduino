@@ -7,6 +7,7 @@ class AdministradorCreate(BaseModel):
     email: str = Field(min_length=5, max_length=255)
     senha: str = Field(min_length=6, max_length=128)
     ativo: bool = True
+    foto_url: str | None = None
 
 
 class AdministradorUpdate(BaseModel):
@@ -14,6 +15,7 @@ class AdministradorUpdate(BaseModel):
     email: str | None = Field(default=None, min_length=5, max_length=255)
     senha: str | None = Field(default=None, min_length=6, max_length=128)
     ativo: bool | None = None
+    foto_url: str | None = None
 
 
 class AdministradorResponse(BaseModel):
@@ -22,5 +24,6 @@ class AdministradorResponse(BaseModel):
     email: str
     ativo: bool
     principal: bool
+    foto_url: str | None = None
     criado_em: datetime
 

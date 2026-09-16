@@ -151,7 +151,7 @@ def test_fluxo_integracao_autenticacao():
         fake_cursor = MagicMock()
         fake_cursor.fetchone.return_value = (
             1, "Admin", "admin@ardlock.local",
-            "$2b$12$aINBb4hKDDfrK3FBd1CpIul9Q3LrB9aT5vceZUbsVBQF8I/aKKlA6", True
+            "$2b$12$aINBb4hKDDfrK3FBd1CpIul9Q3LrB9aT5vceZUbsVBQF8I/aKKlA6", True, None
         )
         fake_connection = MagicMock()
         fake_connection.cursor.return_value.__enter__.return_value = fake_cursor

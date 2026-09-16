@@ -10,8 +10,37 @@ from app.schemas.administrador_schema import (
 )
 
 
+import re
+import urllib.request
+
+
+def resolver_foto_url(url: str | None) -> str | None:
+    if not url or not isinstance(url, str):
+        return None
+    url = url.strip()
+    if not url:
+        return None
+
+    # Se for link de visualização do ImgBB (ex: https://ibb.co/svLgyHMK), resolve a imagem direta (i.ibb.co)
+    if "ibb.co/" in url and "i.ibb.co/" not in url:
+        try:
+            req = urllib.request.Request(
+                url,
+                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+            )
+            with urllib.request.urlopen(req, timeout=4) as resp:
+                html = resp.read().decode("utf-8", errors="ignore")
+                match = re.search(r'https://i\.ibb\.co/[^\s"\'<>]+', html)
+                if match:
+                    return match.group(0)
+        except Exception:
+            pass
+
+    return url
+
+
 class AdministradorService:
-    _campos = ("admin_id", "nome", "email", "ativo", "principal", "criado_em")
+    _campos = ("admin_id", "nome", "email", "ativo", "principal", "foto_url", "criado_em")
 
     @classmethod
     def _row_to_dict(cls, row) -> dict[str, Any]:
@@ -34,7 +63,7 @@ class AdministradorService:
             with connection.cursor() as cursor:
                 cursor.execute(
                     f"""
-                    SELECT admin_id, nome, email, ativo, principal, criado_em
+                    SELECT admin_id, nome, email, ativo, principal, foto_url, criado_em
                     FROM administrador
                     {where_clause}
                     ORDER BY admin_id
@@ -48,7 +77,7 @@ class AdministradorService:
             with connection.cursor() as cursor:
                 cursor.execute(
                     """
-                    SELECT admin_id, nome, email, ativo, principal, criado_em
+                    SELECT admin_id, nome, email, ativo, principal, foto_url, criado_em
                     FROM administrador
                     WHERE admin_id = %s
                     """,
@@ -66,17 +95,18 @@ class AdministradorService:
     def criar_administrador(self, admin_data: AdministradorCreate) -> dict[str, Any]:
         email_limpo = admin_data.email.strip().lower()
         senha_hash = gerar_hash_senha(admin_data.senha)
+        foto_url = resolver_foto_url(admin_data.foto_url)
 
         try:
             with get_connection() as connection:
                 with connection.cursor() as cursor:
                     cursor.execute(
                         """
-                        INSERT INTO administrador (nome, email, senha_hash, ativo, principal)
-                        VALUES (%s, %s, %s, %s, FALSE)
-                        RETURNING admin_id, nome, email, ativo, principal, criado_em
+                        INSERT INTO administrador (nome, email, senha_hash, ativo, principal, foto_url)
+                        VALUES (%s, %s, %s, %s, FALSE, %s)
+                        RETURNING admin_id, nome, email, ativo, principal, foto_url, criado_em
                         """,
-                        (admin_data.nome.strip(), email_limpo, senha_hash, admin_data.ativo),
+                        (admin_data.nome.strip(), email_limpo, senha_hash, admin_data.ativo, foto_url),
                     )
                     criado = cursor.fetchone()
         except IntegrityError as error:
@@ -105,8 +135,9 @@ class AdministradorService:
             return atual
 
         # Se houver senha, converte para hash bcrypt e remove a senha em texto puro do dict
-        if "senha" in campos and campos["senha"]:
-            campos["senha_hash"] = gerar_hash_senha(campos["senha"])
+        if "senha" in campos:
+            if campos["senha"]:
+                campos["senha_hash"] = gerar_hash_senha(campos["senha"])
             del campos["senha"]
 
         if "nome" in campos and campos["nome"]:
@@ -114,6 +145,9 @@ class AdministradorService:
 
         if "email" in campos and campos["email"]:
             campos["email"] = campos["email"].strip().lower()
+
+        if "foto_url" in campos:
+            campos["foto_url"] = resolver_foto_url(campos["foto_url"])
 
         valores = [campos[nome] for nome in campos]
         atribuicoes = ", ".join(f"{nome} = %s" for nome in campos)
@@ -127,7 +161,7 @@ class AdministradorService:
                         UPDATE administrador
                         SET {atribuicoes}
                         WHERE admin_id = %s
-                        RETURNING admin_id, nome, email, ativo, principal, criado_em
+                        RETURNING admin_id, nome, email, ativo, principal, foto_url, criado_em
                         """,
                         valores,
                     )

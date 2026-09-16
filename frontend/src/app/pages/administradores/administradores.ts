@@ -13,6 +13,8 @@ import {
   AdministradorUpdateRequest,
 } from '../../services/api.service';
 
+import { AuthService } from '../../services/auth.service';
+
 @Component({
   selector: 'app-administradores-page',
   standalone: true,
@@ -29,6 +31,7 @@ import {
 })
 export class AdministradoresPage implements OnInit {
   private api = inject(ApiService);
+  private authService = inject(AuthService);
   private snackBar = inject(MatSnackBar);
 
   administradores: AdministradorResponse[] = [];
@@ -44,7 +47,28 @@ export class AdministradoresPage implements OnInit {
     email: '',
     senha: '',
     ativo: true,
+    foto_url: '',
   };
+
+  // Imagens com erro de carregamento
+  imgErros = new Set<number>();
+  formImgFailed = false;
+
+  onAdminImgError(adminId: number): void {
+    this.imgErros.add(adminId);
+  }
+
+  hasAdminImgError(adminId: number): boolean {
+    return this.imgErros.has(adminId);
+  }
+
+  onFormImgError(): void {
+    this.formImgFailed = true;
+  }
+
+  onFotoUrlChange(): void {
+    this.formImgFailed = false;
+  }
 
   // Filtros de busca
   filtroTexto = '';
@@ -71,15 +95,55 @@ export class AdministradoresPage implements OnInit {
     this.carregar();
   }
 
+  private sincronizarSessaoSeUsuarioAtual(admin: AdministradorResponse): void {
+    const sessaoAtual = this.authService.userSession();
+    console.log('[DEBUG - AdminPage] sincronizarSessaoSeUsuarioAtual com admin:', admin, '| Sessão atual:', sessaoAtual);
+
+    if (!sessaoAtual) {
+      if (admin.principal) {
+        console.log('[DEBUG - AdminPage] Nenhuma sessão ativa. Sincronizando com admin principal:', admin);
+        this.authService.updateUserSession({
+          admin_id: admin.admin_id,
+          name: admin.nome,
+          email: admin.email,
+          foto_url: admin.foto_url,
+        });
+      }
+      return;
+    }
+
+    const eMesmoId = sessaoAtual.admin_id !== undefined && Number(sessaoAtual.admin_id) === Number(admin.admin_id);
+    const eMesmoEmail = Boolean(sessaoAtual.email) && sessaoAtual.email.toLowerCase() === admin.email.toLowerCase();
+    const ePrincipal = Boolean(admin.principal) && (sessaoAtual.email === 'admin@ardlock.local' || sessaoAtual.name === 'Administrador' || sessaoAtual.admin_id === 1);
+
+    console.log('[DEBUG - AdminPage] Checagem:', { eMesmoId, eMesmoEmail, ePrincipal });
+
+    if (eMesmoId || eMesmoEmail || ePrincipal) {
+      console.log('[DEBUG - AdminPage] Sincronizando sessão para:', admin);
+      this.authService.updateUserSession({
+        admin_id: admin.admin_id,
+        name: admin.nome,
+        email: admin.email,
+        foto_url: admin.foto_url,
+      });
+    }
+  }
+
   carregar(): void {
+    console.log('[DEBUG - AdminPage] Carregando administradores...');
     this.carregando = true;
     this.api.getAdministradores().subscribe({
       next: (admins) => {
+        console.log('[DEBUG - AdminPage] Administradores carregados da API:', admins);
         this.administradores = admins;
+        for (const a of admins) {
+          this.sincronizarSessaoSeUsuarioAtual(a);
+        }
         this.erro = '';
         this.carregando = false;
       },
-      error: () => {
+      error: (err) => {
+        console.error('[DEBUG - AdminPage] Erro ao carregar administradores:', err);
         this.erro = 'Não foi possível carregar a lista de administradores.';
         this.carregando = false;
       },
@@ -111,6 +175,7 @@ export class AdministradoresPage implements OnInit {
         email: emailLimpo,
         senha: this.form.senha,
         ativo: this.form.ativo,
+        foto_url: this.form.foto_url.trim() || null,
       };
 
       this.api.criarAdministrador(payloadCreate).subscribe({
@@ -133,6 +198,7 @@ export class AdministradoresPage implements OnInit {
         nome: nomeLimpo,
         email: emailLimpo,
         ativo: this.form.ativo,
+        foto_url: this.form.foto_url.trim() || null,
       };
 
       if (this.form.senha && this.form.senha.length >= 6) {
@@ -143,6 +209,7 @@ export class AdministradoresPage implements OnInit {
         next: (admin) => {
           this.salvando = false;
           this.administradores = this.administradores.map((item) => (item.admin_id === admin.admin_id ? admin : item));
+          this.sincronizarSessaoSeUsuarioAtual(admin);
           this.snackBar.open('Administrador atualizado com sucesso.', 'Fechar', { duration: 4000 });
           this.cancelar();
         },
@@ -159,11 +226,13 @@ export class AdministradoresPage implements OnInit {
   editar(admin: AdministradorResponse): void {
     this.editandoId = admin.admin_id;
     this.editandoPrincipal = admin.principal;
+    this.formImgFailed = false;
     this.form = {
       nome: admin.nome,
       email: admin.email,
       senha: '', // Não exibe a senha armazenada
       ativo: admin.ativo,
+      foto_url: admin.foto_url || '',
     };
     this.erro = '';
   }
@@ -190,11 +259,13 @@ export class AdministradoresPage implements OnInit {
   cancelar(): void {
     this.editandoId = null;
     this.editandoPrincipal = false;
+    this.formImgFailed = false;
     this.form = {
       nome: '',
       email: '',
       senha: '',
       ativo: true,
+      foto_url: '',
     };
     this.erro = '';
   }

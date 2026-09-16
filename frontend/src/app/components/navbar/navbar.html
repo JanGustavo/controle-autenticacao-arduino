@@ -24,8 +24,22 @@
 
       @if (isLoggedIn()) {
         <div class="user-profile">
-          <div class="user-avatar">
-            <span class="avatar-initial">{{ avatarInitial }}</span>
+          <div
+            class="user-avatar"
+            [class.clickable]="userDisplay.foto_url && isImgValid(userDisplay.foto_url)"
+            (click)="expandirFoto(userDisplay.foto_url)"
+            [matTooltip]="userDisplay.foto_url && isImgValid(userDisplay.foto_url) ? 'Clique para expandir a foto' : ''"
+          >
+            @if (userDisplay.foto_url && isImgValid(userDisplay.foto_url)) {
+              <img
+                [src]="userDisplay.foto_url"
+                [alt]="userDisplay.name"
+                class="avatar-img"
+                (error)="onImgError(userDisplay.foto_url)"
+              />
+            } @else {
+              <span class="avatar-initial">{{ avatarInitial }}</span>
+            }
           </div>
           <div class="user-info">
 
@@ -51,3 +65,20 @@
     </div>
   </div>
 </header>
+
+<!-- MODAL DE EXPANSÃO DA FOTO -->
+@if (fotoModalUrl()) {
+  <div class="photo-modal-backdrop" (click)="fecharFotoModal()">
+    <div class="photo-modal-card" (click)="$event.stopPropagation()">
+      <button class="modal-close-btn" (click)="fecharFotoModal()" title="Fechar (Esc)">
+        <mat-icon>close</mat-icon>
+      </button>
+      <div class="modal-image-wrapper">
+        <img [src]="fotoModalUrl()!" [alt]="userDisplay.name" />
+      </div>
+      @if (userDisplay.name) {
+        <div class="modal-caption">{{ userDisplay.name }}</div>
+      }
+    </div>
+  </div>
+}

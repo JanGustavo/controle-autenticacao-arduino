@@ -113,6 +113,7 @@ def test_usuario_desativado_nao_consegue_logar():
         "inativo@ardlock.local",
         ADMIN_HASH_BCRYPT,
         False,
+        None,
     )
     fake_connection = MagicMock()
     fake_connection.cursor.return_value.__enter__.return_value = fake_cursor

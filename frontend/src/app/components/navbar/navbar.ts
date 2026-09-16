@@ -39,6 +39,8 @@ export class NavbarComponent implements OnInit {
   private authService = inject(AuthService);
 
   darkMode = signal<boolean>(false);
+  failedUrls = new Set<string>();
+  fotoModalUrl = signal<string | null>(null);
 
   ngOnInit(): void {
     const savedTheme = localStorage.getItem('theme');
@@ -52,13 +54,37 @@ export class NavbarComponent implements OnInit {
     return this.authService.isLoggedIn();
   }
 
-  get userDisplay(): { name: string; email: string } {
-    return this.authService.userSession() || { name: 'Administrador', email: 'admin@ardlock.local' };
+  get userDisplay() {
+    const session = this.authService.userSession();
+    const result = session || { admin_id: undefined, name: 'Administrador', email: 'admin@ardlock.local', foto_url: null };
+    return result;
   }
 
   get avatarInitial(): string {
     const name = this.userDisplay.name;
     return name ? name.trim().charAt(0).toUpperCase() : 'A';
+  }
+
+  onImgError(url: string | null | undefined): void {
+    console.warn('[DEBUG - Navbar] ERRO de carregamento da imagem no header para URL:', url);
+    if (url) {
+      this.failedUrls.add(url);
+    }
+  }
+
+  isImgValid(url: string | null | undefined): boolean {
+    if (!url) return false;
+    return !this.failedUrls.has(url);
+  }
+
+  expandirFoto(url: string | null | undefined): void {
+    if (url && this.isImgValid(url)) {
+      this.fotoModalUrl.set(url);
+    }
+  }
+
+  fecharFotoModal(): void {
+    this.fotoModalUrl.set(null);
   }
 
   toggleDarkMode(): void {

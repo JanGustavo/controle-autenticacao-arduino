@@ -16,13 +16,14 @@ def bypass_auth_db_lookup(monkeypatch):
     """
     mock_conn = MagicMock()
     mock_cursor = MagicMock()
-    # Tupla correspondente a SELECT admin_id, nome, email, senha_hash, ativo
+    # Tupla correspondente a SELECT admin_id, nome, email, senha_hash, ativo, foto_url
     mock_cursor.fetchone.return_value = (
         1,
         "Admin Teste",
         "admin@ardlock.local",
         "$2b$12$aINBb4hKDDfrK3FBd1CpIul9Q3LrB9aT5vceZUbsVBQF8I/aKKlA6",
         True,
+        None,
     )
     mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
 

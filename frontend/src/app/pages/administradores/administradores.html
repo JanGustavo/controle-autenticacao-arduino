@@ -77,6 +77,40 @@
           }
         </div>
 
+        <div class="field">
+          <label for="foto_url">URL da foto de perfil</label>
+          <div class="foto-input-wrapper">
+            <div class="form-avatar-preview">
+              @if (form.foto_url && !formImgFailed) {
+                <img
+                  [src]="form.foto_url"
+                  alt="Pré-visualização da foto"
+                  class="preview-img"
+                  (error)="onFormImgError()"
+                />
+              } @else {
+                <span class="preview-initial">{{ form.nome ? form.nome.trim().charAt(0).toUpperCase() : 'A' }}</span>
+              }
+            </div>
+            <input
+              id="foto_url"
+              type="text"
+              [(ngModel)]="form.foto_url"
+              (ngModelChange)="onFotoUrlChange()"
+              name="foto_url"
+              placeholder="https://exemplo.com/foto.jpg"
+            />
+          </div>
+          @if (form.foto_url && formImgFailed) {
+            <small class="hint-warn">
+              <mat-icon style="font-size: 14px; width: 14px; height: 14px; vertical-align: middle;">warning</mat-icon>
+              Não foi possível carregar a imagem. Certifique-se de usar o <strong>link direto da imagem</strong> (ex: <code>https://i.ibb.co/...</code> ou final em <code>.jpg</code> / <code>.png</code>) e não o link da página web.
+            </small>
+          } @else {
+            <small class="hint-info">Use o link direto de uma imagem (ex: <code>https://i.ibb.co/...</code> ou <code>.jpg/.png</code>).</small>
+          }
+        </div>
+
         <div class="actions">
           @if (editandoId !== null) {
             <button type="button" class="btn btn-secondary" (click)="cancelar()">
@@ -151,6 +185,18 @@
                   <td>#{{ admin.admin_id }}</td>
                   <td>
                     <div class="admin-name-col">
+                      <div class="admin-avatar">
+                        @if (admin.foto_url && !hasAdminImgError(admin.admin_id)) {
+                          <img
+                            [src]="admin.foto_url"
+                            alt="Foto de {{ admin.nome }}"
+                            class="admin-avatar-img"
+                            (error)="onAdminImgError(admin.admin_id)"
+                          />
+                        } @else {
+                          <span class="admin-avatar-initial">{{ admin.nome.trim().charAt(0).toUpperCase() }}</span>
+                        }
+                      </div>
                       <strong>{{ admin.nome }}</strong>
                     </div>
                   </td>

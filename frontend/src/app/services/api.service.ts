@@ -217,6 +217,7 @@ export interface AdministradorResponse {
   email: string;
   ativo: boolean;
   principal: boolean;
+  foto_url?: string | null;
   criado_em: string;
 }
 
@@ -225,13 +226,14 @@ export interface AdministradorCreateRequest {
   email: string;
   senha: string;
   ativo: boolean;
+  foto_url?: string | null;
 }
-
 
 export interface AdministradorUpdateRequest {
   nome?: string;
   email?: string;
   senha?: string;
   ativo?: boolean;
+  foto_url?: string | null;
 }
 

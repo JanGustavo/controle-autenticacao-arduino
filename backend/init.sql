@@ -56,6 +56,7 @@ CREATE TABLE administrador (
     senha_hash VARCHAR(255) NOT NULL,
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
     principal BOOLEAN NOT NULL DEFAULT FALSE,
+    foto_url TEXT,
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 -- Garante no máximo 1 administrador principal no sistema

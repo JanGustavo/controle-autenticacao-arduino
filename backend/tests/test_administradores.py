@@ -9,8 +9,8 @@ from app.main import app
 
 client = TestClient(app)
 
-ADMIN_PRINCIPAL = (1, "Administrador Principal", "admin@ardlock.local", True, True, datetime.now())
-ADMIN_COMUM = (2, "Admin Secundario", "secundario@ardlock.local", True, False, datetime.now())
+ADMIN_PRINCIPAL = (1, "Administrador Principal", "admin@ardlock.local", True, True, None, datetime.now())
+ADMIN_COMUM = (2, "Admin Secundario", "secundario@ardlock.local", True, False, None, datetime.now())
 
 
 
@@ -48,8 +48,8 @@ def test_crud_administradores_sem_jwt_retorna_401():
 # 2. Listar e Consultar Administradores
 def test_listar_administradores_autenticado():
     rows = [
-        (1, "Admin Principal", "admin@ardlock.local", True, True, datetime(2026, 1, 1)),
-        (2, "Admin Secundario", "secundario@ardlock.local", True, False, datetime(2026, 1, 2)),
+        (1, "Admin Principal", "admin@ardlock.local", True, True, None, datetime(2026, 1, 1)),
+        (2, "Admin Secundario", "secundario@ardlock.local", True, False, None, datetime(2026, 1, 2)),
     ]
     with patch("app.services.administrador_service.get_connection", return_value=mock_connection(fetchall_return=rows)):
         response = client.get("/api/v1/administradores", headers=auth_headers())
@@ -63,7 +63,7 @@ def test_listar_administradores_autenticado():
 
 
 def test_obter_administrador_por_id():
-    row = (2, "Admin Secundario", "secundario@ardlock.local", True, False, datetime(2026, 1, 2))
+    row = (2, "Admin Secundario", "secundario@ardlock.local", True, False, None, datetime(2026, 1, 2))
     with patch("app.services.administrador_service.get_connection", return_value=mock_connection(fetchone_return=row)):
         response = client.get("/api/v1/administradores/2", headers=auth_headers())
 
@@ -75,12 +75,13 @@ def test_obter_administrador_por_id():
 
 # 3. Criar Administrador
 def test_criar_administrador_valido():
-    novo_admin = (3, "Novo Admin", "novo@ardlock.local", True, False, datetime(2026, 9, 16))
+    novo_admin = (3, "Novo Admin", "novo@ardlock.local", True, False, "https://exemplo.com/foto.jpg", datetime(2026, 9, 16))
     payload = {
         "nome": "Novo Admin",
         "email": "novo@ardlock.local",
         "senha": "senha_segura_123",
         "ativo": True,
+        "foto_url": "https://exemplo.com/foto.jpg",
     }
 
     with patch("app.services.administrador_service.get_connection") as mock_conn:
@@ -95,6 +96,7 @@ def test_criar_administrador_valido():
         assert data["admin_id"] == 3
         assert data["email"] == "novo@ardlock.local"
         assert data["principal"] is False
+        assert data["foto_url"] == "https://exemplo.com/foto.jpg"
         # Garante que a senha / hash NÃO aparece na resposta da API
         assert "senha" not in data
         assert "senha_hash" not in data
@@ -108,7 +110,7 @@ def test_criar_administrador_valido():
 
 # 4. Atualização
 def test_atualizar_nome_e_email_administrador():
-    admin_atualizado = (2, "Nome Editado", "novoemail@ardlock.local", True, False, datetime(2026, 1, 2))
+    admin_atualizado = (2, "Nome Editado", "novoemail@ardlock.local", True, False, None, datetime(2026, 1, 2))
     with patch("app.services.administrador_service.get_connection") as mock_conn:
         fake_cursor = MagicMock()
         fake_cursor.fetchone.side_effect = [ADMIN_COMUM, admin_atualizado]
