@@ -41,7 +41,7 @@ def autenticar(credenciais: LoginRequest) -> LoginResponse:
             detail="Usuário ou senha incorretos.",
         )
 
-    admin_id, _nome, email, senha_hash, ativo = administrador
+    admin_id, nome, email, senha_hash, ativo = administrador
     senha_valida = verificar_senha(credenciais.senha, senha_hash)
 
     # Resposta genérica para não revelar se o usuário existe, está desativado ou errou a senha
@@ -51,8 +51,9 @@ def autenticar(credenciais: LoginRequest) -> LoginResponse:
             detail="Usuário ou senha incorretos.",
         )
 
-    token = criar_token_jwt(sub=str(admin_id), email=email)
+    token = criar_token_jwt(sub=str(admin_id), email=email, extra_claims={"nome": nome})
     expires_in = obter_expiracao_segundos()
+
 
     return LoginResponse(
         sucesso=True,

@@ -5,6 +5,26 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router, RouterLink } from '@angular/router';
 
+function isTokenValido(token: string | null): boolean {
+  if (!token || typeof token !== 'string') return false;
+  const partes = token.split('.');
+  if (partes.length !== 3) return false;
+
+  try {
+    const payloadJson = atob(partes[1].replace(/-/g, '+').replace(/_/g, '/'));
+    const payload = JSON.parse(payloadJson);
+
+    if (!payload.sub) return false;
+    if (payload.exp && typeof payload.exp === 'number') {
+      const agoraEmSegundos = Math.floor(Date.now() / 1000);
+      if (payload.exp < agoraEmSegundos) return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 @Component({
   selector: 'app-navbar',
   standalone: true,
@@ -17,13 +37,6 @@ export class NavbarComponent implements OnInit {
 
   darkMode = signal<boolean>(false);
 
-  mockUser = {
-    name: 'Administrador',
-    role: 'Engenheiro de Sistema',
-    email: 'admin@ardlock.local',
-    status: 'Logado',
-  };
-
   ngOnInit(): void {
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark') {
@@ -33,7 +46,24 @@ export class NavbarComponent implements OnInit {
   }
 
   isLoggedIn(): boolean {
-    return !!localStorage.getItem('adm_token');
+    const token = localStorage.getItem('adm_token');
+    return isTokenValido(token);
+  }
+
+  get userDisplay(): { name: string; email: string } {
+    const token = localStorage.getItem('adm_token');
+    if (token && isTokenValido(token)) {
+      try {
+        const payloadJson = atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'));
+        const payload = JSON.parse(payloadJson);
+        const email = payload.email || 'admin@ardlock.local';
+        const name = payload.nome || email.split('@')[0];
+        return { name, email };
+      } catch {
+        // fallback
+      }
+    }
+    return { name: 'Administrador', email: 'admin@ardlock.local' };
   }
 
   toggleDarkMode(): void {
@@ -53,3 +83,4 @@ export class NavbarComponent implements OnInit {
     this.router.navigate(['/login']);
   }
 }
+
