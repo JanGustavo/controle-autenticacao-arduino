@@ -1,0 +1,203 @@
+<div class="locais-wrapper">
+  <!-- CABEÇALHO -->
+  <div class="header">
+    <a routerLink="/adm-page" class="back-link">
+      <mat-icon>arrow_back</mat-icon>
+      Voltar ao menu
+    </a>
+    <h2>Gerenciar Administradores do ArdLock</h2>
+    <p class="subtitle">Cadastre e controle as contas administrativas do sistema</p>
+  </div>
+
+  <div class="content-grid">
+    <!-- FORMULÁRIO DE CRIAÇÃO / EDIÇÃO -->
+    <div class="form-card">
+      <div class="card-title">
+        <mat-icon>{{ editandoId !== null ? 'edit' : 'admin_panel_settings' }}</mat-icon>
+        <h3>{{ editandoId !== null ? 'Editar Administrador' : 'Novo Administrador' }}</h3>
+      </div>
+
+      <form (ngSubmit)="salvar()">
+        @if (erro) {
+          <div class="error-banner">
+            <mat-icon>error_outline</mat-icon>
+            <span>{{ erro }}</span>
+          </div>
+        }
+
+        <div class="field">
+          <label for="nome">Nome completo *</label>
+          <input
+            id="nome"
+            type="text"
+            [(ngModel)]="form.nome"
+            name="nome"
+            placeholder="Ex: João da Silva"
+            required
+          />
+        </div>
+
+        <div class="field">
+          <label for="email">E-mail de acesso *</label>
+          <input
+            id="email"
+            type="email"
+            [(ngModel)]="form.email"
+            name="email"
+            placeholder="Ex: joao@ardlock.local"
+            required
+          />
+        </div>
+
+        <div class="field">
+          <label for="senha">
+            Senha {{ editandoId !== null ? '(deixe em branco para manter a atual)' : '*' }}
+          </label>
+          <input
+            id="senha"
+            type="password"
+            [(ngModel)]="form.senha"
+            name="senha"
+            placeholder="{{ editandoId !== null ? '•••••••• (Inalterada)' : 'Mínimo 6 caracteres' }}"
+          />
+        </div>
+
+        <div class="field checkbox-field">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              [(ngModel)]="form.ativo"
+              name="ativo"
+              [disabled]="editandoPrincipal"
+            />
+            <span>Administrador ativo no sistema</span>
+          </label>
+          @if (editandoPrincipal) {
+            <small class="hint-warn">A conta principal do ArdLock não pode ser desativada.</small>
+          }
+        </div>
+
+        <div class="actions">
+          @if (editandoId !== null) {
+            <button type="button" class="btn btn-secondary" (click)="cancelar()">
+              Cancelar
+            </button>
+          }
+          <button type="submit" class="btn btn-primary" [disabled]="salvando">
+            <mat-icon>{{ editandoId !== null ? 'save' : 'add' }}</mat-icon>
+            {{ salvando ? 'Salvando...' : (editandoId !== null ? 'Salvar alterações' : 'Cadastrar') }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- LISTAGEM E FILTROS -->
+    <div class="list-card">
+      <div class="list-header">
+        <div class="search-box">
+          <mat-icon>search</mat-icon>
+          <input
+            type="text"
+            [(ngModel)]="filtroTexto"
+            placeholder="Buscar por nome ou e-mail..."
+            (input)="carregar()"
+          />
+        </div>
+
+        <div class="filter-box">
+          <select [(ngModel)]="filtroAtivo" (change)="carregar()">
+            <option value="todos">Todos os status</option>
+            <option value="ativo">Somente Ativos</option>
+            <option value="inativo">Somente Inativos</option>
+          </select>
+        </div>
+      </div>
+
+      @if (carregando) {
+        <div class="loading-state">
+          <mat-icon class="spinning">sync</mat-icon>
+          <span>Carregando administradores...</span>
+        </div>
+      } @else if (displayedAdmins.length === 0) {
+        <div class="empty-state">
+          <mat-icon>admin_panel_settings</mat-icon>
+          <p>Nenhum administrador encontrado com os filtros aplicados.</p>
+        </div>
+      } @else {
+        <div class="table-container">
+          <table class="locais-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Administrador</th>
+                <th>E-mail</th>
+                <th>Tipo</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (admin of displayedAdmins; track admin.admin_id) {
+                <tr [class.principal-row]="admin.principal">
+                  <td>#{{ admin.admin_id }}</td>
+                  <td>
+                    <div class="admin-name-col">
+                      <strong>{{ admin.nome }}</strong>
+                    </div>
+                  </td>
+                  <td>{{ admin.email }}</td>
+                  <td>
+                    @if (admin.principal) {
+                      <span class="badge badge-principal">
+                        <mat-icon>star</mat-icon>
+                        Conta Principal
+                      </span>
+                    } @else {
+                      <span class="badge badge-comum">Comum</span>
+                    }
+                  </td>
+                  <td>
+                    <span
+                      class="status-pill"
+                      [class.ativo]="admin.ativo"
+                      [class.inativo]="!admin.ativo"
+                    >
+                      {{ admin.ativo ? 'Ativo' : 'Inativo' }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="action-buttons">
+                      <button
+                        type="button"
+                        class="btn-icon edit"
+                        (click)="editar(admin)"
+                        title="Editar Administrador"
+                      >
+                        <mat-icon>edit</mat-icon>
+                      </button>
+
+                      @if (!admin.principal) {
+                        <button
+                          type="button"
+                          class="btn-icon delete"
+                          (click)="excluir(admin)"
+                          title="Excluir Administrador"
+                        >
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                      } @else {
+                        <span class="locked-icon" title="Conta principal protegida contra exclusão">
+                          <mat-icon>lock</mat-icon>
+                        </span>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+</div>

@@ -55,17 +55,23 @@ CREATE TABLE administrador (
     email VARCHAR(255) UNIQUE NOT NULL,
     senha_hash VARCHAR(255) NOT NULL,
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
+    principal BOOLEAN NOT NULL DEFAULT FALSE,
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+-- Garante no máximo 1 administrador principal no sistema
+CREATE UNIQUE INDEX uq_administrador_principal ON administrador (principal) WHERE principal = TRUE;
+
 -- Administrador inicial para desenvolvimento: admin@ardlock.local / admin.
 -- ATENÇÃO: Esta credencial é destinada EXCLUSIVAMENTE para ambiente local/desenvolvimento.
 -- NUNCA utilize esta credencial ou este hash em ambiente de produção.
-INSERT INTO administrador (nome, email, senha_hash)
+INSERT INTO administrador (nome, email, senha_hash, principal)
 VALUES (
         'Administrador',
         'admin@ardlock.local',
-        '$2b$12$aINBb4hKDDfrK3FBd1CpIul9Q3LrB9aT5vceZUbsVBQF8I/aKKlA6'
-    ) ON CONFLICT (email) DO UPDATE SET senha_hash = EXCLUDED.senha_hash;
+        '$2b$12$aINBb4hKDDfrK3FBd1CpIul9Q3LrB9aT5vceZUbsVBQF8I/aKKlA6',
+        TRUE
+    ) ON CONFLICT (email) DO UPDATE SET senha_hash = EXCLUDED.senha_hash, principal = EXCLUDED.principal;
+
 
 -- Dados iniciais para desenvolvimento local.
 INSERT INTO local (nome, identificador_dispositivo)

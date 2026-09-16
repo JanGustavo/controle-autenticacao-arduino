@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import adm_page
+from app.api import administradores
 from app.api import autenticacao
 from app.api import historico_acesso
 from app.api import locais
@@ -33,6 +34,7 @@ app.include_router(health.router, prefix="/api/v1", tags=["health"])
 app.include_router(database_health.router, prefix="/api/v1/health", tags=["database_health"])
 
 app.include_router(adm_page.router, prefix="/api/v1/adm", tags=["adm"])
+app.include_router(administradores.router, prefix="/api/v1", tags=["administradores"])
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(autenticacao.router, prefix="/api/v1", tags=["autenticacao"])
 app.include_router(biometria, prefix="/api/v1", tags=["Biometria"])

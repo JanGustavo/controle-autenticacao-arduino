@@ -125,26 +125,31 @@ docker compose up -d --build
 
 O Docker Compose publica o backend na porta `8001` do host, embora o FastAPI escute na porta `8000` dentro do container.
 
-## 🔐 Autenticação
+## 🔐 Autenticação e Segurança
 
-O painel possui login administrativo em:
+O sistema utiliza um esquema completo de autenticação e autorização para as rotas administrativas:
 
-```text
-POST /api/v1/auth/login
-```
+1. **Hash de Senhas (bcrypt)**: Todas as senhas dos administradores são criptografadas com **bcrypt** (cost factor 12) e salt aleatório. Nenhuma senha é armazenada em texto puro.
+2. **JSON Web Tokens (JWT)**: Ao autenticar em `POST /api/v1/auth/login`, o sistema gera um JWT assinado via **HS256** com tempo de expiração configurável (`JWT_EXPIRE_MINUTES`).
+3. **Bearer Token**: Todas as rotas administrativas exigem o cabeçalho `Authorization: Bearer <token>`. O backend valida o token, sua expiração, sua assinatura e consulta o banco de dados para garantir que o administrador ainda existe e está ativo.
+4. **Conta Principal do ArdLock**: O sistema distingue a conta administrativa principal (`principal = TRUE`). A conta principal possui proteção estrutural: **não pode ser excluída**, **não pode ser desativada** e **não pode perder a condição de principal**.
+5. **Interceptor Angular**: O frontend injeta automaticamente o token JWT em cada requisição através de um `HttpInterceptor`. Caso a API responda com `401 Unauthorized`, o token é revogado e o usuário é redirecionado para a página de login.
 
-As credenciais são verificadas contra a tabela `administrador`. As senhas são armazenadas utilizando **PBKDF2-HMAC-SHA256 com salt**, e a comparação do digest utiliza comparação em tempo constante. Após o login, a API retorna um token aleatório para a sessão do frontend. fileciteturn8file0L2-L2
-
-> **Estado atual:** o token retornado ainda não é um JWT e a autorização das rotas da API precisa ser fortalecida antes de considerar o sistema pronto para produção.
+### Variáveis de Ambiente Requeridas
+- `JWT_SECRET`: Chave secreta para assinatura dos tokens JWT (usar chave longa em produção).
+- `JWT_ALGORITHM`: Algoritmo HMAC (padrão: `HS256`).
+- `JWT_EXPIRE_MINUTES`: Minutos para expiração do token (padrão: `60`).
+- `DATABASE_URL`: URI de conexão com o PostgreSQL.
 
 Credencial inicial de desenvolvimento definida no `init.sql`:
 
 ```text
 Usuário: admin@ardlock.local
-Senha: admin.
+Senha: admin
 ```
 
 **Não utilize essa credencial em produção.**
+
 
 ## 📡 API disponível
 
