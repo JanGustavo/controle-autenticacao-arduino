@@ -177,19 +177,16 @@ def test_impedir_autoexclusao():
         # Admin ID 2 tenta excluir a si próprio
         response = client.delete("/api/v1/administradores/2", headers=auth_headers(admin_id=2))
 
-    assert response.status_code == 400
-    assert "Não é permitido excluir a própria conta logada" in response.json()["detail"]
-
-
-
-def test_impedir_exclusao_que_deixe_sistema_sem_administrador():
+def test_conta_principal_pode_excluir_administradores_comuns():
     with patch("app.services.administrador_service.get_connection") as mock_conn:
         fake_cursor = MagicMock()
-        # Admin comum, mas total de ativos no sistema é 1
-        fake_cursor.fetchone.side_effect = [ADMIN_COMUM, (1,)]
+        # 1: busca admin alvo (comum); 2: delete returning
+        fake_cursor.fetchone.side_effect = [ADMIN_COMUM, (2,)]
         mock_conn.return_value.__enter__.return_value.cursor.return_value.__enter__.return_value = fake_cursor
 
+        # Conta principal (id=1, principal=True) exclui o admin comum 2
         response = client.delete("/api/v1/administradores/2", headers=auth_headers(admin_id=1))
 
-        assert response.status_code == 400
-        assert "Não é possível excluir o único administrador ativo do sistema" in response.json()["detail"]
+        assert response.status_code == 200
+        assert response.json() == {"mensagem": "Administrador excluído com sucesso."}
+

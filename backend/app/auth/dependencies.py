@@ -75,7 +75,7 @@ def obter_administrador_atual(
             with connection.cursor() as cursor:
                 cursor.execute(
                     """
-                    SELECT admin_id, nome, email, ativo
+                    SELECT admin_id, nome, email, ativo, principal
                     FROM administrador
                     WHERE admin_id = %s
                     """,
@@ -98,8 +98,8 @@ def obter_administrador_atual(
     id_db = admin[0]
     nome_db = admin[1]
     email_db = admin[2]
-    # Se a consulta selecionar 4 colunas (id, nome, email, ativo) ativo é o index 3; se selecionar 5 (id, nome, email, senha_hash, ativo), é o index 4
-    ativo_db = admin[-1]
+    ativo_db = admin[3]
+    principal_db = admin[4] if len(admin) > 4 else False
 
     if not ativo_db:
         raise HTTPException(
@@ -113,5 +113,7 @@ def obter_administrador_atual(
         "nome": nome_db,
         "email": email_db,
         "ativo": ativo_db,
+        "principal": principal_db,
     }
+
 

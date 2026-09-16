@@ -145,40 +145,45 @@ class AdministradorService:
             )
         return self._row_to_dict(atualizado)
 
-    def deletar_administrador(self, admin_id: int, admin_autenticado_id: int) -> dict[str, str]:
+    def deletar_administrador(
+        self, admin_id: int, admin_autenticado_id: int, admin_autenticado_principal: bool = False
+    ) -> dict[str, str]:
         admin_alvo = self.obter_administrador(admin_id)
 
-        # 1. Regra da Conta Principal: a conta principal NUNCA pode ser excluída.
+        # 1. Regra da Conta Principal: a conta principal NUNCA pode ser excluída por ninguém (nem por si mesma).
         if admin_alvo["principal"]:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="A conta administrativa principal do ArdLock não pode ser excluída.",
             )
 
-        # 2. Regra de Autoexclusão: Impede que o administrador se autoexclua ativamente.
-        if admin_id == admin_autenticado_id:
+        # 2. Regra de Autoexclusão para contas comuns:
+        # Se NÃO for a conta principal autenticada, impede autoexclusão.
+        if not admin_autenticado_principal and admin_id == admin_autenticado_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Não é permitido excluir a própria conta logada.",
             )
 
-        # 3. Regra de garantia estrutural de administradores no sistema
+        # 3. Regra de garantia estrutural de administradores ativos no sistema (para admins comuns)
         with get_connection() as connection:
             with connection.cursor() as cursor:
-                cursor.execute("SELECT COUNT(*) FROM administrador WHERE ativo = TRUE")
-                total_ativos = cursor.fetchone()[0]
+                if not admin_autenticado_principal:
+                    cursor.execute("SELECT COUNT(*) FROM administrador WHERE ativo = TRUE")
+                    total_ativos = cursor.fetchone()[0]
 
-                if total_ativos <= 1 and admin_alvo["ativo"]:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="Não é possível excluir o único administrador ativo do sistema.",
-                    )
+                    if total_ativos <= 1 and admin_alvo["ativo"]:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Não é possível excluir o único administrador ativo do sistema.",
+                        )
 
                 cursor.execute(
                     "DELETE FROM administrador WHERE admin_id = %s RETURNING admin_id",
                     (admin_id,),
                 )
                 removido = cursor.fetchone()
+
 
         if removido is None:
             raise HTTPException(

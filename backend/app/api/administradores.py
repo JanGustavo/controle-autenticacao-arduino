@@ -40,4 +40,6 @@ def deletar_administrador(
     return administrador_service.deletar_administrador(
         admin_id=admin_id,
         admin_autenticado_id=admin_autenticado["admin_id"],
+        admin_autenticado_principal=admin_autenticado.get("principal", False),
     )
+
