@@ -71,6 +71,17 @@
             </span>
           </div>
 
+          @if (webcam.modoDebug()) {
+            <div class="debug-hud">
+              <div class="hud-metrics">
+                <span>LUMA: <b>{{ webcam.valorLuma() }}</b></span>
+                <span>EAR: <b>{{ webcam.earAtual() }}</b></span>
+                <span>ROSTO: <b>{{ webcam.proporcaoAtual() }}%</b></span>
+              </div>
+              <span class="hud-badge">CUBETERNET DEBUG</span>
+            </div>
+          }
+
           @if (scanning()) {
             <div class="scan-line"></div>
           }
