@@ -53,8 +53,8 @@ export class Login {
     this.api.loginAdm(this.usuario, this.senha).subscribe({
       next: (res) => {
         this.carregando.set(false);
-        if (res.sucesso) {
-          localStorage.setItem('adm_token', res.token || 'mock_token_123');
+        if (res.sucesso && res.token) {
+          localStorage.setItem('adm_token', res.token);
           this.router.navigate(['/adm-page']);
         } else {
           this.erro.set(res.mensagem || 'Credenciais inválidas.');

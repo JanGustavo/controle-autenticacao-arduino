@@ -58,12 +58,15 @@ CREATE TABLE administrador (
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 -- Administrador inicial para desenvolvimento: admin@ardlock.local / admin.
+-- ATENÇÃO: Esta credencial é destinada EXCLUSIVAMENTE para ambiente local/desenvolvimento.
+-- NUNCA utilize esta credencial ou este hash em ambiente de produção.
 INSERT INTO administrador (nome, email, senha_hash)
 VALUES (
         'Administrador',
         'admin@ardlock.local',
-        'pbkdf2_sha256$600000$koFOu6NXaKwtDolxq2RFQw$1e08a4d346ea95108daeda3442b71565fc6bda843563ce6d64ec3b9af54c26d8'
-    ) ON CONFLICT (email) DO NOTHING;
+        '$2b$12$aINBb4hKDDfrK3FBd1CpIul9Q3LrB9aT5vceZUbsVBQF8I/aKKlA6'
+    ) ON CONFLICT (email) DO UPDATE SET senha_hash = EXCLUDED.senha_hash;
+
 -- Dados iniciais para desenvolvimento local.
 INSERT INTO local (nome, identificador_dispositivo)
 VALUES ('Entrada principal', 'ESP32-ENTRADA-01'),

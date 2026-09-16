@@ -79,6 +79,9 @@ export interface HistoricoAcessoResponse {
 export interface LoginResponse {
   sucesso: boolean;
   token?: string;
+  usuario?: string;
+  token_type?: string;
+  expires_in?: number;
   mensagem?: string;
 }
 
