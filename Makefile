@@ -62,13 +62,13 @@ kill-port: ## Encerra processos em portas ocupadas (PORT=XXXX)
 
 db-local: ## Prepara o banco de dados PostgreSQL local com schema e dados iniciais
 	@echo "🗄️  Preparando PostgreSQL local..."
-	@sudo -u postgres psql -v ON_ERROR_STOP=1 -c "ALTER ROLE postgres WITH PASSWORD 'JGustavo2106';"
+	@sudo -u postgres psql -v ON_ERROR_STOP=1 -c "ALTER ROLE postgres WITH PASSWORD 'JGustavo2106';" >/dev/null 2>&1 || true
 	@if ! sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname = 'controle_acesso'" | grep -q 1; then \
+		echo "⚙️  Criando banco de dados controle_acesso..."; \
 		sudo -u postgres createdb controle_acesso; \
 	fi
-	@if ! sudo -u postgres psql -d controle_acesso -tAc "SELECT 1 FROM information_schema.tables WHERE table_name = 'administrador'" | grep -q 1; then \
-		sudo -u postgres psql -v ON_ERROR_STOP=1 -d controle_acesso -f backend/init.sql; \
-	fi
+	@echo "📄 Executando init.sql..."
+	@sudo -u postgres psql -v ON_ERROR_STOP=1 -d controle_acesso -f backend/init.sql >/dev/null 2>&1 || true
 	@for mig in backend/migrations/*.sql; do \
 		if [ -f "$$mig" ]; then \
 			sudo -u postgres psql -v ON_ERROR_STOP=1 -d controle_acesso -f "$$mig" >/dev/null 2>&1 || true; \
@@ -83,7 +83,13 @@ db-reset: ## Restaura o banco de dados local para os dados padrão iniciais
 	@sudo -u postgres dropdb --if-exists controle_acesso
 	@sudo -u postgres createdb controle_acesso
 	@sudo -u postgres psql -v ON_ERROR_STOP=1 -d controle_acesso -f backend/init.sql
+	@for mig in backend/migrations/*.sql; do \
+		if [ -f "$$mig" ]; then \
+			sudo -u postgres psql -v ON_ERROR_STOP=1 -d controle_acesso -f "$$mig" >/dev/null 2>&1 || true; \
+		fi \
+	done
 	@echo "✅ Banco de dados restaurado."
+
 
 dev: db-local ## Inicia ambiente completo de desenvolvimento local com Hot-Reload
 	@$(MAKE) kill-port PORT=$(BACKEND_PORT)
