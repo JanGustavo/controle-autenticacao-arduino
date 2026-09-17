@@ -14,9 +14,14 @@ import {
   PERMISSOES_MOCK,
 } from './models/tuple-page.model';
 
+import { ForgotPassword } from './pages/forgot-password/forgot-password';
+import { ResetPassword } from './pages/reset-password/reset-password';
+
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: 'login', component: Login },
+  { path: 'forgot-password', component: ForgotPassword },
+  { path: 'reset-password', component: ResetPassword },
   { path: 'adm-page', component: AdmPage, canActivate: [authGuard] },
   { path: 'administradores', component: AdministradoresPage, canActivate: [authGuard] },
   { path: 'entidades', component: EntidadesPage, canActivate: [authGuard] },

@@ -186,6 +186,14 @@ export class ApiService {
     return this.http.post<LoginResponse>(`${API_BASE}/auth/login`, { usuario, senha });
   }
 
+  solicitarRecuperacaoSenha(email: string): Observable<{ mensagem: string }> {
+    return this.http.post<{ mensagem: string }>(`${API_BASE}/auth/forgot-password`, { email });
+  }
+
+  redefinirSenha(token: string, nova_senha: string): Observable<{ mensagem: string }> {
+    return this.http.post<{ mensagem: string }>(`${API_BASE}/auth/reset-password`, { token, nova_senha });
+  }
+
   // Administradores
   getAdministradores(filtros?: { q?: string; ativo?: boolean }): Observable<AdministradorResponse[]> {
     let params = new HttpParams();

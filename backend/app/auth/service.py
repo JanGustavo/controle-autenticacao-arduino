@@ -111,7 +111,8 @@ async def solicitar_reset_senha(dados: EsqueciSenhaRequest) -> dict[str, str]:
 
     token = secrets.token_urlsafe(32)
     token_hash = _hash_token(token)
-    expira_em = datetime.now(timezone.utc) + timedelta(minutes=_EXPIRACAO_RESET_MINUTOS)
+    # Usa datetime naive (UTC) para inserção em timestamp without timezone
+    expira_em = (datetime.now(timezone.utc) + timedelta(minutes=_EXPIRACAO_RESET_MINUTOS)).replace(tzinfo=None)
 
     try:
         with get_connection() as connection:
@@ -137,7 +138,14 @@ async def solicitar_reset_senha(dados: EsqueciSenhaRequest) -> dict[str, str]:
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:4200")
     reset_url = f"{frontend_url}/reset-password?token={token}"
 
-    await enviar_email_reset(email, reset_url)
+    try:
+        await enviar_email_reset(email, reset_url)
+    except Exception as e:
+        print(f"Erro ao enviar email: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Não foi possível enviar o e-mail de recuperação no momento. Tente novamente mais tarde."
+        )
 
     return resposta_generica
 
