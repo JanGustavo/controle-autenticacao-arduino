@@ -3,8 +3,10 @@ import os
 import secrets
 from datetime import datetime, timedelta, timezone
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, Request
 from psycopg import OperationalError
+
+from app.services.audit_service import audit_service
 
 from app.auth.schemas import EsqueciSenhaRequest, LoginRequest, LoginResponse, RedefinirSenhaRequest
 from app.auth.security import (
@@ -28,7 +30,7 @@ def _hash_token(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
 
 
-def autenticar(credenciais: LoginRequest) -> LoginResponse:
+def autenticar(credenciais: LoginRequest, request: Request | None = None) -> LoginResponse:
     termo_busca = credenciais.usuario.strip()
 
     try:
@@ -53,6 +55,15 @@ def autenticar(credenciais: LoginRequest) -> LoginResponse:
     # Atenua timing attacks se o usuário não for encontrado
     if not administrador:
         verificar_senha(credenciais.senha, DUMMY_BCRYPT_HASH)
+        audit_service.registrar(
+            action="LOGIN_FAILED",
+            admin_id=None,
+            resource_type="AUTH",
+            resource_id=None,
+            description=f"Tentativa de login falhou (usuário não encontrado): {termo_busca}",
+            request=request,
+            status="FAILURE"
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuário ou senha incorretos.",
@@ -63,10 +74,28 @@ def autenticar(credenciais: LoginRequest) -> LoginResponse:
 
     # Resposta genérica para não revelar se o usuário existe, está desativado ou errou a senha
     if not ativo or not senha_valida:
+        audit_service.registrar(
+            action="LOGIN_FAILED",
+            admin_id=admin_id,
+            resource_type="AUTH",
+            resource_id=None,
+            description=f"Tentativa de login falhou (inativo ou senha inválida)",
+            request=request,
+            status="FAILURE"
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuário ou senha incorretos.",
         )
+
+    audit_service.registrar(
+        action="LOGIN_SUCCESS",
+        admin_id=admin_id,
+        resource_type="AUTH",
+        resource_id=None,
+        description="Login bem-sucedido",
+        request=request
+    )
 
     token = criar_token_jwt(sub=str(admin_id), email=email, extra_claims={"nome": nome, "foto_url": foto_url})
     expires_in = obter_expiracao_segundos()
@@ -80,7 +109,7 @@ def autenticar(credenciais: LoginRequest) -> LoginResponse:
     )
 
 
-async def solicitar_reset_senha(dados: EsqueciSenhaRequest) -> dict[str, str]:
+async def solicitar_reset_senha(dados: EsqueciSenhaRequest, request: Request | None = None) -> dict[str, str]:
     """Gera token de recuperação e envia e-mail se o endereço estiver cadastrado.
 
     A resposta é sempre a mesma — independentemente de o e-mail existir ou não —
@@ -105,6 +134,15 @@ async def solicitar_reset_senha(dados: EsqueciSenhaRequest) -> dict[str, str]:
         ) from error
 
     if not administrador:
+        audit_service.registrar(
+            action="PASSWORD_RESET_REQUESTED",
+            admin_id=None,
+            resource_type="AUTH",
+            resource_id=None,
+            description=f"Solicitação de reset de senha para e-mail não encontrado ou inativo: {dados.email.strip()}",
+            request=request,
+            status="FAILURE"
+        )
         return resposta_generica
 
     admin_id, email = administrador
@@ -140,8 +178,25 @@ async def solicitar_reset_senha(dados: EsqueciSenhaRequest) -> dict[str, str]:
 
     try:
         await enviar_email_reset(email, reset_url)
+        audit_service.registrar(
+            action="PASSWORD_RESET_REQUESTED",
+            admin_id=admin_id,
+            resource_type="AUTH",
+            resource_id=None,
+            description="E-mail de redefinição de senha enviado",
+            request=request
+        )
     except Exception as e:
         print(f"Erro ao enviar email: {e}")
+        audit_service.registrar(
+            action="PASSWORD_RESET_REQUESTED",
+            admin_id=admin_id,
+            resource_type="AUTH",
+            resource_id=None,
+            description=f"Falha ao enviar e-mail de redefinição: {e}",
+            request=request,
+            status="FAILURE"
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Não foi possível enviar o e-mail de recuperação no momento. Tente novamente mais tarde."
@@ -150,7 +205,7 @@ async def solicitar_reset_senha(dados: EsqueciSenhaRequest) -> dict[str, str]:
     return resposta_generica
 
 
-def redefinir_senha(dados: RedefinirSenhaRequest) -> dict[str, str]:
+def redefinir_senha(dados: RedefinirSenhaRequest, request: Request | None = None) -> dict[str, str]:
     """Valida o token de recuperação e atualiza a senha do administrador."""
     token_hash = _hash_token(dados.token.strip())
 
@@ -168,6 +223,15 @@ def redefinir_senha(dados: RedefinirSenhaRequest) -> dict[str, str]:
                 registro = cursor.fetchone()
 
                 if not registro:
+                    audit_service.registrar(
+                        action="PASSWORD_RESET_COMPLETED",
+                        admin_id=None,
+                        resource_type="AUTH",
+                        resource_id=None,
+                        description="Tentativa de redefinição com token inválido/inexistente",
+                        request=request,
+                        status="FAILURE"
+                    )
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail="Token inválido ou expirado.",
@@ -180,6 +244,15 @@ def redefinir_senha(dados: RedefinirSenhaRequest) -> dict[str, str]:
                     expira_em = expira_em.replace(tzinfo=timezone.utc)
 
                 if usado or agora > expira_em:
+                    audit_service.registrar(
+                        action="PASSWORD_RESET_COMPLETED",
+                        admin_id=admin_id,
+                        resource_type="AUTH",
+                        resource_id=None,
+                        description="Tentativa de redefinição com token já usado ou expirado",
+                        request=request,
+                        status="FAILURE"
+                    )
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail="Token inválido ou expirado.",
@@ -194,6 +267,15 @@ def redefinir_senha(dados: RedefinirSenhaRequest) -> dict[str, str]:
                 cursor.execute(
                     "UPDATE password_reset_token SET usado = TRUE WHERE id = %s",
                     (token_id,),
+                )
+                
+                audit_service.registrar(
+                    action="PASSWORD_RESET_COMPLETED",
+                    admin_id=admin_id,
+                    resource_type="AUTH",
+                    resource_id=None,
+                    description="Senha redefinida com sucesso",
+                    request=request
                 )
     except OperationalError as error:
         raise HTTPException(

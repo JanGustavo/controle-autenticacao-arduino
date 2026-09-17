@@ -1,0 +1,84 @@
+<div class="page-wrapper">
+  <div class="page-header">
+    <div class="header-titles">
+      <a routerLink="/adm-page" class="back-link">
+        <mat-icon>arrow_back</mat-icon>
+        Voltar
+      </a>
+      <h2>Logs de Auditoria</h2>
+      <p>Histórico de ações realizadas pelos administradores</p>
+    </div>
+  </div>
+
+  <div class="content-grid">
+    <div class="list-card">
+      @if (erro) {
+        <div class="error-banner">
+          <mat-icon>error_outline</mat-icon>
+          <span>{{ erro }}</span>
+        </div>
+      } @else if (carregando) {
+        <div class="loading-state">
+          <mat-icon class="spinning">sync</mat-icon>
+          <span>Carregando logs de auditoria...</span>
+        </div>
+      } @else if (logs.length === 0) {
+        <div class="empty-state">
+          <mat-icon>history</mat-icon>
+          <p>Nenhum log de auditoria encontrado.</p>
+        </div>
+      } @else {
+        <div class="table-container">
+          <table class="locais-table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Administrador</th>
+                <th>Ação</th>
+                <th>Recurso</th>
+                <th>Detalhes</th>
+                <th>IP</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (log of logs; track log.id) {
+                <tr>
+                  <td>{{ formatDate(log.created_at) }}</td>
+                  <td>
+                    <strong>{{ log.admin_nome }}</strong><br>
+                    <small style="color: #6c757d">ID: {{ log.admin_id }}</small>
+                  </td>
+                  <td>
+                    <span class="badge" style="background: #e2e8f0; color: #1e293b; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;">
+                      {{ log.action }}
+                    </span>
+                  </td>
+                  <td>
+                    {{ log.resource_type }}
+                    @if (log.resource_id) {
+                      <strong>#{{ log.resource_id }}</strong>
+                    }
+                  </td>
+                  <td style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" [title]="log.description">
+                    {{ log.description }}
+                  </td>
+                  <td><small>{{ log.ip_address }}</small></td>
+                  <td>
+                    <span
+                      class="status-pill"
+                      [class.ativo]="log.status === 'success'"
+                      [class.inativo]="log.status !== 'success'"
+                    >
+                      {{ log.status === 'success' ? 'Sucesso' : log.status }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+</div>

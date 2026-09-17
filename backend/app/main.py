@@ -11,6 +11,7 @@ from app.api import usuarios
 from app.api import ws_router
 from app.api.health import database_health, health
 from app.api.biometria import router as biometria
+from app.api import audit_logs
 from app.auth import router as auth
 
 app = FastAPI(
@@ -51,4 +52,5 @@ app.include_router(usuarios.router, prefix="/api/v1", tags=["usuarios"])
 app.include_router(permissoes.router, prefix="/api/v1", tags=["permissoes"])
 app.include_router(historico_acesso.router, prefix="/api/v1", tags=["historico_acesso"])
 app.include_router(locais.router, prefix="/api/v1", tags=["locais"])
+app.include_router(audit_logs.router, prefix="/api/v1/adm", tags=["audit_logs"])
 app.include_router(ws_router.router, tags=["WebSocket"])

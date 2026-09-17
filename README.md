@@ -170,7 +170,7 @@ Todas as rotas abaixo utilizam o prefixo `/api/v1`.
 | Histórico de acesso | GET, POST | `/historico-acesso` |
 | Histórico específico | GET | `/historico-acesso/{id}` |
 
-A implementação atual das rotas de usuários, locais, permissões e histórico já está separada entre **API, schemas e services**, mantendo o backend como um monólito modular. fileciteturn13file0L2-L2 fileciteturn15file0L2-L2 fileciteturn16file0L2-L2 fileciteturn17file0L2-L2
+A implementação atual de todas as rotas (usuários, locais, permissões, histórico, autenticação e biometria) já está completamente separada entre **API, schemas e services**, mantendo o backend como um monólito modular e aderente ao padrão arquitetural. fileciteturn13file0L2-L2 fileciteturn15file0L2-L2 fileciteturn16file0L2-L2 fileciteturn17file0L2-L2
 
 ## 🗄️ Modelo de dados
 
@@ -231,19 +231,19 @@ make dev-frontend # somente frontend
 - [x] Proteção de rotas no frontend
 - [x] Testes automatizados básicos
 - [x] Ambiente Docker Compose
+- [x] Capturar imagem da câmera
+- [x] Gerar embeddings faciais
+- [x] Comparar biometria facial 1:1
+- [x] Implementar autorização no backend para rotas administrativas
+- [x] Substituir o token temporário por JWT ou mecanismo equivalente
 
 ### Em desenvolvimento / próximos passos
 
 - [ ] Integrar leitura RFID pelo ESP32/RC522
 - [ ] Implementar identificação do dispositivo por `identificador_dispositivo`
-- [ ] Capturar imagem da câmera
-- [ ] Gerar embeddings faciais
-- [ ] Comparar biometria facial 1:1
 - [ ] Implementar regra completa de autorização no fluxo físico
 - [ ] Enviar resposta de acesso autorizado/negado ao ESP32
 - [ ] Persistir token de sessão de forma mais robusta
-- [ ] Implementar autorização no backend para rotas administrativas
-- [ ] Substituir o token temporário por JWT ou mecanismo equivalente
 - [ ] Adicionar documentação de integração hardware ↔ API
 - [ ] Revisar CORS e configurações para produção
 

@@ -7,6 +7,7 @@ import { CadastrarPage } from './pages/cadastrar/cadastrar';
 import { CompararPage } from './pages/comparar/comparar';
 import { LocaisPage } from './pages/locais/locais';
 import { AdministradoresPage } from './pages/administradores/administradores';
+import { AuditLogsComponent } from './pages/audit-logs/audit-logs.component';
 import { authGuard } from './guards/auth.guard';
 import {
   DASHBOARD_MOCK,
@@ -54,6 +55,11 @@ export const routes: Routes = [
     component: TuplePage,
     canActivate: [authGuard],
     data: { config: PERMISSOES_MOCK },
+  },
+  {
+    path: 'audit-logs',
+    component: AuditLogsComponent,
+    canActivate: [authGuard],
   },
   { path: '**', redirectTo: 'login' },
 ];
