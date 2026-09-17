@@ -19,17 +19,35 @@ class PermissaoService:
 	def _row_to_dict(cls, row):
 		return dict(zip(cls._campos, row, strict=True))
 
-	def listar_permissoes(self):
+	def listar_permissoes(self, q: str | None = None, usuario_id: int | None = None, local_id: int | None = None):
+		conditions = []
+		params = []
+		if q is not None and q.strip():
+			term = f"%{q.strip().lower()}%"
+			conditions.append("(LOWER(u.nome) LIKE %s OR LOWER(l.nome) LIKE %s)")
+			params.extend([term, term])
+		if usuario_id is not None:
+			conditions.append("p.usuario_id = %s")
+			params.append(usuario_id)
+		if local_id is not None:
+			conditions.append("p.local_id = %s")
+			params.append(local_id)
+
+		where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+
 		with get_connection() as connection:
 			with connection.cursor() as cursor:
 				cursor.execute(
-					"""
-					SELECT permissao_id, usuario_id, local_id,
-						  c
-						  horario_inicio, horario_fim, dias_semana
-					FROM permissao
-					ORDER BY permissao_id
-					"""
+					f"""
+					SELECT p.permissao_id, p.usuario_id, p.local_id,
+						   p.horario_inicio, p.horario_fim, p.dias_semana
+					FROM permissao p
+					LEFT JOIN usuario u ON p.usuario_id = u.user_id
+					LEFT JOIN local l ON p.local_id = l.local_id
+					{where_clause}
+					ORDER BY p.permissao_id
+					""",
+					params if params else None,
 				)
 				return [self._row_to_dict(row) for row in cursor.fetchall()]
 

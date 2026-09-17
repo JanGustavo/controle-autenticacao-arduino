@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 const API_BASE = 'http://localhost:8001/api/v1';
@@ -72,6 +72,8 @@ export interface HistoricoAcessoResponse {
   autorizado: boolean;
   percentual_similaridade: number | null;
   motivo_recusa: string | null;
+  nome_usuario?: string | null;
+  nome_local?: string | null;
 }
 
 export interface LoginResponse {
@@ -93,12 +95,18 @@ export class ApiService {
     return this.http.get<AdmPageResponse>(`${API_BASE}/adm/adm-page`);
   }
 
-  getUsuarios(): Observable<UsuarioResponse[]> {
-    return this.http.get<UsuarioResponse[]>(`${API_BASE}/usuarios`);
+  getUsuarios(filtros?: { q?: string; ativo?: boolean }): Observable<UsuarioResponse[]> {
+    let params = new HttpParams();
+    if (filtros?.q) params = params.set('q', filtros.q);
+    if (filtros?.ativo !== undefined && filtros?.ativo !== null) params = params.set('ativo', filtros.ativo);
+    return this.http.get<UsuarioResponse[]>(`${API_BASE}/usuarios`, { params });
   }
 
-  getLocais(): Observable<LocalResponse[]> {
-    return this.http.get<LocalResponse[]>(`${API_BASE}/locais`);
+  getLocais(filtros?: { q?: string; ativo?: boolean }): Observable<LocalResponse[]> {
+    let params = new HttpParams();
+    if (filtros?.q) params = params.set('q', filtros.q);
+    if (filtros?.ativo !== undefined && filtros?.ativo !== null) params = params.set('ativo', filtros.ativo);
+    return this.http.get<LocalResponse[]>(`${API_BASE}/locais`, { params });
   }
 
   criarLocal(local: LocalRequest): Observable<LocalResponse> {
@@ -113,12 +121,21 @@ export class ApiService {
     return this.http.delete<{ mensagem: string }>(`${API_BASE}/locais/${id}`);
   }
 
-  getPermissoes(): Observable<PermissaoResponse[]> {
-    return this.http.get<PermissaoResponse[]>(`${API_BASE}/permissoes`);
+  getPermissoes(filtros?: { q?: string; usuario_id?: number; local_id?: number }): Observable<PermissaoResponse[]> {
+    let params = new HttpParams();
+    if (filtros?.q) params = params.set('q', filtros.q);
+    if (filtros?.usuario_id) params = params.set('usuario_id', filtros.usuario_id);
+    if (filtros?.local_id) params = params.set('local_id', filtros.local_id);
+    return this.http.get<PermissaoResponse[]>(`${API_BASE}/permissoes`, { params });
   }
 
-  getHistoricoAcesso(): Observable<HistoricoAcessoResponse[]> {
-    return this.http.get<HistoricoAcessoResponse[]>(`${API_BASE}/historico-acesso`);
+  getHistoricoAcesso(filtros?: { q?: string; usuario_id?: number; local_id?: number; autorizado?: boolean }): Observable<HistoricoAcessoResponse[]> {
+    let params = new HttpParams();
+    if (filtros?.q) params = params.set('q', filtros.q);
+    if (filtros?.usuario_id) params = params.set('usuario_id', filtros.usuario_id);
+    if (filtros?.local_id) params = params.set('local_id', filtros.local_id);
+    if (filtros?.autorizado !== undefined && filtros?.autorizado !== null) params = params.set('autorizado', filtros.autorizado);
+    return this.http.get<HistoricoAcessoResponse[]>(`${API_BASE}/historico-acesso`, { params });
   }
 
   criarPermissao(permissao: PermissaoRequest): Observable<PermissaoResponse> {

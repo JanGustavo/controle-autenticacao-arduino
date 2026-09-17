@@ -8,7 +8,7 @@ client = TestClient(app)
 
 def test_login_com_credenciais_validas():
     response = client.post(
-        "/api/auth/login",
+        "/api/v1/auth/login",
         json={"usuario": "admin", "senha": "admin"},
     )
 
@@ -21,7 +21,7 @@ def test_login_com_credenciais_validas():
 
 def test_login_com_credenciais_invalidas():
     response = client.post(
-        "/api/auth/login",
+        "/api/v1/auth/login",
         json={"usuario": "admin", "senha": "incorreta"},
     )
 
@@ -30,6 +30,6 @@ def test_login_com_credenciais_invalidas():
 
 
 def test_login_com_payload_incompleto():
-    response = client.post("/api/auth/login", json={"usuario": "admin"})
+    response = client.post("/api/v1/auth/login", json={"usuario": "admin"})
 
     assert response.status_code == 422

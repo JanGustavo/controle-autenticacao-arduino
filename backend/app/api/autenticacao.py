@@ -3,6 +3,7 @@ import json
 from fastapi import APIRouter, UploadFile, File, HTTPException, status
 from app.services.face_service import FaceService
 from app.database.connection import get_connection
+from app.api.websocket_manager import manager
 
 router = APIRouter(prefix="/autenticacao", tags=["Autenticação de Acesso"])
 
@@ -15,7 +16,7 @@ async def testar_biometria(
     
     # 1. Rosto não identificado
     if not vetor_instantaneo:
-        _salvar_log(
+        await _salvar_e_notificar_log(
             usuario_id=None,
             autorizado=False,
             similaridade=0.0,
@@ -32,7 +33,7 @@ async def testar_biometria(
 
     # 2. Sem registros no banco
     if not usuarios_com_vetor:
-        _salvar_log(
+        await _salvar_e_notificar_log(
             usuario_id=None,
             autorizado=False,
             similaridade=0.0,
@@ -71,16 +72,17 @@ async def testar_biometria(
                 "aprovado": bool(similaridade >= 70.0),
             }
 
-    # 3. Grava o evento no histórico de acessos
+    # 3. Grava o evento no histórico de acessos e transmite via WebSocket
     autorizado = best_match["aprovado"]
     usuario_id_log = best_match["user_id"] if autorizado else None
     motivo = None if autorizado else "Acesso negado - similaridade insuficiente ou não cadastrado"
 
-    _salvar_log(
+    await _salvar_e_notificar_log(
         usuario_id=usuario_id_log,
         autorizado=autorizado,
         similaridade=best_match["similaridade"],
-        motivo_recusa=motivo
+        motivo_recusa=motivo,
+        nome_usuario=best_match["nome"] if autorizado else None
     )
 
     return {
@@ -94,8 +96,16 @@ async def testar_biometria(
     }
 
 
-def _salvar_log(usuario_id: int | None, autorizado: bool, similaridade: float, motivo_recusa: str | None) -> None:
-    """Insere o registro direto na tabela historico_acesso."""
+async def _salvar_e_notificar_log(
+    usuario_id: int | None,
+    autorizado: bool,
+    similaridade: float,
+    motivo_recusa: str | None,
+    nome_usuario: str | None = None
+) -> None:
+    """Insere registro no banco e transmite via WebSocket para todos os clientes conectados."""
+    agora = datetime.now()
+    log_id = None
     try:
         with get_connection() as connection:
             with connection.cursor() as cursor:
@@ -104,17 +114,28 @@ def _salvar_log(usuario_id: int | None, autorizado: bool, similaridade: float, m
                     INSERT INTO historico_acesso 
                     (usuario_id, local_id, uid_card_lido, data_hora, autorizado, percentual_similaridade, motivo_recusa)
                     VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id;
                     """,
-                    (
-                        usuario_id,
-                        None,             # local_id (opcional no teste via painel)
-                        None,             # uid_card_lido (opcional no teste via biometria pura)
-                        datetime.now(),
-                        autorizado,
-                        similaridade,
-                        motivo_recusa
-                    )
+                    (usuario_id, None, None, agora, autorizado, similaridade, motivo_recusa)
                 )
+                res = cursor.fetchone()
+                if res:
+                    log_id = res[0]
                 connection.commit()
+
+        # Broadcast via WebSocket em tempo real
+        evento = {
+            "type": "NOVO_ACESSO",
+            "data": {
+                "id": log_id,
+                "usuario_id": usuario_id,
+                "nome_usuario": nome_usuario,
+                "data_hora": agora.isoformat(),
+                "autorizado": autorizado,
+                "percentual_similaridade": similaridade,
+                "motivo_recusa": motivo_recusa,
+            }
+        }
+        await manager.broadcast(evento)
     except Exception as e:
-        print(f"Erro ao salvar histórico de acesso: {e}")
+        print(f"Erro ao salvar e notificar log de acesso: {e}")

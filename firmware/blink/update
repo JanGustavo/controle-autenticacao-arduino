@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -7,11 +8,20 @@ PORT="${PORT:-/dev/ttyUSB0}"
 BOARD="esp32:esp32:esp32"
 
 echo "Compilando..."
-arduino-cli compile --fqbn "$BOARD" "$SCRIPT_DIR"
 
-echo "Atualizando esp na porta $PORT..."
-arduino-cli upload -p "$PORT" --fqbn "$BOARD" "$SCRIPT_DIR"
+arduino-cli compile \
+    --fqbn "$BOARD" \
+    "$SCRIPT_DIR"
+
+echo "Atualizando ESP32 na porta $PORT..."
+
+arduino-cli upload \
+    -p "$PORT" \
+    --fqbn "$BOARD" \
+    "$SCRIPT_DIR"
 
 echo "Ok"
 
-arduino-cli monitor -p /dev/ttyUSB0 -c baudrate=115200
+arduino-cli monitor \
+    -p "$PORT" \
+    -c baudrate=115200

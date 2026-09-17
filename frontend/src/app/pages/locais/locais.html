@@ -1,9 +1,9 @@
 <main class="locations-page">
   <header class="page-header">
-    <a routerLink="/adm-page" class="back-link"
-      ><mat-icon>arrow_back</mat-icon> Painel administrativo</a
-    >
-    <span class="eyebrow">Cadastros · pontos de acesso</span>
+    <a routerLink="/adm-page" class="back-link">
+      <mat-icon>arrow_back</mat-icon> Painel administrativo
+    </a>
+    
     <h1>Locais</h1>
     <p>Gerencie os dispositivos ESP32/RC522 que controlam os pontos de acesso.</p>
   </header>
@@ -14,16 +14,18 @@
         <span class="eyebrow">{{ editandoId === null ? 'Novo local' : 'Edição' }}</span>
         <h2>{{ editandoId === null ? 'Cadastrar local' : 'Editar local' }}</h2>
       </div>
-      <span class="error" *ngIf="erro" role="alert">{{ erro }}</span>
+      @if (erro) {
+        <span class="error" role="alert">{{ erro }}</span>
+      }
     </div>
 
     <div class="form-grid">
-      <label
-        >Nome do local
+      <label>
+        Nome do local
         <input [(ngModel)]="form.nome" maxlength="255" placeholder="Entrada principal" />
       </label>
-      <label
-        >Identificador do dispositivo
+      <label>
+        Identificador do dispositivo
         <input
           [(ngModel)]="form.identificador_dispositivo"
           maxlength="100"
@@ -40,47 +42,90 @@
       <button mat-flat-button color="primary" [disabled]="salvando" (click)="salvar()">
         <mat-icon>save</mat-icon>{{ salvando ? 'Salvando...' : 'Salvar local' }}
       </button>
-      <button mat-button *ngIf="editandoId !== null" (click)="cancelar()">Cancelar</button>
+      @if (editandoId !== null) {
+        <button mat-button (click)="cancelar()">Cancelar</button>
+      }
     </div>
   </section>
 
   <section class="table-card">
-    <p class="loading" *ngIf="carregando">Carregando locais...</p>
-    <table *ngIf="!carregando">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Nome</th>
-          <th>Dispositivo</th>
-          <th>Status</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let local of locais">
-          <td>{{ local.local_id }}</td>
-          <td>{{ local.nome }}</td>
-          <td>
-            <code>{{ local.identificador_dispositivo }}</code>
-          </td>
-          <td>
-            <span class="status-badge" [class.inactive]="!local.ativo">{{
-              local.ativo ? 'Ativo' : 'Inativo'
-            }}</span>
-          </td>
-          <td class="row-actions">
-            <button mat-icon-button title="Editar" (click)="editar(local)">
-              <mat-icon>edit</mat-icon>
-            </button>
-            <button mat-icon-button title="Excluir" (click)="excluir(local)">
-              <mat-icon>delete</mat-icon>
-            </button>
-          </td>
-        </tr>
-        <tr *ngIf="!locais.length">
-          <td colspan="5" class="empty">Nenhum local cadastrado.</td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="filter-bar">
+      <div class="search-box">
+        <mat-icon>search</mat-icon>
+        <input
+          type="text"
+          [(ngModel)]="filtroTexto"
+          (ngModelChange)="carregar()"
+          placeholder="Pesquisar por nome ou dispositivo..."
+        />
+        @if (filtroTexto) {
+          <button
+            type="button"
+            mat-icon-button
+            (click)="filtroTexto = ''; carregar()"
+            title="Limpar pesquisa"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </div>
+
+      <div class="filter-group">
+        <label for="filtro-ativo-select">Status</label>
+        <select
+          id="filtro-ativo-select"
+          [(ngModel)]="filtroAtivo"
+          (ngModelChange)="carregar()"
+        >
+          <option value="todos">Todos</option>
+          <option value="ativo">Ativos</option>
+          <option value="inativo">Inativos</option>
+        </select>
+      </div>
+    </div>
+
+    @if (carregando) {
+      <p class="loading">Carregando locais...</p>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Dispositivo</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (local of displayedLocais; track local.local_id) {
+            <tr>
+              <td>{{ local.local_id }}</td>
+              <td>{{ local.nome }}</td>
+              <td>
+                <code>{{ local.identificador_dispositivo }}</code>
+              </td>
+              <td>
+                <span class="status-badge" [class.inactive]="!local.ativo">{{
+                  local.ativo ? 'Ativo' : 'Inativo'
+                }}</span>
+              </td>
+              <td class="row-actions">
+                <button mat-icon-button title="Editar" (click)="editar(local)">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button title="Excluir" (click)="excluir(local)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="empty">Nenhum local encontrado.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
   </section>
 </main>

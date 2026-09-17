@@ -24,7 +24,16 @@ def test_listar_usuarios():
 
 	assert response.status_code == 200
 	assert response.json() == [USUARIO]
-	listar.assert_called_once_with()
+	listar.assert_called_once_with(q=None, ativo=None)
+
+
+def test_listar_usuarios_com_filtros():
+	with patch("app.api.usuarios.usuario_service.listar_usuarios", return_value=[USUARIO]) as listar:
+		response = client.get("/api/v1/usuarios?q=maria&ativo=true")
+
+	assert response.status_code == 200
+	assert response.json() == [USUARIO]
+	listar.assert_called_once_with(q="maria", ativo=True)
 
 
 def test_obter_usuario():

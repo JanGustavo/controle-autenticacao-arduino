@@ -17,8 +17,6 @@ CREATE TABLE usuario (
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-ALTER TABLE usuario
-ADD COLUMN facial_vector JSON DEFAULT NULL;
 -- Usuário tem acesso a N Locais, via Permissão (tabela de junção com atributos: horário, dias)
 -- Usuário tem histórico de acesso 1:N Histórico de Acesso
 -- Criar a tabela PERMISSAO

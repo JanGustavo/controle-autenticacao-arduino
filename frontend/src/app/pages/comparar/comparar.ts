@@ -1,111 +1,254 @@
-import { Component, inject, OnDestroy, ViewChild, ElementRef, signal } from '@angular/core';
+import { Component, inject, OnDestroy, ViewChild, ElementRef, signal, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
-import { ApiService } from '../../services/api.service';
+import { Subscription } from 'rxjs';
+import { ApiService, HistoricoAcessoResponse, LocalResponse, UsuarioResponse } from '../../services/api.service';
+import { SpeechService } from '../../services/speech.service';
+import { WebcamService } from '../../services/webcam.service';
+import { WebSocketLogsService } from '../../services/websocket-logs.service';
 
 @Component({
   selector: 'app-comparar-page',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatIconModule, MatSnackBarModule, RouterLink],
+  imports: [
+    CommonModule,
+    MatButtonModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+    MatSnackBarModule,
+    RouterLink,
+  ],
   templateUrl: './comparar.html',
   styleUrl: './comparar.scss',
 })
-export class CompararPage implements OnDestroy {
+export class CompararPage implements OnInit, OnDestroy {
   private api = inject(ApiService);
   private snackBar = inject(MatSnackBar);
+  private speech = inject(SpeechService);
+  public webcam = inject(WebcamService);
+  public wsLogs = inject(WebSocketLogsService);
 
   @ViewChild('videoElement') videoElement?: ElementRef<HTMLVideoElement>;
 
-  webcamAtiva = signal(false);
   scanning = signal(false);
   similaridade = signal(0);
   aprovado = signal(false);
   usuarioEncontrado = signal<string | null>(null);
+  mensagemStatus = signal<string | null>(null);
   fotoPreviewUrl: string | null = null;
-  stream: MediaStream | null = null;
+
+  // Modo Totem / Kiosk
+  modoTotem = signal(true);
+  modoKioskFullscreen = signal(false);
+  exibirOverlayTotem = signal(false);
+  historicoRecente = signal<HistoricoAcessoResponse[]>([]);
+  usuarios: UsuarioResponse[] = [];
+  locais: LocalResponse[] = [];
+
+  private timeoutOverlay: ReturnType<typeof setTimeout> | null = null;
+  private wsSubscription: Subscription | null = null;
+
+  async ngOnInit(): Promise<void> {
+    await this.webcam.carregarModelos();
+    this.carregarHistorico();
+    this.carregarAuxiliares();
+
+    // Inscrição no evento WebSocket de tempo real
+    this.wsSubscription = this.wsLogs.obterLogsEmTempoReal().subscribe({
+      next: (evento) => {
+        if (evento.type === 'NOVO_ACESSO') {
+          const novoItem: HistoricoAcessoResponse = {
+            id: evento.data.id || Date.now(),
+            usuario_id: evento.data.usuario_id,
+            local_id: null,
+            uid_card_lido: null,
+            data_hora: evento.data.data_hora,
+            autorizado: evento.data.autorizado,
+            percentual_similaridade: evento.data.percentual_similaridade,
+            motivo_recusa: evento.data.motivo_recusa,
+            nome_usuario: evento.data.nome_usuario || null,
+          };
+          this.historicoRecente.update((lista) => [novoItem, ...lista.slice(0, 4)]);
+        }
+      },
+    });
+  }
+
+  carregarAuxiliares(): void {
+    this.api.getUsuarios().subscribe({ next: (u) => (this.usuarios = u) });
+    this.api.getLocais().subscribe({ next: (l) => (this.locais = l) });
+  }
+
+  obterNomeUsuario(log: HistoricoAcessoResponse): string {
+    if (log.nome_usuario) return log.nome_usuario;
+    if (log.usuario_id) {
+      const u = this.usuarios.find((item) => item.user_id === log.usuario_id);
+      if (u) return u.nome;
+    }
+    return 'Não identificado';
+  }
+
+  obterNomeLocal(log: HistoricoAcessoResponse): string {
+    if (log.nome_local) return log.nome_local;
+    if (log.local_id) {
+      const l = this.locais.find((item) => item.local_id === log.local_id);
+      if (l) return l.nome;
+    }
+    return 'Arduino ESP32 (Leitor)';
+  }
+
+  carregarHistorico(): void {
+    this.api.getHistoricoAcesso().subscribe({
+      next: (data) => {
+        this.historicoRecente.set(data.slice(-5).reverse());
+      },
+      error: () => {},
+    });
+  }
 
   async iniciarWebcam(): Promise<void> {
     this.resetar();
-    try {
-      this.stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 1280, height: 720, facingMode: 'user' },
-      });
-      this.webcamAtiva.set(true);
-      setTimeout(() => {
-        if (this.videoElement?.nativeElement) {
-          this.videoElement.nativeElement.srcObject = this.stream;
-        }
-      }, 50);
-    } catch {
-      this.snackBar.open('Erro ao acessar a webcam.', 'Fechar', { duration: 4000 });
-    }
+    await this.webcam.iniciarWebcam(
+      () => this.videoElement,
+      this.modoTotem(),
+      () => this.capturarEComparar()
+    );
   }
 
   pararWebcam(): void {
-    if (this.stream) {
-      this.stream.getTracks().forEach((track) => track.stop());
-      this.stream = null;
-    }
-    this.webcamAtiva.set(false);
+    this.webcam.pararWebcam();
     this.scanning.set(false);
   }
 
-  capturarEComparar(): void {
-    if (!this.videoElement?.nativeElement) return;
+  async capturarEComparar(): Promise<void> {
+    if (this.webcam.emCooldown()) return;
+    if (!this.webcam.capturaPronta() && !this.modoTotem()) return;
 
-    const video = this.videoElement.nativeElement;
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
+    const resCapture = await this.webcam.capturarFrameComPreview();
+    if (!resCapture) return;
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    this.fotoPreviewUrl = resCapture.previewUrl;
+    const formData = new FormData();
+    formData.append('file', resCapture.blob, 'comparacao.jpg');
 
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    this.fotoPreviewUrl = canvas.toDataURL('image/jpeg', 0.95);
+    this.scanning.set(true);
 
-    canvas.toBlob((blob) => {
-      if (!blob) return;
+    this.api.testarBiometria(formData).subscribe({
+      next: (res: any) => {
+        this.scanning.set(false);
 
-      const formData = new FormData();
-      formData.append('file', blob, 'comparacao.jpg');
+        if (res.status === 'COMPARADO') {
+          this.similaridade.set(res.similaridade);
+          this.aprovado.set(res.aprovado);
+          this.usuarioEncontrado.set(res.usuario?.nome || res.usuario || 'Usuário Desconhecido');
+          this.mensagemStatus.set(res.mensagem || (res.aprovado ? 'Acesso Liberado' : 'Acesso Negado'));
 
-      this.scanning.set(true);
-
-      this.api.testarBiometria(formData).subscribe({
-        next: (res: any) => {
-          this.scanning.set(false);
-          this.pararWebcam();
-
-          if (res.status === 'COMPARADO') {
-            this.similaridade.set(res.similaridade);
-            this.aprovado.set(res.aprovado);
-            this.usuarioEncontrado.set(res.usuario || 'Usuário Desconhecido');
+          if (res.aprovado) {
+            this.speech.falar(`Acesso liberado. Seja bem-vindo, ${this.usuarioEncontrado()}.`, true);
           } else {
-            this.snackBar.open(res.mensagem || 'Nenhum cadastro para comparar.', 'Fechar', { duration: 4000 });
+            this.speech.falar('Acesso negado. Biometria não corresponde ao cadastro.', true);
           }
-        },
-        error: (err) => {
-          this.scanning.set(false);
-          this.pararWebcam();
-          this.snackBar.open(err.error?.detail || 'Erro ao comparar biometria.', 'Fechar', { duration: 4000 });
-        },
-      });
-    }, 'image/jpeg', 0.95);
+        } else if (res.status === 'SEM_REGISTROS') {
+          this.aprovado.set(false);
+          this.similaridade.set(0);
+          this.usuarioEncontrado.set(null);
+          this.mensagemStatus.set('Nenhum usuário cadastrado no banco de dados.');
+          this.speech.falar('Nenhum usuário cadastrado.');
+        } else {
+          this.aprovado.set(false);
+          this.similaridade.set(0);
+          this.usuarioEncontrado.set(null);
+          this.mensagemStatus.set(res.mensagem || 'Rosto não identificado');
+          this.speech.falar(res.mensagem || 'Erro ao processar biometria.');
+        }
+
+        if (this.modoTotem()) {
+          this.exibirOverlayTotem.set(true);
+          this.timeoutOverlay = setTimeout(() => {
+            this.exibirOverlayTotem.set(false);
+            this.fotoPreviewUrl = null;
+
+            if (this.aprovado()) {
+              // Ativa cooldown de 5s para o liberado
+              this.webcam.ativarCooldownPosAcesso(5000);
+            } else {
+              // Quando negado, ativa um cooldown curto de 1.5s antes de liberar o sensor
+              this.webcam.ativarCooldownPosAcesso(1500);
+            }
+          }, 3000);
+        }
+      },
+      error: (err) => {
+        this.scanning.set(false);
+        this.aprovado.set(false);
+        this.mensagemStatus.set(err.error?.detail || 'Erro no servidor ao validar.');
+        this.speech.falar('Erro de conexão ao validar biometria.');
+
+        if (this.modoTotem()) {
+          this.exibirOverlayTotem.set(true);
+          this.timeoutOverlay = setTimeout(() => {
+            this.exibirOverlayTotem.set(false);
+            this.fotoPreviewUrl = null;
+            this.webcam.ativarCooldownPosAcesso(1500);
+          }, 3000);
+        }
+      },
+    });
+  }
+
+  toggleModoTotem(): void {
+    this.modoTotem.set(!this.modoTotem());
+    if (this.webcam.webcamAtiva()) {
+      this.iniciarWebcam();
+    }
+  }
+
+  toggleKioskFullscreen(): void {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => {
+        this.modoKioskFullscreen.set(true);
+      }).catch(() => {});
+    } else {
+      document.exitFullscreen().then(() => {
+        this.modoKioskFullscreen.set(false);
+      }).catch(() => {});
+    }
+  }
+
+  @HostListener('window:keydown', ['$event'])
+  handleKeyboardEvent(event: KeyboardEvent): void {
+    if (event.key === 'F11') {
+      event.preventDefault();
+      this.toggleKioskFullscreen();
+    } else if (event.code === 'Space' && !this.exibirOverlayTotem()) {
+      if (!this.webcam.webcamAtiva()) {
+        this.iniciarWebcam();
+      }
+    }
   }
 
   resetar(): void {
+    if (this.timeoutOverlay) {
+      clearTimeout(this.timeoutOverlay);
+      this.timeoutOverlay = null;
+    }
+    this.exibirOverlayTotem.set(false);
     this.pararWebcam();
     this.fotoPreviewUrl = null;
     this.similaridade.set(0);
     this.aprovado.set(false);
     this.usuarioEncontrado.set(null);
+    this.mensagemStatus.set(null);
   }
 
   ngOnDestroy(): void {
     this.pararWebcam();
+    if (this.wsSubscription) {
+      this.wsSubscription.unsubscribe();
+    }
   }
 }

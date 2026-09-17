@@ -33,10 +33,10 @@ export const DASHBOARD_MOCK: TuplePageConfig = {
     { key: 'motivo_recusa', label: 'Motivo Recusa' },
   ],
   rows: [
-    { id: 1, usuario_id: 1, uid_card_lido: 'A1:B2:C3:D4', data_hora: '2026-09-02 10:14:02', autorizado: 'Sim', percentual_similaridade: 98.5, motivo_recusa: '-' },
-    { id: 2, usuario_id: 2, uid_card_lido: 'E5:F6:G7:H8', data_hora: '2026-09-02 10:20:45', autorizado: 'Não', percentual_similaridade: 42.0, motivo_recusa: 'Facial incompatível' },
-    { id: 3, usuario_id: 3, uid_card_lido: '12:34:56:78', data_hora: '2026-09-02 11:05:12', autorizado: 'Sim', percentual_similaridade: 95.1, motivo_recusa: '-' },
-    { id: 4, usuario_id: null, uid_card_lido: '99:99:99:99', data_hora: '2026-09-02 11:30:00', autorizado: 'Não', percentual_similaridade: null, motivo_recusa: 'Cartão não cadastrado' },
+    { id: 1, usuario_id: 1, local_id: 'Entrada Principal', uid_card_lido: 'A1:B2:C3:D4', data_hora: '2026-09-02 10:14:02', autorizado: 'Sim', percentual_similaridade: 98.5, motivo_recusa: '-' },
+    { id: 2, usuario_id: 2, local_id: 'Laboratório de Redes', uid_card_lido: 'E5:F6:G7:H8', data_hora: '2026-09-02 10:20:45', autorizado: 'Não', percentual_similaridade: 42.0, motivo_recusa: 'Facial incompatível' },
+    { id: 3, usuario_id: 3, local_id: 'Entrada Principal', uid_card_lido: '12:34:56:78', data_hora: '2026-09-02 11:05:12', autorizado: 'Sim', percentual_similaridade: 95.1, motivo_recusa: '-' },
+    { id: 4, usuario_id: null, local_id: 'Sala Administrativa', uid_card_lido: '99:99:99:99', data_hora: '2026-09-02 11:30:00', autorizado: 'Não', percentual_similaridade: null, motivo_recusa: 'Cartão não cadastrado' },
   ],
 };
 
@@ -89,14 +89,15 @@ export const PERMISSOES_MOCK: TuplePageConfig = {
   resource: 'permissoes',
   columns: [
     { key: 'permissao_id', label: 'ID Permissão' },
-    { key: 'usuario_id', label: 'ID Usuário' },
+    { key: 'usuario_id', label: 'Usuário' },
+    { key: 'local_id', label: 'Local' },
     { key: 'horario_inicio', label: 'Horário Início' },
     { key: 'horario_fim', label: 'Horário Fim' },
-    { key: 'dias_semana', label: 'Dias Semana (INT[])' },
+    { key: 'dias_semana', label: 'Dias Permitidos' },
   ],
   rows: [
-    { permissao_id: 1, usuario_id: 1, horario_inicio: '08:00:00', horario_fim: '18:00:00', dias_semana: '[1, 2, 3, 4, 5]' },
-    { permissao_id: 2, usuario_id: 2, horario_inicio: '00:00:00', horario_fim: '23:59:59', dias_semana: '[1, 2, 3, 4, 5, 6, 7]' },
-    { permissao_id: 3, usuario_id: 3, horario_inicio: '07:00:00', horario_fim: '13:00:00', dias_semana: '[1, 2, 3, 4, 5]' },
+    { permissao_id: 1, usuario_id: 'João Silva', local_id: 'Entrada Principal', horario_inicio: '08:00:00', horario_fim: '18:00:00', dias_semana: 'Segunda, Terça, Quarta, Quinta, Sexta' },
+    { permissao_id: 2, usuario_id: 'Maria Souza', local_id: 'Laboratório de Redes', horario_inicio: '00:00:00', horario_fim: '23:59:59', dias_semana: 'Domingo, Segunda, Terça, Quarta, Quinta, Sexta, Sábado' },
+    { permissao_id: 3, usuario_id: 'Carlos Lima', local_id: 'Sala Administrativa', horario_inicio: '07:00:00', horario_fim: '13:00:00', dias_semana: 'Segunda, Terça, Quarta, Quinta, Sexta' },
   ],
 };

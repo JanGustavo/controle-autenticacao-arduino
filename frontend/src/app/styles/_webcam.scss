@@ -1,0 +1,282 @@
+// ─────────────────────────────────────────────────────────────────────
+// Partial SCSS compartilhado: estilos de webcam, guia facial, badges e Totem
+// ─────────────────────────────────────────────────────────────────────
+
+/* Viewport da webcam */
+.webcam-viewport {
+  position: relative;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #090d16;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+
+  video {
+    width: 100%;
+    height: auto;
+    display: block;
+    transform: scaleX(-1); // Espelha a imagem para navegação natural
+  }
+}
+
+/* Skeleton Loading de Inicialização de Câmera/IA */
+.skeleton-viewport {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  height: 380px;
+  border-radius: 16px;
+  background: linear-gradient(90deg, #0f172a 25%, #1e293b 50%, #0f172a 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 2s infinite;
+  color: #94a3b8;
+
+  mat-spinner {
+    ::ng-deep circle {
+      stroke: #38bdf8;
+    }
+  }
+
+  p {
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Flash de Obturador de Câmera (150ms) */
+.camera-flash-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #ffffff;
+  z-index: 10;
+  pointer-events: none;
+  animation: flash-animation 150ms ease-out forwards;
+}
+
+@keyframes flash-animation {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Badge Dinâmico de Status da IA */
+.status-badge {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 4;
+  backdrop-filter: blur(6px);
+  color: white;
+  transition: all 0.3s ease;
+
+  &.info {
+    background: rgba(30, 41, 59, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  &.warn {
+    background: rgba(220, 38, 38, 0.85);
+    border: 1px solid #f87171;
+  }
+
+  &.success {
+    background: rgba(22, 163, 74, 0.85);
+    border: 1px solid #4ade80;
+  }
+}
+
+/* Guia Oval de Centralização Facial */
+.face-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.face-oval {
+  position: relative;
+  width: min(210px, 45%);
+  height: min(270px, 65%);
+  border: 2px dashed #00d2ff;
+  border-radius: 50%;
+  box-shadow: 0 0 20px rgba(0, 210, 255, 0.4);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+
+  &.valid {
+    border-color: #22c55e;
+    box-shadow: 0 0 25px rgba(34, 197, 94, 0.6);
+  }
+}
+
+/* Anel SVG de Progresso da Auto-captura */
+.progress-ring {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  width: calc(100% + 12px);
+  height: calc(100% + 12px);
+  pointer-events: none;
+
+  circle {
+    fill: transparent;
+    stroke: #22c55e;
+    stroke-width: 5;
+    stroke-dasharray: 600;
+    stroke-dashoffset: 600;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.2s linear;
+  }
+}
+
+.guide-text {
+  margin-top: 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.65);
+  padding: 6px 16px;
+  border-radius: 20px;
+  backdrop-filter: blur(4px);
+  letter-spacing: 0.3px;
+}
+
+/* Controles abaixo da webcam */
+.webcam-controls {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+
+  button {
+    min-width: 120px;
+  }
+}
+
+/* Linha animada de escaneamento */
+.scan-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, rgba(0, 210, 255, 0.8), transparent);
+  animation: scan-line 2s linear infinite;
+  z-index: 3;
+}
+
+@keyframes scan-line {
+  0% { top: 0; }
+  100% { top: 100%; }
+}
+
+/* Overlay / Modal Modo Totem em Tela Cheia */
+.totem-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  backdrop-filter: blur(12px);
+  animation: totem-pop 300ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+
+  &.liberado {
+    background: rgba(22, 163, 74, 0.92);
+    color: #ffffff;
+  }
+
+  &.negado {
+    background: rgba(220, 38, 38, 0.92);
+    color: #ffffff;
+  }
+
+  .totem-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    max-width: 500px;
+
+    .totem-icon {
+      font-size: 96px;
+      width: 96px;
+      height: 96px;
+      margin-bottom: 16px;
+      animation: pulse-icon 1s infinite alternate;
+    }
+
+    .totem-avatar {
+      width: 128px;
+      height: 128px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 4px solid white;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: 3rem;
+      font-weight: 900;
+      margin: 0 0 8px 0;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin: 0 0 16px 0;
+      opacity: 0.95;
+    }
+
+    .totem-details {
+      font-size: 1.2rem;
+      opacity: 0.9;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 12px 24px;
+      border-radius: 30px;
+      margin-top: 12px;
+    }
+  }
+}
+
+@keyframes totem-pop {
+  0% { opacity: 0; transform: scale(0.9); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulse-icon {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.08); }
+}

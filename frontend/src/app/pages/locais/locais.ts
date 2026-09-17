@@ -26,13 +26,34 @@ export class LocaisPage implements OnInit {
   erro = '';
   form: LocalRequest = this.novoForm();
 
+  // Filtros de busca
+  filtroTexto = '';
+  filtroAtivo = 'todos'; // 'todos' | 'ativo' | 'inativo'
+
+  get displayedLocais(): LocalResponse[] {
+    return this.locais.filter((local) => {
+      const matchTexto =
+        !this.filtroTexto ||
+        local.nome.toLowerCase().includes(this.filtroTexto.trim().toLowerCase()) ||
+        local.identificador_dispositivo.toLowerCase().includes(this.filtroTexto.trim().toLowerCase());
+
+      const matchAtivo =
+        this.filtroAtivo === 'todos' ||
+        (this.filtroAtivo === 'ativo' && local.ativo) ||
+        (this.filtroAtivo === 'inativo' && !local.ativo);
+
+      return matchTexto && matchAtivo;
+    });
+  }
+
   ngOnInit(): void {
     this.carregar();
   }
 
   carregar(): void {
     this.carregando = true;
-    this.api.getLocais().subscribe({
+    const ativoParam = this.filtroAtivo === 'todos' ? undefined : this.filtroAtivo === 'ativo';
+    this.api.getLocais({ q: this.filtroTexto.trim() || undefined, ativo: ativoParam }).subscribe({
       next: (locais) => {
         this.locais = locais;
         this.carregando = false;

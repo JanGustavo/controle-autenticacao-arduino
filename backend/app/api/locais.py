@@ -7,8 +7,8 @@ router = APIRouter()
 
 
 @router.get("/locais", response_model=list[LocalResponse])
-def listar_locais():
-    return local_service.listar_locais()
+def listar_locais(q: str | None = None, ativo: bool | None = None):
+    return local_service.listar_locais(q=q, ativo=ativo)
 
 
 @router.get("/locais/{local_id}", response_model=LocalResponse)
