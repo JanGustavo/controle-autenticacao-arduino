@@ -46,11 +46,22 @@
                 <tr>
                   <td>{{ formatDate(log.created_at) }}</td>
                   <td>
-                    <strong>{{ log.admin_nome }}</strong><br>
-                    <small style="color: #6c757d">ID: {{ log.admin_id }}</small>
+                    <strong>{{ log.admin_nome }}</strong
+                    ><br />
+                    <small style="color: #aeee00">ID: {{ log.admin_id }}</small>
                   </td>
                   <td>
-                    <span class="badge" style="background: #e2e8f0; color: #1e293b; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;">
+                    <span
+                      class="badge"
+                      style="
+                        background: #3636ac;
+                        color: #fafafa;
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                        font-size: 12px;
+                        font-weight: 500;
+                      "
+                    >
                       {{ log.action }}
                     </span>
                   </td>
@@ -60,17 +71,35 @@
                       <strong>#{{ log.resource_id }}</strong>
                     }
                   </td>
-                  <td style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" [title]="log.description">
+                  <td
+                    style="
+                      max-width: 200px;
+                      white-space: nowrap;
+                      overflow: hidden;
+                      text-overflow: ellipsis;
+                    "
+                    [title]="log.description"
+                  >
                     {{ log.description }}
                   </td>
-                  <td><small>{{ log.ip_address }}</small></td>
+                  <td>
+                    <small>{{ log.ip_address }}</small>
+                  </td>
                   <td>
                     <span
                       class="status-pill"
-                      [class.ativo]="log.status === 'success'"
-                      [class.inativo]="log.status !== 'success'"
+                      [ngStyle]="{
+                        'background-color':
+                          log.status?.toUpperCase() === 'SUCCESS' ? '#2e7d32' : '#d32f2f',
+                        color: '#ffffff',
+                        padding: '4px 8px',
+                        'border-radius': '4px',
+                        'font-size': '12px',
+                        'font-weight': '500',
+                        display: 'inline-block',
+                      }"
                     >
-                      {{ log.status === 'success' ? 'Sucesso' : log.status }}
+                      {{ log.status?.toUpperCase() === 'SUCCESS' ? 'Sucesso' : log.status }}
                     </span>
                   </td>
                 </tr>

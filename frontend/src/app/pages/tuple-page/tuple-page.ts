@@ -95,6 +95,22 @@ export class TuplePage implements OnInit {
     return rows;
   }
 
+  excluirUsuario(row: Record<string, unknown>): void {
+  const id = Number(row['user_id']);
+  if (!confirm('Deseja realmente excluir este usuário?')) return;
+
+  this.api.deletarUsuario(id).subscribe({
+    next: () => {
+      this.carregarDados();
+      this.acaoNotice = 'Usuário excluído com sucesso.';
+    },
+    error: (err) => {
+      console.error('Erro ao excluir usuário:', err);
+      this.dataNotice.set('Não foi possível excluir o usuário.');
+    },
+  });
+}
+
   limparFiltros(): void {
     this.filtroTexto.set('');
     this.filtroAtivo.set('todos');

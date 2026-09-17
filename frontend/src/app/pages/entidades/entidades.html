@@ -1,231 +1,222 @@
 <main class="entities-page">
   <header class="page-header">
-    <a routerLink="/adm-page" class="back-link">
-      <mat-icon>arrow_back</mat-icon>
-      Painel administrativo
-    </a>
+    <div class="header-top">
+      <a routerLink="/adm-page" class="back-link">
+        <mat-icon>arrow_back</mat-icon>
+        Painel administrativo
+      </a>
+      <button type="button" class="btn-toggle-all" (click)="toggleTodos()">
+        <mat-icon>{{ todosExpandidos ? 'unfold_less' : 'unfold_more' }}</mat-icon>
+        {{ todosExpandidos ? 'Recolher todos' : 'Expandir todos' }}
+      </button>
+    </div>
     <span class="eyebrow">Debug / banco de dados</span>
     <h1>Modelo de entidades</h1>
-    <p>Visão das tabelas principais e dos relacionamentos definidos no banco de dados.</p>
+    <p>Clique em uma entidade para expandir ou ocultar seus atributos.</p>
   </header>
 
   <section class="diagram" aria-label="Diagrama de relacionamento entre entidades">
-    <article class="entity-card user-entity">
-      <header class="entity-header">
-        <div class="entity-icon"><mat-icon>person</mat-icon></div>
-        <div>
-          <span class="entity-kind">Entidade principal</span>
-          <h2>usuario</h2>
+    <!-- USUARIO -->
+    <article class="entity-card user-entity" [class.collapsed]="!expandido['usuario']">
+      <header class="entity-header" (click)="toggleEntity('usuario')">
+        <div class="header-main">
+          <div class="entity-icon"><mat-icon>person</mat-icon></div>
+          <div>
+            <span class="entity-kind">Entidade principal</span>
+            <h2>usuario</h2>
+          </div>
         </div>
+        <mat-icon class="expand-icon">{{ expandido['usuario'] ? 'expand_less' : 'expand_more' }}</mat-icon>
       </header>
-      <ul class="field-list">
-        <li>
-          <mat-icon>key</mat-icon><span><strong>user_id</strong><small>SERIAL · PK</small></span>
-        </li>
-        <li>
-          <mat-icon>badge</mat-icon>
-          <span><strong>nome</strong><small>VARCHAR(255) · NOT NULL</small></span>
-        </li>
-        <li>
-          <mat-icon>contactless</mat-icon>
-          <span><strong>uid_card</strong><small>VARCHAR(100) · UNIQUE</small></span>
-        </li>
-        <li>
-          <mat-icon>face</mat-icon>
-          <span><strong>vetor_facial</strong><small>JSONB · MVP 1:1</small></span>
-        </li>
-        <li>
-          <mat-icon>toggle_on</mat-icon>
-          <span><strong>ativo</strong><small>BOOLEAN · DEFAULT TRUE</small></span>
-        </li>
-        <li>
-          <mat-icon>calendar_today</mat-icon>
-          <span><strong>criado_em</strong><small>TIMESTAMP</small></span>
-        </li>
-      </ul>
-    </article>
-
-    <div class="relationship relationship-permission">
-      <span>1</span>
-      <div class="relationship-line"></div>
-      <span>N</span>
-      <strong>possui</strong>
-    </div>
-
-    <article class="entity-card permission-entity">
-      <header class="entity-header">
-        <div class="entity-icon"><mat-icon>schedule</mat-icon></div>
-        <div>
-          <span class="entity-kind">Regra de acesso</span>
-          <h2>permissao</h2>
-        </div>
-      </header>
-      <ul class="field-list">
-        <li>
-          <mat-icon>key</mat-icon>
-          <span><strong>permissao_id</strong><small>SERIAL · PK</small></span>
-        </li>
-        <li>
-          <mat-icon>link</mat-icon>
-          <span><strong>usuario_id</strong><small>INT · FK → usuario.user_id</small></span>
-        </li>
-        <li class="foreign-key">
-          <mat-icon>link</mat-icon>
-          <span><strong>local_id</strong><small>INT · FK → local.local_id</small></span>
-        </li>
-        <li>
-          <mat-icon>schedule</mat-icon>
-          <span><strong>horario_inicio</strong><small>TIME · NOT NULL</small></span>
-        </li>
-        <li>
-          <mat-icon>schedule</mat-icon>
-          <span><strong>horario_fim</strong><small>TIME · NOT NULL</small></span>
-        </li>
-        <li>
-          <mat-icon>date_range</mat-icon>
-          <span><strong>dias_semana</strong><small>INT[] · NOT NULL</small></span>
-        </li>
-      </ul>
-    </article>
-
-    <div class="relationship relationship-history">
-      <span>1</span>
-      <div class="relationship-line"></div>
-      <span>N</span>
-      <strong>registra</strong>
-    </div>
-
-    <article class="entity-card history-entity">
-      <header class="entity-header">
-        <div class="entity-icon"><mat-icon>history</mat-icon></div>
-        <div>
-          <span class="entity-kind">Auditoria de acessos</span>
-          <h2>historico_acesso</h2>
-        </div>
-      </header>
-      <ul class="field-list">
-        <li>
-          <mat-icon>key</mat-icon><span><strong>id</strong><small>SERIAL · PK</small></span>
-        </li>
-        <li class="foreign-key">
-          <mat-icon>link</mat-icon>
-          <span
-            ><strong>usuario_id</strong><small>INT · FK → usuario.user_id · SET NULL</small></span
-          >
-        </li>
-        <li class="foreign-key">
-          <mat-icon>link</mat-icon>
-          <span><strong>local_id</strong><small>INT · FK → local.local_id · SET NULL</small></span>
-        </li>
-        <li>
-          <mat-icon>contactless</mat-icon>
-          <span><strong>uid_card_lido</strong><small>VARCHAR(100)</small></span>
-        </li>
-        <li>
-          <mat-icon>event</mat-icon><span><strong>data_hora</strong><small>TIMESTAMP</small></span>
-        </li>
-        <li>
-          <mat-icon>verified</mat-icon>
-          <span><strong>autorizado</strong><small>BOOLEAN · NOT NULL</small></span>
-        </li>
-        <li>
-          <mat-icon>percent</mat-icon>
-          <span><strong>percentual_similaridade</strong><small>FLOAT</small></span>
-        </li>
-        <li>
-          <mat-icon>block</mat-icon>
-          <span><strong>motivo_recusa</strong><small>VARCHAR(255)</small></span>
-        </li>
-      </ul>
-    </article>
-
-    <div class="relationship local-relationship local-relationship-permission">
-      <span>N</span>
-      <div class="relationship-line"></div>
-      <span>1</span>
-      <strong>autoriza</strong>
-    </div>
-
-    <div class="relationship local-relationship local-relationship-history">
-      <span>N</span>
-      <div class="relationship-line"></div>
-      <span>1</span>
-      <strong>registra</strong>
-    </div>
-
-    <article class="entity-card local-entity">
-      <header class="entity-header">
-        <div class="entity-icon"><mat-icon>location_on</mat-icon></div>
-        <div>
-          <span class="entity-kind">Ponto de acesso</span>
-          <h2>local</h2>
-        </div>
-      </header>
-      <ul class="field-list">
-        <li>
-          <mat-icon>key</mat-icon>
-          <span><strong>local_id</strong><small>SERIAL · PK</small></span>
-        </li>
-        <li>
-          <mat-icon>place</mat-icon>
-          <span><strong>nome</strong><small>VARCHAR(255) · NOT NULL</small></span>
-        </li>
-        <li>
-          <mat-icon>memory</mat-icon>
-          <span
-            ><strong>identificador_dispositivo</strong
-            ><small>VARCHAR(100) · UNIQUE · NOT NULL</small></span
-          >
-        </li>
-        <li>
-          <mat-icon>toggle_on</mat-icon>
-          <span><strong>ativo</strong><small>BOOLEAN · DEFAULT TRUE</small></span>
-        </li>
-        <li>
-          <mat-icon>calendar_today</mat-icon>
-          <span><strong>criado_em</strong><small>TIMESTAMP</small></span>
-        </li>
-      </ul>
-      <div class="entity-relations" aria-label="Relacionamentos de local">
-        <span><strong>1 : N</strong> permissao</span>
-        <span><strong>1 : N</strong> historico_acesso</span>
+      @if (expandido['usuario']) {
+        <ul class="field-list">
+          <li><mat-icon>key</mat-icon><span><strong>user_id</strong><small>INTEGER · PK</small></span></li>
+          <li><mat-icon>badge</mat-icon><span><strong>nome</strong><small>VARCHAR(255)</small></span></li>
+          <li><mat-icon>contactless</mat-icon><span><strong>uid_card</strong><small>VARCHAR(100)</small></span></li>
+          <li><mat-icon>face</mat-icon><span><strong>vetor_facial</strong><small>JSONB</small></span></li>
+          <li><mat-icon>toggle_on</mat-icon><span><strong>ativo</strong><small>BOOLEAN</small></span></li>
+          <li><mat-icon>calendar_today</mat-icon><span><strong>criado_em</strong><small>TIMESTAMP</small></span></li>
+        </ul>
+      }
+      <div class="entity-relations">
+        <span class="rel-tag"><strong>1 : N</strong> permissao</span>
+        <span class="rel-tag"><strong>1 : N</strong> historico_acesso</span>
       </div>
     </article>
 
-    <article class="entity-card admin-entity">
-      <header class="entity-header">
-        <div class="entity-icon"><mat-icon>admin_panel_settings</mat-icon></div>
-        <div>
-          <span class="entity-kind">Acesso ao painel</span>
-          <h2>administrador</h2>
+    <!-- PERMISSAO -->
+    <article class="entity-card permission-entity" [class.collapsed]="!expandido['permissao']">
+      <header class="entity-header" (click)="toggleEntity('permissao')">
+        <div class="header-main">
+          <div class="entity-icon"><mat-icon>schedule</mat-icon></div>
+          <div>
+            <span class="entity-kind">Regra de acesso</span>
+            <h2>permissao</h2>
+          </div>
         </div>
+        <mat-icon class="expand-icon">{{ expandido['permissao'] ? 'expand_less' : 'expand_more' }}</mat-icon>
       </header>
-      <ul class="field-list">
-        <li>
-          <mat-icon>key</mat-icon>
-          <span><strong>admin_id</strong><small>SERIAL · PK</small></span>
-        </li>
-        <li>
-          <mat-icon>badge</mat-icon>
-          <span><strong>nome</strong><small>VARCHAR(255) · NOT NULL</small></span>
-        </li>
-        <li>
-          <mat-icon>mail</mat-icon>
-          <span><strong>email</strong><small>VARCHAR(255) · UNIQUE · NOT NULL</small></span>
-        </li>
-        <li>
-          <mat-icon>lock</mat-icon>
-          <span><strong>senha_hash</strong><small>VARCHAR(255) · NOT NULL</small></span>
-        </li>
-        <li>
-          <mat-icon>toggle_on</mat-icon>
-          <span><strong>ativo</strong><small>BOOLEAN · DEFAULT TRUE</small></span>
-        </li>
-        <li>
-          <mat-icon>calendar_today</mat-icon>
-          <span><strong>criado_em</strong><small>TIMESTAMP</small></span>
-        </li>
-      </ul>
+      @if (expandido['permissao']) {
+        <ul class="field-list">
+          <li><mat-icon>key</mat-icon><span><strong>permissao_id</strong><small>INTEGER · PK</small></span></li>
+          <li class="foreign-key"><mat-icon>link</mat-icon><span><strong>usuario_id</strong><small>INT · FK → usuario</small></span></li>
+          <li class="foreign-key"><mat-icon>link</mat-icon><span><strong>local_id</strong><small>INT · FK → local</small></span></li>
+          <li><mat-icon>schedule</mat-icon><span><strong>horario_inicio</strong><small>TIME</small></span></li>
+          <li><mat-icon>schedule</mat-icon><span><strong>horario_fim</strong><small>TIME</small></span></li>
+          <li><mat-icon>date_range</mat-icon><span><strong>dias_semana</strong><small>ARRAY</small></span></li>
+        </ul>
+      }
+      <div class="entity-relations">
+        <span class="rel-tag"><strong>FK →</strong> usuario</span>
+        <span class="rel-tag"><strong>FK →</strong> local</span>
+      </div>
+    </article>
+
+    <!-- HISTORICO_ACESSO -->
+    <article class="entity-card history-entity" [class.collapsed]="!expandido['historico_acesso']">
+      <header class="entity-header" (click)="toggleEntity('historico_acesso')">
+        <div class="header-main">
+          <div class="entity-icon"><mat-icon>history</mat-icon></div>
+          <div>
+            <span class="entity-kind">Auditoria de acessos</span>
+            <h2>historico_acesso</h2>
+          </div>
+        </div>
+        <mat-icon class="expand-icon">{{ expandido['historico_acesso'] ? 'expand_less' : 'expand_more' }}</mat-icon>
+      </header>
+      @if (expandido['historico_acesso']) {
+        <ul class="field-list">
+          <li><mat-icon>key</mat-icon><span><strong>id</strong><small>INTEGER · PK</small></span></li>
+          <li class="foreign-key"><mat-icon>link</mat-icon><span><strong>usuario_id</strong><small>INT · FK → usuario</small></span></li>
+          <li class="foreign-key"><mat-icon>link</mat-icon><span><strong>local_id</strong><small>INT · FK → local</small></span></li>
+          <li><mat-icon>contactless</mat-icon><span><strong>uid_card_lido</strong><small>VARCHAR(100)</small></span></li>
+          <li><mat-icon>event</mat-icon><span><strong>data_hora</strong><small>TIMESTAMP</small></span></li>
+          <li><mat-icon>verified</mat-icon><span><strong>autorizado</strong><small>BOOLEAN</small></span></li>
+          <li><mat-icon>percent</mat-icon><span><strong>percentual_similaridade</strong><small>FLOAT8</small></span></li>
+          <li><mat-icon>block</mat-icon><span><strong>motivo_recusa</strong><small>VARCHAR(255)</small></span></li>
+        </ul>
+      }
+      <div class="entity-relations">
+        <span class="rel-tag"><strong>FK →</strong> usuario</span>
+        <span class="rel-tag"><strong>FK →</strong> local</span>
+      </div>
+    </article>
+
+    <!-- LOCAL -->
+    <article class="entity-card local-entity" [class.collapsed]="!expandido['local']">
+      <header class="entity-header" (click)="toggleEntity('local')">
+        <div class="header-main">
+          <div class="entity-icon"><mat-icon>location_on</mat-icon></div>
+          <div>
+            <span class="entity-kind">Ponto de acesso</span>
+            <h2>local</h2>
+          </div>
+        </div>
+        <mat-icon class="expand-icon">{{ expandido['local'] ? 'expand_less' : 'expand_more' }}</mat-icon>
+      </header>
+      @if (expandido['local']) {
+        <ul class="field-list">
+          <li><mat-icon>key</mat-icon><span><strong>local_id</strong><small>INTEGER · PK</small></span></li>
+          <li><mat-icon>place</mat-icon><span><strong>nome</strong><small>VARCHAR(255)</small></span></li>
+          <li><mat-icon>memory</mat-icon><span><strong>identificador_dispositivo</strong><small>VARCHAR(100)</small></span></li>
+          <li><mat-icon>toggle_on</mat-icon><span><strong>ativo</strong><small>BOOLEAN</small></span></li>
+          <li><mat-icon>calendar_today</mat-icon><span><strong>criado_em</strong><small>TIMESTAMP</small></span></li>
+        </ul>
+      }
+      <div class="entity-relations">
+        <span class="rel-tag"><strong>1 : N</strong> permissao</span>
+        <span class="rel-tag"><strong>1 : N</strong> historico_acesso</span>
+      </div>
+    </article>
+
+    <!-- ADMINISTRADOR -->
+    <article class="entity-card admin-entity" [class.collapsed]="!expandido['administrador']">
+      <header class="entity-header" (click)="toggleEntity('administrador')">
+        <div class="header-main">
+          <div class="entity-icon"><mat-icon>admin_panel_settings</mat-icon></div>
+          <div>
+            <span class="entity-kind">Acesso ao painel</span>
+            <h2>administrador</h2>
+          </div>
+        </div>
+        <mat-icon class="expand-icon">{{ expandido['administrador'] ? 'expand_less' : 'expand_more' }}</mat-icon>
+      </header>
+      @if (expandido['administrador']) {
+        <ul class="field-list">
+          <li><mat-icon>key</mat-icon><span><strong>admin_id</strong><small>INTEGER · PK</small></span></li>
+          <li><mat-icon>badge</mat-icon><span><strong>nome</strong><small>VARCHAR(255)</small></span></li>
+          <li><mat-icon>mail</mat-icon><span><strong>email</strong><small>VARCHAR(255)</small></span></li>
+          <li><mat-icon>lock</mat-icon><span><strong>senha_hash</strong><small>VARCHAR(255)</small></span></li>
+          <li><mat-icon>star</mat-icon><span><strong>principal</strong><small>BOOLEAN</small></span></li>
+          <li><mat-icon>image</mat-icon><span><strong>foto_url</strong><small>TEXT</small></span></li>
+          <li><mat-icon>toggle_on</mat-icon><span><strong>ativo</strong><small>BOOLEAN</small></span></li>
+          <li><mat-icon>calendar_today</mat-icon><span><strong>criado_em</strong><small>TIMESTAMP</small></span></li>
+        </ul>
+      }
+      <div class="entity-relations">
+        <span class="rel-tag"><strong>1 : N</strong> audit_logs</span>
+        <span class="rel-tag"><strong>1 : N</strong> password_reset_token</span>
+      </div>
+    </article>
+
+    <!-- AUDIT_LOGS -->
+    <article class="entity-card audit-entity" [class.collapsed]="!expandido['audit_logs']">
+      <header class="entity-header" (click)="toggleEntity('audit_logs')">
+        <div class="header-main">
+          <div class="entity-icon"><mat-icon>list_alt</mat-icon></div>
+          <div>
+            <span class="entity-kind">Logs do sistema</span>
+            <h2>audit_logs</h2>
+          </div>
+        </div>
+        <mat-icon class="expand-icon">{{ expandido['audit_logs'] ? 'expand_less' : 'expand_more' }}</mat-icon>
+      </header>
+      @if (expandido['audit_logs']) {
+        <ul class="field-list">
+          <li><mat-icon>key</mat-icon><span><strong>id</strong><small>INTEGER · PK</small></span></li>
+          <li class="foreign-key"><mat-icon>link</mat-icon><span><strong>admin_id</strong><small>INT · FK → administrador</small></span></li>
+          <li><mat-icon>flash_on</mat-icon><span><strong>action</strong><small>VARCHAR(50)</small></span></li>
+          <li><mat-icon>category</mat-icon><span><strong>resource_type</strong><small>VARCHAR(50)</small></span></li>
+          <li><mat-icon>fingerprint</mat-icon><span><strong>resource_id</strong><small>VARCHAR(50)</small></span></li>
+          <li><mat-icon>description</mat-icon><span><strong>description</strong><small>TEXT</small></span></li>
+          <li><mat-icon>lan</mat-icon><span><strong>ip_address</strong><small>VARCHAR(45)</small></span></li>
+          <li><mat-icon>devices</mat-icon><span><strong>user_agent</strong><small>TEXT</small></span></li>
+          <li><mat-icon>tag</mat-icon><span><strong>request_id</strong><small>VARCHAR(50)</small></span></li>
+          <li><mat-icon>check_circle</mat-icon><span><strong>status</strong><small>VARCHAR(20)</small></span></li>
+          <li><mat-icon>data_object</mat-icon><span><strong>metadata</strong><small>JSONB</small></span></li>
+          <li><mat-icon>calendar_today</mat-icon><span><strong>created_at</strong><small>TIMESTAMP</small></span></li>
+        </ul>
+      }
+      <div class="entity-relations">
+        <span class="rel-tag"><strong>FK →</strong> administrador</span>
+      </div>
+    </article>
+
+    <!-- PASSWORD_RESET_TOKEN -->
+    <article class="entity-card token-entity" [class.collapsed]="!expandido['password_reset_token']">
+      <header class="entity-header" (click)="toggleEntity('password_reset_token')">
+        <div class="header-main">
+          <div class="entity-icon"><mat-icon>vpn_key</mat-icon></div>
+          <div>
+            <span class="entity-kind">Segurança</span>
+            <h2>password_reset_token</h2>
+          </div>
+        </div>
+        <mat-icon class="expand-icon">{{ expandido['password_reset_token'] ? 'expand_less' : 'expand_more' }}</mat-icon>
+      </header>
+      @if (expandido['password_reset_token']) {
+        <ul class="field-list">
+          <li><mat-icon>key</mat-icon><span><strong>id</strong><small>INTEGER · PK</small></span></li>
+          <li class="foreign-key"><mat-icon>link</mat-icon><span><strong>admin_id</strong><small>INT · FK → administrador</small></span></li>
+          <li><mat-icon>password</mat-icon><span><strong>token_hash</strong><small>VARCHAR(64)</small></span></li>
+          <li><mat-icon>timer</mat-icon><span><strong>expira_em</strong><small>TIMESTAMP</small></span></li>
+          <li><mat-icon>check</mat-icon><span><strong>usado</strong><small>BOOLEAN</small></span></li>
+          <li><mat-icon>calendar_today</mat-icon><span><strong>criado_em</strong><small>TIMESTAMP</small></span></li>
+        </ul>
+      }
+      <div class="entity-relations">
+        <span class="rel-tag"><strong>FK →</strong> administrador</span>
+      </div>
     </article>
   </section>
 
@@ -233,5 +224,6 @@
     <span><i class="pk-dot"></i> Chave primária</span>
     <span><i class="fk-dot"></i> Chave estrangeira</span>
     <span><strong>1 : N</strong> Um para muitos</span>
+    <span><strong>FK →</strong> Origem da chave</span>
   </footer>
 </main>

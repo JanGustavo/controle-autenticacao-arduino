@@ -32,6 +32,7 @@ export interface PermissaoCreateRequest {
   dias_semana: number[];
 }
 
+
 export interface LocalResponse {
   local_id: number;
   nome: string;
@@ -103,6 +104,10 @@ export class ApiService {
     if (filtros?.q) params = params.set('q', filtros.q);
     if (filtros?.ativo !== undefined && filtros?.ativo !== null) params = params.set('ativo', filtros.ativo);
     return this.http.get<UsuarioResponse[]>(`${API_BASE}/usuarios`, { params });
+  }
+
+  deletarUsuario(id: number): Observable<{ mensagem: string }> {
+    return this.http.delete<{ mensagem: string }>(`${API_BASE}/usuarios/${id}`);
   }
 
   getLocais(filtros?: { q?: string; ativo?: boolean }): Observable<LocalResponse[]> {

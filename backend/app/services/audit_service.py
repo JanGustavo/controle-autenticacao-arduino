@@ -87,7 +87,7 @@ class AuditService:
                         "user_agent": r[8],
                         "request_id": r[9],
                         "status": r[10],
-                        "metadata": r[11] if r[11] else None,
+                        "metadata": json.loads(r[11]) if isinstance(r[11], str) else r[11],
                         "created_at": r[12].isoformat() if r[12] else "",
                     })
                 return resultado

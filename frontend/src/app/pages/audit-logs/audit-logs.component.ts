@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -20,6 +20,7 @@ import { AuditLogsService, AuditLog } from '../../services/audit-logs.service';
 })
 export class AuditLogsComponent implements OnInit {
   private auditLogsService = inject(AuditLogsService);
+  private cdr = inject(ChangeDetectorRef);
 
   logs: AuditLog[] = [];
   carregando = true;
@@ -33,14 +34,17 @@ export class AuditLogsComponent implements OnInit {
     this.carregando = true;
     this.auditLogsService.getAuditLogs().subscribe({
       next: (dados) => {
+        console.log("Recebeu dados:", dados);
         this.logs = dados;
         this.erro = '';
         this.carregando = false;
+        this.cdr.detectChanges(); // Força a atualização da View
       },
       error: (err) => {
         console.error('Erro ao carregar logs de auditoria:', err);
         this.erro = 'Não foi possível carregar os logs de auditoria.';
         this.carregando = false;
+        this.cdr.detectChanges();
       },
     });
   }

@@ -217,7 +217,7 @@
               @for (col of cfg.columns; track col.key) {
                 <th>{{ col.label }}</th>
               }
-              @if (cfg.resource === 'permissoes') {
+              @if (cfg.resource === 'permissoes' || cfg.resource === 'usuarios') {
                 <th>Ações</th>
               }
             </tr>
@@ -246,10 +246,17 @@
                     </button>
                   </td>
                 }
+                @if (cfg.resource === 'usuarios') {
+                  <td class="row-actions">
+                    <button type="button" mat-icon-button style="color: #ef4444;" title="Excluir Usuário" (click)="excluirUsuario(row)">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </td>
+                }
               </tr>
             } @empty {
               <tr>
-                <td [attr.colspan]="cfg.columns.length + (cfg.resource === 'permissoes' ? 1 : 0)" class="empty">
+                <td [attr.colspan]="cfg.columns.length + (cfg.resource === 'permissoes' || cfg.resource === 'usuarios' ? 1 : 0)" class="empty">
                   Nenhum registro encontrado para "{{ filtroTexto() }}".
                 </td>
               </tr>
