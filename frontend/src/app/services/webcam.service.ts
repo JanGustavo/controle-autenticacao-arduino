@@ -22,6 +22,12 @@ export class WebcamService {
   nivelIluminacao = signal<'boa' | 'baixa'>('boa');
   emCooldown = signal(false);
 
+  // Modos e Diagnósticos
+  modoDebug = signal(true); // Habilitado por padrão para testes com a câmera Cubeternet
+  valorLuma = signal(0);
+  earAtual = signal(0);
+  proporcaoAtual = signal(0);
+
   // Modo auto-captura
   autoCapturaHabilitada = signal(false);
   onAutoCapturaCallback: (() => void) | null = null;
@@ -75,16 +81,58 @@ export class WebcamService {
     try {
       await this.carregarModelos();
 
+      // ── Passo 1: Obter permissão genérica para desbloquear labels ──
+      let streamInicial = await navigator.mediaDevices.getUserMedia({
+        video: { width: 1280, height: 720 },
+      });
+
+      // ── Passo 2: Agora com permissão, enumerar câmeras com labels ──
       const devices = await navigator.mediaDevices.enumerateDevices();
-      const cameraUsb = devices.find(
-        (d) => d.kind === 'videoinput' && d.label.toLowerCase().includes('usb')
+      const cameras = devices.filter((d) => d.kind === 'videoinput');
+      console.log(
+        '[WebcamService] Câmeras detectadas:',
+        cameras.map((c) => `"${c.label}" (${c.deviceId.slice(0, 12)})`)
       );
 
-      const videoConfig: MediaTrackConstraints = cameraUsb
-        ? { deviceId: { exact: cameraUsb.deviceId }, width: 1280, height: 720 }
-        : { facingMode: 'user', width: 1280, height: 720 };
+      // Palavras-chave que identificam câmeras externas USB
+      const palavrasExterna = ['cubeternet', 'usb', 'webcam', 'logitech', 'external'];
+      // Palavras-chave que identificam a câmera integrada do notebook (ignorar)
+      const palavrasInterna = ['positivo', 'theia', 'integrated', 'built-in', 'interno'];
 
-      this.stream = await navigator.mediaDevices.getUserMedia({ video: videoConfig });
+      // 1) Tenta encontrar a câmera externa por palavras-chave conhecidas
+      let cameraExterna = cameras.find((c) => {
+        const label = c.label.toLowerCase();
+        return palavrasExterna.some((kw) => label.includes(kw))
+          && !palavrasInterna.some((kw) => label.includes(kw));
+      });
+
+      // 2) Fallback: qualquer câmera que NÃO seja a integrada
+      if (!cameraExterna && cameras.length > 1) {
+        cameraExterna = cameras.find((c) => {
+          const label = c.label.toLowerCase();
+          return !palavrasInterna.some((kw) => label.includes(kw));
+        });
+      }
+
+      // ── Passo 3: Se achou câmera externa, verificar se já é a ativa ──
+      const trackAtual = streamInicial.getVideoTracks()[0];
+      const deviceIdAtual = trackAtual?.getSettings()?.deviceId;
+
+      if (cameraExterna && cameraExterna.deviceId !== deviceIdAtual) {
+        console.log('[WebcamService] 🔄 Trocando para câmera externa:', cameraExterna.label);
+        // Para o stream genérico e reabre com a câmera correta
+        streamInicial.getTracks().forEach((t) => t.stop());
+        streamInicial = await navigator.mediaDevices.getUserMedia({
+          video: { deviceId: { exact: cameraExterna.deviceId }, width: 1280, height: 720 },
+        });
+        console.log('[WebcamService] ✅ Câmera externa ativada:', cameraExterna.label);
+      } else if (cameraExterna) {
+        console.log('[WebcamService] ✅ Câmera externa já é a padrão:', cameraExterna.label);
+      } else {
+        console.log('[WebcamService] ⚠️ Nenhuma câmera externa encontrada, usando:', trackAtual?.label);
+      }
+
+      this.stream = streamInicial;
       this.webcamAtiva.set(true);
       this.carregandoHardware.set(false);
 
@@ -148,9 +196,10 @@ export class WebcamService {
 
         // Checagem de Iluminação
         const brilhoMedio = this.calcularLuminancia(video);
-        if (brilhoMedio < 35) {
+        this.valorLuma.set(Math.round(brilhoMedio));
+        if (brilhoMedio < 30) {
           this.capturaPronta.set(false);
-          this.statusValidacao.set('Ambiente escuro — Aumente a iluminação');
+          this.statusValidacao.set(`Ambiente escuro (${Math.round(brilhoMedio)} Luma) — Aumente a iluminação`);
           this.tipoStatus.set('warn');
           this.nivelIluminacao.set('baixa');
           this.resetAutoCaptura();
@@ -179,8 +228,9 @@ export class WebcamService {
 
         const box = detection.detection.box;
         const proporcaoRosto = box.width / video.videoWidth;
+        this.proporcaoAtual.set(Math.round(proporcaoRosto * 100));
 
-        if (proporcaoRosto < 0.20) {
+        if (proporcaoRosto < 0.18) {
           this.capturaPronta.set(false);
           this.statusValidacao.set('Aproxime-se da câmera');
           this.tipoStatus.set('warn');
@@ -188,7 +238,7 @@ export class WebcamService {
           return;
         }
 
-        if (proporcaoRosto > 0.65) {
+        if (proporcaoRosto > 0.70) {
           this.capturaPronta.set(false);
           this.statusValidacao.set('Afaste-se um pouco');
           this.tipoStatus.set('warn');
@@ -200,6 +250,7 @@ export class WebcamService {
         const olhoEsq = detection.landmarks.getLeftEye();
         const olhoDir = detection.landmarks.getRightEye();
         const earMedio = (calcularEAR(olhoEsq) + calcularEAR(olhoDir)) / 2;
+        this.earAtual.set(Number(earMedio.toFixed(2)));
 
         if (earMedio < 0.23) {
           this.capturaPronta.set(false);
@@ -330,13 +381,13 @@ export class WebcamService {
     if (!ctx) return Promise.resolve(null);
 
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const previewUrl = canvas.toDataURL('image/jpeg', 0.95);
+    const previewUrl = canvas.toDataURL('image/jpeg', 0.85);
 
     return new Promise((resolve) => {
       canvas.toBlob(
         (blob) => resolve(blob ? { blob, previewUrl } : null),
         'image/jpeg',
-        0.95,
+        0.85,
       );
     });
   }

@@ -46,7 +46,8 @@ async def testar_biometria(
             "aprovado": False,
         }
 
-    best_match = {"user_id": None, "nome": None, "similaridade": 0.0, "aprovado": False}
+    usuarios_validos = []
+    vetores_validos = []
 
     for row in usuarios_com_vetor:
         usuario_id, nome, vetor_facial_raw = row
@@ -59,17 +60,34 @@ async def testar_biometria(
         else:
             vetor_salvo = list(vetor_facial_raw) if vetor_facial_raw else None
 
-        if not vetor_salvo or len(vetor_salvo) != 128:
-            continue
+        if vetor_salvo and len(vetor_salvo) == 128:
+            usuarios_validos.append((usuario_id, nome))
+            vetores_validos.append(vetor_salvo)
 
-        similaridade, _ = FaceService.calculate_similarity(vetor_salvo, vetor_instantaneo)
+    if not usuarios_validos:
+        await _salvar_e_notificar_log(
+            usuario_id=None,
+            autorizado=False,
+            similaridade=0.0,
+            motivo_recusa="Nenhum usuário com vetor biométrico válido no sistema"
+        )
+        return {
+            "status": "SEM_REGISTROS",
+            "mensagem": "Nenhum usuário com biometria cadastrada no sistema.",
+            "similaridade": 0,
+            "aprovado": False,
+        }
 
-        if similaridade > best_match["similaridade"]:
+    similaridades_matches = FaceService.calculate_batch_similarities(vetores_validos, vetor_instantaneo)
+
+    best_match = {"user_id": None, "nome": None, "similaridade": 0.0, "aprovado": False}
+    for (usuario_id, nome), (sim, aprovado) in zip(usuarios_validos, similaridades_matches):
+        if sim > best_match["similaridade"]:
             best_match = {
                 "user_id": usuario_id,
                 "nome": nome,
-                "similaridade": float(similaridade),
-                "aprovado": bool(similaridade >= 70.0),
+                "similaridade": sim,
+                "aprovado": aprovado,
             }
 
     # 3. Grava o evento no histórico de acessos e transmite via WebSocket

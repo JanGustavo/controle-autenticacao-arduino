@@ -79,6 +79,9 @@ export interface HistoricoAcessoResponse {
 export interface LoginResponse {
   sucesso: boolean;
   token?: string;
+  usuario?: string;
+  token_type?: string;
+  expires_in?: number;
   mensagem?: string;
 }
 
@@ -182,4 +185,55 @@ export class ApiService {
   loginAdm(usuario: string, senha: string): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${API_BASE}/auth/login`, { usuario, senha });
   }
+
+  // Administradores
+  getAdministradores(filtros?: { q?: string; ativo?: boolean }): Observable<AdministradorResponse[]> {
+    let params = new HttpParams();
+    if (filtros?.q) params = params.set('q', filtros.q);
+    if (filtros?.ativo !== undefined && filtros?.ativo !== null) params = params.set('ativo', filtros.ativo);
+    return this.http.get<AdministradorResponse[]>(`${API_BASE}/administradores`, { params });
+  }
+
+  getAdministrador(id: number): Observable<AdministradorResponse> {
+    return this.http.get<AdministradorResponse>(`${API_BASE}/administradores/${id}`);
+  }
+
+  criarAdministrador(admin: AdministradorCreateRequest): Observable<AdministradorResponse> {
+    return this.http.post<AdministradorResponse>(`${API_BASE}/administradores`, admin);
+  }
+
+  atualizarAdministrador(id: number, admin: AdministradorUpdateRequest): Observable<AdministradorResponse> {
+    return this.http.patch<AdministradorResponse>(`${API_BASE}/administradores/${id}`, admin);
+  }
+
+  deletarAdministrador(id: number): Observable<{ mensagem: string }> {
+    return this.http.delete<{ mensagem: string }>(`${API_BASE}/administradores/${id}`);
+  }
 }
+
+export interface AdministradorResponse {
+  admin_id: number;
+  nome: string;
+  email: string;
+  ativo: boolean;
+  principal: boolean;
+  foto_url?: string | null;
+  criado_em: string;
+}
+
+export interface AdministradorCreateRequest {
+  nome: string;
+  email: string;
+  senha: string;
+  ativo: boolean;
+  foto_url?: string | null;
+}
+
+export interface AdministradorUpdateRequest {
+  nome?: string;
+  email?: string;
+  senha?: string;
+  ativo?: boolean;
+  foto_url?: string | null;
+}
+

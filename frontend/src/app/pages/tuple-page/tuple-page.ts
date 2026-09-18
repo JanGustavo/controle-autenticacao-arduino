@@ -144,8 +144,8 @@ export class TuplePage implements OnInit {
             this.dataNotice.set(null);
           },
           error: () => {
-            this.usingMock.set(true);
-            this.dataNotice.set('Não foi possível carregar o histórico. Exibindo dados de demonstração.');
+            this.rowsFromApi.set([]);
+            this.dataNotice.set('Não foi possível carregar o histórico de acesso da API.');
           },
         });
       return;
@@ -165,8 +165,8 @@ export class TuplePage implements OnInit {
             this.dataNotice.set(null);
           },
           error: () => {
-            this.usingMock.set(true);
-            this.dataNotice.set('Não foi possível carregar as permissões. Exibindo dados de demonstração.');
+            this.rowsFromApi.set([]);
+            this.dataNotice.set('Não foi possível carregar as permissões da API.');
           },
         });
       return;
@@ -181,8 +181,8 @@ export class TuplePage implements OnInit {
         this.dataNotice.set(null);
       },
       error: () => {
-        this.usingMock.set(true);
-        this.dataNotice.set('Não foi possível carregar os usuários. Exibindo dados de demonstração.');
+        this.rowsFromApi.set([]);
+        this.dataNotice.set('Não foi possível carregar os usuários da API.');
       },
     });
   }

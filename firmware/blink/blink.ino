@@ -16,8 +16,8 @@ const char* api_health = API_URL "/api/v1/health/health";
 
 void setup() {    
     // configs iniciais
-    pinMode(27, OUTPUT);
     pinMode(26, OUTPUT);
+    pinMode(27, OUTPUT);
 
     Serial.begin(115200);
     servo.attach(13);

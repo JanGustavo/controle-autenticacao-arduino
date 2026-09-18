@@ -1,9 +1,11 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from app.auth.dependencies import obter_administrador_atual
 from app.schemas.permissao_schema import PermissaoCreate, PermissaoResponse, PermissaoUpdate
 from app.services.permissao_service import permissao_service
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(obter_administrador_atual)])
+
 
 @router.get("/permissoes", response_model=list[PermissaoResponse])
 def listar_permissoes(q: str | None = None, usuario_id: int | None = None, local_id: int | None = None):

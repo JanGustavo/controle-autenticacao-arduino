@@ -32,11 +32,44 @@
           }
         </label>
 
-        <label class="field">
-          <span>UID do cartão</span>
-          <input formControlName="uid_card" type="text" maxlength="100" placeholder="A1:B2:C3:D4" />
-          <small>Opcional. Deve ser único quando informado.</small>
-        </label>
+        <div class="field full-width uid-field">
+          <label for="uid_card_input">
+            <span>UID do cartão</span>
+          </label>
+          <div class="input-with-action">
+            <input
+              id="uid_card_input"
+              formControlName="uid_card"
+              type="text"
+              maxlength="100"
+              placeholder="Ex: A1:B2:C3:D4"
+            />
+            <button
+              type="button"
+              mat-stroked-button
+              class="btn-rfid-mock"
+              (click)="capturarRfidMock()"
+              [disabled]="lendoRfidMock"
+              title="Simula a leitura de cartão RFID via leitor do Arduino"
+            >
+              @if (lendoRfidMock) {
+                <span class="btn-mock-content">
+                  <mat-progress-spinner diameter="18" mode="indeterminate"></mat-progress-spinner>
+                  <span>Aguardando aproximação...</span>
+                </span>
+              } @else {
+                <span class="btn-mock-content">
+                  <mat-icon>contactless</mat-icon>
+                  <span>Ler RFID (Mock)</span>
+                </span>
+              }
+            </button>
+          </div>
+          <small class="rfid-hint">
+            <mat-icon class="hint-icon">sensors</mat-icon>
+            Simulação de captura temporária do leitor RFID (RC522) que se comunicará com o Arduino/ESP32.
+          </small>
+        </div>
       </div>
     </section>
 
@@ -64,6 +97,17 @@
             <div class="face-oval"></div>
             <span class="guide-text">Centralize o rosto no círculo</span>
           </div>
+
+          @if (webcam.modoDebug()) {
+            <div class="debug-hud">
+              <div class="hud-metrics">
+                <span>LUMA: <b>{{ webcam.valorLuma() }}</b></span>
+                <span>EAR: <b>{{ webcam.earAtual() }}</b></span>
+                <span>ROSTO: <b>{{ webcam.proporcaoAtual() }}%</b></span>
+              </div>
+              <span class="hud-badge">CUBETERNET DEBUG</span>
+            </div>
+          }
 
           @if (scanning) {
             <div class="scan-line"></div>

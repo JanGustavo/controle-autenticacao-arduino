@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { ApiService, LocalResponse, PermissaoCreateRequest } from '../../services/api.service';
@@ -27,6 +28,7 @@ export interface LocalPermissaoItem {
     FormsModule,
     MatButtonModule,
     MatIconModule,
+    MatProgressSpinnerModule,
     MatSnackBarModule,
     ReactiveFormsModule,
     RouterLink,
@@ -47,6 +49,7 @@ export class CadastrarPage implements OnInit, OnDestroy {
   scanning = false;
   submitted = false;
   saving = false;
+  lendoRfidMock = false;
   successMessage = '';
   errorMessage = '';
   locaisPermissao: LocalPermissaoItem[] = [];
@@ -109,6 +112,32 @@ export class CadastrarPage implements OnInit, OnDestroy {
     this.errorMessage = '';
     this.pararWebcam();
     this.speech.falar('Foto capturada com sucesso.');
+  }
+
+  capturarRfidMock(): void {
+    if (this.lendoRfidMock) return;
+
+    this.lendoRfidMock = true;
+    this.speech.falar('Aproxime o cartão do leitor.');
+
+    setTimeout(() => {
+      // Simula leitura de cartão RFID (4 bytes hexadecimais padrão Mifare Classic / RC522)
+      const bytes = Array.from({ length: 4 }, () =>
+        Math.floor(Math.random() * 256)
+          .toString(16)
+          .padStart(2, '0')
+          .toUpperCase()
+      );
+      const uidMock = bytes.join(':');
+
+      this.form.patchValue({ uid_card: uidMock });
+      this.form.get('uid_card')?.markAsDirty();
+      this.form.get('uid_card')?.markAsTouched();
+      this.lendoRfidMock = false;
+
+      this.snackBar.open(`Cartão RFID lido: ${uidMock}`, 'OK', { duration: 3500 });
+      this.speech.falar('Cartão identificado.');
+    }, 700);
   }
 
   submit(): void {

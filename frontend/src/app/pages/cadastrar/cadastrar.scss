@@ -160,6 +160,72 @@ textarea:focus {
   font-weight: 400;
 }
 
+.uid-field {
+  .input-with-action {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+
+    input {
+      flex: 1;
+      font-family: monospace;
+      letter-spacing: 0.05em;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+    }
+
+    .btn-rfid-mock {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 44px;
+      padding: 0 16px;
+      white-space: nowrap;
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 600;
+      border-radius: 6px;
+      transition: all 0.15s ease;
+
+      .btn-mock-content {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      &:hover:not([disabled]) {
+        background: rgba(37, 99, 235, 0.08);
+      }
+
+      mat-icon {
+        font-size: 19px;
+        width: 19px;
+        height: 19px;
+      }
+
+      mat-progress-spinner {
+        display: inline-block;
+      }
+    }
+  }
+
+  .rfid-hint {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--muted);
+    font-size: 0.76rem;
+    font-weight: 400;
+
+    .hint-icon {
+      font-size: 15px;
+      width: 15px;
+      height: 15px;
+      color: #0284c7;
+    }
+  }
+}
+
 .camera-capture {
   position: relative;
   overflow: hidden;

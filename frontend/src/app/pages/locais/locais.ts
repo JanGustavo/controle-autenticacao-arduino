@@ -52,10 +52,10 @@ export class LocaisPage implements OnInit {
 
   carregar(): void {
     this.carregando = true;
-    const ativoParam = this.filtroAtivo === 'todos' ? undefined : this.filtroAtivo === 'ativo';
-    this.api.getLocais({ q: this.filtroTexto.trim() || undefined, ativo: ativoParam }).subscribe({
+    this.api.getLocais().subscribe({
       next: (locais) => {
         this.locais = locais;
+        this.erro = '';
         this.carregando = false;
       },
       error: () => {

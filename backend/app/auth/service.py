@@ -1,43 +1,30 @@
-import hashlib
-import hmac
-import secrets
-
 from fastapi import HTTPException, status
 from psycopg import OperationalError
 
 from app.auth.schemas import LoginRequest, LoginResponse
+from app.auth.security import (
+    DUMMY_BCRYPT_HASH,
+    criar_token_jwt,
+    obter_expiracao_segundos,
+    verificar_senha,
+)
 from app.database.connection import get_connection
 
 
-def _senha_confere(senha: str, senha_hash: str) -> bool:
-    """Valida hashes no formato pbkdf2_sha256$iteracoes$salt$hash."""
-    try:
-        algoritmo, iteracoes, salt, digest = senha_hash.split("$", 3)
-        if algoritmo != "pbkdf2_sha256":
-            return False
-        esperado = hashlib.pbkdf2_hmac(
-            "sha256",
-            senha.encode("utf-8"),
-            salt.encode("utf-8"),
-            int(iteracoes),
-        ).hex()
-    except (ValueError, TypeError):
-        return False
-
-    return hmac.compare_digest(esperado, digest)
-
-
 def autenticar(credenciais: LoginRequest) -> LoginResponse:
+    termo_busca = credenciais.usuario.strip()
+
     try:
         with get_connection() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
                     """
-                    SELECT admin_id, nome, email, senha_hash
+                    SELECT admin_id, nome, email, senha_hash, ativo, foto_url
                     FROM administrador
-                    WHERE LOWER(email) = LOWER(%s) AND ativo = TRUE
+                    WHERE LOWER(email) = LOWER(%s)
+                       OR (LOWER(email) = LOWER(%s || '@ardlock.local'))
                     """,
-                    (credenciais.usuario.strip(),),
+                    (termo_busca, termo_busca),
                 )
                 administrador = cursor.fetchone()
     except OperationalError as error:
@@ -46,14 +33,32 @@ def autenticar(credenciais: LoginRequest) -> LoginResponse:
             detail="Banco de dados indisponível. Verifique o PostgreSQL local.",
         ) from error
 
-    if not administrador or not _senha_confere(credenciais.senha, administrador[3]):
+    # Atenua timing attacks se o usuário não for encontrado
+    if not administrador:
+        verificar_senha(credenciais.senha, DUMMY_BCRYPT_HASH)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuário ou senha incorretos.",
         )
 
+    admin_id, nome, email, senha_hash, ativo, foto_url = administrador
+    senha_valida = verificar_senha(credenciais.senha, senha_hash)
+
+    # Resposta genérica para não revelar se o usuário existe, está desativado ou errou a senha
+    if not ativo or not senha_valida:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuário ou senha incorretos.",
+        )
+
+    token = criar_token_jwt(sub=str(admin_id), email=email, extra_claims={"nome": nome, "foto_url": foto_url})
+    expires_in = obter_expiracao_segundos()
+
+
     return LoginResponse(
         sucesso=True,
-        token=secrets.token_urlsafe(32),
-        usuario=administrador[2],
+        token=token,
+        usuario=email,
+        token_type="bearer",
+        expires_in=expires_in,
     )

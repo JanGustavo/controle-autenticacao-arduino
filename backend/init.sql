@@ -55,15 +55,25 @@ CREATE TABLE administrador (
     email VARCHAR(255) UNIQUE NOT NULL,
     senha_hash VARCHAR(255) NOT NULL,
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
+    principal BOOLEAN NOT NULL DEFAULT FALSE,
+    foto_url TEXT,
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+-- Garante no máximo 1 administrador principal no sistema
+CREATE UNIQUE INDEX uq_administrador_principal ON administrador (principal) WHERE principal = TRUE;
+
 -- Administrador inicial para desenvolvimento: admin@ardlock.local / admin.
-INSERT INTO administrador (nome, email, senha_hash)
+-- ATENÇÃO: Esta credencial é destinada EXCLUSIVAMENTE para ambiente local/desenvolvimento.
+-- NUNCA utilize esta credencial ou este hash em ambiente de produção.
+INSERT INTO administrador (nome, email, senha_hash, principal)
 VALUES (
         'Administrador',
         'admin@ardlock.local',
-        'pbkdf2_sha256$600000$koFOu6NXaKwtDolxq2RFQw$1e08a4d346ea95108daeda3442b71565fc6bda843563ce6d64ec3b9af54c26d8'
-    ) ON CONFLICT (email) DO NOTHING;
+        '$2b$12$aINBb4hKDDfrK3FBd1CpIul9Q3LrB9aT5vceZUbsVBQF8I/aKKlA6',
+        TRUE
+    ) ON CONFLICT (email) DO UPDATE SET senha_hash = EXCLUDED.senha_hash, principal = EXCLUDED.principal;
+
+
 -- Dados iniciais para desenvolvimento local.
 INSERT INTO local (nome, identificador_dispositivo)
 VALUES ('Entrada principal', 'ESP32-ENTRADA-01'),
