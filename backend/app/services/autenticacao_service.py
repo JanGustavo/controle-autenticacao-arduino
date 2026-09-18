@@ -5,7 +5,7 @@ from datetime import datetime
 from fastapi import HTTPException, status
 from app.services.face_service import FaceService
 from app.database.connection import get_connection
-from app.api.websocket_manager import manager
+from app.api.websocket import manager
 from app.schemas.autenticacao_schema import TestarBiometriaResponse
 
 class AutenticacaoService:
