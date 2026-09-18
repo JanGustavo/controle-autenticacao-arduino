@@ -1,3 +1,4 @@
+import os
 import json
 from datetime import datetime
 
@@ -10,6 +11,7 @@ from app.schemas.autenticacao_schema import TestarBiometriaResponse
 class AutenticacaoService:
     @staticmethod
     async def testar_biometria(image_bytes: bytes) -> TestarBiometriaResponse:
+        min_sim = float(os.getenv("P_MINIMA_BIOMETRIA", 80))
         vetor_instantaneo = FaceService.extract_face_vector(image_bytes)
         
         # 1. Rosto não identificado
@@ -21,6 +23,8 @@ class AutenticacaoService:
                 motivo_recusa="Nenhum rosto identificado na imagem da câmera"
             )
             raise HTTPException(status_code=400, detail="Nenhum rosto identificado na imagem da câmera.")
+
+        print(f"\n[DEBUG - Biometria] Vetor Capturado (primeiros 5 valores): {vetor_instantaneo[:5]}")
 
         with get_connection() as connection:
             with connection.cursor() as cursor:
@@ -41,6 +45,7 @@ class AutenticacaoService:
                 status="SEM_REGISTROS",
                 mensagem="Nenhum usuário com biometria cadastrada no sistema.",
                 similaridade=0.0,
+                min_similarity=min_sim,
                 aprovado=False,
             )
 
@@ -59,7 +64,7 @@ class AutenticacaoService:
                 vetor_salvo = list(vetor_facial_raw) if vetor_facial_raw else None
 
             if vetor_salvo and len(vetor_salvo) == 128:
-                usuarios_validos.append((usuario_id, nome))
+                usuarios_validos.append((usuario_id, nome, vetor_salvo))
                 vetores_validos.append(vetor_salvo)
 
         if not usuarios_validos:
@@ -73,13 +78,20 @@ class AutenticacaoService:
                 status="SEM_REGISTROS",
                 mensagem="Nenhum usuário com biometria cadastrada no sistema.",
                 similaridade=0.0,
+                min_similarity=min_sim,
                 aprovado=False,
             )
 
         similaridades_matches = FaceService.calculate_batch_similarities(vetores_validos, vetor_instantaneo)
 
+        print("\n--- [DEBUG] COMPARANDO COM USUÁRIOS DO BANCO ---")
         best_match = {"user_id": None, "nome": None, "similaridade": 0.0, "aprovado": False}
-        for (usuario_id, nome), (sim, aprovado) in zip(usuarios_validos, similaridades_matches):
+        
+        for (usuario_id, nome, vetor_salvo), (sim, aprovado) in zip(usuarios_validos, similaridades_matches):
+            print(f"👤 Usuário ID {usuario_id} ({nome}):")
+            print(f"   - Vetor no Banco (5 valores): {vetor_salvo[:5]}")
+            print(f"   - Similaridade Calculada: {sim}% | Aprovado: {aprovado}")
+            
             if sim > best_match["similaridade"]:
                 best_match = {
                     "user_id": usuario_id,
@@ -87,6 +99,8 @@ class AutenticacaoService:
                     "similaridade": sim,
                     "aprovado": aprovado,
                 }
+
+        print(f"🏆 Resultado Mais Próximo: {best_match['nome']} ({best_match['similaridade']}%) - Match: {best_match['aprovado']}\n")
 
         # 3. Grava o evento no histórico de acessos e transmite via WebSocket
         autorizado = best_match["aprovado"]
@@ -107,6 +121,7 @@ class AutenticacaoService:
             nome=best_match["nome"],
             usuario=best_match["nome"],
             similaridade=best_match["similaridade"],
+            min_similarity=min_sim,
             aprovado=best_match["aprovado"],
             mensagem=f"Mais próximo: {best_match['nome']} ({best_match['similaridade']}%)" if best_match["nome"] else "Nenhum usuário correspondente encontrado.",
         )

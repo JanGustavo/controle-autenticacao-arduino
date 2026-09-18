@@ -176,12 +176,14 @@ export class ApiService {
     similaridade: number;
     aprovado: boolean;
     mensagem: string;
+    min_similarity?: number;
   }> {
     return this.http.post<{
       status: string;
       usuario_id?: number;
       nome?: string;
       similaridade: number;
+      min_similarity?: number;
       aprovado: boolean;
       mensagem: string;
     }>(`${API_BASE}/autenticacao/testar-biometria`, foto);

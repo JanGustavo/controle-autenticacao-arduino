@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic import BaseModel
 
 class TestarBiometriaResponse(BaseModel):
@@ -8,3 +9,4 @@ class TestarBiometriaResponse(BaseModel):
     usuario_id: int | None = None
     nome: str | None = None
     usuario: str | None = None
+    min_similarity: Optional[float] = None
