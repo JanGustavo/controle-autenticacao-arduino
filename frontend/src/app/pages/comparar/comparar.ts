@@ -136,74 +136,70 @@ export class CompararPage implements OnInit, OnDestroy {
     const formData = new FormData();
     formData.append('file', resCapture.blob, 'comparacao.jpg');
 
-    this.scanning.set(true);
+// Limpa mensagens anteriores antes de iniciar a nova validação
+this.mensagemStatus.set(null);
+this.scanning.set(true);
 
-    this.api.testarBiometria(formData).subscribe({
-      next: (res: any) => {
-        this.scanning.set(false);
+this.api.testarBiometria(formData).subscribe({
+  next: (res: any) => {
+    this.scanning.set(false);
 
-        if (res.min_similarity) {
-          this.minSimilaridade.set(res.min_similarity);
-        }
-        console.log('Resultado da comparação: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', this.minSimilaridade());
+    if (res.min_similarity) {
+      this.minSimilaridade.set(res.min_similarity);
+    }
 
-        if (res.status === 'COMPARADO') {
-          this.similaridade.set(res.similaridade);
-          this.aprovado.set(res.aprovado);
-          this.usuarioEncontrado.set(res.usuario?.nome || res.usuario || 'Usuário Desconhecido');
-          this.mensagemStatus.set(res.mensagem || (res.aprovado ? 'Acesso Liberado' : 'Acesso Negado'));
+    if (res.status === 'COMPARADO') {
+      this.similaridade.set(res.similaridade);
+      this.aprovado.set(res.aprovado);
+      this.usuarioEncontrado.set(res.usuario?.nome || res.usuario || 'Usuário Desconhecido');
+      // Define a mensagem apenas para o evento atual
+      this.mensagemStatus.set(res.aprovado ? 'Acesso Liberado' : 'Acesso Negado');
 
-          if (res.aprovado) {
-            this.speech.falar(`Acesso liberado. Seja bem-vindo, ${this.usuarioEncontrado()}.`, true);
-          } else {
-            this.speech.falar('Acesso negado. Biometria não corresponde ao cadastro.', true);
-          }
-        } else if (res.status === 'SEM_REGISTROS') {
-          this.aprovado.set(false);
-          this.similaridade.set(0);
-          this.usuarioEncontrado.set(null);
-          this.mensagemStatus.set('Nenhum usuário cadastrado no banco de dados.');
-          this.speech.falar('Nenhum usuário cadastrado.');
-        } else {
-          this.aprovado.set(false);
-          this.similaridade.set(0);
-          this.usuarioEncontrado.set(null);
-          this.mensagemStatus.set(res.mensagem || 'Rosto não identificado');
-          this.speech.falar(res.mensagem || 'Erro ao processar biometria.');
-        }
+      if (res.aprovado) {
+        this.speech.falar(`Acesso liberado. Seja bem-vindo, ${this.usuarioEncontrado()}.`, true);
+      } else {
+        this.speech.falar('Acesso negado. Biometria não corresponde ao cadastro.', true);
+      }
+    } else if (res.status === 'SEM_REGISTROS') {
+      this.aprovado.set(false);
+      this.similaridade.set(0);
+      this.usuarioEncontrado.set(null);
+      this.mensagemStatus.set('Nenhum usuário cadastrado no banco de dados.');
+      this.speech.falar('Nenhum usuário cadastrado.');
+    } else {
+      this.aprovado.set(false);
+      this.similaridade.set(0);
+      this.usuarioEncontrado.set(null);
+      this.mensagemStatus.set(res.mensagem || 'Rosto não identificado');
+      this.speech.falar(res.mensagem || 'Erro ao processar biometria.');
+    }
 
-        if (this.modoTotem()) {
-          this.exibirOverlayTotem.set(true);
-          this.timeoutOverlay = setTimeout(() => {
-            this.exibirOverlayTotem.set(false);
-            this.fotoPreviewUrl = null;
+    if (this.modoTotem()) {
+      this.exibirOverlayTotem.set(true);
+      this.timeoutOverlay = setTimeout(() => {
+        this.exibirOverlayTotem.set(false);
+        this.fotoPreviewUrl = null;
+        this.webcam.ativarCooldownPosAcesso(this.aprovado() ? 5000 : 1500);
+      }, 3000);
+    }
+  },
+  error: (err) => {
+    this.scanning.set(false);
+    this.aprovado.set(false);
+    this.similaridade.set(0); // Reseta a similaridade em caso de erro HTTP
+    this.mensagemStatus.set(err.error?.detail || 'Rosto não identificado na imagem.');
+    this.speech.falar('Posicione o rosto corretamente.');
 
-            if (this.aprovado()) {
-              // Ativa cooldown de 5s para o liberado
-              this.webcam.ativarCooldownPosAcesso(5000);
-            } else {
-              // Quando negado, ativa um cooldown curto de 1.5s antes de liberar o sensor
-              this.webcam.ativarCooldownPosAcesso(1500);
-            }
-          }, 3000);
-        }
-      },
-      error: (err) => {
-        this.scanning.set(false);
-        this.aprovado.set(false);
-        this.mensagemStatus.set(err.error?.detail || 'Erro no servidor ao validar.');
-        this.speech.falar('Erro de conexão ao validar biometria.');
-
-        if (this.modoTotem()) {
-          this.exibirOverlayTotem.set(true);
-          this.timeoutOverlay = setTimeout(() => {
-            this.exibirOverlayTotem.set(false);
-            this.fotoPreviewUrl = null;
-            this.webcam.ativarCooldownPosAcesso(1500);
-          }, 3000);
-        }
-      },
-    });
+    if (this.modoTotem()) {
+      this.exibirOverlayTotem.set(true);
+      this.timeoutOverlay = setTimeout(() => {
+        this.exibirOverlayTotem.set(false);
+        this.fotoPreviewUrl = null;
+        this.webcam.ativarCooldownPosAcesso(1500);
+      }, 3000);
+    }
+  },
+});
   }
 
   toggleModoTotem(): void {

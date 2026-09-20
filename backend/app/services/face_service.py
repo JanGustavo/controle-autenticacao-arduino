@@ -7,13 +7,13 @@ import os
 import cv2
 import face_recognition
 import numpy as np
+from app.schemas.face_schema import SimilarityResult
 
 
 class FaceService:
     @staticmethod
     def extract_face_vector(image_bytes: bytes) -> list[float] | None:
         """Recebe os bytes de uma imagem, detecta o rosto, aplica alinhamento
-
         e extrai um embedding facial de 128 dimensões.
         """
         print("[DEBUG - FaceService] Iniciando processamento de imagem...")
@@ -97,16 +97,20 @@ class FaceService:
 
     @staticmethod
     def distance_to_similarity(distance: float) -> tuple[float, bool]:
-        """Converte a distância euclidiana dlib em percentual humano e flag de match com base no .env."""
-        min_similarity = float(os.getenv("P_MINIMA_BIOMETRIA", 80))
-        
-        if distance <= 0.60:
-            similarity_percentage = 100.0 - (distance / 0.60) * (100.0 - min_similarity)
+        """
+        Mapeia a distância dlib em percentual com base na regra do P_MINIMA_BIOMETRIA (.env):
+        - Distâncias acima de 0.60 pertencem a rostos visivelmente diferentes (Match = False).
+        - O percentual precisa atingir/ultrapassar P_MINIMA_BIOMETRIA (default: 85%) para ser liberado.
+        """
+        min_similarity = float(os.getenv("P_MINIMA_BIOMETRIA", 85))
+
+        if distance > 0.60:
+            similarity_percentage = max(0.0, 50.0 - ((distance - 0.60) / 0.40) * 50.0)
         else:
-            similarity_percentage = max(0.0, min_similarity - ((distance - 0.60) / 0.40) * min_similarity)
+            similarity_percentage = 100.0 - (distance / 0.60) * 50.0
 
         similarity_percentage = float(round(similarity_percentage, 2))
-        is_match = similarity_percentage >= min_similarity
+        is_match = distance <= 0.60 and similarity_percentage >= min_similarity
 
         print(f"[DEBUG - FaceService] Distância: {distance:.4f} -> Similaridade: {similarity_percentage}% | Match: {is_match} (Corte: {min_similarity}%)")
         return similarity_percentage, is_match
