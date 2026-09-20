@@ -67,13 +67,13 @@ app.add_middleware(
 app.include_router(
     health.router,
     prefix=BASE_PREFIX,
-    tags=["health"],
+    tags=["Health Check"],
 )
 
 app.include_router(
     database_health.router,
     prefix=f"{BASE_PREFIX}/health",
-    tags=["database_health"],
+    tags=["Database Health Check"],
 )
 
 
@@ -84,25 +84,25 @@ app.include_router(
 app.include_router(
     auth.router,
     prefix=f"{BASE_PREFIX}/auth",
-    tags=["auth"],
+    tags=["Auth portal"],
 )
 
 app.include_router(
     autenticacao.router,
     prefix=BASE_PREFIX,
-    tags=["autenticacao"],
+    tags=["Autenticação-facial"],
 )
 
 app.include_router(
     administradores.router,
     prefix=BASE_PREFIX,
-    tags=["administradores"],
+    tags=["Administradores"],
 )
 
 app.include_router(
     permissoes.router,
     prefix=BASE_PREFIX,
-    tags=["permissoes"],
+    tags=["Permissões"],
 )
 
 
@@ -124,13 +124,13 @@ app.include_router(
 app.include_router(
     usuarios.router,
     prefix=BASE_PREFIX,
-    tags=["usuarios"],
+    tags=["Usuários"],
 )
 
 app.include_router(
     locais.router,
     prefix=BASE_PREFIX,
-    tags=["locais"],
+    tags=["Locais"],
 )
 
 
@@ -141,13 +141,13 @@ app.include_router(
 app.include_router(
     historico_acesso.router,
     prefix=BASE_PREFIX,
-    tags=["historico_acesso"],
+    tags=["Histórico de Acesso"],
 )
 
 app.include_router(
     audit_logs.router,
     prefix=f"{BASE_PREFIX}/adm",
-    tags=["audit_logs"],
+    tags=["Logs de Auditoria"],
 )
 
 
