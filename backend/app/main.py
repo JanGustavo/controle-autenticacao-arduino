@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import adm_page
 from app.api import administradores
 from app.api import autenticacao
 from app.api import historico_acesso
@@ -13,6 +12,7 @@ from app.api.health import database_health, health
 from app.api.biometria import router as biometria
 from app.api import audit_logs
 from app.auth import router as auth
+from app.api import rfid
 
 app = FastAPI(
     title="Controle de Autenticação com Biometria Facial + RFID",
@@ -38,19 +38,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+base:str = "/api/v1"
 
 
-app.include_router(health.router, prefix="/api/v1", tags=["health"])
-app.include_router(database_health.router, prefix="/api/v1/health", tags=["database_health"])
 
-app.include_router(adm_page.router, prefix="/api/v1/adm", tags=["adm"])
-app.include_router(administradores.router, prefix="/api/v1", tags=["administradores"])
-app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
-app.include_router(autenticacao.router, prefix="/api/v1", tags=["autenticacao"])
-app.include_router(biometria, prefix="/api/v1", tags=["Biometria"])
-app.include_router(usuarios.router, prefix="/api/v1", tags=["usuarios"])
-app.include_router(permissoes.router, prefix="/api/v1", tags=["permissoes"])
-app.include_router(historico_acesso.router, prefix="/api/v1", tags=["historico_acesso"])
-app.include_router(locais.router, prefix="/api/v1", tags=["locais"])
-app.include_router(audit_logs.router, prefix="/api/v1/adm", tags=["audit_logs"])
+app.include_router(health.router, prefix=base, tags=["health"])
+app.include_router(database_health.router, prefix=base + "/health", tags=["database_health"])
+
+app.include_router(permissoes.router, prefix=base, tags=["permissoes"])
+app.include_router(historico_acesso.router, prefix=base, tags=["historico_acesso"])
+app.include_router(locais.router, prefix=base, tags=["locais"])
+app.include_router(usuarios.router, prefix=base, tags=["usuarios"])
+app.include_router(audit_logs.router, prefix=base + "/adm", tags=["audit_logs"])
 app.include_router(websocket.router, tags=["WebSocket"])
+app.include_router(rfid.router, prefix=base + "/arduino", tags=["RFID"])
