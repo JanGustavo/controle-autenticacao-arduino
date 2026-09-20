@@ -50,7 +50,7 @@ class FaceService:
         """
 
         if cls._app is None:
-            intra = int(os.getenv("ORT_INTRA_OP_THREADS", "8"))
+            intra = int(os.getenv("ORT_INTRA_OP_THREADS", "4"))
             inter = int(os.getenv("ORT_INTER_OP_THREADS", "1"))
 
             print(
@@ -64,7 +64,7 @@ class FaceService:
             so.execution_mode = ort.ExecutionMode.ORT_PARALLEL
             so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
 
-            det_size = int(os.getenv("FACE_DET_SIZE", "640"))
+            det_size = int(os.getenv("FACE_DET_SIZE", "480"))
 
             cls._app = FaceAnalysis(
                 name=os.getenv("FACE_MODEL", "buffalo_l"),
@@ -256,9 +256,9 @@ class FaceService:
     def _get_threshold() -> float:
         """Threshold configurável por .env (ainda em calibração -- ver seção 8 do RNF02)."""
         try:
-            return float(os.getenv("FACE_SIMILARITY_THRESHOLD", "0.50"))
+            return float(os.getenv("FACE_SIMILARITY_THRESHOLD", "0.80"))
         except ValueError:
-            return 0.50
+            return 0.80
 
     @classmethod
     def _build_similarity_result(cls, similarity: float) -> SimilarityResult:
