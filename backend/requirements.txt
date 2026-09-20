@@ -6,11 +6,17 @@ httpx>=0.28.1
 psycopg[binary]>=3.2.3
 setuptools<81
 python-multipart>=0.0.9
+
+# Imagem e reconhecimento facial
 opencv-python-headless>=4.8.0
-face-recognition>=1.3.0
-face-recognition-models>=0.3.0
 numpy>=1.24.0
+insightface>=0.7.3
+onnxruntime>=1.22.0
+
+# Autenticação
 bcrypt>=4.0.0
 PyJWT>=2.8.0
+
+# Validação e e-mail
 email-validator>=2.0.0
 fastapi-mail>=1.4.1

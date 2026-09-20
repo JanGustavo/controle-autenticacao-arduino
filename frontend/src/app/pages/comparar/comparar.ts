@@ -33,6 +33,7 @@ export class CompararPage implements OnInit, OnDestroy {
   public wsLogs = inject(WebSocketLogsService);
 
   @ViewChild('videoElement') videoElement?: ElementRef<HTMLVideoElement>;
+  @ViewChild('webcamContainer') webcamContainer?: ElementRef<HTMLDivElement>;
 
   scanning = signal(false);
   similaridade = signal(0);
@@ -42,7 +43,6 @@ export class CompararPage implements OnInit, OnDestroy {
   mensagemStatus = signal<string | null>(null);
   fotoPreviewUrl: string | null = null;
 
-  // Modo Totem / Kiosk
   modoTotem = signal(true);
   modoKioskFullscreen = signal(false);
   exibirOverlayTotem = signal(false);
@@ -58,7 +58,6 @@ export class CompararPage implements OnInit, OnDestroy {
     this.carregarHistorico();
     this.carregarAuxiliares();
 
-    // Inscrição no evento WebSocket de tempo real
     this.wsSubscription = this.wsLogs.obterLogsEmTempoReal().subscribe({
       next: (evento) => {
         if (evento.type === 'NOVO_ACESSO') {
@@ -125,6 +124,39 @@ export class CompararPage implements OnInit, OnDestroy {
     this.scanning.set(false);
   }
 
+/**
+   * Mapeia as coordenadas da Bounding Box para o círculo dinâmico
+   * ajustado de forma proporcional ao rosto.
+   */
+  obterEstiloOvalDinamico(): { [key: string]: string } {
+    const box = this.webcam.faceBox();
+    const video = this.videoElement?.nativeElement;
+    const container = this.webcamContainer?.nativeElement;
+
+    if (!box || !video || !container || !video.videoWidth) {
+      return {};
+    }
+
+    const scaleX = container.clientWidth / video.videoWidth;
+    const scaleY = container.clientHeight / video.videoHeight;
+
+    // Fator ajustado para 0.85 (circunda o rosto sem cobrir a tela inteira)
+    const scaleFactor = 0.85;
+    const size = Math.max(box.width * scaleX, box.height * scaleY) * scaleFactor;
+
+    // Centralização com leve ajuste de elevação (-10px) para enquadrar a cabeça
+    const left = (box.x + box.width / 2) * scaleX - size / 2;
+    const top = (box.y + box.height / 2) * scaleY - size / 2 - 10;
+
+    return {
+      left: `${left}px`,
+      top: `${top}px`,
+      width: `${size}px`,
+      height: `${size}px`,
+      transform: 'none',
+    };
+  }
+
   async capturarEComparar(): Promise<void> {
     if (this.webcam.emCooldown()) return;
     if (!this.webcam.capturaPronta() && !this.modoTotem()) return;
@@ -136,70 +168,68 @@ export class CompararPage implements OnInit, OnDestroy {
     const formData = new FormData();
     formData.append('file', resCapture.blob, 'comparacao.jpg');
 
-// Limpa mensagens anteriores antes de iniciar a nova validação
-this.mensagemStatus.set(null);
-this.scanning.set(true);
+    this.mensagemStatus.set(null);
+    this.scanning.set(true);
 
-this.api.testarBiometria(formData).subscribe({
-  next: (res: any) => {
-    this.scanning.set(false);
+    this.api.testarBiometria(formData).subscribe({
+      next: (res: any) => {
+        this.scanning.set(false);
 
-    if (res.min_similarity) {
-      this.minSimilaridade.set(res.min_similarity);
-    }
+        if (res.min_similarity) {
+          this.minSimilaridade.set(res.min_similarity);
+        }
 
-    if (res.status === 'COMPARADO') {
-      this.similaridade.set(res.similaridade);
-      this.aprovado.set(res.aprovado);
-      this.usuarioEncontrado.set(res.usuario?.nome || res.usuario || 'Usuário Desconhecido');
-      // Define a mensagem apenas para o evento atual
-      this.mensagemStatus.set(res.aprovado ? 'Acesso Liberado' : 'Acesso Negado');
+        if (res.status === 'COMPARADO') {
+          this.similaridade.set(res.similaridade);
+          this.aprovado.set(res.aprovado);
+          this.usuarioEncontrado.set(res.usuario?.nome || res.usuario || 'Usuário Desconhecido');
+          this.mensagemStatus.set(res.aprovado ? 'Acesso Liberado' : 'Acesso Negado');
 
-      if (res.aprovado) {
-        this.speech.falar(`Acesso liberado. Seja bem-vindo, ${this.usuarioEncontrado()}.`, true);
-      } else {
-        this.speech.falar('Acesso negado. Biometria não corresponde ao cadastro.', true);
-      }
-    } else if (res.status === 'SEM_REGISTROS') {
-      this.aprovado.set(false);
-      this.similaridade.set(0);
-      this.usuarioEncontrado.set(null);
-      this.mensagemStatus.set('Nenhum usuário cadastrado no banco de dados.');
-      this.speech.falar('Nenhum usuário cadastrado.');
-    } else {
-      this.aprovado.set(false);
-      this.similaridade.set(0);
-      this.usuarioEncontrado.set(null);
-      this.mensagemStatus.set(res.mensagem || 'Rosto não identificado');
-      this.speech.falar(res.mensagem || 'Erro ao processar biometria.');
-    }
+          if (res.aprovado) {
+            this.speech.falar(`Acesso liberado. Seja bem-vindo, ${this.usuarioEncontrado()}.`, true);
+          } else {
+            this.speech.falar('Acesso negado. Biometria não corresponde ao cadastro.', true);
+          }
+        } else if (res.status === 'SEM_REGISTROS') {
+          this.aprovado.set(false);
+          this.similaridade.set(0);
+          this.usuarioEncontrado.set(null);
+          this.mensagemStatus.set('Nenhum usuário cadastrado no banco de dados.');
+          this.speech.falar('Nenhum usuário cadastrado.');
+        } else {
+          this.aprovado.set(false);
+          this.similaridade.set(0);
+          this.usuarioEncontrado.set(null);
+          this.mensagemStatus.set(res.mensagem || 'Rosto não identificado');
+          this.speech.falar(res.mensagem || 'Erro ao processar biometria.');
+        }
 
-    if (this.modoTotem()) {
-      this.exibirOverlayTotem.set(true);
-      this.timeoutOverlay = setTimeout(() => {
-        this.exibirOverlayTotem.set(false);
-        this.fotoPreviewUrl = null;
-        this.webcam.ativarCooldownPosAcesso(this.aprovado() ? 5000 : 1500);
-      }, 3000);
-    }
-  },
-  error: (err) => {
-    this.scanning.set(false);
-    this.aprovado.set(false);
-    this.similaridade.set(0); // Reseta a similaridade em caso de erro HTTP
-    this.mensagemStatus.set(err.error?.detail || 'Rosto não identificado na imagem.');
-    this.speech.falar('Posicione o rosto corretamente.');
+        if (this.modoTotem()) {
+          this.exibirOverlayTotem.set(true);
+          this.timeoutOverlay = setTimeout(() => {
+            this.exibirOverlayTotem.set(false);
+            this.fotoPreviewUrl = null;
+            this.webcam.ativarCooldownPosAcesso(this.aprovado() ? 5000 : 1500);
+          }, 3000);
+        }
+      },
+      error: (err) => {
+        this.scanning.set(false);
+        this.aprovado.set(false);
+        this.similaridade.set(0);
+        this.mensagemStatus.set(err.error?.detail || 'Rosto não identificado na imagem.');
+        this.speech.falar('Posicione o rosto corretamente.');
 
-    if (this.modoTotem()) {
-      this.exibirOverlayTotem.set(true);
-      this.timeoutOverlay = setTimeout(() => {
-        this.exibirOverlayTotem.set(false);
-        this.fotoPreviewUrl = null;
-        this.webcam.ativarCooldownPosAcesso(1500);
-      }, 3000);
-    }
-  },
-});
+        if (this.modoTotem()) {
+          this.exibirOverlayTotem.set(true);
+          this.timeoutOverlay = setTimeout(() => {
+            this.exibirOverlayTotem.set(false);
+            this.fotoPreviewUrl = null;
+            this.webcam.ativarCooldownPosAcesso(1500);
+          }, 3000);
+        }
+      },
+    });
   }
 
   toggleModoTotem(): void {

@@ -88,6 +88,17 @@
         height: 64px;
       }
     }
+
+    /* Suporte a transição suave para o Círculo Guia Dinâmico */
+    .face-oval {
+      transition: all 0.12s ease-out;
+
+      &.dynamic {
+        position: absolute !important;
+        border-radius: 50%;
+        pointer-events: none;
+      }
+    }
   }
 
   .card-logs {
@@ -195,7 +206,6 @@
   }
 }
 
-// Suporte completo para Dark Mode
 :host-context(body.dark-mode) {
   .comparar-wrapper {
     color: #f8fafc;
@@ -204,12 +214,20 @@
       .header-top {
         .back-link {
           color: #94a3b8;
-          &:hover { color: #f8fafc; }
+
+          &:hover {
+            color: #f8fafc;
+          }
         }
       }
 
-      h2 { color: #f8fafc; }
-      p { color: #94a3b8; }
+      h2 {
+        color: #f8fafc;
+      }
+
+      p {
+        color: #94a3b8;
+      }
     }
 
     .card-cam,
@@ -254,6 +272,7 @@
             .user-name {
               color: #f8fafc !important;
             }
+
             .local-name {
               color: #94a3b8 !important;
             }

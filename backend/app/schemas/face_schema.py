@@ -9,7 +9,6 @@ class FaceVectorResponse(BaseModel):
 
 
 class SimilarityResult(BaseModel):
-    distance: float
-    similarity_percentage: float
+    similarity: float
+    threshold: float
     is_match: bool
-    min_similarity_applied: float
