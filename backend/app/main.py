@@ -8,9 +8,10 @@ from app.api import historico_acesso
 from app.api import locais
 from app.api import permissoes
 from app.api import usuarios
-from app.api import ws_router
+from app.api import websocket
 from app.api.health import database_health, health
 from app.api.biometria import router as biometria
+from app.api import audit_logs
 from app.auth import router as auth
 # from app.api import rfid
 
@@ -52,5 +53,5 @@ app.include_router(usuarios.router, prefix="/api/v1", tags=["usuarios"])
 app.include_router(permissoes.router, prefix="/api/v1", tags=["permissoes"])
 app.include_router(historico_acesso.router, prefix="/api/v1", tags=["historico_acesso"])
 app.include_router(locais.router, prefix="/api/v1", tags=["locais"])
-app.include_router(ws_router.router, tags=["WebSocket"])
-# app.include_router(rfid.router, prefix="/api/v1", tags=["RFID"])
+app.include_router(audit_logs.router, prefix="/api/v1/adm", tags=["audit_logs"])
+app.include_router(websocket.router, tags=["WebSocket"])

@@ -9,11 +9,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ApiService } from '../../services/api.service';
-import { AuthService } from '../../services/auth.service';
-
 
 @Component({
-  selector: 'app-login',
+  selector: 'app-forgot-password',
   standalone: true,
   imports: [
     CommonModule,
@@ -26,50 +24,36 @@ import { AuthService } from '../../services/auth.service';
     MatIconModule,
     MatProgressSpinnerModule,
   ],
-  templateUrl: './login.html',
-  styleUrl: './login.scss',
+  templateUrl: './forgot-password.html',
+  styleUrl: './forgot-password.scss'
 })
-export class Login {
+export class ForgotPassword {
   private api = inject(ApiService);
-  private authService = inject(AuthService);
-  private router = inject(Router);
 
-
-  usuario = '';
-  senha = '';
-  hidePassword = signal(true);
+  email = '';
   carregando = signal(false);
   erro = signal<string | null>(null);
-
-  togglePassword(event: MouseEvent) {
-    this.hidePassword.update((val) => !val);
-    event.stopPropagation();
-  }
+  sucesso = signal<string | null>(null);
 
   onSubmit() {
-    if (!this.usuario || !this.senha) {
-      this.erro.set('Por favor, preencha o e-mail e a senha.');
+    if (!this.email) {
+      this.erro.set('Por favor, preencha o e-mail.');
       return;
     }
 
     this.carregando.set(true);
     this.erro.set(null);
+    this.sucesso.set(null);
 
-    this.api.loginAdm(this.usuario, this.senha).subscribe({
+    this.api.solicitarRecuperacaoSenha(this.email).subscribe({
       next: (res) => {
         this.carregando.set(false);
-        if (res.sucesso && res.token) {
-          this.authService.setToken(res.token);
-          this.router.navigate(['/adm-page']);
-        } else {
-
-          this.erro.set(res.mensagem || 'Credenciais inválidas.');
-        }
+        this.sucesso.set(res.mensagem || 'E-mail enviado com sucesso.');
       },
       error: (error) => {
         this.carregando.set(false);
         this.erro.set(
-          error.error?.detail || 'Não foi possível autenticar. Verifique o usuário e a senha.',
+          error.error?.detail || 'Não foi possível solicitar a recuperação. Tente novamente mais tarde.'
         );
       },
     });

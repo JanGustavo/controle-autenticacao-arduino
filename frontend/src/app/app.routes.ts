@@ -7,6 +7,7 @@ import { CadastrarPage } from './pages/cadastrar/cadastrar';
 import { CompararPage } from './pages/comparar/comparar';
 import { LocaisPage } from './pages/locais/locais';
 import { AdministradoresPage } from './pages/administradores/administradores';
+import { AuditLogsComponent } from './pages/audit-logs/audit-logs.component';
 import { authGuard } from './guards/auth.guard';
 import {
   DASHBOARD_MOCK,
@@ -14,9 +15,14 @@ import {
   PERMISSOES_MOCK,
 } from './models/tuple-page.model';
 
+import { ForgotPassword } from './pages/forgot-password/forgot-password';
+import { ResetPassword } from './pages/reset-password/reset-password';
+
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: 'login', component: Login },
+  { path: 'forgot-password', component: ForgotPassword },
+  { path: 'reset-password', component: ResetPassword },
   { path: 'adm-page', component: AdmPage, canActivate: [authGuard] },
   { path: 'administradores', component: AdministradoresPage, canActivate: [authGuard] },
   { path: 'entidades', component: EntidadesPage, canActivate: [authGuard] },
@@ -49,6 +55,11 @@ export const routes: Routes = [
     component: TuplePage,
     canActivate: [authGuard],
     data: { config: PERMISSOES_MOCK },
+  },
+  {
+    path: 'audit-logs',
+    component: AuditLogsComponent,
+    canActivate: [authGuard],
   },
   { path: '**', redirectTo: 'login' },
 ];

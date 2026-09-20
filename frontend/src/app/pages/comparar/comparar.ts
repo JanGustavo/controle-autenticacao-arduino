@@ -36,6 +36,7 @@ export class CompararPage implements OnInit, OnDestroy {
 
   scanning = signal(false);
   similaridade = signal(0);
+  minSimilaridade = signal(80);
   aprovado = signal(false);
   usuarioEncontrado = signal<string | null>(null);
   mensagemStatus = signal<string | null>(null);
@@ -140,6 +141,11 @@ export class CompararPage implements OnInit, OnDestroy {
     this.api.testarBiometria(formData).subscribe({
       next: (res: any) => {
         this.scanning.set(false);
+
+        if (res.min_similarity) {
+          this.minSimilaridade.set(res.min_similarity);
+        }
+        console.log('Resultado da comparação: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', this.minSimilaridade());
 
         if (res.status === 'COMPARADO') {
           this.similaridade.set(res.similaridade);

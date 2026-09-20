@@ -189,7 +189,7 @@
 
         <div class="totem-details">
           @if (similaridade() > 0) {
-            <span>Similaridade: {{ similaridade() }}% (Min: 70%)</span>
+            <span>Similaridade: {{ similaridade() }}% (Min: {{minSimilaridade()}}%)</span>
           }
           @if (mensagemStatus() && !aprovado()) {
             <span>{{ mensagemStatus() }}</span>

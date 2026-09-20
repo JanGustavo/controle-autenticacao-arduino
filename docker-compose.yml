@@ -19,6 +19,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - acesso-net
 
   # ── Backend (FastAPI + Uvicorn + WebSockets) ──────────────────────────────────
   backend:
@@ -42,6 +44,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - acesso-net
 
   # ── Frontend (Angular Totem → Nginx com Reverse Proxy p/ WebSocket) ───────────
   frontend:
@@ -55,6 +59,12 @@ services:
       - "4200:80"
     depends_on:
       - backend
+    networks:
+      - acesso-net
 
 volumes:
   pgdata:
+
+networks:
+  acesso-net:
+    driver: bridge
