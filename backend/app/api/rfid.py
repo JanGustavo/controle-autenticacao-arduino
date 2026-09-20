@@ -4,6 +4,12 @@ from app.services.rfid_service import rfid_service
 
 router = APIRouter()
 
+from app.schemas.rfid_schema import (
+    VerificarCartaoRequest,
+    VerificarCartaoResponse,
+    ResultadoBiometriaRequest,
+)
+
 @router.post("/verificar-cartao", response_model=VerificarCartaoResponse)
 async def verificar_cartao(request: VerificarCartaoRequest):
     """
@@ -22,3 +28,34 @@ async def verificar_cartao(request: VerificarCartaoRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Erro interno no servidor ao verificar o cartão."
         )
+
+@router.post("/resultado-biometria")
+async def receber_resultado_biometria(
+    resultado: ResultadoBiometriaRequest,
+):
+    """
+    Recebe o resultado da biometria facial.
+
+    Temporariamente apenas simula o recebimento
+    pelo hardware através do console.
+    """
+
+    if resultado.aprovado:
+        print(
+            f"[HARDWARE] 🟢 ACESSO LIBERADO | "
+            f"Usuário: {resultado.nome} | "
+            f"ID: {resultado.usuario_id} | "
+            f"Similaridade: {resultado.similaridade:.4f}"
+        )
+    else:
+        print(
+            f"[HARDWARE] 🔴 ACESSO NEGADO | "
+            f"Usuário: {resultado.nome or 'Desconhecido'} | "
+            f"ID: {resultado.usuario_id} | "
+            f"Similaridade: {resultado.similaridade:.4f}"
+        )
+
+    return {
+        "recebido": True,
+        "aprovado": resultado.aprovado,
+    }

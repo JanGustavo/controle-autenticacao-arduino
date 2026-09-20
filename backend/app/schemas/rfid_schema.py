@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 import re
 
+
 class VerificarCartaoRequest(BaseModel):
     uid_card: str = Field(
         ...,
@@ -10,20 +11,35 @@ class VerificarCartaoRequest(BaseModel):
         description="UID do cartão lido pelo ESP32 (hex, 8, 14 ou 20 chars)"
     )
 
-    @field_validator('uid_card')
+    @field_validator("uid_card")
     @classmethod
     def validar_formato_uid(cls, v: str) -> str:
         padrao = r"^[0-9A-Fa-f]{8}$|^[0-9A-Fa-f]{14}$|^[0-9A-Fa-f]{20}$"
+
         if not re.fullmatch(padrao, v):
             raise ValueError(
                 "Formato de UID inválido. Esperado uma string hexadecimal "
                 "(0-9, A-F) com exatamente 8, 14 ou 20 caracteres."
             )
+
         # Padroniza para maiúsculo antes de chegar no Service/Banco de Dados
         return v.upper()
+
 
 class VerificarCartaoResponse(BaseModel):
     valido: bool
     usuario_id: Optional[int] = None
     nome: Optional[str] = None
     mensagem: str
+
+
+class ResultadoBiometriaRequest(BaseModel):
+    usuario_id: Optional[int] = None
+    nome: Optional[str] = None
+    aprovado: bool
+    similaridade: float = Field(
+        ...,
+        ge=0.0,
+        le=1.0,
+        description="Similaridade facial calculada entre 0.0 e 1.0"
+    )
