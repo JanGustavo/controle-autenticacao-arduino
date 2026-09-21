@@ -1,17 +1,20 @@
 import os
 import json
 from datetime import datetime
+import httpx
 
 from fastapi import HTTPException, status
 from app.services.face_service import FaceService
 from app.database.connection import get_connection
 from app.api.websocket import manager
 from app.schemas.autenticacao_schema import TestarBiometriaResponse
+from app.schemas.face_schema import SimilarityResult
 
 class AutenticacaoService:
     @staticmethod
     async def testar_biometria(image_bytes: bytes) -> TestarBiometriaResponse:
-        min_sim = float(os.getenv("P_MINIMA_BIOMETRIA", 80))
+        # Lê o threshold configurado para o InsightFace (padrão 0.50)
+        min_sim = float(os.getenv("FACE_SIMILARITY_THRESHOLD", "0.50"))
         vetor_instantaneo = FaceService.extract_face_vector(image_bytes)
         
         # 1. Rosto não identificado
@@ -24,7 +27,7 @@ class AutenticacaoService:
             )
             raise HTTPException(status_code=400, detail="Nenhum rosto identificado na imagem da câmera.")
 
-        print(f"\n[DEBUG - Biometria] Vetor Capturado (primeiros 5 valores): {vetor_instantaneo[:5]}")
+        print(f"\n[DEBUG - Biometria] Vetor Capturado ({len(vetor_instantaneo)} dim, primeiros 5 valores): {vetor_instantaneo[:5]}")
 
         with get_connection() as connection:
             with connection.cursor() as cursor:
@@ -63,7 +66,8 @@ class AutenticacaoService:
             else:
                 vetor_salvo = list(vetor_facial_raw) if vetor_facial_raw else None
 
-            if vetor_salvo and len(vetor_salvo) == 128:
+            # ACEITA VETORES DE 512 DIMENSÕES (INSIGHTFACE) OU 128 (LEGADO)
+            if vetor_salvo and len(vetor_salvo) in (512, 128):
                 usuarios_validos.append((usuario_id, nome, vetor_salvo))
                 vetores_validos.append(vetor_salvo)
 
@@ -87,10 +91,14 @@ class AutenticacaoService:
         print("\n--- [DEBUG] COMPARANDO COM USUÁRIOS DO BANCO ---")
         best_match = {"user_id": None, "nome": None, "similaridade": 0.0, "aprovado": False}
         
-        for (usuario_id, nome, vetor_salvo), (sim, aprovado) in zip(usuarios_validos, similaridades_matches):
+        # TRATA CADA ITEM DA RESPOSTA COMO SimilarityResult
+        for (usuario_id, nome, vetor_salvo), sim_res in zip(usuarios_validos, similaridades_matches):
+            sim = sim_res.similarity
+            aprovado = sim_res.is_match
+
             print(f"👤 Usuário ID {usuario_id} ({nome}):")
-            print(f"   - Vetor no Banco (5 valores): {vetor_salvo[:5]}")
-            print(f"   - Similaridade Calculada: {sim}% | Aprovado: {aprovado}")
+            print(f"   - Vetor no Banco ({len(vetor_salvo)} dim, primeiros 5 valores): {vetor_salvo[:5]}")
+            print(f"   - Similaridade Calculada: {sim:.4f} | Threshold: {sim_res.threshold} | Aprovado: {aprovado}")
             
             if sim > best_match["similaridade"]:
                 best_match = {
@@ -100,7 +108,7 @@ class AutenticacaoService:
                     "aprovado": aprovado,
                 }
 
-        print(f"🏆 Resultado Mais Próximo: {best_match['nome']} ({best_match['similaridade']}%) - Match: {best_match['aprovado']}\n")
+        print(f"🏆 Resultado Mais Próximo: {best_match['nome']} ({best_match['similaridade']:.4f}) - Match: {best_match['aprovado']}\n")
 
         # 3. Grava o evento no histórico de acessos e transmite via WebSocket
         autorizado = best_match["aprovado"]
@@ -114,6 +122,14 @@ class AutenticacaoService:
             motivo_recusa=motivo,
             nome_usuario=best_match["nome"] if autorizado else None
         )
+        
+        # Disparo assíncrono do debug para o ESP32 com base no resultado da tupla mapeada
+        await AutenticacaoService._enviar_debug_esp32(
+            usuario_id=best_match["user_id"],
+            aprovado=best_match["aprovado"],
+            nome=best_match["nome"],
+            similaridade=best_match["similaridade"]
+        )
 
         return TestarBiometriaResponse(
             status="COMPARADO" if best_match["user_id"] else "NENHUM_CONFERENTE",
@@ -123,7 +139,7 @@ class AutenticacaoService:
             similaridade=best_match["similaridade"],
             min_similarity=min_sim,
             aprovado=best_match["aprovado"],
-            mensagem=f"Mais próximo: {best_match['nome']} ({best_match['similaridade']}%)" if best_match["nome"] else "Nenhum usuário correspondente encontrado.",
+            mensagem=f"Mais próximo: {best_match['nome']} ({best_match['similaridade']})" if best_match["nome"] else "Nenhum usuário correspondente encontrado.",
         )
 
     @staticmethod
@@ -170,5 +186,53 @@ class AutenticacaoService:
             await manager.broadcast(evento)
         except Exception as e:
             print(f"Erro ao salvar e notificar log de acesso: {e}")
+
+    #debug 
+    @staticmethod
+    async def _enviar_debug_esp32(
+        usuario_id: int | None,
+        aprovado: bool,
+        nome: str | None,
+        similaridade: float,
+    ) -> None:
+        """
+        Envia o resultado da biometria para o endpoint que,
+        futuramente, será responsável pela comunicação com o hardware.
+
+        Atualmente o endpoint apenas simula o recebimento
+        pelo ESP32/Mega através do console.
+        """
+
+        url = "http://localhost:8001/api/v1/arduino/resultado-biometria" #substituir pelo .env que vai apontar para o endpoint real do ESP32/Mega
+
+        payload = {
+            "usuario_id": usuario_id,
+            "nome": nome,
+            "aprovado": aprovado,
+            "similaridade": round(similaridade, 4),
+        }
+
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    url,
+                    json=payload,
+                    timeout=2.0,
+                )
+
+            response.raise_for_status()
+
+            print(
+                f"[BIOMETRIA → HARDWARE] "
+                f"Resultado enviado | "
+                f"aprovado={aprovado} | "
+                f"status={response.status_code}"
+            )
+
+        except httpx.HTTPError as e:
+            print(
+                f"[BIOMETRIA → HARDWARE] "
+                f"Falha ao enviar resultado: {e}"
+            )
 
 autenticacao_service = AutenticacaoService()

@@ -1,20 +1,68 @@
-"""
-Mantendo o protocolo pequeno e performático
-
-EX:
-{
-    "esp_id": 1,
-    "uid_card": "A1B2C3D4"
-}
-"""
-
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
+from typing import Optional
+import re
 
 
-class RFIDRequest(BaseModel):
-    esp_id: int
-    uid_card: str
+class VerificarCartaoRequest(BaseModel):
+    esp_id: int = Field(
+        ...,
+        gt=0, # ge = greater than (maior que 0)
+        description="ID numérico da placa ESP32"
+    )
+
+    uid_card: str = Field(
+        ...,
+        min_length=8,
+        max_length=20,
+        description="UID do cartão lido pelo ESP32 (hex, 8, 14 ou 20 chars)"
+    )
+
+    @field_validator("uid_card")
+    @classmethod
+    def validar_formato_uid(cls, v: str) -> str:
+        padrao = r"^[0-9A-Fa-f]{8}$|^[0-9A-Fa-f]{14}$|^[0-9A-Fa-f]{20}$"
+
+        if not re.fullmatch(padrao, v):
+            raise ValueError(
+                "Formato de UID inválido. Esperado uma string hexadecimal "
+                "(0-9, A-F) com exatamente 8, 14 ou 20 caracteres."
+            )
+
+        # Padroniza para maiúsculo antes de chegar no Service/Banco de Dados
+        return v.upper()
 
 
-class RFIDResponse(BaseModel):
-    veredito: int
+class VerificarCartaoResponse(BaseModel):
+    valido: bool
+    usuario_id: Optional[int] = None
+    nome: Optional[str] = None
+    mensagem: str
+
+
+class ResultadoBiometriaRequest(BaseModel):
+    usuario_id: Optional[int] = None
+    nome: Optional[str] = None
+    aprovado: bool
+    similaridade: float = Field(
+        ...,
+        ge=0.0,
+        le=1.0,
+        description="Similaridade facial calculada entre 0.0 e 1.0"
+    )
+
+class VerificarBiometriaArduinoRequest(BaseModel):
+    esp_id: int = Field(..., gt=0, description="ID numérico da placa ESP32")
+    uid_card: str = Field(..., description="UID do cartão para associar a busca")
+
+    @field_validator("uid_card")
+    @classmethod
+    def validar_formato_uid(cls, v: str) -> str:
+        return v.upper()
+
+
+class VerificarBiometriaArduinoResponse(BaseModel):
+    usuario_id: Optional[int] = None
+    nome: Optional[str] = None
+    aprovado: bool
+    similaridade: float = 0.0
+    mensagem: str

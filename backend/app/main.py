@@ -1,25 +1,46 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import adm_page
-from app.api import administradores
-from app.api import autenticacao
-from app.api import historico_acesso
-from app.api import locais
-from app.api import permissoes
-from app.api import usuarios
-from app.api import websocket
-from app.api.health import database_health, health
+# ─────────────────────────────────────────────
+# Routers da API
+# ─────────────────────────────────────────────
+from app.api import (
+    administradores,
+    autenticacao,
+    audit_logs,
+    historico_acesso,
+    locais,
+    permissoes,
+    rfid,
+    usuarios,
+    websocket,
+)
+
 from app.api.biometria import router as biometria
-from app.api import audit_logs
+from app.api.health import database_health, health
 from app.auth import router as auth
 # from app.api import rfid
 
+
+# ─────────────────────────────────────────────
+# Configuração da aplicação
+# ─────────────────────────────────────────────
+
+BASE_PREFIX = "/api/v1"
+
 app = FastAPI(
     title="Controle de Autenticação com Biometria Facial + RFID",
-    description="Backend do projeto integrador de ADS — controle de acesso com arduino.",
+    description=(
+        "Backend do projeto integrador de ADS — "
+        "controle de acesso com arduino."
+    ),
     version="0.1.0",
 )
+
+
+# ─────────────────────────────────────────────
+# Configuração de CORS
+# ─────────────────────────────────────────────
 
 app.add_middleware(
     CORSMiddleware,
@@ -33,25 +54,120 @@ app.add_middleware(
         "http://127.0.0.1:8000",
         "http://127.0.0.1:8001",
     ],
-    allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
+    allow_origin_regex=r"http\://(localhost|127\.0\.0\.1)(:\d+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
+# ─────────────────────────────────────────────
+# Health Check
+# ─────────────────────────────────────────────
 
-app.include_router(health.router, prefix="/api/v1", tags=["health"])
-app.include_router(database_health.router, prefix="/api/v1/health", tags=["database_health"])
+app.include_router(
+    health.router,
+    prefix=BASE_PREFIX,
+    tags=["Health Check"],
+)
 
-app.include_router(adm_page.router, prefix="/api/v1/adm", tags=["adm"])
-app.include_router(administradores.router, prefix="/api/v1", tags=["administradores"])
-app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
-app.include_router(autenticacao.router, prefix="/api/v1", tags=["autenticacao"])
-app.include_router(biometria, prefix="/api/v1", tags=["Biometria"])
-app.include_router(usuarios.router, prefix="/api/v1", tags=["usuarios"])
-app.include_router(permissoes.router, prefix="/api/v1", tags=["permissoes"])
-app.include_router(historico_acesso.router, prefix="/api/v1", tags=["historico_acesso"])
-app.include_router(locais.router, prefix="/api/v1", tags=["locais"])
-app.include_router(audit_logs.router, prefix="/api/v1/adm", tags=["audit_logs"])
-app.include_router(websocket.router, tags=["WebSocket"])
+app.include_router(
+    database_health.router,
+    prefix=f"{BASE_PREFIX}/health",
+    tags=["Database Health Check"],
+)
+
+
+# ─────────────────────────────────────────────
+# Autenticação e controle de acesso
+# ─────────────────────────────────────────────
+
+app.include_router(
+    auth.router,
+    prefix=f"{BASE_PREFIX}/auth",
+    tags=["Auth portal"],
+)
+
+app.include_router(
+    autenticacao.router,
+    prefix=BASE_PREFIX,
+    tags=["Autenticação-facial"],
+)
+
+app.include_router(
+    administradores.router,
+    prefix=BASE_PREFIX,
+    tags=["Administradores"],
+)
+
+app.include_router(
+    permissoes.router,
+    prefix=BASE_PREFIX,
+    tags=["Permissões"],
+)
+
+
+# ─────────────────────────────────────────────
+# Biometria facial
+# ─────────────────────────────────────────────
+
+app.include_router(
+    biometria,
+    prefix=BASE_PREFIX,
+    tags=["Biometria"],
+)
+
+
+# ─────────────────────────────────────────────
+# Usuários e locais
+# ─────────────────────────────────────────────
+
+app.include_router(
+    usuarios.router,
+    prefix=BASE_PREFIX,
+    tags=["Usuários"],
+)
+
+app.include_router(
+    locais.router,
+    prefix=BASE_PREFIX,
+    tags=["Locais"],
+)
+
+
+# ─────────────────────────────────────────────
+# Histórico e auditoria
+# ─────────────────────────────────────────────
+
+app.include_router(
+    historico_acesso.router,
+    prefix=BASE_PREFIX,
+    tags=["Histórico de Acesso"],
+)
+
+app.include_router(
+    audit_logs.router,
+    prefix=f"{BASE_PREFIX}/adm",
+    tags=["Logs de Auditoria"],
+)
+
+
+# ─────────────────────────────────────────────
+# Comunicação em tempo real
+# ─────────────────────────────────────────────
+
+app.include_router(
+    websocket.router,
+    tags=["WebSocket"],
+)
+
+
+# ─────────────────────────────────────────────
+# Comunicação com Arduino / ESP32
+# ─────────────────────────────────────────────
+
+app.include_router(
+    rfid.router,
+    prefix=f"{BASE_PREFIX}/arduino",
+    tags=["RFID"],
+)

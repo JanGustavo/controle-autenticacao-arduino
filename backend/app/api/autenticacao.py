@@ -2,7 +2,7 @@ from fastapi import APIRouter, UploadFile, File
 from app.services.autenticacao_service import autenticacao_service
 from app.schemas.autenticacao_schema import TestarBiometriaResponse
 
-router = APIRouter(prefix="/autenticacao", tags=["Autenticação de Acesso"])
+router = APIRouter()
 
 @router.post("/testar-biometria", response_model=TestarBiometriaResponse)
 async def testar_biometria(

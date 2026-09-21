@@ -4,6 +4,13 @@ import { SpeechService } from './speech.service';
 
 export type EstadoEnquadramento = 'ok' | 'sem_rosto' | 'sorriso' | 'olhos' | 'escuro' | null;
 
+export interface FaceBoxPosition {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class WebcamService {
   private speech = inject(SpeechService);
@@ -16,6 +23,9 @@ export class WebcamService {
   tipoStatus = signal<'info' | 'warn' | 'success'>('info');
   capturaPronta = signal(false);
 
+  // Círculo Dinâmico (Bounding Box Suavizado)
+  faceBox = signal<FaceBoxPosition | null>(null);
+
   // Totem: Progresso de Auto-captura, Cooldown e Flash
   progressoAutoCaptura = signal(0);
   dispararFlash = signal(false);
@@ -23,7 +33,7 @@ export class WebcamService {
   emCooldown = signal(false);
 
   // Modos e Diagnósticos
-  modoDebug = signal(true); // Habilitado por padrão para testes com a câmera Cubeternet
+  modoDebug = signal(true);
   valorLuma = signal(0);
   earAtual = signal(0);
   proporcaoAtual = signal(0);
@@ -35,14 +45,22 @@ export class WebcamService {
   // ── Estado público ────────────────────────────────────────────────
   stream: MediaStream | null = null;
 
-  // ── Estado privado ────────────────────────────────────────────────
+  // ── Estado privado e Otimização de Performance ────────────────────
   private intervalValidacao: ReturnType<typeof setInterval> | null = null;
   private modelosCarregados = false;
   private ultimoEstadoEnquadramento: EstadoEnquadramento = null;
   private processandoDeteccao = false;
   private videoElementRef: ElementRef<HTMLVideoElement> | null = null;
 
-  // Timer de auto-captura e audio ticking
+  // Buffer Canvas Reutilizável (Evita Garbage Collection contínuo)
+  private lumaCanvas: HTMLCanvasElement = document.createElement('canvas');
+  private lumaCtx: CanvasRenderingContext2D | null = null;
+
+  // Cerca / Suavização da Bounding Box (Alpha Smoothing)
+  private currentBox: FaceBoxPosition | null = null;
+  private readonly SMOOTH_ALPHA = 0.35;
+
+  // Timer de auto-captura
   private tempoAcumuladoValido = 0;
   private readonly TEMPO_AUTO_CAPTURA = 1500;
   private ultimoTickTimestamp = 0;
@@ -50,10 +68,20 @@ export class WebcamService {
   // Cooldown pós-acesso
   private cooldownTimer: ReturnType<typeof setTimeout> | null = null;
 
-  async carregarModelos(): Promise<void> {
+  constructor() {
+    this.lumaCanvas.width = 64;
+    this.lumaCanvas.height = 48;
+    this.lumaCtx = this.lumaCanvas.getContext('2d', { willReadFrequently: true });
+  }
+
+async carregarModelos(): Promise<void> {
     if (this.modelosCarregados) return;
     this.carregandoHardware.set(true);
     try {
+      // Define explicitamente o backend de aceleração de hardware via faceapi.tf
+      if (faceapi.tf && 'setBackend' in faceapi.tf) {
+        await (faceapi.tf as any).setBackend('webgl').catch(() => (faceapi.tf as any).setBackend('cpu'));
+      }
       await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
       await faceapi.nets.faceExpressionNet.loadFromUri('/models');
       await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
@@ -81,32 +109,22 @@ export class WebcamService {
     try {
       await this.carregarModelos();
 
-      // ── Passo 1: Obter permissão genérica para desbloquear labels ──
       let streamInicial = await navigator.mediaDevices.getUserMedia({
         video: { width: 1280, height: 720 },
       });
 
-      // ── Passo 2: Agora com permissão, enumerar câmeras com labels ──
       const devices = await navigator.mediaDevices.enumerateDevices();
       const cameras = devices.filter((d) => d.kind === 'videoinput');
-      console.log(
-        '[WebcamService] Câmeras detectadas:',
-        cameras.map((c) => `"${c.label}" (${c.deviceId.slice(0, 12)})`)
-      );
 
-      // Palavras-chave que identificam câmeras externas USB
       const palavrasExterna = ['cubeternet', 'usb', 'webcam', 'logitech', 'external'];
-      // Palavras-chave que identificam a câmera integrada do notebook (ignorar)
       const palavrasInterna = ['positivo', 'theia', 'integrated', 'built-in', 'interno'];
 
-      // 1) Tenta encontrar a câmera externa por palavras-chave conhecidas
       let cameraExterna = cameras.find((c) => {
         const label = c.label.toLowerCase();
         return palavrasExterna.some((kw) => label.includes(kw))
           && !palavrasInterna.some((kw) => label.includes(kw));
       });
 
-      // 2) Fallback: qualquer câmera que NÃO seja a integrada
       if (!cameraExterna && cameras.length > 1) {
         cameraExterna = cameras.find((c) => {
           const label = c.label.toLowerCase();
@@ -114,22 +132,14 @@ export class WebcamService {
         });
       }
 
-      // ── Passo 3: Se achou câmera externa, verificar se já é a ativa ──
       const trackAtual = streamInicial.getVideoTracks()[0];
       const deviceIdAtual = trackAtual?.getSettings()?.deviceId;
 
       if (cameraExterna && cameraExterna.deviceId !== deviceIdAtual) {
-        console.log('[WebcamService] 🔄 Trocando para câmera externa:', cameraExterna.label);
-        // Para o stream genérico e reabre com a câmera correta
         streamInicial.getTracks().forEach((t) => t.stop());
         streamInicial = await navigator.mediaDevices.getUserMedia({
           video: { deviceId: { exact: cameraExterna.deviceId }, width: 1280, height: 720 },
         });
-        console.log('[WebcamService] ✅ Câmera externa ativada:', cameraExterna.label);
-      } else if (cameraExterna) {
-        console.log('[WebcamService] ✅ Câmera externa já é a padrão:', cameraExterna.label);
-      } else {
-        console.log('[WebcamService] ⚠️ Nenhuma câmera externa encontrada, usando:', trackAtual?.label);
       }
 
       this.stream = streamInicial;
@@ -156,12 +166,13 @@ export class WebcamService {
     }
   }
 
-  /** Ativa o Cooldown pós-acesso para evitar requisições repetidas da mesma pessoa */
   ativarCooldownPosAcesso(duracaoMs = 5000): void {
     this.emCooldown.set(true);
     this.resetAutoCaptura();
     this.statusValidacao.set('Catraca liberada — Aguardando passagem');
     this.tipoStatus.set('info');
+    this.faceBox.set(null);
+    this.currentBox = null;
 
     if (this.cooldownTimer) clearTimeout(this.cooldownTimer);
     this.cooldownTimer = setTimeout(() => {
@@ -169,7 +180,6 @@ export class WebcamService {
       this.statusValidacao.set('Centralize o rosto');
       this.tipoStatus.set('info');
       this.ultimoEstadoEnquadramento = null;
-      // Garante reativação expressa do loop de IA
       this.iniciarLoopValidacao();
     }, duracaoMs);
   }
@@ -194,8 +204,8 @@ export class WebcamService {
           return;
         }
 
-        // Checagem de Iluminação
-        const brilhoMedio = this.calcularLuminancia(video);
+        // Checagem de Iluminação Reutilizando Buffer Canvas
+        const brilhoMedio = this.calcularLuminanciaOtimizada(video);
         this.valorLuma.set(Math.round(brilhoMedio));
         if (brilhoMedio < 30) {
           this.capturaPronta.set(false);
@@ -203,13 +213,15 @@ export class WebcamService {
           this.tipoStatus.set('warn');
           this.nivelIluminacao.set('baixa');
           this.resetAutoCaptura();
+          this.suavizarRostoPerdido();
           return;
         } else {
           this.nivelIluminacao.set('boa');
         }
 
+        // Detecção com TinyFaceDetector em Resolução Otimizada (224px)
         const detection = await faceapi
-          .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224 }))
+          .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 }))
           .withFaceLandmarks()
           .withFaceExpressions();
 
@@ -218,6 +230,7 @@ export class WebcamService {
           this.statusValidacao.set('Rosto não detectado');
           this.tipoStatus.set('warn');
           this.resetAutoCaptura();
+          this.suavizarRostoPerdido();
 
           if (this.ultimoEstadoEnquadramento !== 'sem_rosto') {
             this.speech.falar('Rosto não detectado. Centralize-se na câmera.');
@@ -226,8 +239,16 @@ export class WebcamService {
           return;
         }
 
-        const box = detection.detection.box;
-        const proporcaoRosto = box.width / video.videoWidth;
+        // Atualização e Suavização da Bounding Box (Círculo Dinâmico)
+        const rawBox = detection.detection.box;
+        this.atualizarFaceBoxSuavizada({
+          x: rawBox.x,
+          y: rawBox.y,
+          width: rawBox.width,
+          height: rawBox.height,
+        });
+
+        const proporcaoRosto = rawBox.width / video.videoWidth;
         this.proporcaoAtual.set(Math.round(proporcaoRosto * 100));
 
         if (proporcaoRosto < 0.18) {
@@ -284,7 +305,6 @@ export class WebcamService {
           this.tipoStatus.set('success');
           this.ultimoEstadoEnquadramento = 'ok';
 
-          // Incrementar Auto-captura se ativado
           if (this.autoCapturaHabilitada()) {
             this.incrementarAutoCaptura();
           }
@@ -292,15 +312,32 @@ export class WebcamService {
       } finally {
         this.processandoDeteccao = false;
       }
-    }, 250);
+    }, 200);
+  }
+
+  private atualizarFaceBoxSuavizada(target: FaceBoxPosition): void {
+    if (!this.currentBox) {
+      this.currentBox = { ...target };
+    } else {
+      // Média Móvel Suavizada (Alpha Smoothing Filter)
+      this.currentBox.x += this.SMOOTH_ALPHA * (target.x - this.currentBox.x);
+      this.currentBox.y += this.SMOOTH_ALPHA * (target.y - this.currentBox.y);
+      this.currentBox.width += this.SMOOTH_ALPHA * (target.width - this.currentBox.width);
+      this.currentBox.height += this.SMOOTH_ALPHA * (target.height - this.currentBox.height);
+    }
+    this.faceBox.set({ ...this.currentBox });
+  }
+
+  private suavizarRostoPerdido(): void {
+    this.currentBox = null;
+    this.faceBox.set(null);
   }
 
   private incrementarAutoCaptura(): void {
-    this.tempoAcumuladoValido += 250;
+    this.tempoAcumuladoValido += 200;
     const pct = Math.min(100, Math.round((this.tempoAcumuladoValido / this.TEMPO_AUTO_CAPTURA) * 100));
     this.progressoAutoCaptura.set(pct);
 
-    // Audio Ticking suave a cada 500ms
     const agora = Date.now();
     if (agora - this.ultimoTickTimestamp >= 450 && pct < 100) {
       this.speech.tocarBipTick();
@@ -321,15 +358,10 @@ export class WebcamService {
     this.progressoAutoCaptura.set(0);
   }
 
-  private calcularLuminancia(video: HTMLVideoElement): number {
-    const canvas = document.createElement('canvas');
-    canvas.width = 64;
-    canvas.height = 48;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return 100;
-
-    ctx.drawImage(video, 0, 0, 64, 48);
-    const imgData = ctx.getImageData(0, 0, 64, 48);
+  private calcularLuminanciaOtimizada(video: HTMLVideoElement): number {
+    if (!this.lumaCtx) return 100;
+    this.lumaCtx.drawImage(video, 0, 0, 64, 48);
+    const imgData = this.lumaCtx.getImageData(0, 0, 64, 48);
     const data = imgData.data;
     let somaLuma = 0;
 
@@ -345,6 +377,7 @@ export class WebcamService {
       this.intervalValidacao = null;
     }
     this.resetAutoCaptura();
+    this.suavizarRostoPerdido();
   }
 
   pararWebcam(): void {

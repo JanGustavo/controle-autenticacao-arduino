@@ -10,7 +10,11 @@
             <mat-icon>{{ modoKioskFullscreen() ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
             Modo Kiosk (F11)
           </button>
-          <button mat-stroked-button [color]="modoTotem() ? 'accent' : 'primary'" (click)="toggleModoTotem()">
+          <button
+            mat-stroked-button
+            [color]="modoTotem() ? 'accent' : 'primary'"
+            (click)="toggleModoTotem()"
+          >
             <mat-icon>{{ modoTotem() ? 'touch_app' : 'center_focus_strong' }}</mat-icon>
             {{ modoTotem() ? 'Modo Totem (Auto)' : 'Modo Manual' }}
           </button>
@@ -23,7 +27,6 @@
 
   <div class="totem-grid">
     <div class="card-cam">
-      <!-- Skeleton Loading de Inicialização de Câmera/IA -->
       @if (webcam.carregandoHardware()) {
         <div class="skeleton-viewport">
           <mat-spinner diameter="48"></mat-spinner>
@@ -32,23 +35,28 @@
       }
 
       @if (webcam.webcamAtiva() && !webcam.carregandoHardware()) {
-        <div class="webcam-viewport">
-          <!-- Efeito Flash de Obturador -->
+        <div class="webcam-viewport" #webcamContainer>
           @if (webcam.dispararFlash()) {
             <div class="camera-flash-overlay"></div>
           }
 
           <video #videoElement width="1280" height="720" autoplay muted></video>
 
-          <!-- Badge Visual Dinâmico da IA -->
           <div class="status-badge" [ngClass]="webcam.tipoStatus()">
-            <mat-icon>{{ webcam.tipoStatus() === 'success' ? 'check_circle' : 'warning' }}</mat-icon>
+            <mat-icon>{{
+              webcam.tipoStatus() === 'success' ? 'check_circle' : 'warning'
+            }}</mat-icon>
             <span>{{ webcam.statusValidacao() }}</span>
           </div>
 
-          <!-- Guia de Centralização Facial com Progresso de Auto-captura -->
+          <!-- CÍRCULO DINÂMICO QUE SEGUE O ROSTO -->
           <div class="face-overlay">
-            <div class="face-oval" [class.valid]="webcam.tipoStatus() === 'success'">
+            <div
+              class="face-oval"
+              [class.valid]="webcam.tipoStatus() === 'success'"
+              [class.dynamic]="!!webcam.faceBox()"
+              [style]="obterEstiloOvalDinamico()"
+            >
               @if (webcam.progressoAutoCaptura() > 0) {
                 <svg class="progress-ring">
                   <circle
@@ -129,7 +137,6 @@
       }
     </div>
 
-    <!-- Painel Lateral de Histórico e Logs -->
     <div class="card-logs">
       <h3><mat-icon>history</mat-icon> Últimos Acessos</h3>
       <div class="logs-list">
@@ -152,32 +159,21 @@
             </div>
           </div>
         } @empty {
-          <div class="no-logs">
-            Nenhum registro recente
-          </div>
+          <div class="no-logs">Nenhum registro recente</div>
         }
       </div>
     </div>
   </div>
 
-  <!-- OVERLAY / MODAL EM TELA CHEIA PARA MODO TOTEM -->
   @if (exibirOverlayTotem()) {
-    <div
-      class="totem-overlay"
-      [class.liberado]="aprovado()"
-      [class.negado]="!aprovado()"
-    >
+    <div class="totem-overlay" [class.liberado]="aprovado()" [class.negado]="!aprovado()">
       <div class="totem-card">
         <mat-icon class="totem-icon">
           {{ aprovado() ? 'check_circle' : 'cancel' }}
         </mat-icon>
 
         @if (fotoPreviewUrl) {
-          <img
-            [src]="fotoPreviewUrl"
-            class="totem-avatar"
-            alt="Avatar Capturado"
-          />
+          <img [src]="fotoPreviewUrl" class="totem-avatar" alt="Avatar Capturado" />
         }
 
         <h1>{{ aprovado() ? 'ACESSO LIBERADO' : 'ACESSO NEGADO' }}</h1>
@@ -189,7 +185,10 @@
 
         <div class="totem-details">
           @if (similaridade() > 0) {
-            <span>Similaridade: {{ similaridade() }}% (Min: {{minSimilaridade()}}%)</span>
+            <span
+              >Similaridade: {{ similaridade() * 100 | number: '1.2-2' }}% (Min:
+              {{ minSimilaridade() * 100 | number: '1.0-0' }}%)</span
+            >
           }
           @if (mensagemStatus() && !aprovado()) {
             <span>{{ mensagemStatus() }}</span>
