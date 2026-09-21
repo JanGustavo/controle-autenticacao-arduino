@@ -4,6 +4,12 @@ import re
 
 
 class VerificarCartaoRequest(BaseModel):
+    esp_id: int = Field(
+        ...,
+        gt=0, # ge = greater than (maior que 0)
+        description="ID numérico da placa ESP32"
+    )
+
     uid_card: str = Field(
         ...,
         min_length=8,
@@ -43,3 +49,20 @@ class ResultadoBiometriaRequest(BaseModel):
         le=1.0,
         description="Similaridade facial calculada entre 0.0 e 1.0"
     )
+
+class VerificarBiometriaArduinoRequest(BaseModel):
+    esp_id: int = Field(..., gt=0, description="ID numérico da placa ESP32")
+    uid_card: str = Field(..., description="UID do cartão para associar a busca")
+
+    @field_validator("uid_card")
+    @classmethod
+    def validar_formato_uid(cls, v: str) -> str:
+        return v.upper()
+
+
+class VerificarBiometriaArduinoResponse(BaseModel):
+    usuario_id: Optional[int] = None
+    nome: Optional[str] = None
+    aprovado: bool
+    similaridade: float = 0.0
+    mensagem: str

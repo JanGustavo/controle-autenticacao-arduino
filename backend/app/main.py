@@ -19,6 +19,7 @@ from app.api import (
 from app.api.biometria import router as biometria
 from app.api.health import database_health, health
 from app.auth import router as auth
+# from app.api import rfid
 
 
 # ─────────────────────────────────────────────

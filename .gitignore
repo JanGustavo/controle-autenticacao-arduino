@@ -6,6 +6,7 @@ temp/
 .env.*
 !.env.example
 firmware/blink/secrets.h
+**/venv/
 
 # ── Python ────────────────────────────────────────────────────────────────────
 venv/

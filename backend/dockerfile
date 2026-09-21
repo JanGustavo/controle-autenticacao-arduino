@@ -5,7 +5,7 @@ WORKDIR /install
 
 COPY requirements.txt .
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
     libopenblas-dev \
@@ -26,9 +26,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
+# Adicionadas as dependências de sistema necessárias em tempo de execução
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libopenblas0-pthread \
     libgl1 \
+    libglib2.0-0 \
+    libgthread-2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copia as dependências instaladas no stage anterior

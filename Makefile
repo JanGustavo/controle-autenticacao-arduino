@@ -64,16 +64,17 @@ kill-port: ## Encerra processos em portas ocupadas (PORT=XXXX)
 
 db-local: ## Prepara o banco de dados PostgreSQL local com schema e dados iniciais
 	@echo "🗄️  Preparando PostgreSQL local..."
-	@sudo -u postgres psql -v ON_ERROR_STOP=1 -c "ALTER ROLE postgres WITH PASSWORD 'JGustavo2106';" >/dev/null 2>&1 || true
-	@if ! sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname = 'controle_acesso'" | grep -q 1; then \
+	@PGPASSWORD=JGustavo2106 psql -h localhost -U postgres -v ON_ERROR_STOP=1 -c "ALTER ROLE postgres WITH PASSWORD 'JGustavo2106';" >/dev/null 2>&1 || \
+	 psql -h localhost -U postgres -v ON_ERROR_STOP=1 -c "ALTER ROLE postgres WITH PASSWORD 'JGustavo2106';" >/dev/null 2>&1 || true
+	@if ! PGPASSWORD=JGustavo2106 psql -h localhost -U postgres -tAc "SELECT 1 FROM pg_database WHERE datname = 'controle_acesso'" | grep -q 1; then \
 		echo "⚙️  Criando banco de dados controle_acesso..."; \
-		sudo -u postgres createdb controle_acesso; \
+		PGPASSWORD=JGustavo2106 createdb -h localhost -U postgres controle_acesso; \
 	fi
 	@echo "📄 Executando init.sql..."
-	@sudo -u postgres psql -v ON_ERROR_STOP=1 -d controle_acesso -f backend/init.sql >/dev/null 2>&1 || true
+	@PGPASSWORD=JGustavo2106 psql -h localhost -U postgres -v ON_ERROR_STOP=1 -d controle_acesso -f backend/init.sql >/dev/null 2>&1 || true
 	@for mig in backend/migrations/*.sql; do \
 		if [ -f "$$mig" ]; then \
-			sudo -u postgres psql -v ON_ERROR_STOP=1 -d controle_acesso -f "$$mig" >/dev/null 2>&1 || true; \
+			PGPASSWORD=JGustavo2106 psql -h localhost -U postgres -v ON_ERROR_STOP=1 -d controle_acesso -f "$$mig" >/dev/null 2>&1 || true; \
 		fi \
 	done
 	@echo "✅ Banco PostgreSQL local pronto."
@@ -81,17 +82,16 @@ db-local: ## Prepara o banco de dados PostgreSQL local com schema e dados inicia
 
 db-reset: ## Restaura o banco de dados local para os dados padrão iniciais
 	@echo "⚠️  Apagando e recriando banco controle_acesso..."
-	@sudo -u postgres psql -v ON_ERROR_STOP=1 -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'controle_acesso' AND pid <> pg_backend_pid();"
-	@sudo -u postgres dropdb --if-exists controle_acesso
-	@sudo -u postgres createdb controle_acesso
-	@sudo -u postgres psql -v ON_ERROR_STOP=1 -d controle_acesso -f backend/init.sql
+	@PGPASSWORD=JGustavo2106 psql -h localhost -U postgres -v ON_ERROR_STOP=1 -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'controle_acesso' AND pid <> pg_backend_pid();"
+	@PGPASSWORD=JGustavo2106 dropdb -h localhost -U postgres --if-exists controle_acesso
+	@PGPASSWORD=JGustavo2106 createdb -h localhost -U postgres controle_acesso
+	@PGPASSWORD=JGustavo2106 psql -h localhost -U postgres -v ON_ERROR_STOP=1 -d controle_acesso -f backend/init.sql
 	@for mig in backend/migrations/*.sql; do \
 		if [ -f "$$mig" ]; then \
-			sudo -u postgres psql -v ON_ERROR_STOP=1 -d controle_acesso -f "$$mig" >/dev/null 2>&1 || true; \
+			PGPASSWORD=JGustavo2106 psql -h localhost -U postgres -v ON_ERROR_STOP=1 -d controle_acesso -f "$$mig" >/dev/null 2>&1 || true; \
 		fi \
 	done
 	@echo "✅ Banco de dados restaurado."
-
 
 dev: db-local ## Inicia ambiente completo de desenvolvimento local com Hot-Reload
 	@$(MAKE) kill-port PORT=$(BACKEND_PORT)
