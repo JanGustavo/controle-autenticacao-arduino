@@ -90,7 +90,7 @@ app.include_router(
 
 app.include_router(
     autenticacao.router,
-    prefix=BASE_PREFIX,
+    prefix=BASE_PREFIX + "/autenticacao",
     tags=["Autenticação-facial"],
 )
 
