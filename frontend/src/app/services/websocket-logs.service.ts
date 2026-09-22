@@ -1,17 +1,24 @@
 import { Injectable, signal } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 
+export interface WebSocketEventData {
+  id?: number | null;
+  usuario_id?: number | null;
+  nome_usuario?: string | null;
+  local_id?: number | null;
+  data_hora?: string | null;
+  autorizado?: boolean | null;
+  percentual_similaridade?: number | null;
+  motivo_recusa?: string | null;
+  uid_card?: string | null;
+  identificador_dispositivo?: string | null;
+  tentativa_id?: string | null;
+  motivo?: string | null;
+}
+
 export interface WebSocketLogEvent {
   type: string;
-  data: {
-    id: number | null;
-    usuario_id: number | null;
-    nome_usuario?: string | null;
-    data_hora: string;
-    autorizado: boolean;
-    percentual_similaridade: number | null;
-    motivo_recusa: string | null;
-  };
+  data: WebSocketEventData;
 }
 
 /**
@@ -22,7 +29,7 @@ export interface WebSocketLogEvent {
 export class WebSocketLogsService {
   private socket: WebSocket | null = null;
   private logSubject = new Subject<WebSocketLogEvent>();
-  
+
   public conectado = signal(false);
 
   constructor() {
@@ -30,7 +37,11 @@ export class WebSocketLogsService {
   }
 
   conectar(): void {
-    if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) {
+    if (
+      this.socket &&
+      (this.socket.readyState === WebSocket.OPEN ||
+        this.socket.readyState === WebSocket.CONNECTING)
+    ) {
       return;
     }
 
@@ -70,7 +81,6 @@ export class WebSocketLogsService {
     }
   }
 
-  /** Retorna um Observable com as mensagens de log transmitidas em tempo real */
   obterLogsEmTempoReal(): Observable<WebSocketLogEvent> {
     return this.logSubject.asObservable();
   }
