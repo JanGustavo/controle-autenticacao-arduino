@@ -1,5 +1,7 @@
+from typing import Optional, Literal
+from uuid import UUID
+
 from pydantic import BaseModel, Field, field_validator
-from typing import Optional
 import re
 
 _PADRAO_UID = r"^[0-9A-Fa-f]{8}$|^[0-9A-Fa-f]{14}$|^[0-9A-Fa-f]{20}$"
@@ -58,9 +60,11 @@ class VerificarCartaoResponse(BaseModel):
     # Renomeado de 'valido' para 'existe' -- é o nome que o firmware do
     # ESP32 já espera no JSON de resposta do POST /verificar-cartao.
     existe: bool
+    tentativa_id: UUID | None = None
     usuario_id: Optional[int] = None
     nome: Optional[str] = None
     mensagem: str
+    proxima_etapa: Literal["BIOMETRIA", "NEGADO"] = "NEGADO"
 
 
 class ResultadoBiometriaRequest(BaseModel):
@@ -73,18 +77,22 @@ class ResultadoBiometriaRequest(BaseModel):
 
 
 class VerificarBiometriaArduinoRequest(BaseModel):
-    identificador_dispositivo: str = Field(..., min_length=1, description="Identificador do ESP32/local")
+    identificador_dispositivo: str = Field(
+        ..., min_length=1, description="Identificador do ESP32/local"
+    )
     uid_card: str = Field(..., description="UID do cartão para associar a busca")
 
     @field_validator("uid_card")
     @classmethod
     def validar_formato_uid(cls, v: str) -> str:
-        return v.upper()
+        return _validar_uid(v)
 
 
 class VerificarBiometriaArduinoResponse(BaseModel):
+    tentativa_id: UUID | None = None
     usuario_id: Optional[int] = None
     nome: Optional[str] = None
     aprovado: bool
-    similaridade: float = 0.0
+    similaridade: float = Field(default=0.0, ge=0.0, le=1.0)
+    comando: Literal["liberar", "negar"] = "negar"
     mensagem: str
