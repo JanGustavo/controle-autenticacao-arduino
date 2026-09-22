@@ -6,9 +6,11 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { ApiService, LocalResponse, PermissaoCreateRequest } from '../../services/api.service';
 import { SpeechService } from '../../services/speech.service';
 import { WebcamService } from '../../services/webcam.service';
+import { WebSocketLogsService } from '../../services/websocket-logs.service';
 
 export interface LocalPermissaoItem {
   local_id: number;
@@ -44,12 +46,15 @@ export class CadastrarPage implements OnInit, OnDestroy {
   private snackBar = inject(MatSnackBar);
   private speech = inject(SpeechService);
   public webcam = inject(WebcamService);
+  public wsLogs = inject(WebSocketLogsService);
 
   cameraOpened = false;
   scanning = false;
   submitted = false;
   saving = false;
   lendoRfidMock = false;
+  aguardandoRfid = false;
+  identificadorRfidSelecionado = '';
   successMessage = '';
   errorMessage = '';
   locaisPermissao: LocalPermissaoItem[] = [];
@@ -57,6 +62,7 @@ export class CadastrarPage implements OnInit, OnDestroy {
   locaisErro = '';
   fotoPreviewUrl: string | null = null;
   private fotoCapturada: Blob | File | null = null;
+  private wsSubscription: Subscription | null = null;
 
   form = this.formBuilder.nonNullable.group({
     nome: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(255)]],
@@ -65,7 +71,7 @@ export class CadastrarPage implements OnInit, OnDestroy {
   });
 
   async ngOnInit(): Promise<void> {
-    this.api.getLocais().subscribe({
+    this.api.getLocais({ ativo: true }).subscribe({
       next: (locais) => {
         this.locaisPermissao = locais.map((local) => ({
           local_id: local.local_id,
@@ -84,11 +90,27 @@ export class CadastrarPage implements OnInit, OnDestroy {
       },
     });
 
+    this.wsSubscription = this.wsLogs.obterLogsEmTempoReal().subscribe({
+      next: (evento) => {
+        if (
+          evento.type !== 'RFID_LIDO' ||
+          !this.aguardandoRfid ||
+          evento.data.identificador_dispositivo !== this.identificadorRfidSelecionado ||
+          !evento.data.uid_card
+        ) {
+          return;
+        }
+
+        this.aplicarLeituraRfid(evento.data.uid_card);
+      },
+    });
+
     await this.webcam.carregarModelos();
   }
 
   ngOnDestroy(): void {
     this.pararWebcam();
+    this.wsSubscription?.unsubscribe();
   }
 
   async iniciarWebcam(): Promise<void> {
@@ -114,29 +136,56 @@ export class CadastrarPage implements OnInit, OnDestroy {
     this.speech.falar('Foto capturada com sucesso.');
   }
 
+  iniciarLeituraRfid(): void {
+    if (this.lendoRfidMock || this.aguardandoRfid) return;
+
+    if (!this.identificadorRfidSelecionado) {
+      this.errorMessage = 'Selecione o dispositivo que fará a leitura do cartão.';
+      return;
+    }
+
+    this.errorMessage = '';
+    this.aguardandoRfid = true;
+    this.speech.falar('Aproxime o cartão do leitor RFID.');
+  }
+
+  cancelarLeituraRfid(): void {
+    this.aguardandoRfid = false;
+    this.speech.parar();
+  }
+
+  private aplicarLeituraRfid(uidCard: string): void {
+    const uidNormalizado = this.normalizarUid(uidCard);
+
+    this.form.patchValue({ uid_card: uidNormalizado || '' });
+    this.form.get('uid_card')?.markAsDirty();
+    this.form.get('uid_card')?.markAsTouched();
+    this.aguardandoRfid = false;
+
+    this.snackBar.open(
+      `Cartão RFID lido: ${uidNormalizado}`,
+      'OK',
+      { duration: 3500 }
+    );
+    this.speech.falar('Cartão identificado.');
+  }
+
   capturarRfidMock(): void {
-    if (this.lendoRfidMock) return;
+    if (this.lendoRfidMock || !this.identificadorRfidSelecionado) return;
 
     this.lendoRfidMock = true;
-    this.speech.falar('Aproxime o cartão do leitor.');
+    this.speech.falar('Simulando leitura do cartão.');
 
     setTimeout(() => {
-      // Simula leitura de cartão RFID (4 bytes hexadecimais padrão Mifare Classic / RC522)
       const bytes = Array.from({ length: 4 }, () =>
         Math.floor(Math.random() * 256)
           .toString(16)
           .padStart(2, '0')
           .toUpperCase()
       );
-      const uidMock = bytes.join(':');
 
-      this.form.patchValue({ uid_card: uidMock });
-      this.form.get('uid_card')?.markAsDirty();
-      this.form.get('uid_card')?.markAsTouched();
+      this.aplicarLeituraRfid(bytes.join(''));
       this.lendoRfidMock = false;
-
-      this.snackBar.open(`Cartão RFID lido: ${uidMock}`, 'OK', { duration: 3500 });
-      this.speech.falar('Cartão identificado.');
     }, 700);
   }
 
@@ -147,6 +196,11 @@ export class CadastrarPage implements OnInit, OnDestroy {
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      return;
+    }
+
+    if (!this.identificadorRfidSelecionado) {
+      this.errorMessage = 'Selecione o dispositivo que fará a leitura do cartão.';
       return;
     }
 
@@ -162,8 +216,15 @@ export class CadastrarPage implements OnInit, OnDestroy {
       return;
     }
 
-    this.saving = true;
     const { nome, uid_card, ativo } = this.form.getRawValue();
+    const uidNormalizado = this.normalizarUid(uid_card);
+
+    if (!uidNormalizado) {
+      this.errorMessage = 'Faça a leitura do cartão RFID antes de salvar.';
+      return;
+    }
+
+    this.saving = true;
 
     const permissoesPayload: PermissaoCreateRequest[] = locaisSelecionados.map((item) => ({
       local_id: item.local_id,
@@ -172,25 +233,49 @@ export class CadastrarPage implements OnInit, OnDestroy {
       dias_semana: item.dias_semana,
     }));
 
+    // O usuário é criado sem o UID. O vínculo do cartão passa pelo endpoint
+    // específico de RFID, usando o dispositivo que realizou a leitura.
     this.api.criarUsuario({
       nome,
-      uid_card: this.normalizarUid(uid_card),
+      uid_card: null,
       vetor_facial: null,
       ativo,
       permissoes: permissoesPayload,
     }).subscribe({
       next: (usuario) => {
-        this.api.cadastrarBiometria(usuario.user_id, this.fotoCapturada!).subscribe({
-          next: ({ vector_length }) => {
-            this.saving = false;
-            this.successMessage = `Usuário ${usuario.nome} criado com sucesso (${locaisSelecionados.length} permissões e vetor facial de ${vector_length} dims).`;
-            this.snackBar.open(this.successMessage, 'Fechar', { duration: 6000 });
-            this.speech.falar('Usuário cadastrado com sucesso.');
+        this.api.cadastrarCartao(
+          this.identificadorRfidSelecionado,
+          uidNormalizado,
+          usuario.user_id,
+        ).subscribe({
+          next: () => {
+            this.api.cadastrarBiometria(
+              usuario.user_id,
+              this.fotoCapturada!
+            ).subscribe({
+              next: ({ vector_length }) => {
+                this.saving = false;
+                this.successMessage =
+                  `Usuário ${usuario.nome} criado com sucesso (${locaisSelecionados.length} permissões e vetor facial de ${vector_length} dims).`;
+                this.snackBar.open(this.successMessage, 'Fechar', { duration: 6000 });
+                this.speech.falar('Usuário cadastrado com sucesso.');
+              },
+              error: (error) => {
+                this.saving = false;
+                this.errorMessage =
+                  error.error?.detail ||
+                  'Usuário e cartão foram cadastrados, mas não foi possível cadastrar a biometria.';
+                this.snackBar.open(this.errorMessage, 'Fechar', { duration: 7000 });
+              },
+            });
           },
           error: (error) => {
             this.saving = false;
-            this.errorMessage = error.error?.detail || 'Usuário criado, mas não foi possível cadastrar a biometria.';
-            this.snackBar.open(this.errorMessage, 'Fechar', { duration: 6000 });
+            this.errorMessage =
+              error.status === 400
+                ? (error.error?.detail || 'Este cartão já está cadastrado.')
+                : 'Usuário criado, mas não foi possível associar o cartão RFID.';
+            this.snackBar.open(this.errorMessage, 'Fechar', { duration: 7000 });
           },
         });
       },
@@ -211,6 +296,8 @@ export class CadastrarPage implements OnInit, OnDestroy {
     this.scanning = false;
     this.submitted = false;
     this.saving = false;
+    this.aguardandoRfid = false;
+    this.identificadorRfidSelecionado = '';
     this.successMessage = '';
     this.errorMessage = '';
     this.fotoCapturada = null;
