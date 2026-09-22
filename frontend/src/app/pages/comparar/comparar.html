@@ -21,7 +21,13 @@
         </div>
       </div>
       <h2>Catraca Facial & Biometria</h2>
-      <p>Aproxime o rosto para validação automática em tempo real.</p>
+      <p>
+        {{
+          tentativaId()
+            ? 'Cartão reconhecido. Posicione o rosto para validação.'
+            : 'Aproxime o cartão RFID para iniciar a validação.'
+        }}
+      </p>
     </div>
   }
 
@@ -113,7 +119,8 @@
         <div class="webcam-controls">
           @if (!webcam.webcamAtiva()) {
             <button mat-raised-button color="primary" (click)="iniciarWebcam()">
-              <mat-icon>videocam</mat-icon> Iniciar Totem / Câmera
+              <mat-icon>videocam</mat-icon>
+              {{ tentativaId() ? 'Iniciar câmera' : 'Aguardando RFID' }}
             </button>
           }
 
