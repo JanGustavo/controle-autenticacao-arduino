@@ -89,22 +89,8 @@ export class CompararPage implements OnInit, OnDestroy {
         }
 
         if (evento.type === 'NOVO_ACESSO') {
-          const novoItem: HistoricoAcessoResponse = {
-            id: evento.data.id || Date.now(),
-            usuario_id: evento.data.usuario_id ?? null,
-            local_id: evento.data.local_id ?? null,
-            uid_card_lido: evento.data.uid_card ?? null,
-            data_hora: evento.data.data_hora || new Date().toISOString(),
-            autorizado: !!evento.data.autorizado,
-            percentual_similaridade: evento.data.percentual_similaridade ?? null,
-            motivo_recusa: evento.data.motivo_recusa ?? null,
-            nome_usuario: evento.data.nome_usuario || null,
-          };
-
-          this.historicoRecente.update((lista) => [
-            novoItem,
-            ...lista.filter((item) => item.id !== novoItem.id).slice(0, 4),
-          ]);
+          this.carregarHistorico();
+        }
         }
       },
     });
