@@ -91,6 +91,33 @@ export interface BiometriaResponse {
   vector_length: number;
 }
 
+export interface VerificarCartaoResponse {
+  existe: boolean;
+  tentativa_id: string | null;
+  usuario_id: number | null;
+  nome: string | null;
+  mensagem: string;
+  proxima_etapa: 'BIOMETRIA' | 'NEGADO';
+}
+
+export interface VerificarBiometriaResponse {
+  tentativa_id: string | null;
+  usuario_id: number | null;
+  nome: string | null;
+  local_id: number | null;
+  aprovado: boolean;
+  similaridade: number;
+  comando: 'liberar' | 'negar';
+  mensagem: string;
+}
+
+export interface CadastrarCartaoResponse {
+  sucesso: boolean;
+  usuario_id: number | null;
+  uid_card: string | null;
+  mensagem: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private http = inject(HttpClient);
@@ -167,6 +194,45 @@ export class ApiService {
     const nomeArquivo = foto instanceof File ? foto.name : `biometria_${usuarioId}.jpg`;
     dados.append('file', foto, nomeArquivo);
     return this.http.post<BiometriaResponse>(`${API_BASE}/biometria/cadastrar/${usuarioId}`, dados);
+  }
+
+  verificarCartao(uidCard: string, identificadorDispositivo: string): Observable<VerificarCartaoResponse> {
+    return this.http.post<VerificarCartaoResponse>(
+      `${API_BASE}/arduino/verificar-cartao`,
+      {
+        uid_card: uidCard,
+        identificador_dispositivo: identificadorDispositivo,
+      },
+    );
+  }
+
+  verificarFace(tentativaId: string, foto: File | Blob): Observable<VerificarBiometriaResponse> {
+    const dados = new FormData();
+    const nomeArquivo = foto instanceof File ? foto.name : 'comparacao.jpg';
+    dados.append('file', foto, nomeArquivo);
+
+    const params = new HttpParams().set('tentativa_id', tentativaId);
+
+    return this.http.post<VerificarBiometriaResponse>(
+      `${API_BASE}/arduino/verificar-face`,
+      dados,
+      { params },
+    );
+  }
+
+  cadastrarCartao(
+    identificadorDispositivo: string,
+    uidCard: string,
+    usuarioId: number,
+  ): Observable<CadastrarCartaoResponse> {
+    return this.http.post<CadastrarCartaoResponse>(
+      `${API_BASE}/arduino/cadastrar-cartao`,
+      {
+        identificador_dispositivo: identificadorDispositivo,
+        uid_card: uidCard,
+        usuario_id: usuarioId,
+      },
+    );
   }
 
   testarBiometria(foto: FormData): Observable<{
