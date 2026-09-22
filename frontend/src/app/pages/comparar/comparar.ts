@@ -41,6 +41,7 @@ export class CompararPage implements OnInit, OnDestroy {
   aprovado = signal(false);
   usuarioEncontrado = signal<string | null>(null);
   mensagemStatus = signal<string | null>(null);
+  tentativaId = signal<string | null>(null);
   fotoPreviewUrl: string | null = null;
 
   modoTotem = signal(true);
@@ -60,19 +61,50 @@ export class CompararPage implements OnInit, OnDestroy {
 
     this.wsSubscription = this.wsLogs.obterLogsEmTempoReal().subscribe({
       next: (evento) => {
+        if (evento.type === 'RFID_APROVADO' && evento.data.tentativa_id) {
+          this.tentativaId.set(evento.data.tentativa_id);
+          this.aprovado.set(false);
+          this.similaridade.set(0);
+          this.usuarioEncontrado.set(evento.data.nome_usuario || null);
+          this.mensagemStatus.set(
+            'Cartão reconhecido. Aguardando validação facial...'
+          );
+
+          if (this.modoTotem() && !this.webcam.webcamAtiva()) {
+            void this.iniciarWebcam();
+          }
+
+          this.speech.falar('Cartão reconhecido. Agora olhe para a câmera.', true);
+          return;
+        }
+
+        if (evento.type === 'RFID_NEGADO') {
+          this.tentativaId.set(null);
+          this.pararWebcam();
+          this.aprovado.set(false);
+          this.similaridade.set(0);
+          this.usuarioEncontrado.set(null);
+          this.mensagemStatus.set(evento.data.motivo || 'Cartão recusado.');
+          return;
+        }
+
         if (evento.type === 'NOVO_ACESSO') {
           const novoItem: HistoricoAcessoResponse = {
             id: evento.data.id || Date.now(),
-            usuario_id: evento.data.usuario_id,
-            local_id: null,
-            uid_card_lido: null,
-            data_hora: evento.data.data_hora,
-            autorizado: evento.data.autorizado,
-            percentual_similaridade: evento.data.percentual_similaridade,
-            motivo_recusa: evento.data.motivo_recusa,
+            usuario_id: evento.data.usuario_id ?? null,
+            local_id: evento.data.local_id ?? null,
+            uid_card_lido: evento.data.uid_card ?? null,
+            data_hora: evento.data.data_hora || new Date().toISOString(),
+            autorizado: !!evento.data.autorizado,
+            percentual_similaridade: evento.data.percentual_similaridade ?? null,
+            motivo_recusa: evento.data.motivo_recusa ?? null,
             nome_usuario: evento.data.nome_usuario || null,
           };
-          this.historicoRecente.update((lista) => [novoItem, ...lista.slice(0, 4)]);
+
+          this.historicoRecente.update((lista) => [
+            novoItem,
+            ...lista.filter((item) => item.id !== novoItem.id).slice(0, 4),
+          ]);
         }
       },
     });
@@ -159,19 +191,37 @@ export class CompararPage implements OnInit, OnDestroy {
 
   async capturarEComparar(): Promise<void> {
     if (this.webcam.emCooldown()) return;
+
+    const tentativaAtual = this.tentativaId();
+
+    if (this.modoTotem() && !tentativaAtual) {
+      this.mensagemStatus.set('Aguardando leitura de cartão RFID...');
+      return;
+    }
+
     if (!this.webcam.capturaPronta() && !this.modoTotem()) return;
 
     const resCapture = await this.webcam.capturarFrameComPreview();
     if (!resCapture) return;
 
     this.fotoPreviewUrl = resCapture.previewUrl;
-    const formData = new FormData();
-    formData.append('file', resCapture.blob, 'comparacao.jpg');
-
-    this.mensagemStatus.set(null);
+    this.mensagemStatus.set(
+      tentativaAtual
+        ? 'Validando biometria...'
+        : 'Comparando biometria...'
+    );
     this.scanning.set(true);
 
-    this.api.testarBiometria(formData).subscribe({
+    let request$;
+    if (tentativaAtual) {
+      request$ = this.api.verificarFace(tentativaAtual, resCapture.blob);
+    } else {
+      const formData = new FormData();
+      formData.append('file', resCapture.blob, 'comparacao.jpg');
+      request$ = this.api.testarBiometria(formData);
+    }
+
+    request$.subscribe({
       next: (res: any) => {
         this.scanning.set(false);
 
@@ -179,29 +229,37 @@ export class CompararPage implements OnInit, OnDestroy {
           this.minSimilaridade.set(res.min_similarity);
         }
 
-        if (res.status === 'COMPARADO') {
-          this.similaridade.set(res.similaridade);
-          this.aprovado.set(res.aprovado);
-          this.usuarioEncontrado.set(res.usuario?.nome || res.usuario || 'Usuário Desconhecido');
-          this.mensagemStatus.set(res.aprovado ? 'Acesso Liberado' : 'Acesso Negado');
+        this.similaridade.set(Number(res.similaridade ?? 0));
+        this.aprovado.set(!!res.aprovado);
+        this.usuarioEncontrado.set(
+          res.nome ||
+          res.usuario?.nome ||
+          res.usuario ||
+          null
+        );
 
-          if (res.aprovado) {
-            this.speech.falar(`Acesso liberado. Seja bem-vindo, ${this.usuarioEncontrado()}.`, true);
-          } else {
-            this.speech.falar('Acesso negado. Biometria não corresponde ao cadastro.', true);
-          }
-        } else if (res.status === 'SEM_REGISTROS') {
-          this.aprovado.set(false);
-          this.similaridade.set(0);
-          this.usuarioEncontrado.set(null);
-          this.mensagemStatus.set('Nenhum usuário cadastrado no banco de dados.');
-          this.speech.falar('Nenhum usuário cadastrado.');
+        this.mensagemStatus.set(
+          res.aprovado
+            ? 'Acesso Liberado'
+            : (res.mensagem || 'Acesso Negado')
+        );
+
+        if (res.aprovado) {
+          this.speech.falar(
+            'Acesso liberado. Seja bem-vindo, ' +
+            (this.usuarioEncontrado() || 'usuário') +
+            '.',
+            true
+          );
         } else {
-          this.aprovado.set(false);
-          this.similaridade.set(0);
-          this.usuarioEncontrado.set(null);
-          this.mensagemStatus.set(res.mensagem || 'Rosto não identificado');
-          this.speech.falar(res.mensagem || 'Erro ao processar biometria.');
+          this.speech.falar(
+            res.mensagem || 'Acesso negado.',
+            true
+          );
+        }
+
+        if (tentativaAtual) {
+          this.tentativaId.set(null);
         }
 
         if (this.modoTotem()) {
@@ -209,16 +267,25 @@ export class CompararPage implements OnInit, OnDestroy {
           this.timeoutOverlay = setTimeout(() => {
             this.exibirOverlayTotem.set(false);
             this.fotoPreviewUrl = null;
-            this.webcam.ativarCooldownPosAcesso(this.aprovado() ? 5000 : 1500);
+            this.webcam.ativarCooldownPosAcesso(
+              this.aprovado() ? 5000 : 1500
+            );
           }, 3000);
         }
       },
       error: (err) => {
         this.scanning.set(false);
+        this.tentativaId.set(null);
         this.aprovado.set(false);
         this.similaridade.set(0);
-        this.mensagemStatus.set(err.error?.detail || 'Rosto não identificado na imagem.');
-        this.speech.falar('Posicione o rosto corretamente.');
+        this.mensagemStatus.set(
+          err.error?.detail ||
+          'Não foi possível concluir a validação facial.'
+        );
+        this.speech.falar(
+          'Não foi possível concluir a validação facial.',
+          true
+        );
 
         if (this.modoTotem()) {
           this.exibirOverlayTotem.set(true);
