@@ -91,7 +91,6 @@ export class CompararPage implements OnInit, OnDestroy {
         if (evento.type === 'NOVO_ACESSO') {
           this.carregarHistorico();
         }
-        }
       },
     });
   }
@@ -328,6 +327,7 @@ export class CompararPage implements OnInit, OnDestroy {
     this.aprovado.set(false);
     this.usuarioEncontrado.set(null);
     this.mensagemStatus.set(null);
+    this.tentativaId.set(null);
   }
 
   ngOnDestroy(): void {
