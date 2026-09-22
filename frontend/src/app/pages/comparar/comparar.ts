@@ -37,7 +37,7 @@ export class CompararPage implements OnInit, OnDestroy {
 
   scanning = signal(false);
   similaridade = signal(0);
-  minSimilaridade = signal(80);
+  minSimilaridade = signal(0.8);
   aprovado = signal(false);
   usuarioEncontrado = signal<string | null>(null);
   mensagemStatus = signal<string | null>(null);
