@@ -228,3 +228,11 @@ CREATE INDEX idx_tentativa_acesso_dispositivo_uid
         uid_card_lido,
         criado_em DESC
     );
+
+-- Impede duas tentativas simultaneamente PENDENTE para o mesmo dispositivo/cartão.
+CREATE UNIQUE INDEX uq_tentativa_pendente_dispositivo_cartao
+    ON tentativa_acesso (
+        identificador_dispositivo,
+        uid_card_lido
+    )
+    WHERE status = 'PENDENTE';
