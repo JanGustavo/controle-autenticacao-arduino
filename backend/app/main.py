@@ -1,3 +1,6 @@
+import asyncio
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -19,6 +22,7 @@ from app.api import (
 from app.api.biometria import router as biometria
 from app.api.health import database_health, health
 from app.auth import router as auth
+from app.services.expiracao_service import loop_expiracao_periodica
 # from app.api import rfid
 
 
@@ -28,13 +32,36 @@ from app.auth import router as auth
 
 BASE_PREFIX = "/api/v1"
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Inicializa e encerra tarefas de infraestrutura da aplicação.
+    """
+    task_expiracao = asyncio.create_task(
+        loop_expiracao_periodica(),
+        name="expiracao-tentativas-acesso",
+    )
+
+    try:
+        yield
+    finally:
+        task_expiracao.cancel()
+
+        try:
+            await task_expiracao
+        except asyncio.CancelledError:
+            pass
+
+
 app = FastAPI(
     title="Controle de Autenticação com Biometria Facial + RFID",
     description=(
-        "Backend do projeto integrador de ADS — "
+        "Backend do projeto integrador de ADS "
         "controle de acesso com arduino."
     ),
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 
