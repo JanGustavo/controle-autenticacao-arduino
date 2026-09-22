@@ -106,10 +106,32 @@ async def verificar_face(
     """
     try:
         image_bytes = await file.read()
-        return acesso_service.verificar_face_tentativa(
+
+        resultado = acesso_service.verificar_face_tentativa(
             tentativa_id,
             image_bytes,
         )
+
+        await manager.broadcast(
+            {
+                "type": "NOVO_ACESSO",
+                "data": {
+                    "id": None,
+                    "usuario_id": resultado.usuario_id,
+                    "nome_usuario": resultado.nome,
+                    "local_id": resultado.local_id,
+                    "autorizado": resultado.aprovado,
+                    "percentual_similaridade": resultado.similaridade,
+                    "motivo_recusa": (
+                        None if resultado.aprovado else resultado.mensagem
+                    ),
+                    "data_hora": None,
+                    "tentativa_id": str(resultado.tentativa_id),
+                },
+            }
+        )
+
+        return resultado
     except TentativaAcessoNaoEncontradaError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
