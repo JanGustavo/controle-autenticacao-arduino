@@ -2,56 +2,63 @@ from fastapi import APIRouter, HTTPException, status
 from app.schemas.rfid_schema import (
     VerificarCartaoRequest,
     VerificarCartaoResponse,
-    ResultadoBiometriaRequest,
-    VerificarBiometriaArduinoRequest,
+    CadastrarCartaoRequest,
+    CadastrarCartaoResponse,
 )
-from app.services.rfid_service import rfid_service
+from app.services.rfid_service import (
+    rfid_service,
+    CartaoNaoEncontradoError,
+    CartaoJaCadastradoError,
+    UsuarioNaoEncontradoError,
+)
 
 router = APIRouter()
 
 
 @router.post("/verificar-cartao", response_model=VerificarCartaoResponse)
 async def verificar_cartao(request: VerificarCartaoRequest):
-    """
-    Recebe o UID do cartão lido pelo ESP32 e verifica se existe um usuário associado.
-    """
     try:
-        # Se chegou até aqui, o Pydantic já garantiu que request.uid_card é uma string válida pelo regex
-        print(f"ESP_ID: {request.esp_id}")
-        print(f"UUID: {request.uid_card}")
-        return rfid_service.verificar_cartao(request.uid_card)
-        
+        print(
+            f"[VERIFICAÇÃO] Dispositivo: {request.identificador_dispositivo} "
+            f"| UID: {request.uid_card}"
+        )
+        return rfid_service.verificar_cartao(
+            uid_card=request.uid_card,
+            identificador_dispositivo=request.identificador_dispositivo,
+        )
+
+    except CartaoNaoEncontradoError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
-        # Registra o erro real no console para você conseguir debugar
         print(f"[RFID API Erro] {e}")
-        
-        # Levanta um 500 apenas se o banco de dados cair ou a lógica interna falhar
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erro interno no servidor ao verificar o cartão."
+            detail=f"Erro interno no servidor ao verificar o cartão: {str(e)}",
         )
 
 
-@router.post("/resultado-biometria")
-async def receber_resultado_biometria(
-    resultado: VerificarBiometriaArduinoRequest,
-):
+@router.post("/cadastrar-cartao", response_model=CadastrarCartaoResponse)
+async def cadastrar_cartao(request: CadastrarCartaoRequest):
     """
-    Recebe a requisição do ESP32 consultando o veredito da biometria.
+    Cadastra e vincula o UID lido pelo ESP32 a um usuario_id específico.
     """
-    print(f"[ESP32 Biometria Query] ESP_ID: {resultado.esp_id} | UID: {resultado.uid_card}")
-
-    aprovado_por_biometria = True 
-
-    if aprovado_por_biometria:
-        print(f"[HARDWARE] 🟢 ACESSO LIBERADO | UID: {resultado.uid_card}")
-    else:
-        print(f"[HARDWARE] 🔴 ACESSO NEGADO | UID: {resultado.uid_card}")
-
-    return {
-        "usuario_id": 4,
-        "nome": "Lucas Admin",
-        "aprovado": aprovado_por_biometria,
-        "similaridade": 0.95,
-        "mensagem": "Verificação biométrica concluída."
-    }
+    try:
+        print(
+            f"[CADASTRO] Dispositivo: {request.identificador_dispositivo} "
+            f"| UID: {request.uid_card} -> User: {request.usuario_id}"
+        )
+        return rfid_service.cadastrar_cartao(
+            identificador_dispositivo=request.identificador_dispositivo,
+            uid_card=request.uid_card,
+            usuario_id=request.usuario_id,
+        )
+    except CartaoJaCadastradoError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except UsuarioNaoEncontradoError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except Exception as e:
+        print(f"[CADASTRO API Erro] {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao cadastrar cartão: {str(e)}",
+        )
