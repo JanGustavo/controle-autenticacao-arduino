@@ -5,7 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { ApiService, HistoricoAcessoResponse, LocalResponse, UsuarioResponse } from '../../services/api.service';
 import { SpeechService } from '../../services/speech.service';
 import { WebcamService } from '../../services/webcam.service';
@@ -128,7 +128,11 @@ export class CompararPage implements OnInit, OnDestroy {
   }
 
   async iniciarWebcam(): Promise<void> {
+    const tentativaPendente = this.tentativaId();
+
     this.resetar();
+    this.tentativaId.set(tentativaPendente);
+
     await this.webcam.iniciarWebcam(
       () => this.videoElement,
       this.modoTotem(),
@@ -197,7 +201,7 @@ export class CompararPage implements OnInit, OnDestroy {
     );
     this.scanning.set(true);
 
-    let request$;
+    let request$: Observable<any>;
     if (tentativaAtual) {
       request$ = this.api.verificarFace(tentativaAtual, resCapture.blob);
     } else {
