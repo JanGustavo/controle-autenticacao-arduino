@@ -448,6 +448,7 @@ class AcessoService:
                            t.uid_card_lido,
                            t.status,
                            t.expira_em,
+                           u.nome,
                            u.ativo,
                            l.ativo,
                            p.horario_inicio,
@@ -478,6 +479,7 @@ class AcessoService:
                     uid_card,
                     status_atual,
                     expira_em,
+                    nome_usuario,
                     usuario_ativo,
                     local_ativo,
                     horario_inicio,
@@ -515,6 +517,9 @@ class AcessoService:
 
                     return VerificarBiometriaArduinoResponse(
                         tentativa_id=tentativa_id,
+                        usuario_id=usuario_id,
+                        nome=nome_usuario,
+                        local_id=local_id,
                         aprovado=aprovado_final,
                         similaridade=similaridade_final,
                         comando=(
@@ -620,6 +625,8 @@ class AcessoService:
 
         return VerificarBiometriaArduinoResponse(
             tentativa_id=tentativa_id,
+            usuario_id=usuario_id,
+            local_id=local_id,
             aprovado=aprovado_final,
             similaridade=float(similaridade),
             comando="liberar" if aprovado_final else "negar",
