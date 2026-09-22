@@ -92,6 +92,7 @@ class VerificarBiometriaArduinoResponse(BaseModel):
     tentativa_id: UUID | None = None
     usuario_id: Optional[int] = None
     nome: Optional[str] = None
+    local_id: Optional[int] = None
     aprovado: bool
     similaridade: float = Field(default=0.0, ge=0.0, le=1.0)
     comando: Literal["liberar", "negar"] = "negar"
