@@ -15,6 +15,7 @@ from app.services.acesso_service import (
     TentativaAcessoNaoEncontradaError,
     acesso_service,
 )
+from app.schemas.websocket_schema import manager
 from app.services.rfid_service import (
     CartaoJaCadastradoError,
     UsuarioNaoEncontradoError,
@@ -37,12 +38,46 @@ async def verificar_cartao(request: VerificarCartaoRequest):
             f"[VERIFICAÇÃO] Dispositivo: {request.identificador_dispositivo} "
             f"| UID: {request.uid_card}"
         )
-        return acesso_service.iniciar_tentativa(
+        await manager.broadcast(
+            {
+                "type": "RFID_LIDO",
+                "data": {
+                    "uid_card": request.uid_card,
+                    "identificador_dispositivo": request.identificador_dispositivo,
+                },
+            }
+        )
+
+        resultado = acesso_service.iniciar_tentativa(
             uid_card=request.uid_card,
             identificador_dispositivo=request.identificador_dispositivo,
         )
 
+        await manager.broadcast(
+            {
+                "type": "RFID_APROVADO",
+                "data": {
+                    "tentativa_id": str(resultado.tentativa_id),
+                    "usuario_id": resultado.usuario_id,
+                    "nome_usuario": resultado.nome,
+                    "identificador_dispositivo": request.identificador_dispositivo,
+                },
+            }
+        )
+
+        return resultado
+
     except AcessoNegadoError as error:
+        await manager.broadcast(
+            {
+                "type": "RFID_NEGADO",
+                "data": {
+                    "uid_card": request.uid_card,
+                    "identificador_dispositivo": request.identificador_dispositivo,
+                    "motivo": str(error),
+                },
+            }
+        )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(error),
@@ -103,7 +138,26 @@ async def resultado_biometria(
     poderá passar a usar tentativa_id diretamente.
     """
     try:
-        return acesso_service.finalizar_resultado_arduino(request)
+        resultado = acesso_service.finalizar_resultado_arduino(request)
+
+        await manager.broadcast(
+            {
+                "type": "NOVO_ACESSO",
+                "data": {
+                    "id": None,
+                    "usuario_id": resultado.usuario_id,
+                    "nome_usuario": resultado.nome,
+                    "local_id": resultado.local_id,
+                    "autorizado": resultado.aprovado,
+                    "percentual_similaridade": resultado.similaridade,
+                    "motivo_recusa": None if resultado.aprovado else resultado.mensagem,
+                    "data_hora": None,
+                    "tentativa_id": str(resultado.tentativa_id),
+                },
+            }
+        )
+
+        return resultado
     except TentativaAcessoNaoEncontradaError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
