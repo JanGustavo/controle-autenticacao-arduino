@@ -80,7 +80,7 @@ export class CadastrarPage implements OnInit, OnDestroy {
           selecionado: false,
           horario_inicio: '08:00',
           horario_fim: '18:00',
-          dias_semana: [1, 2, 3, 4, 5], // Padrão Seg-Sex
+          dias_semana: [2, 3, 4, 5, 6], // Padrão Seg-Sex
         }));
         this.locaisCarregando = false;
       },
