@@ -33,41 +33,84 @@
         </label>
 
         <div class="field full-width uid-field">
-          <label for="uid_card_input">
-            <span>UID do cartão</span>
+          <label for="rfid-device-select">
+            <span>Dispositivo RFID <b>*</b></span>
           </label>
+          <select
+            id="rfid-device-select"
+            [(ngModel)]="identificadorRfidSelecionado"
+            [ngModelOptions]="{ standalone: true }"
+            [disabled]="saving || aguardandoRfid"
+          >
+            <option value="">Selecione o ESP32/leitor</option>
+            @for (local of locaisPermissao; track local.local_id) {
+              <option [value]="local.identificador">
+                {{ local.nome_local }} · {{ local.identificador }}
+              </option>
+            }
+          </select>
+
+          <label for="uid_card_input">
+            <span>UID do cartão <b>*</b></span>
+          </label>
+
           <div class="input-with-action">
             <input
               id="uid_card_input"
               formControlName="uid_card"
               type="text"
-              maxlength="100"
-              placeholder="Ex: A1:B2:C3:D4"
+              maxlength="20"
+              readonly
+              placeholder="Aguardando leitura RFID..."
             />
-            <button
-              type="button"
-              mat-stroked-button
-              class="btn-rfid-mock"
-              (click)="capturarRfidMock()"
-              [disabled]="lendoRfidMock"
-              title="Simula a leitura de cartão RFID via leitor do Arduino"
-            >
-              @if (lendoRfidMock) {
+
+            @if (aguardandoRfid) {
+              <button
+                type="button"
+                mat-stroked-button
+                class="btn-rfid-mock"
+                (click)="cancelarLeituraRfid()"
+              >
                 <span class="btn-mock-content">
                   <mat-progress-spinner diameter="18" mode="indeterminate"></mat-progress-spinner>
-                  <span>Aguardando aproximação...</span>
+                  <span>Aguardando cartão...</span>
                 </span>
-              } @else {
+              </button>
+            } @else {
+              <button
+                type="button"
+                mat-stroked-button
+                class="btn-rfid-mock"
+                (click)="iniciarLeituraRfid()"
+                [disabled]="!identificadorRfidSelecionado || saving"
+                title="Aguarda uma leitura real do ESP32 selecionado"
+              >
                 <span class="btn-mock-content">
                   <mat-icon>contactless</mat-icon>
-                  <span>Ler RFID (Mock)</span>
+                  <span>Aguardar RFID</span>
                 </span>
-              }
-            </button>
+              </button>
+
+              <button
+                type="button"
+                mat-stroked-button
+                class="btn-rfid-mock"
+                (click)="capturarRfidMock()"
+                [disabled]="!identificadorRfidSelecionado || saving || lendoRfidMock"
+                title="Simula uma leitura enquanto o hardware real está em desenvolvimento"
+              >
+                <span class="btn-mock-content">
+                  <mat-icon>developer_mode</mat-icon>
+                  <span>Simular</span>
+                </span>
+              </button>
+            }
           </div>
+
           <small class="rfid-hint">
             <mat-icon class="hint-icon">sensors</mat-icon>
-            Simulação de captura temporária do leitor RFID (RC522) que se comunicará com o Arduino/ESP32.
+            Selecione o dispositivo e aguarde a leitura. O UID recebido pelo ESP32
+            será preenchido automaticamente via WebSocket.
           </small>
         </div>
       </div>
