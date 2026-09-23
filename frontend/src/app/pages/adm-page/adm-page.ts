@@ -5,7 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
-import { ApiService, AdmPageResponse } from '../../services/api.service';
+import { ApiService, HealthResponse } from '../../services/api.service';
 import { signal } from '@angular/core';
 
 @Component({
@@ -25,12 +25,12 @@ import { signal } from '@angular/core';
 export class AdmPage implements OnInit {
   private api = inject(ApiService);
 
-  dados = signal<AdmPageResponse | null>(null);
+  dados = signal<HealthResponse | null>(null);
   carregando = signal(true);
   erro = signal<string | null>(null);
 
   ngOnInit(): void {
-    this.api.getAdmPage().subscribe({
+    this.api.getHealth().subscribe({
       next: (res) => {
         this.dados.set(res);
         this.carregando.set(false);

@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 
 const API_BASE = 'http://localhost:8001/api/v1';
 
-export interface AdmPageResponse {
+export interface HealthResponse {
   message: string;
 }
 
@@ -122,8 +122,8 @@ export interface CadastrarCartaoResponse {
 export class ApiService {
   private http = inject(HttpClient);
 
-  getAdmPage(): Observable<AdmPageResponse> {
-    return this.http.get<AdmPageResponse>(`${API_BASE}/adm/adm-page`);
+  getHealth(): Observable<HealthResponse> {
+    return this.http.get<HealthResponse>(`${API_BASE}/health`);
   }
 
   getUsuarios(filtros?: { q?: string; ativo?: boolean }): Observable<UsuarioResponse[]> {

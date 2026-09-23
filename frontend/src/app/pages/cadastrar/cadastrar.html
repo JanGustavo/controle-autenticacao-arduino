@@ -127,7 +127,7 @@
 
       @if (webcam.webcamAtiva()) {
         <div class="webcam-viewport">
-          <video #videoElement autoplay playsinline muted></video>
+          <video #videoElement autoplay playsinline muted style="transform: scaleX(-1); -webkit-transform: scaleX(-1);"></video>
 
           <!-- Badge Visual Dinâmico de IA -->
           <div class="status-badge" [ngClass]="webcam.tipoStatus()">

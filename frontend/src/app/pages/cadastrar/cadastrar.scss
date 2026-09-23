@@ -743,3 +743,37 @@ textarea:focus {
     }
   }
 }
+
+/* 1. Inverte o vídeo ao vivo na webcam */
+.webcam-viewport {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+
+  video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+    transform: scaleX(-1) !important;
+    -webkit-transform: scaleX(-1) !important;
+  }
+
+  .status-badge,
+  .face-overlay,
+  .debug-hud {
+    transform: none !important;
+  }
+}
+
+/* 2. Inverte a foto estática pós-captura (bloco da foto selecionada) */
+.camera-capture {
+  .photo-preview {
+    transform: scaleX(-1) !important;
+    -webkit-transform: scaleX(-1) !important;
+  }
+}
+
+.photo-preview {
+  transform: scaleX(-1) !important;
+  -webkit-transform: scaleX(-1) !important;
+}

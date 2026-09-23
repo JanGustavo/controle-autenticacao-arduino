@@ -50,7 +50,6 @@ def mock_get_conn_admin(admin_row=ADMIN_MOCK):
         ("/api/v1/historico-acesso", "GET"),
         ("/api/v1/historico-acesso", "POST"),
         ("/api/v1/historico-acesso/1", "GET"),
-        ("/api/v1/adm/adm-page", "GET"),
         ("/api/v1/biometria/cadastrar/1", "POST"),
     ],
 )

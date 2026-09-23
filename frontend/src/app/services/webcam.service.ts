@@ -399,7 +399,7 @@ async carregarModelos(): Promise<void> {
     setTimeout(() => this.dispararFlash.set(false), 150);
   }
 
-  async capturarFrameComPreview(): Promise<{ blob: Blob; previewUrl: string } | null> {
+async capturarFrameComPreview(): Promise<{ blob: Blob; previewUrl: string } | null> {
     const video = this.videoElementRef?.nativeElement;
     if (!video) return Promise.resolve(null);
 
@@ -413,6 +413,10 @@ async carregarModelos(): Promise<void> {
     const ctx = canvas.getContext('2d');
     if (!ctx) return Promise.resolve(null);
 
+    // Inverte a imagem horizontalmente no Canvas
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     const previewUrl = canvas.toDataURL('image/jpeg', 0.85);
 
@@ -425,7 +429,6 @@ async carregarModelos(): Promise<void> {
     });
   }
 }
-
 function calcularEAR(olho: faceapi.Point[]): number {
   const d1 = Math.hypot(olho[1].x - olho[5].x, olho[1].y - olho[5].y);
   const d2 = Math.hypot(olho[2].x - olho[4].x, olho[2].y - olho[4].y);

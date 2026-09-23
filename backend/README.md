@@ -151,7 +151,6 @@ POST /api/v1/auth/login
 ### Administrador
 
 ```http
-GET /api/v1/adm/adm-page
 ```
 
 ### Usuários
