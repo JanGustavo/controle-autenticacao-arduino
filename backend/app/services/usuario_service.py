@@ -2,175 +2,105 @@ import re
 
 from fastapi import HTTPException, status
 from psycopg.errors import IntegrityError
-from psycopg.types.json import Jsonb
 
 from app.database.connection import get_connection
+from app.models.permissao_model import permissao_model
+from app.models.usuario_model import usuario_model
 from app.schemas.usuario_schema import UsuarioCreate, UsuarioUpdate
 
 
 class UsuarioService:
-	_campos = ("user_id", "nome", "uid_card", "vetor_facial", "ativo", "criado_em")
+    @staticmethod
+    def _normalizar_uid(uid_card: str | None) -> str | None:
+        if uid_card is None:
+            return None
+        return re.sub(r"[\s:-]", "", uid_card).upper() or None
 
-	@classmethod
-	def _row_to_dict(cls, row):
-		return dict(zip(cls._campos, row, strict=True))
+    def listar_usuarios(self, q: str | None = None, ativo: bool | None = None):
+        return usuario_model.listar(q=q, ativo=ativo)
 
-	@staticmethod
-	def _normalizar_uid(uid_card: str | None) -> str | None:
-		if uid_card is None:
-			return None
-		return re.sub(r"[\s:-]", "", uid_card).upper() or None
+    def obter_usuario(self, usuario_id: int):
+        usuario = usuario_model.buscar_por_id(usuario_id)
+        if usuario is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Usuário não encontrado.",
+            )
+        return usuario
 
-	def listar_usuarios(self, q: str | None = None, ativo: bool | None = None):
-		conditions = []
-		params = []
-		if q is not None and q.strip():
-			term = f"%{q.strip().lower()}%"
-			conditions.append("(LOWER(nome) LIKE %s OR LOWER(COALESCE(uid_card, '')) LIKE %s)")
-			params.extend([term, term])
-		if ativo is not None:
-			conditions.append("ativo = %s")
-			params.append(ativo)
+    def criar_usuario(self, usuario: UsuarioCreate):
+        try:
+            # A criação do usuário e de suas permissões continua atômica.
+            # O Service coordena a transação; os Models concentram o SQL.
+            with get_connection() as connection:
+                with connection.cursor() as cursor:
+                    criado = usuario_model.criar_com_cursor(
+                        cursor,
+                        nome=usuario.nome,
+                        uid_card=self._normalizar_uid(usuario.uid_card),
+                        vetor_facial=usuario.vetor_facial,
+                        ativo=usuario.ativo,
+                    )
 
-		where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+                    for permissao in usuario.permissoes:
+                        permissao_model.criar_com_cursor(
+                            cursor,
+                            usuario_id=criado["user_id"],
+                            local_id=permissao.local_id,
+                            horario_inicio=permissao.horario_inicio,
+                            horario_fim=permissao.horario_fim,
+                            dias_semana=permissao.dias_semana,
+                        )
 
-		with get_connection() as connection:
-			with connection.cursor() as cursor:
-				cursor.execute(
-					f"""
-					SELECT user_id, nome, uid_card, vetor_facial, ativo, criado_em
-					FROM usuario
-					{where_clause}
-					ORDER BY user_id
-					""",
-					params if params else None,
-				)
-				return [self._row_to_dict(row) for row in cursor.fetchall()]
+            return criado
+        except IntegrityError as error:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="O cartão informado já está cadastrado.",
+            ) from error
 
-	def obter_usuario(self, usuario_id: int):
-		with get_connection() as connection:
-			with connection.cursor() as cursor:
-				cursor.execute(
-					"""
-					SELECT user_id, nome, uid_card, vetor_facial, ativo, criado_em
-					FROM usuario
-					WHERE user_id = %s
-					""",
-					(usuario_id,),
-				)
-				usuario = cursor.fetchone()
+    def atualizar_usuario(self, usuario_id: int, usuario: UsuarioUpdate):
+        campos = usuario.model_dump(exclude_unset=True)
+        if not campos:
+            return self.obter_usuario(usuario_id)
 
-		if usuario is None:
-			raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado.")
-		return self._row_to_dict(usuario)
+        if "uid_card" in campos:
+            campos["uid_card"] = self._normalizar_uid(campos["uid_card"])
 
-	def criar_usuario(self, usuario: UsuarioCreate):
-		try:
-			with get_connection() as connection:
-				with connection.cursor() as cursor:
-					cursor.execute(
-						"""
-						INSERT INTO usuario (nome, uid_card, vetor_facial, ativo)
-						VALUES (%s, %s, %s, %s)
-						RETURNING user_id, nome, uid_card, vetor_facial, ativo, criado_em
-						""",
-						(
-							usuario.nome,
-							self._normalizar_uid(usuario.uid_card),
-							Jsonb(usuario.vetor_facial) if usuario.vetor_facial is not None else None,
-							usuario.ativo,
-						),
-					)
-					criado = cursor.fetchone()
-					for permissao in usuario.permissoes:
-						cursor.execute(
-							"""
-							INSERT INTO permissao (
-								usuario_id, local_id, horario_inicio, horario_fim, dias_semana
-							) VALUES (%s, %s, %s, %s, %s)
-							""",
-							(
-								criado[0],
-								permissao.local_id,
-								permissao.horario_inicio,
-								permissao.horario_fim,
-								permissao.dias_semana,
-							),
-						)
-		except IntegrityError as error:
-			raise HTTPException(
-				status_code=status.HTTP_409_CONFLICT,
-				detail="O cartão informado já está cadastrado.",
-			) from error
+        try:
+            atualizado = usuario_model.atualizar(usuario_id, campos)
+        except IntegrityError as error:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="O cartão informado já está cadastrado.",
+            ) from error
 
-		return self._row_to_dict(criado)
+        if atualizado is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Usuário não encontrado.",
+            )
+        return atualizado
 
-	def atualizar_usuario(self, usuario_id: int, usuario: UsuarioUpdate):
-		campos = usuario.model_dump(exclude_unset=True)
-		if not campos:
-			return self.obter_usuario(usuario_id)
+    def atualizar_vetor_facial(
+        self,
+        usuario_id: int,
+        vetor_facial: list[float],
+    ):
+        if not usuario_model.atualizar_vetor_facial(usuario_id, vetor_facial):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Usuário não encontrado.",
+            )
+        return usuario_id
 
-		valores = [
-			self._normalizar_uid(campos[nome]) if nome == "uid_card" else
-			Jsonb(campos[nome]) if nome == "vetor_facial" and campos[nome] is not None else campos[nome]
-			for nome in campos
-		]
-		atribuicoes = ", ".join(f"{nome} = %s" for nome in campos)
-		valores.append(usuario_id)
-
-		try:
-			with get_connection() as connection:
-				with connection.cursor() as cursor:
-					cursor.execute(
-						f"""
-						UPDATE usuario
-						SET {atribuicoes}
-						WHERE user_id = %s
-						RETURNING user_id, nome, uid_card, vetor_facial, ativo, criado_em
-						""",
-						valores,
-					)
-					atualizado = cursor.fetchone()
-		except IntegrityError as error:
-			raise HTTPException(
-				status_code=status.HTTP_409_CONFLICT,
-				detail="O cartão informado já está cadastrado.",
-			) from error
-
-		if atualizado is None:
-			raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado.")
-		return self._row_to_dict(atualizado)
-
-	def atualizar_vetor_facial(self, usuario_id: int, vetor_facial: list[float]):
-		with get_connection() as connection:
-			with connection.cursor() as cursor:
-				cursor.execute(
-					"""
-					UPDATE usuario
-					SET vetor_facial = %s
-					WHERE user_id = %s
-					RETURNING user_id
-					""",
-					(Jsonb(vetor_facial), usuario_id),
-				)
-				atualizado = cursor.fetchone()
-
-		if atualizado is None:
-			raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado.")
-		return atualizado[0]
-
-	def deletar_usuario(self, usuario_id: int):
-		with get_connection() as connection:
-			with connection.cursor() as cursor:
-				cursor.execute(
-					"DELETE FROM usuario WHERE user_id = %s RETURNING user_id",
-					(usuario_id,),
-				)
-				removido = cursor.fetchone()
-
-		if removido is None:
-			raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado.")
-		return {"mensagem": "Usuário excluído com sucesso."}
+    def deletar_usuario(self, usuario_id: int):
+        if not usuario_model.deletar(usuario_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Usuário não encontrado.",
+            )
+        return {"mensagem": "Usuário excluído com sucesso."}
 
 
 usuario_service = UsuarioService()
