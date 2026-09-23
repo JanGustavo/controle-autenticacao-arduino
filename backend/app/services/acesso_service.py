@@ -5,6 +5,11 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from app.database.connection import get_connection
+from app.models.historico_acesso_model import historico_acesso_model
+from app.models.local_model import local_model
+from app.models.permissao_model import permissao_model
+from app.models.tentativa_acesso_model import tentativa_acesso_model
+from app.models.usuario_model import usuario_model
 from app.schemas.rfid_schema import (
     VerificarBiometriaArduinoRequest,
     VerificarBiometriaArduinoResponse,
@@ -29,9 +34,8 @@ class AcessoService:
     """
     Orquestra a tentativa completa de acesso.
 
-    Não mantém uma transação aberta durante a espera da biometria.
-    O RFID cria uma tentativa PENDENTE; a biometria finaliza essa
-    tentativa em uma segunda transação curta e atômica.
+    A regra de negócio permanece aqui. Persistência fica nos Models.
+    Nenhuma transação permanece aberta durante a espera da biometria.
     """
 
     _STATUS_PENDENTE = "PENDENTE"
@@ -63,9 +67,7 @@ class AcessoService:
         if horario_inicio <= horario_fim:
             dentro_horario = horario_inicio <= hora_atual <= horario_fim
         else:
-            dentro_horario = (
-                hora_atual >= horario_inicio or hora_atual <= horario_fim
-            )
+            dentro_horario = hora_atual >= horario_inicio or hora_atual <= horario_fim
 
         if not dentro_horario:
             return False, (
@@ -82,147 +84,88 @@ class AcessoService:
         identificador_dispositivo: str,
     ) -> VerificarCartaoResponse:
         """
-        RFID -> local/dispositivo -> usuário -> permissão -> tentativa PENDENTE.
+        RFID -> dispositivo -> usuário -> permissão -> tentativa PENDENTE.
 
-        O histórico de uma negação desta etapa é gravado na mesma transação.
-        A exceção só é lançada depois do commit, evitando rollback do histórico.
+        Consultas e gravações ficam nos Models; este método mantém apenas
+        a decisão de negócio e a coordenação do fluxo.
         """
         agora = cls._agora()
-        timeout_segundos = int(
-            os.getenv("ACCESS_ATTEMPT_TIMEOUT_SECONDS", "15")
-        )
+        timeout_segundos = int(os.getenv("ACCESS_ATTEMPT_TIMEOUT_SECONDS", "15"))
         tentativa_id = uuid4()
 
+        local = local_model.buscar_por_dispositivo(identificador_dispositivo)
+        usuario = usuario_model.buscar_por_uid(uid_card)
+
+        local_id = local["local_id"] if local else None
+        usuario_id = usuario["user_id"] if usuario else None
+
         negacao: str | None = None
-        resposta: VerificarCartaoResponse | None = None
+
+        if not local:
+            negacao = "Dispositivo não cadastrado no sistema."
+        elif not local["ativo"]:
+            negacao = "Local/dispositivo desativado."
+        elif not usuario:
+            negacao = "Cartão não cadastrado no sistema."
+        elif not usuario["ativo"]:
+            negacao = "Usuário inativo."
+        else:
+            permissao = permissao_model.buscar_por_usuario_local(
+                usuario_id,
+                local_id,
+            )
+
+            if not permissao:
+                negacao = "Usuário sem permissão para este local."
+            else:
+                permitido, motivo = cls._permissao_valida(
+                    permissao["horario_inicio"],
+                    permissao["horario_fim"],
+                    list(permissao["dias_semana"]),
+                    agora,
+                )
+                if not permitido:
+                    negacao = motivo or "Acesso fora da permissão."
+
+        if negacao:
+            historico_acesso_model.criar(
+                usuario_id=usuario_id,
+                local_id=local_id,
+                uid_card_lido=uid_card,
+                data_hora=agora,
+                autorizado=False,
+                percentual_similaridade=None,
+                motivo_recusa=negacao,
+            )
+            raise AcessoNegadoError(negacao)
+
+        expira_em = agora + timedelta(seconds=timeout_segundos)
 
         with get_connection() as connection:
             with connection.cursor() as cursor:
-                cursor.execute(
-                    """
-                    SELECT local_id, ativo
-                    FROM local
-                    WHERE identificador_dispositivo = %s
-                    """,
-                    (identificador_dispositivo,),
+                tentativa_acesso_model.criar_com_cursor(
+                    cursor,
+                    tentativa_id=tentativa_id,
+                    usuario_id=usuario_id,
+                    local_id=local_id,
+                    uid_card_lido=uid_card,
+                    identificador_dispositivo=identificador_dispositivo,
+                    status=cls._STATUS_PENDENTE,
+                    criado_em=agora,
+                    expira_em=expira_em,
                 )
-                local = cursor.fetchone()
 
-                cursor.execute(
-                    """
-                    SELECT user_id, nome, ativo
-                    FROM usuario
-                    WHERE uid_card = %s
-                    """,
-                    (uid_card,),
-                )
-                usuario = cursor.fetchone()
-
-                local_id = local[0] if local else None
-                usuario_id = usuario[0] if usuario else None
-
-                if not local:
-                    negacao = "Dispositivo não cadastrado no sistema."
-                elif not local[1]:
-                    negacao = "Local/dispositivo desativado."
-                elif not usuario:
-                    negacao = "Cartão não cadastrado no sistema."
-                elif not usuario[2]:
-                    negacao = "Usuário inativo."
-                else:
-                    cursor.execute(
-                        """
-                        SELECT horario_inicio, horario_fim, dias_semana
-                        FROM permissao
-                        WHERE usuario_id = %s
-                          AND local_id = %s
-                        """,
-                        (usuario_id, local_id),
-                    )
-                    permissao = cursor.fetchone()
-
-                    if not permissao:
-                        negacao = "Usuário sem permissão para este local."
-                    else:
-                        permitido, motivo = cls._permissao_valida(
-                            permissao[0],
-                            permissao[1],
-                            list(permissao[2]),
-                            agora,
-                        )
-                        if not permitido:
-                            negacao = motivo or "Acesso fora da permissão."
-
-                if negacao:
-                    cursor.execute(
-                        """
-                        INSERT INTO historico_acesso (
-                            usuario_id,
-                            local_id,
-                            uid_card_lido,
-                            autorizado,
-                            percentual_similaridade,
-                            motivo_recusa
-                        )
-                        VALUES (%s, %s, %s, FALSE, NULL, %s)
-                        """,
-                        (
-                            usuario_id,
-                            local_id,
-                            uid_card,
-                            negacao,
-                        ),
-                    )
-                else:
-                    expira_em = agora + timedelta(seconds=timeout_segundos)
-
-                    cursor.execute(
-                        """
-                        INSERT INTO tentativa_acesso (
-                            tentativa_id,
-                            usuario_id,
-                            local_id,
-                            uid_card_lido,
-                            identificador_dispositivo,
-                            status,
-                            criado_em,
-                            expira_em
-                        )
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                        """,
-                        (
-                            tentativa_id,
-                            usuario_id,
-                            local_id,
-                            uid_card,
-                            identificador_dispositivo,
-                            cls._STATUS_PENDENTE,
-                            agora,
-                            expira_em,
-                        ),
-                    )
-
-                    resposta = VerificarCartaoResponse(
-                        existe=True,
-                        tentativa_id=tentativa_id,
-                        usuario_id=usuario_id,
-                        nome=usuario[1],
-                        mensagem=(
-                            "Cartão reconhecido e dentro da permissão. "
-                            "Aguardando validação facial."
-                        ),
-                        proxima_etapa="BIOMETRIA",
-                    )
-
-        if negacao:
-            raise AcessoNegadoError(negacao)
-
-        if resposta is None:
-            raise AcessoServiceError(
-                "Não foi possível iniciar a tentativa de acesso."
-            )
-
-        return resposta
+        return VerificarCartaoResponse(
+            existe=True,
+            tentativa_id=tentativa_id,
+            usuario_id=usuario_id,
+            nome=usuario["nome"],
+            mensagem=(
+                "Cartão reconhecido e dentro da permissão. "
+                "Aguardando validação facial."
+            ),
+            proxima_etapa="BIOMETRIA",
+        )
 
     @staticmethod
     def _normalizar_vetor(raw_vector: Any) -> list[float] | None:
@@ -247,11 +190,10 @@ class AcessoService:
         """
         Etapa temporária 1:N.
 
-        Mesmo usando 1:N, a decisão final fica vinculada ao usuário
-        identificado pelo RFID: o melhor candidato precisa ser o mesmo
-        usuário da tentativa.
+        Mesmo usando 1:N, a aprovação continua vinculada ao usuário
+        identificado pelo RFID.
         """
-        tentativa = cls._buscar_tentativa(tentativa_id)
+        tentativa = tentativa_acesso_model.buscar_por_id(tentativa_id)
 
         if tentativa is None:
             raise TentativaAcessoNaoEncontradaError(
@@ -273,28 +215,18 @@ class AcessoService:
                 motivo_recusa=face_result.message,
             )
 
-        with get_connection() as connection:
-            with connection.cursor() as cursor:
-                cursor.execute(
-                    """
-                    SELECT user_id, nome, vetor_facial
-                    FROM usuario
-                    WHERE ativo = TRUE
-                      AND vetor_facial IS NOT NULL
-                    ORDER BY user_id
-                    """
-                )
-                usuarios = cursor.fetchall()
-
+        usuarios = usuario_model.listar_ativos_com_biometria()
         usuarios_validos: list[tuple[int, str, list[float]]] = []
         vetores: list[list[float]] = []
 
-        for usuario_id, nome, vetor_raw in usuarios:
-            vetor = cls._normalizar_vetor(vetor_raw)
+        for usuario in usuarios:
+            vetor = cls._normalizar_vetor(usuario["vetor_facial"])
             if vetor is None:
                 continue
 
-            usuarios_validos.append((usuario_id, nome, vetor))
+            usuarios_validos.append(
+                (usuario["user_id"], usuario["nome"], vetor)
+            )
             vetores.append(vetor)
 
         if not usuarios_validos:
@@ -303,8 +235,7 @@ class AcessoService:
                 aprovado=False,
                 similaridade=0.0,
                 motivo_recusa=(
-                    "Nenhum usuário com vetor biométrico válido "
-                    "no sistema."
+                    "Nenhum usuário com vetor biométrico válido no sistema."
                 ),
             )
 
@@ -349,37 +280,23 @@ class AcessoService:
         """
         Compatibilidade temporária com o firmware atual.
 
-        O módulo facial ainda não envia tentativa_id, então usamos a
-        tentativa PENDENTE mais recente do mesmo cartão + dispositivo.
+        O firmware ainda não envia tentativa_id, então buscamos a tentativa
+        PENDENTE mais recente do cartão + dispositivo.
         """
-        with get_connection() as connection:
-            with connection.cursor() as cursor:
-                cursor.execute(
-                    """
-                    SELECT tentativa_id
-                    FROM tentativa_acesso
-                    WHERE uid_card_lido = %s
-                      AND identificador_dispositivo = %s
-                      AND status = %s
-                    ORDER BY criado_em DESC
-                    LIMIT 1
-                    """,
-                    (
-                        dados.uid_card.upper(),
-                        dados.identificador_dispositivo,
-                        cls._STATUS_PENDENTE,
-                    ),
-                )
-                row = cursor.fetchone()
+        tentativa_id = tentativa_acesso_model.buscar_pendente_por_cartao_dispositivo(
+            dados.uid_card.upper(),
+            dados.identificador_dispositivo,
+            cls._STATUS_PENDENTE,
+        )
 
-        if row is None:
+        if tentativa_id is None:
             raise TentativaAcessoNaoEncontradaError(
                 "Nenhuma tentativa PENDENTE encontrada para "
                 "este cartão e dispositivo."
             )
 
         return cls._finalizar_tentativa(
-            tentativa_id=row[0],
+            tentativa_id=tentativa_id,
             aprovado=dados.aprovado,
             similaridade=dados.similaridade,
             motivo_recusa=(
@@ -390,45 +307,6 @@ class AcessoService:
         )
 
     @classmethod
-    def _buscar_tentativa(
-        cls,
-        tentativa_id: UUID,
-    ) -> dict[str, Any] | None:
-        with get_connection() as connection:
-            with connection.cursor() as cursor:
-                cursor.execute(
-                    """
-                    SELECT tentativa_id,
-                           usuario_id,
-                           local_id,
-                           uid_card_lido,
-                           identificador_dispositivo,
-                           status,
-                           criado_em,
-                           expira_em
-                    FROM tentativa_acesso
-                    WHERE tentativa_id = %s
-                    """,
-                    (tentativa_id,),
-                )
-                row = cursor.fetchone()
-
-        if row is None:
-            return None
-
-        campos = (
-            "tentativa_id",
-            "usuario_id",
-            "local_id",
-            "uid_card_lido",
-            "identificador_dispositivo",
-            "status",
-            "criado_em",
-            "expira_em",
-        )
-        return dict(zip(campos, row, strict=True))
-
-    @classmethod
     def _finalizar_tentativa(
         cls,
         tentativa_id: UUID,
@@ -436,82 +314,48 @@ class AcessoService:
         similaridade: float,
         motivo_recusa: str | None,
     ) -> VerificarBiometriaArduinoResponse:
+        """
+        Finaliza tentativa em uma única transação curta.
+
+        O Model executa SELECT/UPDATE/INSERT; o Service decide o resultado.
+        """
         agora = cls._agora()
 
         with get_connection() as connection:
             with connection.cursor() as cursor:
-                cursor.execute(
-                    """
-                    SELECT t.tentativa_id,
-                           t.usuario_id,
-                           t.local_id,
-                           t.uid_card_lido,
-                           t.status,
-                           t.expira_em,
-                           u.nome,
-                           u.ativo,
-                           l.ativo,
-                           p.horario_inicio,
-                           p.horario_fim,
-                           p.dias_semana
-                    FROM tentativa_acesso t
-                    JOIN usuario u ON u.user_id = t.usuario_id
-                    JOIN local l ON l.local_id = t.local_id
-                    LEFT JOIN permissao p
-                        ON p.usuario_id = t.usuario_id
-                       AND p.local_id = t.local_id
-                    WHERE t.tentativa_id = %s
-                    FOR UPDATE OF t
-                    """,
-                    (tentativa_id,),
+                contexto = tentativa_acesso_model.buscar_contexto_finalizacao_com_cursor(
+                    cursor,
+                    tentativa_id,
                 )
-                row = cursor.fetchone()
 
-                if row is None:
+                if contexto is None:
                     raise TentativaAcessoNaoEncontradaError(
                         "Tentativa de acesso não encontrada."
                     )
 
-                (
-                    _,
-                    usuario_id,
-                    local_id,
-                    uid_card,
-                    status_atual,
-                    expira_em,
-                    nome_usuario,
-                    usuario_ativo,
-                    local_ativo,
-                    horario_inicio,
-                    horario_fim,
-                    dias_semana,
-                ) = row
+                usuario_id = contexto["usuario_id"]
+                local_id = contexto["local_id"]
+                uid_card = contexto["uid_card_lido"]
+                nome_usuario = contexto["nome_usuario"]
 
-                if status_atual != cls._STATUS_PENDENTE:
-                    cursor.execute(
-                        """
-                        SELECT percentual_similaridade,
-                               status,
-                               motivo_recusa
-                        FROM tentativa_acesso
-                        WHERE tentativa_id = %s
-                        """,
-                        (tentativa_id,),
+                if contexto["status"] != cls._STATUS_PENDENTE:
+                    estado = tentativa_acesso_model.buscar_estado_com_cursor(
+                        cursor,
+                        tentativa_id,
                     )
-                    estado = cursor.fetchone()
 
                     aprovado_final = (
                         bool(estado)
-                        and estado[1] == cls._STATUS_AUTORIZADO
+                        and estado["status"] == cls._STATUS_AUTORIZADO
                     )
                     similaridade_final = (
-                        float(estado[0] or 0.0)
+                        float(estado["percentual_similaridade"] or 0.0)
                         if estado
                         else 0.0
                     )
                     mensagem = (
-                        estado[2]
-                        if estado and estado[2]
+                        estado["motivo_recusa"]
+                        if estado and estado["motivo_recusa"]
                         else "Tentativa já finalizada."
                     )
 
@@ -522,110 +366,77 @@ class AcessoService:
                         local_id=local_id,
                         aprovado=aprovado_final,
                         similaridade=similaridade_final,
-                        comando=(
-                            "liberar"
-                            if aprovado_final
-                            else "negar"
-                        ),
+                        comando="liberar" if aprovado_final else "negar",
                         mensagem=mensagem,
                     )
 
-                if agora > expira_em:
+                if agora > contexto["expira_em"]:
                     status_final = cls._STATUS_EXPIRADO
-                    motivo_final = (
-                        "Tempo máximo para validação facial excedido."
-                    )
+                    motivo_final = "Tempo máximo para validação facial excedido."
                     aprovado_final = False
-                elif not usuario_ativo:
+                elif not contexto["usuario_ativo"]:
                     status_final = cls._STATUS_NEGADO
                     motivo_final = "Usuário está inativo."
                     aprovado_final = False
-                elif not local_ativo:
+                elif not contexto["local_ativo"]:
                     status_final = cls._STATUS_NEGADO
                     motivo_final = "Local/dispositivo está inativo."
                     aprovado_final = False
                 elif (
-                    not horario_inicio
-                    or not horario_fim
-                    or not dias_semana
+                    not contexto["horario_inicio"]
+                    or not contexto["horario_fim"]
+                    or not contexto["dias_semana"]
                 ):
                     status_final = cls._STATUS_NEGADO
                     motivo_final = (
-                        "Permissão de acesso não encontrada "
-                        "no momento da validação."
+                        "Permissão de acesso não encontrada no momento da validação."
                     )
                     aprovado_final = False
                 else:
                     permitido, motivo_permissao = cls._permissao_valida(
-                        horario_inicio,
-                        horario_fim,
-                        list(dias_semana),
+                        contexto["horario_inicio"],
+                        contexto["horario_fim"],
+                        list(contexto["dias_semana"]),
                         agora,
                     )
 
                     if not permitido:
                         status_final = cls._STATUS_NEGADO
-                        motivo_final = (
-                            motivo_permissao
-                            or "Acesso fora da permissão."
-                        )
+                        motivo_final = motivo_permissao or "Acesso fora da permissão."
                         aprovado_final = False
                     elif not aprovado:
                         status_final = cls._STATUS_NEGADO
-                        motivo_final = (
-                            motivo_recusa or "Biometria recusada."
-                        )
+                        motivo_final = motivo_recusa or "Biometria recusada."
                         aprovado_final = False
                     else:
                         status_final = cls._STATUS_AUTORIZADO
                         motivo_final = None
                         aprovado_final = True
 
-                cursor.execute(
-                    """
-                    UPDATE tentativa_acesso
-                    SET status = %s,
-                        concluido_em = %s,
-                        percentual_similaridade = %s,
-                        motivo_recusa = %s
-                    WHERE tentativa_id = %s
-                    """,
-                    (
-                        status_final,
-                        agora,
-                        float(similaridade),
-                        motivo_final,
-                        tentativa_id,
-                    ),
+                tentativa_acesso_model.finalizar_com_cursor(
+                    cursor,
+                    tentativa_id=tentativa_id,
+                    status=status_final,
+                    concluido_em=agora,
+                    percentual_similaridade=float(similaridade),
+                    motivo_recusa=motivo_final,
                 )
 
-                cursor.execute(
-                    """
-                    INSERT INTO historico_acesso (
-                        usuario_id,
-                        local_id,
-                        uid_card_lido,
-                        data_hora,
-                        autorizado,
-                        percentual_similaridade,
-                        motivo_recusa
-                    )
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
-                    """,
-                    (
-                        usuario_id,
-                        local_id,
-                        uid_card,
-                        agora,
-                        aprovado_final,
-                        float(similaridade),
-                        motivo_final,
-                    ),
+                historico_acesso_model.criar_com_cursor(
+                    cursor,
+                    usuario_id=usuario_id,
+                    local_id=local_id,
+                    uid_card_lido=uid_card,
+                    data_hora=agora,
+                    autorizado=aprovado_final,
+                    percentual_similaridade=float(similaridade),
+                    motivo_recusa=motivo_final,
                 )
 
         return VerificarBiometriaArduinoResponse(
             tentativa_id=tentativa_id,
             usuario_id=usuario_id,
+            nome=nome_usuario,
             local_id=local_id,
             aprovado=aprovado_final,
             similaridade=float(similaridade),
