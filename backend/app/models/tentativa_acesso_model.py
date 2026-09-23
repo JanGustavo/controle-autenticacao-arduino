@@ -159,6 +159,31 @@ class TentativaAcessoModel:
         }
 
     @staticmethod
+    def expirar_pendentes_com_cursor(
+        cursor,
+        *,
+        agora,
+        motivo_recusa: str,
+    ):
+        cursor.execute(
+            """
+            UPDATE tentativa_acesso
+            SET status = 'EXPIRADO',
+                concluido_em = %s,
+                motivo_recusa = %s
+            WHERE status = 'PENDENTE'
+              AND expira_em < %s
+            RETURNING tentativa_id, usuario_id, local_id, uid_card_lido
+            """,
+            (agora, motivo_recusa, agora),
+        )
+        campos = ("tentativa_id", "usuario_id", "local_id", "uid_card_lido")
+        return [
+            dict(zip(campos, row, strict=True))
+            for row in cursor.fetchall()
+        ]
+
+    @staticmethod
     def finalizar_com_cursor(
         cursor,
         *,
