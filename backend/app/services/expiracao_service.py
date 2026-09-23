@@ -1,11 +1,7 @@
 """
 Expiração automática das tentativas de acesso.
 
-Uma tentativa de acesso nasce como PENDENTE depois da aprovação do RFID.
-Caso a etapa facial nunca seja concluída, a tentativa precisa sair desse
-estado para não permanecer pendurada indefinidamente.
-
-A varredura usa o índice (status, expira_em) da tabela tentativa_acesso.
+A regra de expiração fica neste Service; SQL e persistência ficam nos Models.
 """
 
 import asyncio
@@ -13,6 +9,8 @@ import logging
 from datetime import datetime
 
 from app.database.connection import get_connection
+from app.models.historico_acesso_model import historico_acesso_model
+from app.models.tentativa_acesso_model import tentativa_acesso_model
 
 logger = logging.getLogger(__name__)
 
@@ -26,86 +24,37 @@ _MOTIVO_EXPIRACAO_AUTOMATICA = (
 
 def expirar_tentativas_pendentes() -> int:
     """
-    Marca como EXPIRADO cada tentativa PENDENTE cujo prazo já terminou
-    e grava o resultado correspondente no histórico.
-
-    A alteração de status e a criação dos registros de histórico ocorrem
-    na mesma transação.
+    Expira tentativas vencidas e grava o histórico na mesma transação.
     """
     agora = datetime.now()
 
     with get_connection() as connection:
         with connection.cursor() as cursor:
-            cursor.execute(
-                """
-                UPDATE tentativa_acesso
-                SET status = 'EXPIRADO',
-                    concluido_em = %s,
-                    motivo_recusa = %s
-                WHERE status = 'PENDENTE'
-                  AND expira_em < %s
-                RETURNING tentativa_id,
-                          usuario_id,
-                          local_id,
-                          uid_card_lido
-                """,
-                (
-                    agora,
-                    _MOTIVO_EXPIRACAO_AUTOMATICA,
-                    agora,
-                ),
+            expiradas = tentativa_acesso_model.expirar_pendentes_com_cursor(
+                cursor,
+                agora=agora,
+                motivo_recusa=_MOTIVO_EXPIRACAO_AUTOMATICA,
             )
 
-            expiradas = cursor.fetchall()
-
-            if not expiradas:
-                return 0
-
-            for (
-                tentativa_id,
-                usuario_id,
-                local_id,
-                uid_card_lido,
-            ) in expiradas:
-                cursor.execute(
-                    """
-                    INSERT INTO historico_acesso (
-                        usuario_id,
-                        local_id,
-                        uid_card_lido,
-                        data_hora,
-                        autorizado,
-                        percentual_similaridade,
-                        motivo_recusa
-                    )
-                    VALUES (
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        FALSE,
-                        NULL,
-                        %s
-                    )
-                    """,
-                    (
-                        usuario_id,
-                        local_id,
-                        uid_card_lido,
-                        agora,
-                        _MOTIVO_EXPIRACAO_AUTOMATICA,
-                    ),
+            for tentativa in expiradas:
+                historico_acesso_model.criar_com_cursor(
+                    cursor,
+                    usuario_id=tentativa["usuario_id"],
+                    local_id=tentativa["local_id"],
+                    uid_card_lido=tentativa["uid_card_lido"],
+                    data_hora=agora,
+                    autorizado=False,
+                    percentual_similaridade=None,
+                    motivo_recusa=_MOTIVO_EXPIRACAO_AUTOMATICA,
                 )
 
                 logger.info(
                     "[Expiracao] tentativa_id=%s expirada "
                     "automaticamente (usuario_id=%s, local_id=%s).",
-                    tentativa_id,
-                    usuario_id,
-                    local_id,
+                    tentativa["tentativa_id"],
+                    tentativa["usuario_id"],
+                    tentativa["local_id"],
                 )
-
-        connection.commit()
 
     return len(expiradas)
 
