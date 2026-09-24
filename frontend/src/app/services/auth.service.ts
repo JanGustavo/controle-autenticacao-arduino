@@ -68,9 +68,18 @@ export class AuthService {
   // Signal reativo com o estado da sessão do usuário
   userSession = signal<UserSession | null>(carregarSessaoInicial());
 
-  isLoggedIn(): boolean {
+  getToken(): string | null {
     const token = localStorage.getItem('adm_token');
-    return isTokenValido(token) && this.userSession() !== null;
+
+    if (!isTokenValido(token)) {
+      return null;
+    }
+
+    return token;
+  }
+
+  isLoggedIn(): boolean {
+    return this.getToken() !== null && this.userSession() !== null;
   }
 
   setToken(token: string): void {
