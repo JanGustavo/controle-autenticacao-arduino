@@ -7,7 +7,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { ApiService, LocalResponse, PermissaoCreateRequest } from '../../services/api.service';
+import { ApiService, DispositivoResponse, PermissaoCreateRequest } from '../../services/api.service';
 import { SpeechService } from '../../services/speech.service';
 import { WebcamService } from '../../services/webcam.service';
 import { WebSocketLogsService } from '../../services/websocket-logs.service';
@@ -15,7 +15,6 @@ import { WebSocketLogsService } from '../../services/websocket-logs.service';
 export interface LocalPermissaoItem {
   local_id: number;
   nome_local: string;
-  identificador: string;
   selecionado: boolean;
   horario_inicio: string;
   horario_fim: string;
@@ -58,6 +57,7 @@ export class CadastrarPage implements OnInit, OnDestroy {
   successMessage = '';
   errorMessage = '';
   locaisPermissao: LocalPermissaoItem[] = [];
+  dispositivosRfid: DispositivoResponse[] = [];
   locaisCarregando = true;
   locaisErro = '';
   fotoPreviewUrl: string | null = null;
@@ -76,7 +76,6 @@ export class CadastrarPage implements OnInit, OnDestroy {
         this.locaisPermissao = locais.map((local) => ({
           local_id: local.local_id,
           nome_local: local.nome,
-          identificador: local.identificador_dispositivo,
           selecionado: false,
           horario_inicio: '08:00',
           horario_fim: '18:00',
@@ -87,6 +86,15 @@ export class CadastrarPage implements OnInit, OnDestroy {
       error: () => {
         this.locaisCarregando = false;
         this.locaisErro = 'Não foi possível carregar os locais disponíveis.';
+      },
+    });
+
+    this.api.getDispositivos({ ativo: true }).subscribe({
+      next: (dispositivos) => {
+        this.dispositivosRfid = dispositivos;
+      },
+      error: () => {
+        this.errorMessage = 'Não foi possível carregar os dispositivos RFID.';
       },
     });
 
