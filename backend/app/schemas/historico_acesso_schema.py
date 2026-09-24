@@ -7,6 +7,7 @@ class HistoricoAcessoResponse(BaseModel):
     id: int
     usuario_id: int | None
     local_id: int | None
+    dispositivo_id: int | None = None
     uid_card_lido: str | None
     data_hora: datetime
     autorizado: bool
@@ -17,6 +18,7 @@ class HistoricoAcessoResponse(BaseModel):
 class HistoricoAcessoCreate(BaseModel):
     usuario_id: int | None = None
     local_id: int | None = None
+    dispositivo_id: int | None = None
     uid_card_lido: str | None = None
     data_hora: datetime | None = None
     autorizado: bool
