@@ -240,15 +240,15 @@ export class TuplePage implements OnInit {
   }
 
   private atualizarLinhasPermissoes(): void {
-    if (this.permissoes.length) {
-      this.rowsFromApi.set(this.permissoes.map((permissao) => this.toPermissionRow(permissao)));
-    }
+    this.rowsFromApi.set(
+      this.permissoes.map((permissao) => this.toPermissionRow(permissao))
+    );
   }
 
   private atualizarLinhasHistorico(): void {
-    if (this.historico.length) {
-      this.rowsFromApi.set(this.historico.map((registro) => this.toHistoryRow(registro)));
-    }
+    this.rowsFromApi.set(
+      this.historico.map((registro) => this.toHistoryRow(registro))
+    );
   }
 
   private toHistoryRow(registro: HistoricoAcessoResponse): Record<string, unknown> {
