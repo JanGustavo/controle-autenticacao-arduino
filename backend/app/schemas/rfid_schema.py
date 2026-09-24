@@ -17,11 +17,10 @@ def _validar_uid(v: str) -> str:
 
 
 class CadastrarCartaoRequest(BaseModel):
-    # Antes era esp_id: int -- não existe tabela de ESP no banco, e o que
-    # identifica um local de verdade é local.identificador_dispositivo
-    # (a mesma string fixa como constante em cada firmware .ino).
+    # O firmware envia o identificador lógico do dispositivo cadastrado
+    # na tabela dispositivo.
     identificador_dispositivo: str = Field(
-        ..., min_length=1, description="Identificador do ESP32/local que originou a requisição"
+        ..., min_length=1, description="Identificador do dispositivo que originou a requisição"
     )
     uid_card: str = Field(..., description="UID do cartão lido pelo leitor RFID")
     usuario_id: int = Field(..., gt=0, description="ID do usuário que vai receber o cartão")
@@ -41,7 +40,7 @@ class CadastrarCartaoResponse(BaseModel):
 
 class VerificarCartaoRequest(BaseModel):
     identificador_dispositivo: str = Field(
-        ..., min_length=1, description="Identificador do ESP32/local (local.identificador_dispositivo)"
+        ..., min_length=1, description="Identificador do dispositivo cadastrado"
     )
     uid_card: str = Field(
         ...,
@@ -78,7 +77,7 @@ class ResultadoBiometriaRequest(BaseModel):
 
 class VerificarBiometriaArduinoRequest(BaseModel):
     identificador_dispositivo: str = Field(
-        ..., min_length=1, description="Identificador do ESP32/local"
+        ..., min_length=1, description="Identificador do dispositivo cadastrado"
     )
     uid_card: str = Field(..., description="UID do cartão para associar a busca")
 
