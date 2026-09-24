@@ -1,63 +1,43 @@
-# ⚙️ Configuração de Ambiente (`.env`)
+# 🔐 Fluxo de validação facial
 
-O backend utiliza a variável de ambiente abaixo para definir o endereço base do ESP32 onde o comando HTTP `POST` será despachado:
+A biometria operacional é executada pelo backend em modo **1:1 estrito**.
 
-```env
-ESP32_URL_COMANDO=http://192.168.1.100/api/v1/arduino/liberar-acesso
+## Entrada do Totem
+
+Após o RFID gerar uma `tentativa_id`, o Totem envia a captura:
+
+```http
+POST /api/v1/arduino/verificar-face?tentativa_id=<UUID>
+Authorization: Bearer <JWT_ADMIN>
+Content-Type: multipart/form-data
 ```
 
-> **Nota:** Certifique-se de que o IP configurado corresponde ao endereço IP atribuído ao ESP32 na rede local.
+O backend:
 
----
+1. valida a tentativa PENDENTE;
+2. extrai o embedding da captura;
+3. busca somente o vetor do titular identificado pelo RFID;
+4. realiza comparação 1:1;
+5. revalida usuário, dispositivo, local, permissão, dia e horário;
+6. grava a decisão e o histórico.
 
-## 📥 Estrutura de Payload Enviada pelo Backend (POST)
-
-Assim que a biometria facial é processada e associada ao respectivo `uid_card` do usuário, o backend atua como cliente HTTP e envia um JSON estruturado para o ESP32.
-
-### 🟢 1. Cenário de Sucesso (Acesso Liberado)
-
-Disparado quando a similaridade facial atinge ou ultrapassa o limiar configurado (**Threshold**) e o usuário é reconhecido com sucesso.
-
-- **Método:** `POST`
-- **Content-Type:** `application/json`
+## Saída
 
 ```json
 {
+  "tentativa_id": "3b75c2c1-1e6d-4f52-9aa3-45f59ce77700",
+  "usuario_id": 17,
+  "nome": "Jan",
+  "local_id": 1,
+  "aprovado": true,
+  "similaridade": 0.91,
   "comando": "liberar",
-  "usuario": "Jan",
-  "similaridade": 0.97
+  "mensagem": "Acesso autorizado.",
+  "tempo_resposta_ms": 1432
 }
 ```
 
-**Ação esperada no ESP32:**
+O Totem não informa `aprovado`. O ESP32 também não informa `aprovado`.
+Ambos consomem a decisão calculada pelo backend.
 
-- Acionar o microservo/relé da catraca;
-- Piscar os LEDs verdes;
-- Acionar o buzzer de sucesso;
-- Aguardar o tempo de passagem;
-- Retornar ao estado de repouso.
-
----
-
-### 🔴 2. Cenário de Falha (Acesso Negado)
-
-Disparado quando o rosto não é compatível com o cadastro ou a similaridade fica abaixo do esperado.
-
-- **Método:** `POST`
-- **Content-Type:** `application/json`
-
-```json
-{
-  "comando": "negar",
-  "motivo": "Rosto incompatível",
-  "similaridade": 0.12
-}
-```
-
-**Ação esperada no ESP32:**
-
-- Manter a catraca trancada;
-- Piscar os LEDs vermelhos;
-- Emitir o alerta sonoro pelo buzzer de erro;
-- Retornar ao estado de repouso.
-```
+O threshold operacional atual é **0.80**.
