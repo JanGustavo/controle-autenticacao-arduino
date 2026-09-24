@@ -95,9 +95,7 @@ export class LocaisPage implements OnInit {
       },
       error: (error) => {
         this.salvando = false;
-        this.erro = error.status === 409
-          ? 'Este identificador de dispositivo já está cadastrado.'
-          : 'Não foi possível salvar o local.';
+        this.erro = error.error?.detail || 'Não foi possível salvar o local.';
         this.cdr.markForCheck();
       },
     });
