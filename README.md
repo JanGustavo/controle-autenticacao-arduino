@@ -160,35 +160,48 @@ Todas as rotas abaixo utilizam o prefixo `/api/v1`.
 | Autenticação | POST | `/auth/login` |
 | Health check | GET | `/health` |
 | Saúde do banco | GET | `/health/db` |
-| Painel administrativo | GET | `/adm/adm-page` |
+| Administradores | GET, POST | `/administradores` |
+| Administrador específico | GET, PATCH, DELETE | `/administradores/{id}` |
+| Logs de auditoria | GET | `/adm/audit-logs` |
 | Usuários | GET, POST | `/usuarios` |
 | Usuário específico | GET, PATCH, DELETE | `/usuarios/{id}` |
 | Locais | GET, POST | `/locais` |
 | Local específico | GET, PATCH, DELETE | `/locais/{id}` |
+| Dispositivos | GET, POST | `/dispositivos` |
+| Dispositivo específico | GET, PATCH, DELETE | `/dispositivos/{id}` |
 | Permissões | GET, POST | `/permissoes` |
 | Permissão específica | GET, PATCH, DELETE | `/permissoes/{id}` |
+| Cadastro biométrico | POST | `/biometria/cadastrar/{usuario_id}` |
+| Verificação RFID (ESP32) | POST | `/arduino/verificar-cartao` |
+| Validação facial (Totem) | POST | `/arduino/verificar-face` |
+| Resultado facial (ESP32) | POST | `/arduino/resultado-biometria` |
+| Cadastro de cartão RFID | POST | `/arduino/cadastrar-cartao` |
 | Histórico de acesso | GET, POST | `/historico-acesso` |
 | Histórico específico | GET | `/historico-acesso/{id}` |
+| WebSocket em tempo real | WS | `/ws/logs` |
 
-A implementação atual de todas as rotas (usuários, locais, permissões, histórico, autenticação e biometria) já está completamente separada entre **API, schemas e services**, mantendo o backend como um monólito modular e aderente ao padrão arquitetural. fileciteturn13file0L2-L2 fileciteturn15file0L2-L2 fileciteturn16file0L2-L2 fileciteturn17file0L2-L2
+A implementação de todas as rotas está separada entre **API (routers), schemas (Pydantic), models (acesso a dados com pool e transações curtas) e services (regras de negócio)**, mantendo o backend modular e desacoplado.
 
 ## 🗄️ Modelo de dados
 
-O PostgreSQL possui as entidades principais:
+O PostgreSQL possui as entidades normalizadas:
 
-- `administrador` — usuários administrativos do painel.
-- `usuario` — pessoas que podem receber acesso.
-- `local` — portas/ambientes associados a dispositivos.
-- `permissao` — regras de acesso por usuário, local, horário e dias da semana.
-- `historico_acesso` — registro das tentativas de acesso.
-
-O histórico possui índices compostos por usuário/data e local/data para acelerar consultas cronológicas. Os vetores faciais são representados como `JSONB` no MVP, permitindo comparação 1:1. O uso de `pgvector` pode ser considerado posteriormente para buscas por similaridade em escala. fileciteturn21file0L2-L2
+- `administrador` — usuários administrativos do painel e controle de conta principal (`principal = TRUE`).
+- `audit_logs` — trilha de auditoria administrativa completa (ações, recurso alterado, IP e data/hora).
+- `usuario` — indivíduos autorizáveis no sistema com seus UIDs de cartão RFID e embeddings faciais (`JSONB`).
+- `local` — portas, salas e ambientes físicos monitorados.
+- `dispositivo` — controladoras físicas (ESP32) vinculadas a um local (relação 1:N Local -> Dispositivos).
+- `permissao` — regras de acesso por usuário, local, janela horária (`horario_inicio` / `horario_fim`) e dias da semana.
+- `tentativa_acesso` — estado orquestrado temporário entre a aprovação do RFID e a conclusão biométrica facial (com TTL de expiração).
+- `historico_acesso` — registro imutável de todas as tentativas de acesso com status, similaridade, data/hora e motivo de recusa.
 
 ## 🖥️ Frontend
 
-O painel é desenvolvido em Angular 22 e utiliza Angular Material. Atualmente possui páginas para login, painel administrativo, dashboard, usuários, permissões, locais, entidades e cadastro. Rotas administrativas são protegidas pelo `authGuard`. fileciteturn18file0L2-L2
-
-A comunicação com a API é centralizada em `ApiService`, utilizando HTTP e a base `http://localhost:8001/api/v1` no ambiente local. fileciteturn20file0L2-L2
+O painel é desenvolvido em Angular 22 e utiliza Angular Material. Possui páginas para:
+- Autenticação e gestão de administradores;
+- Dashboard em tempo real com conexão WebSocket (`/ws/logs`);
+- CRUD de usuários, locais, dispositivos e permissões por horário/dias;
+- Totem de autoatendimento Kiosk com captura de câmera, espelhamento, síntese de voz e feedback visual de acesso.
 
 ## 🧪 Testes
 
@@ -196,10 +209,11 @@ No backend:
 
 ```bash
 cd backend
-pytest
+source venv/bin/activate
+PYTHONPATH=. pytest -v
 ```
 
-Os testes atuais cobrem autenticação, health check e operações relacionadas a usuários.
+A suíte possui 100% de aprovação (66 testes cobrindo autenticação JWT, isolamento de rotas protegidas, integridade de administradores, FaceService com InsightFace, saúde da aplicação e CRUD de usuários).
 
 ## 🛠️ Comandos Make
 
@@ -218,34 +232,27 @@ make dev-frontend # somente frontend
 
 ### Implementado
 
-- [x] Estrutura modular do backend
+- [x] Estrutura modular do backend (Controller -> Service -> Model)
 - [x] FastAPI + documentação OpenAPI/Swagger
-- [x] PostgreSQL via Docker
-- [x] Health check da aplicação e do banco
-- [x] Autenticação administrativa
-- [x] CRUD de usuários
-- [x] CRUD de locais
-- [x] CRUD de permissões
-- [x] Consulta e registro do histórico de acesso
-- [x] Painel Angular
-- [x] Proteção de rotas no frontend
-- [x] Testes automatizados básicos
-- [x] Ambiente Docker Compose
-- [x] Capturar imagem da câmera
-- [x] Gerar embeddings faciais
-- [x] Comparar biometria facial 1:1
-- [x] Implementar autorização no backend para rotas administrativas
-- [x] Substituir o token temporário por JWT ou mecanismo equivalente
+- [x] PostgreSQL via Docker e migrations versionadas
+- [x] Health check da aplicação e do banco de dados
+- [x] Autenticação administrativa JWT (Bearer) com proteção da conta principal
+- [x] Trilha de logs de auditoria administrativa (`audit_logs`)
+- [x] CRUD de usuários, locais, dispositivos e permissões
+- [x] Relação 1:N entre Local e Dispositivos físicos
+- [x] Associação e validação estrita de cartões RFID (formato HEX)
+- [x] Cadastro biométrico com embeddings InsightFace (`buffalo_l`) sem persistência da imagem crua
+- [x] Orquestração de tentativa de acesso com tabela temporária e expiração automática
+- [x] Medição de latência ponta a ponta (`tempo_resposta_ms`) da leitura do RFID à decisão final
+- [x] Acionamento de periféricos no firmware (LEDs, Buzzer e Servo da catraca)
+- [x] Broadcast de eventos em tempo real via WebSocket para o Totem
+- [x] Suíte de testes automatizados com 100% de cobertura nos fluxos críticos
 
 ### Em desenvolvimento / próximos passos
 
-- [ ] Integrar leitura RFID pelo ESP32/RC522
-- [ ] Implementar identificação do dispositivo por `identificador_dispositivo`
-- [ ] Implementar regra completa de autorização no fluxo físico
-- [ ] Enviar resposta de acesso autorizado/negado ao ESP32
-- [ ] Persistir token de sessão de forma mais robusta
-- [ ] Adicionar documentação de integração hardware ↔ API
-- [ ] Revisar CORS e configurações para produção
+- [ ] Migração formal do reconhecimento facial para modo puramente 1:1 (comparação direta com o vetor do cartão)
+- [ ] Transição do threshold biométrico operacional de 80% para 85% conforme homologação final
+- [ ] Conexão e calibração de bancada física definitiva com servo SG90 e leitor RC522 em campo
 
 ## 🎓 Contexto acadêmico
 
