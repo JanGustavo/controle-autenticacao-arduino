@@ -7,19 +7,28 @@ export interface UserSession {
   foto_url?: string | null;
 }
 
+function decodificarPayloadJwt(token: string): Record<string, unknown> {
+  const payloadBase64Url = token.split('.')[1];
+  const payloadBase64 = payloadBase64Url
+    .replace(/-/g, '+')
+    .replace(/_/g, '/')
+    .padEnd(Math.ceil(payloadBase64Url.length / 4) * 4, '=');
+
+  return JSON.parse(atob(payloadBase64));
+}
+
 function isTokenValido(token: string | null): boolean {
   if (!token || typeof token !== 'string') return false;
   const partes = token.split('.');
   if (partes.length !== 3) return false;
 
   try {
-    const payloadJson = atob(partes[1].replace(/-/g, '+').replace(/_/g, '/'));
-    const payload = JSON.parse(payloadJson);
+    const payload = decodificarPayloadJwt(token);
 
-    if (!payload.sub) return false;
-    if (payload.exp && typeof payload.exp === 'number') {
+    if (!payload['sub']) return false;
+    if (payload['exp'] && typeof payload['exp'] === 'number') {
       const agoraEmSegundos = Math.floor(Date.now() / 1000);
-      if (payload.exp < agoraEmSegundos) return false;
+      if (payload['exp'] < agoraEmSegundos) return false;
     }
     return true;
   } catch {
@@ -30,12 +39,18 @@ function isTokenValido(token: string | null): boolean {
 function extrairUserDoToken(token: string | null): UserSession | null {
   if (!token || !isTokenValido(token)) return null;
   try {
-    const payloadJson = atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'));
-    const payload = JSON.parse(payloadJson);
-    const admin_id = payload.sub ? Number(payload.sub) : undefined;
-    const email = payload.email || 'admin@ardlock.local';
-    const name = payload.nome || email.split('@')[0];
-    const foto_url = payload.foto_url || null;
+    const payload = decodificarPayloadJwt(token);
+    const admin_id = payload['sub'] ? Number(payload['sub']) : undefined;
+    const email =
+      typeof payload['email'] === 'string'
+        ? payload['email']
+        : 'admin@ardlock.local';
+    const name =
+      typeof payload['nome'] === 'string'
+        ? payload['nome']
+        : email.split('@')[0];
+    const foto_url =
+      typeof payload['foto_url'] === 'string' ? payload['foto_url'] : null;
     return { admin_id, name, email, foto_url };
   } catch {
     return null;
