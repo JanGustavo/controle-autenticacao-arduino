@@ -53,7 +53,9 @@ export class CadastrarPage implements OnInit, OnDestroy {
   saving = false;
   lendoRfidMock = false;
   aguardandoRfid = false;
-  identificadorRfidSelecionado = '';
+  dispositivoRfidSelecionadoId: number | null = null;
+  dispositivosCarregando = true;
+  dispositivosErro = '';
   successMessage = '';
   errorMessage = '';
   locaisPermissao: LocalPermissaoItem[] = [];
@@ -63,6 +65,19 @@ export class CadastrarPage implements OnInit, OnDestroy {
   fotoPreviewUrl: string | null = null;
   private fotoCapturada: Blob | File | null = null;
   private wsSubscription: Subscription | null = null;
+
+  get dispositivoRfidSelecionado(): DispositivoResponse | null {
+    if (this.dispositivoRfidSelecionadoId === null) return null;
+
+    return this.dispositivosRfid.find(
+      (dispositivo) =>
+        dispositivo.dispositivo_id === this.dispositivoRfidSelecionadoId
+    ) ?? null;
+  }
+
+  get identificadorRfidSelecionado(): string {
+    return this.dispositivoRfidSelecionado?.identificador ?? '';
+  }
 
   form = this.formBuilder.nonNullable.group({
     nome: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(255)]],
@@ -92,9 +107,24 @@ export class CadastrarPage implements OnInit, OnDestroy {
     this.api.getDispositivos({ ativo: true }).subscribe({
       next: (dispositivos) => {
         this.dispositivosRfid = dispositivos;
+        this.dispositivosCarregando = false;
+        this.dispositivosErro = '';
+
+        if (
+          this.dispositivoRfidSelecionadoId !== null &&
+          !dispositivos.some(
+            (item) =>
+              item.dispositivo_id === this.dispositivoRfidSelecionadoId
+          )
+        ) {
+          this.dispositivoRfidSelecionadoId = null;
+        }
       },
       error: () => {
-        this.errorMessage = 'Não foi possível carregar os dispositivos RFID.';
+        this.dispositivosRfid = [];
+        this.dispositivosCarregando = false;
+        this.dispositivosErro =
+          'Não foi possível carregar os dispositivos RFID ativos.';
       },
     });
 
@@ -305,7 +335,7 @@ export class CadastrarPage implements OnInit, OnDestroy {
     this.submitted = false;
     this.saving = false;
     this.aguardandoRfid = false;
-    this.identificadorRfidSelecionado = '';
+    this.dispositivoRfidSelecionadoId = null;
     this.successMessage = '';
     this.errorMessage = '';
     this.fotoCapturada = null;
