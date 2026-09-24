@@ -18,9 +18,16 @@
           <span>{{ erro }}</span>
         </div>
       } @else if (carregando) {
-        <div class="loading-state">
-          <mat-icon class="spinning">sync</mat-icon>
-          <span>Carregando logs de auditoria...</span>
+        <div class="skeleton-table" aria-label="Carregando logs de auditoria">
+          @for (item of [1, 2, 3, 4, 5]; track item) {
+            <div class="skeleton-row">
+              <span class="skeleton-cell"></span>
+              <span class="skeleton-cell"></span>
+              <span class="skeleton-cell"></span>
+              <span class="skeleton-cell"></span>
+              <span class="skeleton-cell"></span>
+            </div>
+          }
         </div>
       } @else if (logs.length === 0) {
         <div class="empty-state">
