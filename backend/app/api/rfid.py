@@ -101,8 +101,8 @@ async def verificar_face(
     """
     Finaliza uma tentativa usando a câmera/backend.
 
-    Nesta fase, a comparação ainda é 1:N. A aprovação só ocorre quando
-    o melhor candidato é o mesmo usuário identificado pelo RFID.
+    A comparação é estritamente 1:1: a face capturada é comparada
+    somente com o vetor do usuário identificado pelo RFID.
     """
     try:
         image_bytes = await file.read()
@@ -156,9 +156,9 @@ async def resultado_biometria(
     """
     Recebe o resultado do módulo facial do hardware.
 
-    Temporariamente localiza a tentativa PENDENTE mais recente do mesmo
-    cartão + dispositivo. Quando o módulo 1:1 estiver pronto, o contrato
-    poderá passar a usar tentativa_id diretamente.
+    Mantém compatibilidade com o firmware ao localizar a tentativa
+    PENDENTE mais recente do mesmo cartão + dispositivo. O fluxo de
+    câmera do backend usa tentativa_id e validação facial 1:1.
     """
     try:
         resultado = acesso_service.finalizar_resultado_arduino(request)
