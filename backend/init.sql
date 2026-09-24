@@ -199,6 +199,7 @@ WHERE usuario.uid_card = 'A1B2C3D4';
 INSERT INTO historico_acesso (
         usuario_id,
         local_id,
+        dispositivo_id,
         uid_card_lido,
         autorizado,
         percentual_similaridade,
@@ -206,6 +207,7 @@ INSERT INTO historico_acesso (
     )
 SELECT usuario.user_id,
     local.local_id,
+    d.dispositivo_id,
     usuario.uid_card,
     FALSE,
     48.2,
@@ -217,6 +219,7 @@ WHERE usuario.uid_card = 'E5F6G7H8';
 INSERT INTO historico_acesso (
         usuario_id,
         local_id,
+        dispositivo_id,
         uid_card_lido,
         autorizado,
         percentual_similaridade,
