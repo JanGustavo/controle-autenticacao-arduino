@@ -5,6 +5,27 @@
 // custom components at https://material.angular.dev/guide/theming
 @use '@angular/material' as mat;
 
+:root {
+  --ard-canvas: #f6f8fb;
+  --ard-surface: #ffffff;
+  --ard-ink: #172033;
+  --ard-muted: #64748b;
+  --ard-line: #e2e8f0;
+  --ard-primary: #2563eb;
+  --ard-success: #15803d;
+  --ard-danger: #b91c1c;
+  --ard-warning: #b45309;
+  --ard-radius-sm: 10px;
+  --ard-radius-md: 14px;
+  --ard-radius-lg: 18px;
+  --ard-space-1: 4px;
+  --ard-space-2: 8px;
+  --ard-space-3: 12px;
+  --ard-space-4: 16px;
+  --ard-space-5: 24px;
+  --ard-space-6: 32px;
+}
+
 html {
   height: 100%;
   @include mat.theme(
@@ -30,6 +51,13 @@ body {
 }
 
 body.dark-mode {
+  --ard-canvas: #0b1220;
+  --ard-surface: #111827;
+  --ard-ink: #f8fafc;
+  --ard-muted: #94a3b8;
+  --ard-line: rgba(255, 255, 255, 0.1);
+  --ard-primary: #60a5fa;
+
   color-scheme: dark;
   background-color: #0f172a !important;
   color: #f1f5f9 !important;
