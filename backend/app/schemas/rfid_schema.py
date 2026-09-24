@@ -96,3 +96,7 @@ class VerificarBiometriaArduinoResponse(BaseModel):
     similaridade: float = Field(default=0.0, ge=0.0, le=1.0)
     comando: Literal["liberar", "negar"] = "negar"
     mensagem: str
+    tempo_resposta_ms: Optional[int] = Field(
+        default=None,
+        description="Tempo total decorrido entre a leitura do RFID e a decisão final (em ms)",
+    )

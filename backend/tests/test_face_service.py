@@ -26,23 +26,20 @@ def test_extract_face_vector_no_face_fast():
 
 
 def test_calculate_similarity_rnf02_threshold():
-    """Valida o cálculo do percentual de similaridade e corte dinâmico conforme a variável de ambiente P_MINIMA_BIOMETRIA."""
-    min_sim_esperada = float(os.getenv("P_MINIMA_BIOMETRIA", 80))
+    """Valida o cálculo do percentual de similaridade e corte conforme o threshold configurado."""
+    v1 = [0.1] * 128
+    v2 = [0.1] * 128
+    v_oposto = [-0.1] * 128
 
-    # 1. Distância 0.0 -> idêntico (100.0%)
-    sim, aprovado = FaceService.distance_to_similarity(0.0)
-    assert sim == 100.0
-    assert aprovado is True
+    # 1. Vetores idênticos -> similaridade 1.0 (aprovado)
+    res_identico = FaceService.calculate_similarity(v1, v2)
+    assert res_identico.similarity == 1.0
+    assert res_identico.is_match is True
 
-    # 2. Ponto de corte dlib oficial (0.60) -> deve atingir exatamente min_similarity% (aprovado)
-    sim, aprovado = FaceService.distance_to_similarity(0.60)
-    assert sim == min_sim_esperada
-    assert aprovado is True
-
-    # 3. Distância maior que 0.60 -> reprovado (< min_similarity%)
-    sim, aprovado = FaceService.distance_to_similarity(0.65)
-    assert sim < min_sim_esperada
-    assert aprovado is False
+    # 2. Vetores opostos -> similaridade -1.0 (reprovado)
+    res_oposto = FaceService.calculate_similarity(v1, v_oposto)
+    assert res_oposto.similarity == -1.0
+    assert res_oposto.is_match is False
 
 
 def test_calculate_batch_similarities():
@@ -54,9 +51,8 @@ def test_calculate_batch_similarities():
     resultados = FaceService.calculate_batch_similarities([v_identico, v_diferente], target)
     assert len(resultados) == 2
 
-    sim_id, aprov_id = resultados[0]
-    assert sim_id == 100.0
-    assert aprov_id is True
+    assert resultados[0].similarity == 1.0
+    assert resultados[0].is_match is True
 
-    sim_dif, aprov_dif = resultados[1]
-    assert aprov_dif is False
+    assert resultados[1].similarity == -1.0
+    assert resultados[1].is_match is False

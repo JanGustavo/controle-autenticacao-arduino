@@ -454,6 +454,12 @@ class AcessoService:
                     motivo_recusa=motivo_final,
                 )
 
+        tempo_resposta_ms: int | None = None
+        criado_em = contexto.get("criado_em")
+        if criado_em:
+            delta = agora - criado_em
+            tempo_resposta_ms = max(0, int(delta.total_seconds() * 1000))
+
         return VerificarBiometriaArduinoResponse(
             tentativa_id=tentativa_id,
             usuario_id=usuario_id,
@@ -467,6 +473,7 @@ class AcessoService:
                 if aprovado_final
                 else (motivo_final or "Acesso negado.")
             ),
+            tempo_resposta_ms=tempo_resposta_ms,
         )
 
 

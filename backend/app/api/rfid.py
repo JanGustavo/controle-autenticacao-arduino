@@ -127,6 +127,7 @@ async def verificar_face(
                     ),
                     "data_hora": None,
                     "tentativa_id": str(resultado.tentativa_id),
+                    "tempo_resposta_ms": resultado.tempo_resposta_ms,
                 },
             }
         )
@@ -175,6 +176,7 @@ async def resultado_biometria(
                     "motivo_recusa": None if resultado.aprovado else resultado.mensagem,
                     "data_hora": None,
                     "tentativa_id": str(resultado.tentativa_id),
+                    "tempo_resposta_ms": resultado.tempo_resposta_ms,
                 },
             }
         )

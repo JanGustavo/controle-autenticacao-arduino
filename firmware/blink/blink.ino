@@ -2,13 +2,13 @@
 #include <HTTPClient.h>
 #include <SPI.h>
 #include <MFRC522.h>
-// #include <ESP32Servo.h>
+#include <ESP32Servo.h>
 #include <secrets.h>
 
 // Configuração dos pinos
 #define LED_VERDE 4
 #define LED_VERMELHO 16
-
+#define BUZZER_PIN 2
 #define SERVO_PIN 13
 
 #define SS_PIN 14
@@ -30,7 +30,7 @@ const char *api_verify_card = API_URL "/api/v1/arduino/verificar-cartao";
 const char *api_biometria = API_URL "/api/v1/arduino/resultado-biometria";
 
 MFRC522 rfid(SS_PIN, RST_PIN);
-// Servo servo;
+Servo servo;
 
 // Declaração das funções (Protótipos)
 void testLed(int led);
@@ -40,11 +40,13 @@ void inicializarRFID();
 bool lerRFID(char *buffer);
 char *obterRFIDString(char *buffer);
 bool verificarSeExisteUuid(char *uuid);
-bool verificarBiometria();
+bool verificarBiometria(const char *uuid);
 void acenderLedVerde();
 void acenderLedVermelho();
 void animacaoAprovado();
 void animacaoNegado();
+void acionarServoPorta(bool abrir);
+void emitirBuzzer(int frequencia, int duracaoMs);
 
 // Setup
 void setup()
@@ -55,16 +57,23 @@ void setup()
     Serial.println();
     Serial.println("Inicializando sistema...");
 
-    // Inicialização dos LEDs
+    // Inicialização dos LEDs, Buzzer e Servo
     pinMode(LED_VERDE, OUTPUT);
     pinMode(LED_VERMELHO, OUTPUT);
+    pinMode(BUZZER_PIN, OUTPUT);
+    digitalWrite(BUZZER_PIN, LOW);
 
-    // Teste dos LEDs
+    servo.attach(SERVO_PIN);
+    servo.write(0); // Garante tranca fechada
+
+    // Teste dos LEDs e Buzzer
     Serial.println("\nTestando LED verde...");
     testLed(LED_VERDE);
 
     Serial.println("Testando LED vermelho...");
     testLed(LED_VERMELHO);
+
+    emitirBuzzer(2000, 100);
 
     // Teste do Wi-Fi
     WiFi.mode(WIFI_STA);
@@ -167,9 +176,35 @@ void testLed(int led)
     delay(300);
 }
 
-// Animação LED Verde (3 piscadas) - Simula o Servo
+// Acionamento do Servo da Catraca/Porta
+void acionarServoPorta(bool abrir)
+{
+    if (abrir)
+    {
+        servo.write(90); // Abre a trava / catraca
+    }
+    else
+    {
+        servo.write(0);  // Tranca novamente
+    }
+}
+
+// Emissão de som pelo Buzzer
+void emitirBuzzer(int frequencia, int duracaoMs)
+{
+    tone(BUZZER_PIN, frequencia, duracaoMs);
+    delay(duracaoMs);
+    noTone(BUZZER_PIN);
+}
+
+// Animação Acesso Aprovado: LED Verde, Buzzer duplo e abertura de Servo
 void animacaoAprovado()
 {
+    acionarServoPorta(true);
+    emitirBuzzer(2500, 150);
+    delay(50);
+    emitirBuzzer(3000, 200);
+
     for (int i = 0; i < 3; i++)
     {
         digitalWrite(LED_VERDE, HIGH);
@@ -177,11 +212,17 @@ void animacaoAprovado()
         digitalWrite(LED_VERDE, LOW);
         delay(300);
     }
+
+    delay(2000); // Tempo para o usuário atravessar
+    acionarServoPorta(false); // Fecha novamente
 }
 
-// Animação LED Vermelho (3 piscadas) - Acesso Negado
+// Animação Acesso Negado: LED Vermelho e Buzzer grave de erro
 void animacaoNegado()
 {
+    acionarServoPorta(false);
+    emitirBuzzer(400, 400);
+
     for (int i = 0; i < 3; i++)
     {
         digitalWrite(LED_VERMELHO, HIGH);
