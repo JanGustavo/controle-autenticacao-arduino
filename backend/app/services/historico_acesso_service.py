@@ -32,7 +32,7 @@ class HistoricoAcessoService:
         return historico_acesso_model.criar(
             usuario_id=registro.usuario_id,
             local_id=registro.local_id,
-            dispositivo_id=None,
+            dispositivo_id=registro.dispositivo_id,
             uid_card_lido=registro.uid_card_lido,
             data_hora=registro.data_hora,
             autorizado=registro.autorizado,
