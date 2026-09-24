@@ -1,3 +1,9 @@
+@use '../../styles/form-pattern' as forms;
+@use '../../styles/table-pattern' as tables;
+
+@include forms.ard-form-pattern;
+@include tables.ard-table-pattern;
+
 .tuple-wrapper {
   --canvas: #f5f6f8;
   --surface: #ffffff;
