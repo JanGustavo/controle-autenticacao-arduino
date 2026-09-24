@@ -75,16 +75,14 @@ class ResultadoBiometriaRequest(BaseModel):
     )
 
 
-class VerificarBiometriaArduinoRequest(BaseModel):
-    identificador_dispositivo: str = Field(
-        ..., min_length=1, description="Identificador do dispositivo cadastrado"
-    )
-    uid_card: str = Field(..., description="UID do cartão para associar a busca")
-
-    @field_validator("uid_card")
-    @classmethod
-    def validar_formato_uid(cls, v: str) -> str:
-        return _validar_uid(v)
+class ResultadoTentativaResponse(BaseModel):
+    tentativa_id: UUID
+    status: Literal["PENDENTE", "AUTORIZADO", "NEGADO", "EXPIRADO"]
+    comando: Literal["aguardar", "liberar", "negar"]
+    aprovado: Optional[bool] = None
+    similaridade: float = Field(default=0.0, ge=0.0, le=1.0)
+    mensagem: str
+    tempo_resposta_ms: Optional[int] = None
 
 
 class VerificarBiometriaArduinoResponse(BaseModel):
