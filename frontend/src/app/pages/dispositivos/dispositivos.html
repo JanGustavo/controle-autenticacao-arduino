@@ -1,0 +1,157 @@
+<main class="locations-page">
+  <header class="page-header">
+    <a routerLink="/adm-page" class="back-link">
+      <mat-icon>arrow_back</mat-icon> Painel administrativo
+    </a>
+
+    <h1>Dispositivos</h1>
+    <p>Gerencie os ESP32/RC522 vinculados aos locais físicos.</p>
+  </header>
+
+  <section class="editor">
+    <div class="editor-heading">
+      <div>
+        <span class="eyebrow">{{ editandoId === null ? 'Novo dispositivo' : 'Edição' }}</span>
+        <h2>{{ editandoId === null ? 'Cadastrar dispositivo' : 'Editar dispositivo' }}</h2>
+      </div>
+      @if (erro) {
+        <span class="error" role="alert">{{ erro }}</span>
+      }
+    </div>
+
+    <div class="form-grid">
+      <label>
+        Local
+        <select [(ngModel)]="form.local_id">
+          <option [ngValue]="0" disabled>Selecione...</option>
+          @for (local of locais; track local.local_id) {
+            <option [ngValue]="local.local_id">{{ local.nome }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Nome do dispositivo
+        <input
+          [(ngModel)]="form.nome"
+          maxlength="255"
+          placeholder="Leitor principal"
+        />
+      </label>
+
+      <label>
+        Identificador
+        <input
+          [(ngModel)]="form.identificador"
+          maxlength="100"
+          placeholder="ESP32-ENTRADA-01"
+        />
+      </label>
+
+      <label class="status">
+        <input type="checkbox" [(ngModel)]="form.ativo" />
+        <span>Dispositivo ativo</span>
+      </label>
+    </div>
+
+    <div class="actions">
+      <button
+        mat-flat-button
+        color="primary"
+        [disabled]="salvando"
+        (click)="salvar()"
+      >
+        <mat-icon>save</mat-icon>
+        {{ salvando ? 'Salvando...' : 'Salvar dispositivo' }}
+      </button>
+
+      @if (editandoId !== null) {
+        <button mat-button (click)="cancelar()">Cancelar</button>
+      }
+    </div>
+  </section>
+
+  <section class="table-card">
+    <div class="filter-bar">
+      <div class="search-box">
+        <mat-icon>search</mat-icon>
+        <input
+          type="text"
+          [(ngModel)]="filtroTexto"
+          placeholder="Pesquisar por nome, identificador ou local..."
+        />
+      </div>
+
+      <div class="filter-group">
+        <label>Local</label>
+        <select [(ngModel)]="filtroLocalId">
+          <option [ngValue]="null">Todos</option>
+          @for (local of locais; track local.local_id) {
+            <option [ngValue]="local.local_id">{{ local.nome }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Status</label>
+        <select [(ngModel)]="filtroAtivo">
+          <option value="todos">Todos</option>
+          <option value="ativo">Ativos</option>
+          <option value="inativo">Inativos</option>
+        </select>
+      </div>
+    </div>
+
+    @if (carregando) {
+      <p class="loading">Carregando dispositivos...</p>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Identificador</th>
+            <th>Local</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (dispositivo of displayedDispositivos; track dispositivo.dispositivo_id) {
+            <tr>
+              <td>{{ dispositivo.dispositivo_id }}</td>
+              <td>{{ dispositivo.nome }}</td>
+              <td><code>{{ dispositivo.identificador }}</code></td>
+              <td>{{ nomeLocal(dispositivo.local_id) }}</td>
+              <td>
+                <span class="status-badge" [class.inactive]="!dispositivo.ativo">
+                  {{ dispositivo.ativo ? 'Ativo' : 'Inativo' }}
+                </span>
+              </td>
+              <td class="row-actions">
+                <button
+                  mat-icon-button
+                  title="Editar"
+                  (click)="editar(dispositivo)"
+                >
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button
+                  mat-icon-button
+                  title="Excluir"
+                  (click)="excluir(dispositivo)"
+                >
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="empty">Nenhum dispositivo encontrado.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </section>
+</main>
