@@ -1,4 +1,5 @@
 import os
+from contextlib import contextmanager
 from datetime import datetime, time, timedelta
 from unittest.mock import MagicMock, patch
 import pytest
@@ -12,18 +13,30 @@ from app.main import app
 from app.auth.dependencies import obter_administrador_atual
 from app.schemas.face_schema import FaceVectorResponse
 
-app.dependency_overrides[obter_administrador_atual] = lambda: {
-    "admin_id": 1,
-    "nome": "QA",
-    "email": "qa@ardlock.local",
-    "ativo": True,
-    "principal": True,
-}
-
 client = TestClient(app)
 
 DUMMY_VECTOR = [0.05] * 512
 DUMMY_DIFF_VECTOR = [-0.05] * 512
+
+@contextmanager
+def _auth_override():
+    """
+    Sobrescreve a autenticação apenas durante o teste que precisa chamar
+    uma rota protegida. O override é sempre removido no final para não
+    contaminar os demais módulos da suíte.
+    """
+    app.dependency_overrides[obter_administrador_atual] = lambda: {
+        "admin_id": 1,
+        "nome": "QA",
+        "email": "qa@ardlock.local",
+        "ativo": True,
+        "principal": True,
+    }
+    try:
+        yield
+    finally:
+        app.dependency_overrides.pop(obter_administrador_atual, None)
+
 
 
 def _mock_db_connection():
@@ -122,10 +135,11 @@ def test_fluxo_acesso_1to1_aprovado():
         }
 
         fake_photo = b"fake-jpeg-photo-content"
-        res_face = client.post(
-            f"/api/v1/arduino/verificar-face?tentativa_id={tentativa_id}",
-            files={"file": ("face.jpg", fake_photo, "image/jpeg")},
-        )
+        with _auth_override():
+            res_face = client.post(
+                f"/api/v1/arduino/verificar-face?tentativa_id={tentativa_id}",
+                files={"file": ("face.jpg", fake_photo, "image/jpeg")},
+            )
         assert res_face.status_code == 200
         dados_face = res_face.json()
         assert dados_face["aprovado"] is True
@@ -190,10 +204,11 @@ def test_fluxo_acesso_1to1_rosto_diferente_negado():
         }
 
         fake_photo = b"fake-jpeg-photo-content"
-        res_face = client.post(
-            f"/api/v1/arduino/verificar-face?tentativa_id={tentativa_id}",
-            files={"file": ("face.jpg", fake_photo, "image/jpeg")},
-        )
+        with _auth_override():
+            res_face = client.post(
+                f"/api/v1/arduino/verificar-face?tentativa_id={tentativa_id}",
+                files={"file": ("face.jpg", fake_photo, "image/jpeg")},
+            )
         assert res_face.status_code == 200
         dados_face = res_face.json()
         assert dados_face["aprovado"] is False
@@ -203,16 +218,11 @@ def test_fluxo_acesso_1to1_rosto_diferente_negado():
 
 
 def test_verificar_face_exige_autenticacao_administrativa():
-    override = app.dependency_overrides.pop(obter_administrador_atual, None)
-    try:
-        response = client.post(
-            "/api/v1/arduino/verificar-face?tentativa_id=00000000-0000-0000-0000-000000000001",
-            files={"file": ("face.jpg", b"fake", "image/jpeg")},
-        )
-        assert response.status_code == 401
-    finally:
-        if override is not None:
-            app.dependency_overrides[obter_administrador_atual] = override
+    response = client.post(
+        "/api/v1/arduino/verificar-face?tentativa_id=00000000-0000-0000-0000-000000000001",
+        files={"file": ("face.jpg", b"fake", "image/jpeg")},
+    )
+    assert response.status_code == 401
 
 
 def test_resultado_acesso_pendente_retorna_aguardar():
@@ -295,10 +305,11 @@ def test_revalidacao_final_nega_mesmo_com_face_compativel():
             "dias_semana": [1, 2, 3, 4, 5, 6, 7],
         }
 
-        response = client.post(
-            f"/api/v1/arduino/verificar-face?tentativa_id={tentativa_id}",
-            files={"file": ("face.jpg", b"fake", "image/jpeg")},
-        )
+        with _auth_override():
+            response = client.post(
+                f"/api/v1/arduino/verificar-face?tentativa_id={tentativa_id}",
+                files={"file": ("face.jpg", b"fake", "image/jpeg")},
+            )
 
     assert response.status_code == 200
     body = response.json()
