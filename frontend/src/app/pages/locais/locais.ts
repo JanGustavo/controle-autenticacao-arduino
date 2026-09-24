@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -18,6 +18,7 @@ import { ApiService, LocalRequest, LocalResponse } from '../../services/api.serv
 export class LocaisPage implements OnInit {
   private api = inject(ApiService);
   private snackBar = inject(MatSnackBar);
+  private cdr = inject(ChangeDetectorRef);
 
   locais: LocalResponse[] = [];
   carregando = true;
@@ -56,10 +57,12 @@ export class LocaisPage implements OnInit {
         this.locais = locais;
         this.erro = '';
         this.carregando = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.erro = 'Não foi possível carregar os locais.';
         this.carregando = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -88,12 +91,14 @@ export class LocaisPage implements OnInit {
           : this.locais.map((item) => item.local_id === local.local_id ? local : item);
         this.snackBar.open(this.editandoId === null ? 'Local criado com sucesso.' : 'Local atualizado com sucesso.', 'Fechar', { duration: 4000 });
         this.cancelar();
+        this.cdr.markForCheck();
       },
       error: (error) => {
         this.salvando = false;
         this.erro = error.status === 409
           ? 'Este identificador de dispositivo já está cadastrado.'
           : 'Não foi possível salvar o local.';
+        this.cdr.markForCheck();
       },
     });
   }
@@ -113,8 +118,12 @@ export class LocaisPage implements OnInit {
       next: () => {
         this.locais = this.locais.filter((item) => item.local_id !== local.local_id);
         this.snackBar.open('Local excluído com sucesso.', 'Fechar', { duration: 4000 });
+        this.cdr.markForCheck();
       },
-      error: () => (this.erro = 'Não foi possível excluir o local.'),
+      error: () => {
+        this.erro = 'Não foi possível excluir o local.';
+        this.cdr.markForCheck();
+      },
     });
   }
 
