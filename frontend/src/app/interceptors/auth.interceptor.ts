@@ -1,40 +1,45 @@
-import { Injectable, inject } from '@angular/core';
-import { HttpEvent, HttpHandler, HttpInterceptor, HttpRequest, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { catchError, throwError } from 'rxjs';
 
 import { AuthService } from '../services/auth.service';
 
-@Injectable()
-export class AuthInterceptor implements HttpInterceptor {
-  private router = inject(Router);
-  private authService = inject(AuthService);
+const PUBLIC_AUTH_PATHS = [
+  '/api/v1/auth/login',
+  '/api/v1/auth/forgot-password',
+  '/api/v1/auth/reset-password',
+];
 
+export const authInterceptor: HttpInterceptorFn = (req, next) => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+  const token = authService.getToken();
 
-  intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    const token = localStorage.getItem('adm_token');
+  const isPublicAuthRequest = PUBLIC_AUTH_PATHS.some((path) =>
+    req.url.includes(path)
+  );
 
-    let request = req;
-    if (token) {
-      request = req.clone({
-        setHeaders: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-    }
+  const request =
+    token && !isPublicAuthRequest
+      ? req.clone({
+          setHeaders: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+      : req;
 
-    return next.handle(request).pipe(
-      catchError((error: HttpErrorResponse) => {
-        if (error.status === 401) {
-          this.authService.clearToken();
-          if (this.router.url !== '/login') {
-            this.router.navigate(['/login']);
-          }
+  return next(request).pipe(
+    catchError((error: HttpErrorResponse) => {
+      if (error.status === 401 && !isPublicAuthRequest) {
+        authService.clearToken();
+
+        if (router.url !== '/login') {
+          void router.navigate(['/login']);
         }
+      }
 
-        return throwError(() => error);
-      })
-    );
-  }
-}
+      return throwError(() => error);
+    })
+  );
+};
