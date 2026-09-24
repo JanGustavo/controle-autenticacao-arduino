@@ -88,6 +88,11 @@ export class CompararPage implements OnInit, OnDestroy {
     this.wsSubscription = this.wsLogs.obterLogsEmTempoReal().subscribe({
       next: (evento) => {
         if (evento.type === 'RFID_APROVADO' && evento.data.tentativa_id) {
+          // A simulação usa este mesmo endpoint e também gera o broadcast.
+          // Nesse caso, a resposta HTTP é a fonte da tentativa para evitar
+          // abrir/reiniciar a webcam duas vezes.
+          if (this.iniciandoTentativa()) return;
+
           this.prepararTentativa(
             evento.data.tentativa_id,
             evento.data.nome_usuario || null,
@@ -105,6 +110,8 @@ export class CompararPage implements OnInit, OnDestroy {
         }
 
         if (evento.type === 'RFID_NEGADO') {
+          if (this.iniciandoTentativa()) return;
+
           this.tentativaId.set(null);
           this.pararWebcam();
           this.aprovado.set(false);
