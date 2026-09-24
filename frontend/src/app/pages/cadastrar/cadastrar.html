@@ -38,17 +38,25 @@
           </label>
           <select
             id="rfid-device-select"
-            [(ngModel)]="identificadorRfidSelecionado"
+            [(ngModel)]="dispositivoRfidSelecionadoId"
             [ngModelOptions]="{ standalone: true }"
-            [disabled]="saving || aguardandoRfid"
+            [disabled]="saving || aguardandoRfid || dispositivosCarregando"
           >
-            <option value="">Selecione o ESP32/leitor</option>
+            <option [ngValue]="null">
+              {{ dispositivosCarregando ? 'Carregando dispositivos...' : 'Selecione o ESP32/leitor' }}
+            </option>
             @for (dispositivo of dispositivosRfid; track dispositivo.dispositivo_id) {
-              <option [value]="dispositivo.identificador">
+              <option [ngValue]="dispositivo.dispositivo_id">
                 {{ dispositivo.nome }} · {{ dispositivo.identificador }}
               </option>
             }
           </select>
+
+          @if (dispositivosErro) {
+            <small class="field-error" role="alert">{{ dispositivosErro }}</small>
+          } @else if (!dispositivosCarregando && !dispositivosRfid.length) {
+            <small class="field-hint">Nenhum dispositivo RFID ativo disponível.</small>
+          }
 
           <label for="uid_card_input">
             <span>UID do cartão <b>*</b></span>
