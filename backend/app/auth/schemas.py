@@ -1,12 +1,33 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class LoginRequest(BaseModel):
-    usuario: str
-    senha: str
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "usuario": "admin@ardlock.local",
+                "senha": "admin",
+            }
+        }
+    )
+
+    usuario: str = Field(description="E-mail/login do administrador")
+    senha: str = Field(description="Senha do administrador")
 
 
 class LoginResponse(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "sucesso": True,
+                "token": "<jwt>",
+                "usuario": "admin@ardlock.local",
+                "token_type": "bearer",
+                "expires_in": 3600,
+                "mensagem": "Login realizado com sucesso.",
+            }
+        }
+    )
     sucesso: bool
     token: str
     usuario: str
