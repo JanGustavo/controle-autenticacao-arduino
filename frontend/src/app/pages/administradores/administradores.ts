@@ -100,11 +100,9 @@ export class AdministradoresPage implements OnInit {
 
   private sincronizarSessaoSeUsuarioAtual(admin: AdministradorResponse): void {
     const sessaoAtual = this.authService.userSession();
-    console.log('[DEBUG - AdminPage] sincronizarSessaoSeUsuarioAtual com admin:', admin, '| Sessão atual:', sessaoAtual);
 
     if (!sessaoAtual) {
       if (admin.principal) {
-        console.log('[DEBUG - AdminPage] Nenhuma sessão ativa. Sincronizando com admin principal:', admin);
         this.authService.updateUserSession({
           admin_id: admin.admin_id,
           name: admin.nome,
@@ -119,10 +117,7 @@ export class AdministradoresPage implements OnInit {
     const eMesmoEmail = Boolean(sessaoAtual.email) && sessaoAtual.email.toLowerCase() === admin.email.toLowerCase();
     const ePrincipal = Boolean(admin.principal) && (sessaoAtual.email === 'admin@ardlock.local' || sessaoAtual.name === 'Administrador' || sessaoAtual.admin_id === 1);
 
-    console.log('[DEBUG - AdminPage] Checagem:', { eMesmoId, eMesmoEmail, ePrincipal });
-
     if (eMesmoId || eMesmoEmail || ePrincipal) {
-      console.log('[DEBUG - AdminPage] Sincronizando sessão para:', admin);
       this.authService.updateUserSession({
         admin_id: admin.admin_id,
         name: admin.nome,
