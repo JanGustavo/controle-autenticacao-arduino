@@ -37,7 +37,6 @@ export class AdministradoresPage implements OnInit {
 
   administradores: AdministradorResponse[] = [];
   carregando = false;
-  carregado = false;
   erroLista = '';
   salvando = false;
   editandoId: number | null = null;
@@ -136,7 +135,6 @@ export class AdministradoresPage implements OnInit {
       .pipe(
         finalize(() => {
           this.carregando = false;
-          this.carregado = true;
         })
       )
       .subscribe({
