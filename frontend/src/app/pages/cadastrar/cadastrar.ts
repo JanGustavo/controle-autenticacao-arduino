@@ -344,7 +344,7 @@ export class CadastrarPage implements OnInit, OnDestroy {
       item.selecionado = false;
       item.horario_inicio = '08:00';
       item.horario_fim = '18:00';
-      item.dias_semana = [1, 2, 3, 4, 5];
+      item.dias_semana = [2, 3, 4, 5, 6];
     });
   }
 
