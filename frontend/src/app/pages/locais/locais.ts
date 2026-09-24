@@ -34,8 +34,7 @@ export class LocaisPage implements OnInit {
     return this.locais.filter((local) => {
       const matchTexto =
         !this.filtroTexto ||
-        local.nome.toLowerCase().includes(this.filtroTexto.trim().toLowerCase()) ||
-        local.identificador_dispositivo.toLowerCase().includes(this.filtroTexto.trim().toLowerCase());
+        local.nome.toLowerCase().includes(this.filtroTexto.trim().toLowerCase());
 
       const matchAtivo =
         this.filtroAtivo === 'todos' ||
@@ -69,11 +68,10 @@ export class LocaisPage implements OnInit {
     this.erro = '';
     const payload: LocalRequest = {
       nome: this.form.nome.trim(),
-      identificador_dispositivo: this.form.identificador_dispositivo.trim().toUpperCase(),
       ativo: this.form.ativo,
     };
-    if (payload.nome.length < 2 || !payload.identificador_dispositivo) {
-      this.erro = 'Informe o nome e o identificador do dispositivo.';
+    if (payload.nome.length < 2) {
+      this.erro = 'Informe o nome do local.';
       return;
     }
 
@@ -104,7 +102,6 @@ export class LocaisPage implements OnInit {
     this.editandoId = local.local_id;
     this.form = {
       nome: local.nome,
-      identificador_dispositivo: local.identificador_dispositivo,
       ativo: local.ativo,
     };
     this.erro = '';
@@ -127,6 +124,6 @@ export class LocaisPage implements OnInit {
   }
 
   private novoForm(): LocalRequest {
-    return { nome: '', identificador_dispositivo: '', ativo: true };
+    return { nome: '', ativo: true };
   }
 }
