@@ -179,6 +179,7 @@ WHERE usuario.uid_card = '12345678' ON CONFLICT (usuario_id, local_id) DO NOTHIN
 INSERT INTO historico_acesso (
         usuario_id,
         local_id,
+        dispositivo_id,
         uid_card_lido,
         autorizado,
         percentual_similaridade,
@@ -186,6 +187,7 @@ INSERT INTO historico_acesso (
     )
 SELECT usuario.user_id,
     local.local_id,
+    d.dispositivo_id,
     usuario.uid_card,
     TRUE,
     97.5,
@@ -209,7 +211,8 @@ SELECT usuario.user_id,
     48.2,
     'Vetor facial incompatível'
 FROM usuario
-    JOIN local ON local.identificador_dispositivo = 'ESP32-LAB-01'
+    JOIN dispositivo d ON d.identificador = 'ESP32-LAB-01'
+    JOIN local ON local.local_id = d.local_id
 WHERE usuario.uid_card = 'E5F6G7H8';
 INSERT INTO historico_acesso (
         usuario_id,
@@ -221,6 +224,7 @@ INSERT INTO historico_acesso (
     )
 SELECT NULL,
     local.local_id,
+    d.dispositivo_id,
     'FFFFFFFF',
     FALSE,
     NULL,
