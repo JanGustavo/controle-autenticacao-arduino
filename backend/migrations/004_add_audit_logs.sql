@@ -1,4 +1,4 @@
-CREATE TABLE audit_logs (
+CREATE TABLE IF NOT EXISTS audit_logs (
     id SERIAL PRIMARY KEY,
     admin_id INT,
     action VARCHAR(50) NOT NULL,
@@ -14,6 +14,6 @@ CREATE TABLE audit_logs (
     CONSTRAINT fk_audit_admin FOREIGN KEY (admin_id) REFERENCES administrador(admin_id) ON DELETE SET NULL
 );
 
-CREATE INDEX idx_audit_logs_action ON audit_logs (action);
-CREATE INDEX idx_audit_logs_admin_id ON audit_logs (admin_id);
-CREATE INDEX idx_audit_logs_created_at ON audit_logs (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs (action);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_admin_id ON audit_logs (admin_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs (created_at DESC);
