@@ -145,7 +145,7 @@
         </div>
         <div class="permission-form">
           <label>
-            Usuário
+            <span class="floating-label">Usuário</span>
             <select [(ngModel)]="permissaoForm.usuario_id" [disabled]="editandoPermissaoId !== null">
               <option [ngValue]="0" disabled>Selecione...</option>
               @for (usuario of usuarios; track usuario.user_id) {
@@ -156,7 +156,7 @@
             </select>
           </label>
           <label>
-            Local
+            <span class="floating-label">Local</span>
             <select [(ngModel)]="permissaoForm.local_id">
               <option [ngValue]="0" disabled>Selecione...</option>
               @for (local of locais; track local.local_id) {
@@ -164,8 +164,8 @@
               }
             </select>
           </label>
-          <label>Início <input type="time" [(ngModel)]="permissaoForm.horario_inicio" /></label>
-          <label>Fim <input type="time" [(ngModel)]="permissaoForm.horario_fim" /></label>
+          <label><span class="floating-label">Início</span><input type="time" [(ngModel)]="permissaoForm.horario_inicio" /></label>
+          <label><span class="floating-label">Fim</span><input type="time" [(ngModel)]="permissaoForm.horario_fim" /></label>
           <div class="permission-days">
             <span>Dias</span>
             @for (dia of [1, 2, 3, 4, 5, 6, 7]; track dia) {
