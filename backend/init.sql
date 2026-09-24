@@ -2,11 +2,22 @@
 CREATE TABLE local (
     local_id SERIAL PRIMARY KEY,
     nome VARCHAR(255) NOT NULL,
-    -- UID que cada ESP32/RC522 manda pra se identificar nas requisições.
-    identificador_dispositivo VARCHAR(100) UNIQUE NOT NULL,
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Um local pode possuir vários dispositivos físicos de acesso.
+CREATE TABLE dispositivo (
+    dispositivo_id SERIAL PRIMARY KEY,
+    local_id INT NOT NULL,
+    nome VARCHAR(255) NOT NULL,
+    identificador VARCHAR(100) UNIQUE NOT NULL,
+    ativo BOOLEAN NOT NULL DEFAULT TRUE,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_dispositivo_local
+        FOREIGN KEY (local_id) REFERENCES local(local_id) ON DELETE CASCADE
+);
+CREATE INDEX idx_dispositivo_local_id ON dispositivo(local_id);
 -- Criar a tabela USUARIO
 CREATE TABLE usuario (
     user_id SERIAL PRIMARY KEY,
@@ -38,6 +49,7 @@ CREATE TABLE historico_acesso (
     id SERIAL PRIMARY KEY,
     usuario_id INT,
     local_id INT,
+    dispositivo_id INT,
     uid_card_lido VARCHAR(100),
     data_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     autorizado BOOLEAN NOT NULL,
@@ -46,6 +58,8 @@ CREATE TABLE historico_acesso (
     CONSTRAINT fk_historico_usuario FOREIGN KEY (usuario_id) REFERENCES usuario(user_id) ON DELETE
     SET NULL,
         CONSTRAINT fk_historico_local FOREIGN KEY (local_id) REFERENCES local(local_id) ON DELETE
+    SET NULL,
+        CONSTRAINT fk_historico_dispositivo FOREIGN KEY (dispositivo_id) REFERENCES dispositivo(dispositivo_id) ON DELETE
     SET NULL
 );
 -- Criar a tabela ADMINISTRADOR
@@ -75,10 +89,26 @@ VALUES (
 
 
 -- Dados iniciais para desenvolvimento local.
-INSERT INTO local (nome, identificador_dispositivo)
-VALUES ('Entrada principal', 'ESP32-ENTRADA-01'),
-    ('Laboratório de redes', 'ESP32-LAB-01'),
-    ('Sala administrativa', 'ESP32-ADM-01') ON CONFLICT (identificador_dispositivo) DO NOTHING;
+INSERT INTO local (nome)
+VALUES ('Entrada principal'),
+    ('Laboratório de redes'),
+    ('Sala administrativa')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO dispositivo (local_id, nome, identificador)
+SELECT local_id, 'Leitor principal', 'ESP32-ENTRADA-01'
+FROM local WHERE nome = 'Entrada principal'
+ON CONFLICT (identificador) DO NOTHING;
+
+INSERT INTO dispositivo (local_id, nome, identificador)
+SELECT local_id, 'Leitor principal', 'ESP32-LAB-01'
+FROM local WHERE nome = 'Laboratório de redes'
+ON CONFLICT (identificador) DO NOTHING;
+
+INSERT INTO dispositivo (local_id, nome, identificador)
+SELECT local_id, 'Leitor principal', 'ESP32-ADM-01'
+FROM local WHERE nome = 'Sala administrativa'
+ON CONFLICT (identificador) DO NOTHING;
 INSERT INTO usuario (nome, uid_card, vetor_facial, ativo)
 VALUES (
         'João Silva',
@@ -111,7 +141,8 @@ SELECT usuario.user_id,
     '18:00',
     ARRAY [2, 3, 4, 5, 6]
 FROM usuario
-    JOIN local ON local.identificador_dispositivo = 'ESP32-ENTRADA-01'
+    JOIN dispositivo d ON d.identificador = 'ESP32-ENTRADA-01'
+    JOIN local ON local.local_id = d.local_id
 WHERE usuario.uid_card = 'A1B2C3D4' ON CONFLICT (usuario_id, local_id) DO NOTHING;
 INSERT INTO permissao (
         usuario_id,
@@ -126,7 +157,8 @@ SELECT usuario.user_id,
     '22:00',
     ARRAY [2, 3, 4, 5, 6, 7]
 FROM usuario
-    JOIN local ON local.identificador_dispositivo IN ('ESP32-ENTRADA-01', 'ESP32-LAB-01')
+    JOIN dispositivo d ON d.identificador IN ('ESP32-ENTRADA-01', 'ESP32-LAB-01')
+    JOIN local ON local.local_id = d.local_id
 WHERE usuario.uid_card = 'E5F6G7H8' ON CONFLICT (usuario_id, local_id) DO NOTHING;
 INSERT INTO permissao (
         usuario_id,
@@ -141,7 +173,8 @@ SELECT usuario.user_id,
     '17:00',
     ARRAY [2, 3, 4, 5, 6]
 FROM usuario
-    JOIN local ON local.identificador_dispositivo = 'ESP32-ADM-01'
+    JOIN dispositivo d ON d.identificador = 'ESP32-ADM-01'
+    JOIN local ON local.local_id = d.local_id
 WHERE usuario.uid_card = '12345678' ON CONFLICT (usuario_id, local_id) DO NOTHING;
 INSERT INTO historico_acesso (
         usuario_id,
@@ -158,7 +191,8 @@ SELECT usuario.user_id,
     97.5,
     NULL
 FROM usuario
-    JOIN local ON local.identificador_dispositivo = 'ESP32-ENTRADA-01'
+    JOIN dispositivo d ON d.identificador = 'ESP32-ENTRADA-01'
+    JOIN local ON local.local_id = d.local_id
 WHERE usuario.uid_card = 'A1B2C3D4';
 INSERT INTO historico_acesso (
         usuario_id,
@@ -192,7 +226,8 @@ SELECT NULL,
     NULL,
     'Cartão não cadastrado'
 FROM local
-WHERE local.identificador_dispositivo = 'ESP32-ENTRADA-01';
+JOIN dispositivo d ON d.local_id = local.local_id
+WHERE d.identificador = 'ESP32-ENTRADA-01';
 -- Acelera a consulta do histórico de um usuário específico em ordem cronológica.
 CREATE INDEX idx_historico_acesso_usuario_data_hora ON historico_acesso (usuario_id, data_hora DESC);
 -- Acelera a consulta do histórico de um local específico em ordem cronológica.
@@ -203,8 +238,8 @@ CREATE TABLE tentativa_acesso (
     tentativa_id UUID PRIMARY KEY,
     usuario_id INT NOT NULL,
     local_id INT NOT NULL,
+    dispositivo_id INT NOT NULL,
     uid_card_lido VARCHAR(100) NOT NULL,
-    identificador_dispositivo VARCHAR(100) NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'PENDENTE',
     criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     expira_em TIMESTAMP NOT NULL,
@@ -215,6 +250,8 @@ CREATE TABLE tentativa_acesso (
         FOREIGN KEY (usuario_id) REFERENCES usuario(user_id) ON DELETE CASCADE,
     CONSTRAINT fk_tentativa_local
         FOREIGN KEY (local_id) REFERENCES local(local_id) ON DELETE CASCADE,
+    CONSTRAINT fk_tentativa_dispositivo
+        FOREIGN KEY (dispositivo_id) REFERENCES dispositivo(dispositivo_id) ON DELETE CASCADE,
     CONSTRAINT ck_tentativa_status
         CHECK (status IN ('PENDENTE', 'AUTORIZADO', 'NEGADO', 'EXPIRADO'))
 );
@@ -224,7 +261,7 @@ CREATE INDEX idx_tentativa_acesso_status_expira
 
 CREATE INDEX idx_tentativa_acesso_dispositivo_uid
     ON tentativa_acesso (
-        identificador_dispositivo,
+        dispositivo_id,
         uid_card_lido,
         criado_em DESC
     );
@@ -232,7 +269,7 @@ CREATE INDEX idx_tentativa_acesso_dispositivo_uid
 -- Impede duas tentativas simultaneamente PENDENTE para o mesmo dispositivo/cartão.
 CREATE UNIQUE INDEX uq_tentativa_pendente_dispositivo_cartao
     ON tentativa_acesso (
-        identificador_dispositivo,
+        dispositivo_id,
         uid_card_lido
     )
     WHERE status = 'PENDENTE';
