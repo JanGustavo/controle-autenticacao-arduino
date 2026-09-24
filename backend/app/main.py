@@ -11,6 +11,7 @@ from app.api import (
     administradores,
     autenticacao,
     audit_logs,
+    dispositivos,
     historico_acesso,
     locais,
     permissoes,
@@ -159,6 +160,12 @@ app.include_router(
     locais.router,
     prefix=BASE_PREFIX,
     tags=["Locais"],
+)
+
+app.include_router(
+    dispositivos.router,
+    prefix=BASE_PREFIX,
+    tags=["Dispositivos"],
 )
 
 
