@@ -146,10 +146,10 @@
         </div>
       </div>
 
-      @if (erro) {
+      @if (erroLista) {
         <div class="error-banner" style="margin: 24px;">
           <mat-icon>error_outline</mat-icon>
-          <span>{{ erro }}</span>
+          <span>{{ erroLista }}</span>
         </div>
       } @else if (carregando) {
         <div class="loading-state">
