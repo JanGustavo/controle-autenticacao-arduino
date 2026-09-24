@@ -6,6 +6,7 @@ class HistoricoAcessoModel:
         "id",
         "usuario_id",
         "local_id",
+        "dispositivo_id",
         "uid_card_lido",
         "data_hora",
         "autorizado",
@@ -55,8 +56,8 @@ class HistoricoAcessoModel:
             with connection.cursor() as cursor:
                 cursor.execute(
                     f"""
-                    SELECT h.id, h.usuario_id, h.local_id, h.uid_card_lido,
-                           h.data_hora, h.autorizado,
+                    SELECT h.id, h.usuario_id, h.local_id, h.dispositivo_id,
+                           h.uid_card_lido, h.data_hora, h.autorizado,
                            h.percentual_similaridade, h.motivo_recusa
                     FROM historico_acesso h
                     LEFT JOIN usuario u ON h.usuario_id = u.user_id
@@ -73,8 +74,9 @@ class HistoricoAcessoModel:
             with connection.cursor() as cursor:
                 cursor.execute(
                     """
-                    SELECT id, usuario_id, local_id, uid_card_lido, data_hora,
-                           autorizado, percentual_similaridade, motivo_recusa
+                    SELECT id, usuario_id, local_id, dispositivo_id,
+                           uid_card_lido, data_hora, autorizado,
+                           percentual_similaridade, motivo_recusa
                     FROM historico_acesso
                     WHERE id = %s
                     """,
@@ -91,6 +93,7 @@ class HistoricoAcessoModel:
         *,
         usuario_id: int | None,
         local_id: int | None,
+        dispositivo_id: int | None,
         uid_card_lido: str | None,
         data_hora,
         autorizado: bool,
@@ -100,16 +103,18 @@ class HistoricoAcessoModel:
         cursor.execute(
             """
             INSERT INTO historico_acesso (
-                usuario_id, local_id, uid_card_lido, data_hora,
+                usuario_id, local_id, dispositivo_id, uid_card_lido, data_hora,
                 autorizado, percentual_similaridade, motivo_recusa
             )
-            VALUES (%s, %s, %s, COALESCE(%s, CURRENT_TIMESTAMP), %s, %s, %s)
-            RETURNING id, usuario_id, local_id, uid_card_lido, data_hora,
-                      autorizado, percentual_similaridade, motivo_recusa
+            VALUES (%s, %s, %s, %s, COALESCE(%s, CURRENT_TIMESTAMP), %s, %s, %s)
+            RETURNING id, usuario_id, local_id, dispositivo_id,
+                      uid_card_lido, data_hora, autorizado,
+                      percentual_similaridade, motivo_recusa
             """,
             (
                 usuario_id,
                 local_id,
+                dispositivo_id,
                 uid_card_lido,
                 data_hora,
                 autorizado,
