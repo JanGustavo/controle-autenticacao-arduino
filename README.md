@@ -173,9 +173,9 @@ Todas as rotas abaixo utilizam o prefixo `/api/v1`.
 | Permissão específica | GET, PATCH, DELETE | `/permissoes/{id}` |
 | Cadastro biométrico | POST | `/biometria/cadastrar/{usuario_id}` |
 | Verificação RFID (ESP32) | POST | `/arduino/verificar-cartao` |
-| Validação facial (Totem) | POST | `/arduino/verificar-face` |
-| Resultado facial (ESP32) | POST | `/arduino/resultado-biometria` |
-| Cadastro de cartão RFID | POST | `/arduino/cadastrar-cartao` |
+| Validação facial 1:1 (Totem, JWT) | POST | `/arduino/verificar-face` |
+| Consulta da decisão (ESP32) | GET | `/arduino/resultado-acesso` |
+| Cadastro de cartão RFID (JWT) | POST | `/arduino/cadastrar-cartao` |
 | Histórico de acesso | GET, POST | `/historico-acesso` |
 | Histórico específico | GET | `/historico-acesso/{id}` |
 | WebSocket em tempo real | WS | `/ws/logs` |
@@ -250,8 +250,8 @@ make dev-frontend # somente frontend
 
 ### Em desenvolvimento / próximos passos
 
-- [ ] Migração formal do reconhecimento facial para modo puramente 1:1 (comparação direta com o vetor do cartão)
-- [ ] Transição do threshold biométrico operacional de 80% para 85% conforme homologação final
+- [x] Reconhecimento facial 1:1 estrito contra o titular identificado pelo RFID
+- [x] Threshold biométrico operacional em 80% conforme calibração atual
 - [ ] Conexão e calibração de bancada física definitiva com servo SG90 e leitor RC522 em campo
 
 ## 🎓 Contexto acadêmico
@@ -267,3 +267,31 @@ Projeto desenvolvido como parte do **Projeto Integrador de ADS**, com foco na ap
 ## 📄 Licença
 
 Projeto acadêmico. Licenciamento formal ainda não definido.
+
+### Contrato do fluxo físico
+
+O backend é a única fonte da decisão de acesso:
+
+```text
+ESP32 -> POST /arduino/verificar-cartao
+          |
+          +-> valida dispositivo, local, usuário, permissão, dia e horário
+          |
+          +-> cria tentativa_id somente se elegível
+
+Totem -> POST /arduino/verificar-face?tentativa_id=...
+          |
+          +-> JWT administrativo
+          +-> embedding facial
+          +-> comparação 1:1
+          +-> revalidação das regras
+          +-> decisão final
+
+ESP32 -> GET /arduino/resultado-acesso
+          |
+          +-> aguardar | liberar | negar
+```
+
+O ESP32 nunca envia `aprovado`, `similaridade` ou outro campo capaz de
+definir a decisão. A autenticação HMAC por dispositivo permanece como
+hardening planejado para as rotas físicas.
