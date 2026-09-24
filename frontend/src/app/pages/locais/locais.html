@@ -77,7 +77,23 @@
     @if (erro) {
       <p class="error" style="margin: 16px;">{{ erro }}</p>
     } @else if (carregando) {
-      <p class="loading">Carregando locais...</p>
+      <div class="skeleton-table" aria-label="Carregando locais">
+        @for (item of [1, 2, 3, 4, 5]; track item) {
+          <div class="skeleton-row">
+            <span class="skeleton-cell"></span>
+            <span class="skeleton-cell"></span>
+            <span class="skeleton-cell"></span>
+            <span class="skeleton-cell"></span>
+            <span class="skeleton-cell"></span>
+          </div>
+        }
+      </div>
+    } @else if (!displayedLocais.length) {
+      <div class="empty-state">
+        <mat-icon>location_off</mat-icon>
+        <strong>Nenhum local encontrado</strong>
+        <span>{{ locais.length === 0 ? 'Cadastre o primeiro local para começar.' : 'Ajuste os filtros para ver outros resultados.' }}</span>
+      </div>
     } @else {
       <table>
         <thead>
@@ -105,12 +121,6 @@
                 <button mat-icon-button title="Excluir" (click)="excluir(local)">
                   <mat-icon>delete</mat-icon>
                 </button>
-              </td>
-            </tr>
-          } @empty {
-            <tr>
-              <td colspan="4" class="empty">
-                {{ locais.length === 0 ? 'Nenhum local cadastrado no sistema.' : 'Nenhum local corresponde ao filtro aplicado.' }}
               </td>
             </tr>
           }
