@@ -9,7 +9,16 @@ os.environ.setdefault("JWT_ALGORITHM", "HS256")
 os.environ.setdefault("JWT_EXPIRE_MINUTES", "60")
 
 from app.main import app
+from app.auth.dependencies import obter_administrador_atual
 from app.schemas.face_schema import FaceVectorResponse
+
+app.dependency_overrides[obter_administrador_atual] = lambda: {
+    "admin_id": 1,
+    "nome": "QA",
+    "email": "qa@ardlock.local",
+    "ativo": True,
+    "principal": True,
+}
 
 client = TestClient(app)
 
