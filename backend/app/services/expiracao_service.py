@@ -41,6 +41,7 @@ def expirar_tentativas_pendentes() -> int:
                     cursor,
                     usuario_id=tentativa["usuario_id"],
                     local_id=tentativa["local_id"],
+                    dispositivo_id=tentativa["dispositivo_id"],
                     uid_card_lido=tentativa["uid_card_lido"],
                     data_hora=agora,
                     autorizado=False,
