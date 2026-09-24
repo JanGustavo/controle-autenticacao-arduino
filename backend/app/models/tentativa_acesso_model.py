@@ -8,8 +8,8 @@ class TentativaAcessoModel:
         "tentativa_id",
         "usuario_id",
         "local_id",
+        "dispositivo_id",
         "uid_card_lido",
-        "identificador_dispositivo",
         "status",
         "criado_em",
         "expira_em",
@@ -24,8 +24,8 @@ class TentativaAcessoModel:
             with connection.cursor() as cursor:
                 cursor.execute(
                     """
-                    SELECT tentativa_id, usuario_id, local_id, uid_card_lido,
-                           identificador_dispositivo, status, criado_em, expira_em
+                    SELECT tentativa_id, usuario_id, local_id, dispositivo_id,
+                           uid_card_lido, status, criado_em, expira_em
                     FROM tentativa_acesso
                     WHERE tentativa_id = %s
                     """,
@@ -45,12 +45,13 @@ class TentativaAcessoModel:
             with connection.cursor() as cursor:
                 cursor.execute(
                     """
-                    SELECT tentativa_id
-                    FROM tentativa_acesso
-                    WHERE uid_card_lido = %s
-                      AND identificador_dispositivo = %s
-                      AND status = %s
-                    ORDER BY criado_em DESC
+                    SELECT t.tentativa_id
+                    FROM tentativa_acesso t
+                    JOIN dispositivo d ON d.dispositivo_id = t.dispositivo_id
+                    WHERE t.uid_card_lido = %s
+                      AND d.identificador = %s
+                      AND t.status = %s
+                    ORDER BY t.criado_em DESC
                     LIMIT 1
                     """,
                     (uid_card, identificador_dispositivo, status_pendente),
@@ -66,8 +67,8 @@ class TentativaAcessoModel:
         tentativa_id: UUID,
         usuario_id: int,
         local_id: int,
+        dispositivo_id: int,
         uid_card_lido: str,
-        identificador_dispositivo: str,
         status: str,
         criado_em,
         expira_em,
@@ -75,8 +76,8 @@ class TentativaAcessoModel:
         cursor.execute(
             """
             INSERT INTO tentativa_acesso (
-                tentativa_id, usuario_id, local_id, uid_card_lido,
-                identificador_dispositivo, status, criado_em, expira_em
+                tentativa_id, usuario_id, local_id, dispositivo_id,
+                uid_card_lido, status, criado_em, expira_em
             )
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """,
@@ -84,8 +85,8 @@ class TentativaAcessoModel:
                 tentativa_id,
                 usuario_id,
                 local_id,
+                dispositivo_id,
                 uid_card_lido,
-                identificador_dispositivo,
                 status,
                 criado_em,
                 expira_em,
@@ -99,18 +100,21 @@ class TentativaAcessoModel:
             SELECT t.tentativa_id,
                    t.usuario_id,
                    t.local_id,
+                   t.dispositivo_id,
                    t.uid_card_lido,
                    t.status,
                    t.expira_em,
                    u.nome,
                    u.ativo,
                    l.ativo,
+                   d.ativo,
                    p.horario_inicio,
                    p.horario_fim,
                    p.dias_semana
             FROM tentativa_acesso t
             JOIN usuario u ON u.user_id = t.usuario_id
             JOIN local l ON l.local_id = t.local_id
+            JOIN dispositivo d ON d.dispositivo_id = t.dispositivo_id
             LEFT JOIN permissao p
                 ON p.usuario_id = t.usuario_id
                AND p.local_id = t.local_id
@@ -127,12 +131,14 @@ class TentativaAcessoModel:
             "tentativa_id",
             "usuario_id",
             "local_id",
+            "dispositivo_id",
             "uid_card_lido",
             "status",
             "expira_em",
             "nome_usuario",
             "usuario_ativo",
             "local_ativo",
+            "dispositivo_ativo",
             "horario_inicio",
             "horario_fim",
             "dias_semana",
@@ -173,11 +179,17 @@ class TentativaAcessoModel:
                 motivo_recusa = %s
             WHERE status = 'PENDENTE'
               AND expira_em < %s
-            RETURNING tentativa_id, usuario_id, local_id, uid_card_lido
+            RETURNING tentativa_id, usuario_id, local_id, dispositivo_id, uid_card_lido
             """,
             (agora, motivo_recusa, agora),
         )
-        campos = ("tentativa_id", "usuario_id", "local_id", "uid_card_lido")
+        campos = (
+            "tentativa_id",
+            "usuario_id",
+            "local_id",
+            "dispositivo_id",
+            "uid_card_lido",
+        )
         return [
             dict(zip(campos, row, strict=True))
             for row in cursor.fetchall()
