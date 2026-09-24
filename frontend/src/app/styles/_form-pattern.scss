@@ -1,0 +1,148 @@
+@mixin ard-form-pattern {
+  .form-shell,
+  .editor,
+  .form-card,
+  .permission-editor,
+  .register-form {
+    background: var(--surface, #fff);
+    border: 1px solid var(--line, #e2e8f0);
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+  }
+
+  .form-grid,
+  .permission-form,
+  .field-grid {
+    gap: 18px;
+  }
+
+  .form-field,
+  .field,
+  .form-grid > label,
+  .permission-form > label {
+    position: relative;
+    display: grid;
+    gap: 7px;
+    color: var(--ink, #0f172a);
+    font-size: 0.88rem;
+    font-weight: 700;
+  }
+
+  .form-field > span:first-child,
+  .field > span:first-child,
+  .form-grid > label,
+  .permission-form > label {
+    color: var(--muted, #64748b);
+  }
+
+  input:not([type='checkbox']),
+  select,
+  textarea {
+    width: 100%;
+    min-height: 44px;
+    box-sizing: border-box;
+    padding: 11px 13px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    outline: none;
+    background: var(--surface, #fff);
+    color: var(--ink, #0f172a);
+    font: inherit;
+    font-weight: 500;
+    transition:
+      border-color 150ms ease,
+      box-shadow 150ms ease,
+      background-color 150ms ease;
+  }
+
+  textarea {
+    min-height: 96px;
+    resize: vertical;
+  }
+
+  input:not([type='checkbox']):focus,
+  select:focus,
+  textarea:focus {
+    border-color: var(--accent, #2563eb);
+    box-shadow: 0 0 0 3px color-mix(
+      in srgb,
+      var(--accent, #2563eb) 14%,
+      transparent
+    );
+  }
+
+  input:disabled,
+  select:disabled,
+  textarea:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+    background: color-mix(in srgb, var(--surface, #fff) 90%, #94a3b8 10%);
+  }
+
+  .field-error,
+  .error,
+  .error-message,
+  .editor-notice.error {
+    color: #b91c1c;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+
+  .field-hint,
+  .rfid-hint,
+  .hint-info {
+    color: var(--muted, #64748b);
+    font-size: 0.78rem;
+    font-weight: 500;
+  }
+
+  .actions,
+  .editor-actions,
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .actions button,
+  .editor-actions button,
+  .form-actions button {
+    min-height: 40px;
+    border-radius: 10px;
+    font-weight: 700;
+  }
+
+  @media (max-width: 700px) {
+    .form-grid,
+    .field-grid {
+      grid-template-columns: 1fr !important;
+    }
+
+    .actions,
+    .editor-actions,
+    .form-actions {
+      justify-content: stretch;
+
+      button {
+        flex: 1;
+      }
+    }
+  }
+
+  :host-context(body.dark-mode) & {
+    input:not([type='checkbox']),
+    select,
+    textarea {
+      background: #0f172a;
+      border-color: #475569;
+      color: #f8fafc;
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: #64748b;
+    }
+  }
+}
