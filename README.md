@@ -2,7 +2,7 @@
 
 Projeto integrador de Análise e Desenvolvimento de Sistemas (ADS) para gerenciamento de acesso físico, combinando **RFID**, **biometria facial**, **ESP32** e uma aplicação web administrativa.
 
-O projeto está organizado como uma aplicação web com **frontend Angular**, **backend FastAPI** e **PostgreSQL**. A camada de domínio já contempla usuários, locais, permissões e histórico de acessos. A integração física com ESP32/RFID e a validação biométrica ainda fazem parte da evolução do projeto.
+O projeto está organizado como uma aplicação web com **frontend Angular**, **backend FastAPI** e **PostgreSQL**. A aplicação já integra usuários, locais, dispositivos, permissões, histórico, RFID e validação facial 1:1. O ESP32 atua como sensor/atuador e o backend permanece como única fonte da decisão de acesso.
 
 ## 🧩 Arquitetura
 
@@ -77,6 +77,17 @@ controle-autenticacao-arduino/
 ├── Makefile
 └── .env.example
 ```
+
+## 📚 Documentação técnica
+
+| Documento | Conteúdo |
+|---|---|
+| [Backend](docs/BACKEND.md) | arquitetura, regras, persistência, autenticação e fluxo de acesso |
+| [Frontend](docs/FRONTEND.md) | Angular, Totem, WebSocket, webcam, padrões visuais e debug |
+| [API e Debug](docs/API_DEBUG.md) | roteiro de Swagger, códigos HTTP e diagnóstico ponta a ponta |
+| [Arquitetura de camadas](backend/ARCHITECTURE.md) | convenção API → Service → Model |
+
+A documentação interativa da API está em `/docs` e a alternativa ReDoc em `/redoc`.
 
 ## 🚀 Executando com Docker
 
@@ -213,7 +224,7 @@ source venv/bin/activate
 PYTHONPATH=. pytest -v
 ```
 
-A suíte possui 100% de aprovação (66 testes cobrindo autenticação JWT, isolamento de rotas protegidas, integridade de administradores, FaceService com InsightFace, saúde da aplicação e CRUD de usuários).
+A suíte automatizada cobre autenticação JWT, isolamento de rotas protegidas, fluxo 1:1, FaceService, regras de acesso e CRUDs. Para homologação, considere sempre a saída da execução atual do Pytest, pois a quantidade de testes evolui com o projeto.
 
 ## 🛠️ Comandos Make
 
