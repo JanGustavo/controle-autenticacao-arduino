@@ -1,15 +1,16 @@
 from uuid import UUID
 
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 
 from app.schemas.rfid_schema import (
     CadastrarCartaoRequest,
     CadastrarCartaoResponse,
-    VerificarBiometriaArduinoRequest,
+    ResultadoTentativaResponse,
     VerificarBiometriaArduinoResponse,
     VerificarCartaoRequest,
     VerificarCartaoResponse,
 )
+from app.auth.dependencies import obter_administrador_atual
 from app.services.acesso_service import (
     AcessoNegadoError,
     TentativaAcessoNaoEncontradaError,
@@ -97,6 +98,7 @@ async def verificar_cartao(request: VerificarCartaoRequest):
 async def verificar_face(
     tentativa_id: UUID = Query(...),
     file: UploadFile = File(...),
+    _admin: dict = Depends(obter_administrador_atual),
 ):
     """
     Finaliza uma tentativa usando a câmera/backend.
@@ -146,57 +148,46 @@ async def verificar_face(
         ) from error
 
 
-@router.post(
-    "/resultado-biometria",
-    response_model=VerificarBiometriaArduinoResponse,
+@router.get(
+    "/resultado-acesso",
+    response_model=ResultadoTentativaResponse,
 )
-async def resultado_biometria(
-    request: VerificarBiometriaArduinoRequest,
+async def resultado_acesso(
+    tentativa_id: UUID = Query(...),
+    identificador_dispositivo: str = Query(..., min_length=1),
 ):
     """
-    Recebe o resultado do módulo facial do hardware.
+    Endpoint de polling do ESP32 para consultar a decisão FINAL do backend.
 
-    Mantém compatibilidade com o firmware ao localizar a tentativa
-    PENDENTE mais recente do mesmo cartão + dispositivo. O fluxo de
-    câmera do backend usa tentativa_id e validação facial 1:1.
+    O dispositivo informa apenas a tentativa e sua identidade lógica.
+    Ele nunca envia campos como "aprovado" ou "similaridade".
+
+    Enquanto a validação facial não terminar, o comando é "aguardar".
+    A autenticação HMAC do dispositivo será adicionada em etapa posterior.
     """
     try:
-        resultado = acesso_service.finalizar_resultado_arduino(request)
-
-        await manager.broadcast(
-            {
-                "type": "NOVO_ACESSO",
-                "data": {
-                    "id": None,
-                    "usuario_id": resultado.usuario_id,
-                    "nome_usuario": resultado.nome,
-                    "local_id": resultado.local_id,
-                    "autorizado": resultado.aprovado,
-                    "percentual_similaridade": resultado.similaridade,
-                    "motivo_recusa": None if resultado.aprovado else resultado.mensagem,
-                    "data_hora": None,
-                    "tentativa_id": str(resultado.tentativa_id),
-                    "tempo_resposta_ms": resultado.tempo_resposta_ms,
-                },
-            }
+        return acesso_service.obter_resultado_tentativa(
+            tentativa_id=tentativa_id,
+            identificador_dispositivo=identificador_dispositivo,
         )
-
-        return resultado
     except TentativaAcessoNaoEncontradaError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(error),
         ) from error
     except Exception as error:
-        print(f"[BIOMETRIA API Erro] {error}")
+        print(f"[RESULTADO ACESSO Erro] {error}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erro interno ao registrar o resultado da biometria.",
+            detail="Erro interno ao consultar a decisão de acesso.",
         ) from error
 
 
 @router.post("/cadastrar-cartao", response_model=CadastrarCartaoResponse)
-async def cadastrar_cartao(request: CadastrarCartaoRequest):
+async def cadastrar_cartao(
+    request: CadastrarCartaoRequest,
+    _admin: dict = Depends(obter_administrador_atual),
+):
     """
     Cadastra e vincula o UID lido pelo ESP32 a um usuario_id específico.
     """
