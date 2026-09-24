@@ -6,6 +6,7 @@ import { EntidadesPage } from './pages/entidades/entidades';
 import { CadastrarPage } from './pages/cadastrar/cadastrar';
 import { CompararPage } from './pages/comparar/comparar';
 import { LocaisPage } from './pages/locais/locais';
+import { DispositivosPage } from './pages/dispositivos/dispositivos';
 import { AdministradoresPage } from './pages/administradores/administradores';
 import { AuditLogsComponent } from './pages/audit-logs/audit-logs.component';
 import { authGuard } from './guards/auth.guard';
@@ -28,6 +29,7 @@ export const routes: Routes = [
   { path: 'entidades', component: EntidadesPage, canActivate: [authGuard] },
 
   { path: 'locais', component: LocaisPage, canActivate: [authGuard] },
+  { path: 'dispositivos', component: DispositivosPage, canActivate: [authGuard] },
   {
     path: 'dashboard',
     component: TuplePage,
