@@ -5,7 +5,7 @@
     </a>
     
     <h1>Locais</h1>
-    <p>Gerencie os dispositivos ESP32/RC522 que controlam os pontos de acesso.</p>
+    <p>Gerencie os locais físicos. Os dispositivos ficam vinculados aos locais.</p>
   </header>
 
   <section class="editor">
@@ -23,14 +23,6 @@
       <label>
         Nome do local
         <input [(ngModel)]="form.nome" maxlength="255" placeholder="Entrada principal" />
-      </label>
-      <label>
-        Identificador do dispositivo
-        <input
-          [(ngModel)]="form.identificador_dispositivo"
-          maxlength="100"
-          placeholder="ESP32-ENTRADA-01"
-        />
       </label>
       <label class="status">
         <input type="checkbox" [(ngModel)]="form.ativo" />
@@ -55,7 +47,7 @@
         <input
           type="text"
           [(ngModel)]="filtroTexto"
-          placeholder="Pesquisar por nome ou dispositivo..."
+          placeholder="Pesquisar por nome..."
         />
         @if (filtroTexto) {
           <button
@@ -92,7 +84,6 @@
           <tr>
             <th>ID</th>
             <th>Nome</th>
-            <th>Dispositivo</th>
             <th>Status</th>
             <th>Ações</th>
           </tr>
@@ -102,9 +93,6 @@
             <tr>
               <td>{{ local.local_id }}</td>
               <td>{{ local.nome }}</td>
-              <td>
-                <code>{{ local.identificador_dispositivo }}</code>
-              </td>
               <td>
                 <span class="status-badge" [class.inactive]="!local.ativo">{{
                   local.ativo ? 'Ativo' : 'Inativo'
@@ -121,7 +109,7 @@
             </tr>
           } @empty {
             <tr>
-              <td colspan="5" class="empty">
+              <td colspan="4" class="empty">
                 {{ locais.length === 0 ? 'Nenhum local cadastrado no sistema.' : 'Nenhum local corresponde ao filtro aplicado.' }}
               </td>
             </tr>
