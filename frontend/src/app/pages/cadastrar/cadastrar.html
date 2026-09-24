@@ -43,9 +43,9 @@
             [disabled]="saving || aguardandoRfid"
           >
             <option value="">Selecione o ESP32/leitor</option>
-            @for (local of locaisPermissao; track local.local_id) {
-              <option [value]="local.identificador">
-                {{ local.nome_local }} · {{ local.identificador }}
+            @for (dispositivo of dispositivosRfid; track dispositivo.dispositivo_id) {
+              <option [value]="dispositivo.identificador">
+                {{ dispositivo.nome }} · {{ dispositivo.identificador }}
               </option>
             }
           </select>
