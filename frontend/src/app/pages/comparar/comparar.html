@@ -122,10 +122,12 @@
         >
           @if (iniciandoTentativa()) {
             <mat-spinner diameter="18"></mat-spinner>
-            Validando RFID...
+            <span>Validando RFID...</span>
           } @else {
-            <mat-icon>contactless</mat-icon>
-            Simular cartão
+            <span class="btn-content">
+              <mat-icon>contactless</mat-icon>
+              <span>Simular cartão</span>
+            </span>
           }
         </button>
 
