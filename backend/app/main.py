@@ -33,6 +33,116 @@ from app.services.expiracao_service import loop_expiracao_periodica
 
 BASE_PREFIX = "/api/v1"
 
+TAGS_METADATA = [
+    {
+        "name": "Auth portal",
+        "description": (
+            "Login, recuperação e redefinição de senha dos administradores. "
+            "O login retorna o JWT usado nas rotas protegidas."
+        ),
+    },
+    {
+        "name": "Administradores",
+        "description": "Gestão das contas administrativas e regras da conta principal.",
+    },
+    {
+        "name": "Usuários",
+        "description": "CRUD de pessoas autorizáveis, cartão RFID e estado do usuário.",
+    },
+    {
+        "name": "Locais",
+        "description": "Ambientes físicos protegidos pelo ArdLock.",
+    },
+    {
+        "name": "Dispositivos",
+        "description": (
+            "Controladoras ESP32/leitores vinculados a um local. "
+            "Um local pode possuir vários dispositivos."
+        ),
+    },
+    {
+        "name": "Permissões",
+        "description": "Regras de acesso por usuário, local, dias da semana e janela horária.",
+    },
+    {
+        "name": "Biometria",
+        "description": (
+            "Cadastro administrativo do embedding facial. "
+            "A imagem original não é o dado persistido do usuário."
+        ),
+    },
+    {
+        "name": "RFID",
+        "description": (
+            "Fluxo físico de acesso: elegibilidade RFID, validação facial 1:1 "
+            "e consulta da decisão pelo ESP32."
+        ),
+    },
+    {
+        "name": "Histórico de Acesso",
+        "description": "Registro das tentativas físicas autorizadas, negadas e expiradas.",
+    },
+    {
+        "name": "Logs de Auditoria",
+        "description": "Trilha de ações administrativas, IP, recurso e data/hora.",
+    },
+    {
+        "name": "WebSocket",
+        "description": "Eventos em tempo real para painel e Totem.",
+    },
+    {
+        "name": "Health Check",
+        "description": "Disponibilidade básica da aplicação.",
+    },
+    {
+        "name": "Database Health Check",
+        "description": "Diagnóstico da conectividade com o PostgreSQL.",
+    },
+    {
+        "name": "Autenticação-facial",
+        "description": (
+            "Rota legada de diagnóstico biométrico. Não participa do fluxo "
+            "operacional de liberação de acesso."
+        ),
+    },
+]
+
+API_DESCRIPTION = """
+# ArdLock API
+
+API central do sistema de controle de acesso **RFID + biometria facial 1:1 + ESP32**.
+
+## Fluxo operacional
+
+1. **ESP32** envia RFID e `identificador_dispositivo`.
+2. O backend valida dispositivo, local, usuário, permissão, dia e horário.
+3. Se elegível, cria uma `tentativa_id` com status **PENDENTE**.
+4. O **Totem** envia a captura facial autenticado por JWT.
+5. O backend compara a face **somente com o titular identificado pelo RFID**.
+6. As regras de acesso são revalidadas antes do fechamento.
+7. O backend persiste a decisão e o ESP32 consulta **aguardar / liberar / negar**.
+
+> O backend é a única fonte da decisão. O ESP32 não envia `aprovado=true`.
+
+## Autenticação
+
+Rotas administrativas usam **Bearer JWT**. Use **Authorize** no topo do Swagger
+depois de obter o token em `POST /api/v1/auth/login`.
+
+As rotas físicas do ESP32 estão preparadas para autenticação HMAC por dispositivo,
+que permanece como hardening posterior.
+
+## Debug rápido
+
+- `GET /api/v1/health`: aplicação
+- `GET /api/v1/health/db`: PostgreSQL
+- `POST /api/v1/arduino/verificar-cartao`: inicia tentativa
+- `POST /api/v1/arduino/verificar-face`: fecha biometria 1:1
+- `GET /api/v1/arduino/resultado-acesso`: decisão para o ESP32
+
+Documentação adicional: `docs/BACKEND.md` e `docs/API_DEBUG.md`.
+"""
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -56,13 +166,23 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Controle de Autenticação com Biometria Facial + RFID",
-    description=(
-        "Backend do projeto integrador de ADS "
-        "controle de acesso com arduino."
-    ),
-    version="0.1.0",
+    title="ArdLock API",
+    summary="Controle de acesso físico com RFID, biometria facial 1:1 e ESP32",
+    description=API_DESCRIPTION,
+    version="0.3.0",
     lifespan=lifespan,
+    openapi_tags=TAGS_METADATA,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
+    swagger_ui_parameters={
+        "displayRequestDuration": True,
+        "filter": True,
+        "persistAuthorization": True,
+        "tryItOutEnabled": True,
+        "docExpansion": "list",
+        "defaultModelsExpandDepth": 1,
+    },
 )
 
 
