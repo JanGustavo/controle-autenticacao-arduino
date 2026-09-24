@@ -26,7 +26,17 @@ from app.services.rfid_service import (
 router = APIRouter()
 
 
-@router.post("/verificar-cartao", response_model=VerificarCartaoResponse)
+@router.post(
+    "/verificar-cartao",
+    response_model=VerificarCartaoResponse,
+    summary="Validar RFID e iniciar tentativa",
+    response_description="Tentativa PENDENTE criada para a etapa facial",
+    responses={
+        404: {"description": "Elegibilidade recusada pelo backend"},
+        422: {"description": "Payload RFID inválido"},
+        500: {"description": "Erro interno ao iniciar a tentativa"},
+    },
+)
 async def verificar_cartao(request: VerificarCartaoRequest):
     """
     Inicia uma tentativa real de acesso.
@@ -94,6 +104,14 @@ async def verificar_cartao(request: VerificarCartaoRequest):
 @router.post(
     "/verificar-face",
     response_model=VerificarBiometriaArduinoResponse,
+    summary="Validar face 1:1 e finalizar tentativa",
+    response_description="Decisão final calculada pelo backend",
+    responses={
+        401: {"description": "JWT ausente, expirado ou inválido"},
+        404: {"description": "Tentativa inexistente ou indisponível"},
+        422: {"description": "tentativa_id ou upload inválido"},
+        500: {"description": "Erro interno na validação facial"},
+    },
 )
 async def verificar_face(
     tentativa_id: UUID = Query(...),
@@ -151,6 +169,13 @@ async def verificar_face(
 @router.get(
     "/resultado-acesso",
     response_model=ResultadoTentativaResponse,
+    summary="Consultar decisão da tentativa",
+    response_description="Comando que o ESP32 deve executar",
+    responses={
+        404: {"description": "Tentativa não pertence ao dispositivo informado"},
+        422: {"description": "Parâmetros inválidos"},
+        500: {"description": "Erro interno ao consultar a decisão"},
+    },
 )
 async def resultado_acesso(
     tentativa_id: UUID = Query(...),
@@ -183,7 +208,19 @@ async def resultado_acesso(
         ) from error
 
 
-@router.post("/cadastrar-cartao", response_model=CadastrarCartaoResponse)
+@router.post(
+    "/cadastrar-cartao",
+    response_model=CadastrarCartaoResponse,
+    summary="Vincular cartão RFID a um usuário",
+    response_description="Cartão associado ao usuário",
+    responses={
+        400: {"description": "UID já associado ou regra de cadastro inválida"},
+        401: {"description": "JWT administrativo ausente ou inválido"},
+        404: {"description": "Usuário não encontrado"},
+        422: {"description": "Payload inválido"},
+        500: {"description": "Erro interno no cadastro do cartão"},
+    },
+)
 async def cadastrar_cartao(
     request: CadastrarCartaoRequest,
     _admin: dict = Depends(obter_administrador_atual),
