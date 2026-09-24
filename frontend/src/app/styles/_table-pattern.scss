@@ -9,7 +9,9 @@
 
   .table-container,
   .table-card {
-    overflow-x: auto;
+    overflow: auto;
+    max-height: min(70vh, 760px);
+    scrollbar-gutter: stable;
   }
 
   table,
@@ -21,6 +23,9 @@
   }
 
   th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
     padding: 14px 16px;
     border-bottom: 1px solid var(--line, #e2e8f0);
     background: color-mix(in srgb, var(--surface, #fff) 92%, #64748b 8%);
