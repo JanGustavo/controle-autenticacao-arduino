@@ -42,9 +42,14 @@ export const routes: Routes = [
     canActivate: [authGuard],
   },
   {
-    path: 'comparar',
+    path: 'validar-acesso',
     component: CompararPage,
     canActivate: [authGuard],
+  },
+  {
+    path: 'comparar',
+    redirectTo: 'validar-acesso',
+    pathMatch: 'full',
   },
   {
     path: 'usuarios',

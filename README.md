@@ -2,7 +2,7 @@
 
 Projeto integrador de Análise e Desenvolvimento de Sistemas (ADS) para gerenciamento de acesso físico, combinando **RFID**, **biometria facial**, **ESP32** e uma aplicação web administrativa.
 
-O projeto está organizado como uma aplicação web com **frontend Angular**, **backend FastAPI** e **PostgreSQL**. A camada de domínio já contempla usuários, locais, permissões e histórico de acessos. A integração física com ESP32/RFID e a validação biométrica ainda fazem parte da evolução do projeto.
+O projeto está organizado como uma aplicação web com **frontend Angular**, **backend FastAPI** e **PostgreSQL**. A aplicação já integra usuários, locais, dispositivos, permissões, histórico, RFID e validação facial 1:1. O ESP32 atua como sensor/atuador e o backend permanece como única fonte da decisão de acesso.
 
 ## 🧩 Arquitetura
 
@@ -77,6 +77,17 @@ controle-autenticacao-arduino/
 ├── Makefile
 └── .env.example
 ```
+
+## 📚 Documentação técnica
+
+| Documento | Conteúdo |
+|---|---|
+| [Backend](docs/BACKEND.md) | arquitetura, regras, persistência, autenticação e fluxo de acesso |
+| [Frontend](docs/FRONTEND.md) | Angular, Totem, WebSocket, webcam, padrões visuais e debug |
+| [API e Debug](docs/API_DEBUG.md) | roteiro de Swagger, códigos HTTP e diagnóstico ponta a ponta |
+| [Arquitetura de camadas](backend/ARCHITECTURE.md) | convenção API → Service → Model |
+
+A documentação interativa da API está em `/docs` e a alternativa ReDoc em `/redoc`.
 
 ## 🚀 Executando com Docker
 
@@ -173,9 +184,9 @@ Todas as rotas abaixo utilizam o prefixo `/api/v1`.
 | Permissão específica | GET, PATCH, DELETE | `/permissoes/{id}` |
 | Cadastro biométrico | POST | `/biometria/cadastrar/{usuario_id}` |
 | Verificação RFID (ESP32) | POST | `/arduino/verificar-cartao` |
-| Validação facial (Totem) | POST | `/arduino/verificar-face` |
-| Resultado facial (ESP32) | POST | `/arduino/resultado-biometria` |
-| Cadastro de cartão RFID | POST | `/arduino/cadastrar-cartao` |
+| Validação facial 1:1 (Totem, JWT) | POST | `/arduino/verificar-face` |
+| Consulta da decisão (ESP32) | GET | `/arduino/resultado-acesso` |
+| Cadastro de cartão RFID (JWT) | POST | `/arduino/cadastrar-cartao` |
 | Histórico de acesso | GET, POST | `/historico-acesso` |
 | Histórico específico | GET | `/historico-acesso/{id}` |
 | WebSocket em tempo real | WS | `/ws/logs` |
@@ -213,7 +224,7 @@ source venv/bin/activate
 PYTHONPATH=. pytest -v
 ```
 
-A suíte possui 100% de aprovação (66 testes cobrindo autenticação JWT, isolamento de rotas protegidas, integridade de administradores, FaceService com InsightFace, saúde da aplicação e CRUD de usuários).
+A suíte automatizada cobre autenticação JWT, isolamento de rotas protegidas, fluxo 1:1, FaceService, regras de acesso e CRUDs. Para homologação, considere sempre a saída da execução atual do Pytest, pois a quantidade de testes evolui com o projeto.
 
 ## 🛠️ Comandos Make
 
@@ -250,8 +261,8 @@ make dev-frontend # somente frontend
 
 ### Em desenvolvimento / próximos passos
 
-- [ ] Migração formal do reconhecimento facial para modo puramente 1:1 (comparação direta com o vetor do cartão)
-- [ ] Transição do threshold biométrico operacional de 80% para 85% conforme homologação final
+- [x] Reconhecimento facial 1:1 estrito contra o titular identificado pelo RFID
+- [x] Threshold biométrico operacional em 80% conforme calibração atual
 - [ ] Conexão e calibração de bancada física definitiva com servo SG90 e leitor RC522 em campo
 
 ## 🎓 Contexto acadêmico
@@ -267,3 +278,31 @@ Projeto desenvolvido como parte do **Projeto Integrador de ADS**, com foco na ap
 ## 📄 Licença
 
 Projeto acadêmico. Licenciamento formal ainda não definido.
+
+### Contrato do fluxo físico
+
+O backend é a única fonte da decisão de acesso:
+
+```text
+ESP32 -> POST /arduino/verificar-cartao
+          |
+          +-> valida dispositivo, local, usuário, permissão, dia e horário
+          |
+          +-> cria tentativa_id somente se elegível
+
+Totem -> POST /arduino/verificar-face?tentativa_id=...
+          |
+          +-> JWT administrativo
+          +-> embedding facial
+          +-> comparação 1:1
+          +-> revalidação das regras
+          +-> decisão final
+
+ESP32 -> GET /arduino/resultado-acesso
+          |
+          +-> aguardar | liberar | negar
+```
+
+O ESP32 nunca envia `aprovado`, `similaridade` ou outro campo capaz de
+definir a decisão. A autenticação HMAC por dispositivo permanece como
+hardening planejado para as rotas físicas.

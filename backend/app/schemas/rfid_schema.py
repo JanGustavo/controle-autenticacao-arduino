@@ -1,7 +1,7 @@
 from typing import Optional, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 import re
 
 _PADRAO_UID = r"^[0-9A-Fa-f]{8}$|^[0-9A-Fa-f]{14}$|^[0-9A-Fa-f]{20}$"
@@ -17,6 +17,15 @@ def _validar_uid(v: str) -> str:
 
 
 class CadastrarCartaoRequest(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "identificador_dispositivo": "ESP32-ENTRADA-01",
+                "uid_card": "A1B2C3D4",
+                "usuario_id": 17,
+            }
+        }
+    )
     # O firmware envia o identificador lógico do dispositivo cadastrado
     # na tabela dispositivo.
     identificador_dispositivo: str = Field(
@@ -39,6 +48,14 @@ class CadastrarCartaoResponse(BaseModel):
 
 
 class VerificarCartaoRequest(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "identificador_dispositivo": "ESP32-ENTRADA-01",
+                "uid_card": "A1B2C3D4",
+            }
+        }
+    )
     identificador_dispositivo: str = Field(
         ..., min_length=1, description="Identificador do dispositivo cadastrado"
     )
@@ -56,6 +73,18 @@ class VerificarCartaoRequest(BaseModel):
 
 
 class VerificarCartaoResponse(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "existe": True,
+                "tentativa_id": "3b75c2c1-1e6d-4f52-9aa3-45f59ce77700",
+                "usuario_id": 17,
+                "nome": "Jan",
+                "mensagem": "Cartão reconhecido e dentro da permissão. Aguardando validação facial.",
+                "proxima_etapa": "BIOMETRIA",
+            }
+        }
+    )
     # Renomeado de 'valido' para 'existe' -- é o nome que o firmware do
     # ESP32 já espera no JSON de resposta do POST /verificar-cartao.
     existe: bool
@@ -75,19 +104,45 @@ class ResultadoBiometriaRequest(BaseModel):
     )
 
 
-class VerificarBiometriaArduinoRequest(BaseModel):
-    identificador_dispositivo: str = Field(
-        ..., min_length=1, description="Identificador do dispositivo cadastrado"
+class ResultadoTentativaResponse(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "tentativa_id": "3b75c2c1-1e6d-4f52-9aa3-45f59ce77700",
+                "status": "AUTORIZADO",
+                "comando": "liberar",
+                "aprovado": True,
+                "similaridade": 0.91,
+                "mensagem": "Acesso autorizado.",
+                "tempo_resposta_ms": 1432,
+            }
+        }
     )
-    uid_card: str = Field(..., description="UID do cartão para associar a busca")
-
-    @field_validator("uid_card")
-    @classmethod
-    def validar_formato_uid(cls, v: str) -> str:
-        return _validar_uid(v)
+    tentativa_id: UUID
+    status: Literal["PENDENTE", "AUTORIZADO", "NEGADO", "EXPIRADO"]
+    comando: Literal["aguardar", "liberar", "negar"]
+    aprovado: Optional[bool] = None
+    similaridade: float = Field(default=0.0, ge=0.0, le=1.0)
+    mensagem: str
+    tempo_resposta_ms: Optional[int] = None
 
 
 class VerificarBiometriaArduinoResponse(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "tentativa_id": "3b75c2c1-1e6d-4f52-9aa3-45f59ce77700",
+                "usuario_id": 17,
+                "nome": "Jan",
+                "local_id": 1,
+                "aprovado": True,
+                "similaridade": 0.91,
+                "comando": "liberar",
+                "mensagem": "Acesso autorizado.",
+                "tempo_resposta_ms": 1432,
+            }
+        }
+    )
     tentativa_id: UUID | None = None
     usuario_id: Optional[int] = None
     nome: Optional[str] = None

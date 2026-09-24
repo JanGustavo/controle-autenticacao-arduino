@@ -1,15 +1,16 @@
 from uuid import UUID
 
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 
 from app.schemas.rfid_schema import (
     CadastrarCartaoRequest,
     CadastrarCartaoResponse,
-    VerificarBiometriaArduinoRequest,
+    ResultadoTentativaResponse,
     VerificarBiometriaArduinoResponse,
     VerificarCartaoRequest,
     VerificarCartaoResponse,
 )
+from app.auth.dependencies import obter_administrador_atual
 from app.services.acesso_service import (
     AcessoNegadoError,
     TentativaAcessoNaoEncontradaError,
@@ -25,7 +26,17 @@ from app.services.rfid_service import (
 router = APIRouter()
 
 
-@router.post("/verificar-cartao", response_model=VerificarCartaoResponse)
+@router.post(
+    "/verificar-cartao",
+    response_model=VerificarCartaoResponse,
+    summary="Validar RFID e iniciar tentativa",
+    response_description="Tentativa PENDENTE criada para a etapa facial",
+    responses={
+        404: {"description": "Elegibilidade recusada pelo backend"},
+        422: {"description": "Payload RFID inválido"},
+        500: {"description": "Erro interno ao iniciar a tentativa"},
+    },
+)
 async def verificar_cartao(request: VerificarCartaoRequest):
     """
     Inicia uma tentativa real de acesso.
@@ -93,16 +104,25 @@ async def verificar_cartao(request: VerificarCartaoRequest):
 @router.post(
     "/verificar-face",
     response_model=VerificarBiometriaArduinoResponse,
+    summary="Validar face 1:1 e finalizar tentativa",
+    response_description="Decisão final calculada pelo backend",
+    responses={
+        401: {"description": "JWT ausente, expirado ou inválido"},
+        404: {"description": "Tentativa inexistente ou indisponível"},
+        422: {"description": "tentativa_id ou upload inválido"},
+        500: {"description": "Erro interno na validação facial"},
+    },
 )
 async def verificar_face(
     tentativa_id: UUID = Query(...),
     file: UploadFile = File(...),
+    _admin: dict = Depends(obter_administrador_atual),
 ):
     """
     Finaliza uma tentativa usando a câmera/backend.
 
-    Nesta fase, a comparação ainda é 1:N. A aprovação só ocorre quando
-    o melhor candidato é o mesmo usuário identificado pelo RFID.
+    A comparação é estritamente 1:1: a face capturada é comparada
+    somente com o vetor do usuário identificado pelo RFID.
     """
     try:
         image_bytes = await file.read()
@@ -146,57 +166,65 @@ async def verificar_face(
         ) from error
 
 
-@router.post(
-    "/resultado-biometria",
-    response_model=VerificarBiometriaArduinoResponse,
+@router.get(
+    "/resultado-acesso",
+    response_model=ResultadoTentativaResponse,
+    summary="Consultar decisão da tentativa",
+    response_description="Comando que o ESP32 deve executar",
+    responses={
+        404: {"description": "Tentativa não pertence ao dispositivo informado"},
+        422: {"description": "Parâmetros inválidos"},
+        500: {"description": "Erro interno ao consultar a decisão"},
+    },
 )
-async def resultado_biometria(
-    request: VerificarBiometriaArduinoRequest,
+async def resultado_acesso(
+    tentativa_id: UUID = Query(...),
+    identificador_dispositivo: str = Query(..., min_length=1),
 ):
     """
-    Recebe o resultado do módulo facial do hardware.
+    Endpoint de polling do ESP32 para consultar a decisão FINAL do backend.
 
-    Temporariamente localiza a tentativa PENDENTE mais recente do mesmo
-    cartão + dispositivo. Quando o módulo 1:1 estiver pronto, o contrato
-    poderá passar a usar tentativa_id diretamente.
+    O dispositivo informa apenas a tentativa e sua identidade lógica.
+    Ele nunca envia campos como "aprovado" ou "similaridade".
+
+    Enquanto a validação facial não terminar, o comando é "aguardar".
+    A autenticação HMAC do dispositivo será adicionada em etapa posterior.
     """
     try:
-        resultado = acesso_service.finalizar_resultado_arduino(request)
-
-        await manager.broadcast(
-            {
-                "type": "NOVO_ACESSO",
-                "data": {
-                    "id": None,
-                    "usuario_id": resultado.usuario_id,
-                    "nome_usuario": resultado.nome,
-                    "local_id": resultado.local_id,
-                    "autorizado": resultado.aprovado,
-                    "percentual_similaridade": resultado.similaridade,
-                    "motivo_recusa": None if resultado.aprovado else resultado.mensagem,
-                    "data_hora": None,
-                    "tentativa_id": str(resultado.tentativa_id),
-                    "tempo_resposta_ms": resultado.tempo_resposta_ms,
-                },
-            }
+        return acesso_service.obter_resultado_tentativa(
+            tentativa_id=tentativa_id,
+            identificador_dispositivo=identificador_dispositivo,
         )
-
-        return resultado
     except TentativaAcessoNaoEncontradaError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(error),
         ) from error
     except Exception as error:
-        print(f"[BIOMETRIA API Erro] {error}")
+        print(f"[RESULTADO ACESSO Erro] {error}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erro interno ao registrar o resultado da biometria.",
+            detail="Erro interno ao consultar a decisão de acesso.",
         ) from error
 
 
-@router.post("/cadastrar-cartao", response_model=CadastrarCartaoResponse)
-async def cadastrar_cartao(request: CadastrarCartaoRequest):
+@router.post(
+    "/cadastrar-cartao",
+    response_model=CadastrarCartaoResponse,
+    summary="Vincular cartão RFID a um usuário",
+    response_description="Cartão associado ao usuário",
+    responses={
+        400: {"description": "UID já associado ou regra de cadastro inválida"},
+        401: {"description": "JWT administrativo ausente ou inválido"},
+        404: {"description": "Usuário não encontrado"},
+        422: {"description": "Payload inválido"},
+        500: {"description": "Erro interno no cadastro do cartão"},
+    },
+)
+async def cadastrar_cartao(
+    request: CadastrarCartaoRequest,
+    _admin: dict = Depends(obter_administrador_atual),
+):
     """
     Cadastra e vincula o UID lido pelo ESP32 a um usuario_id específico.
     """

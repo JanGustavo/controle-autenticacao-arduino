@@ -1,8 +1,6 @@
 import os
 import json
 from datetime import datetime
-import httpx
-
 from fastapi import HTTPException, status
 from app.services.face_service import FaceService
 from app.database.connection import get_connection
@@ -123,14 +121,6 @@ class AutenticacaoService:
             nome_usuario=best_match["nome"] if autorizado else None
         )
         
-        # Disparo assíncrono do debug para o ESP32 com base no resultado da tupla mapeada
-        await AutenticacaoService._enviar_debug_esp32(
-            usuario_id=best_match["user_id"],
-            aprovado=best_match["aprovado"],
-            nome=best_match["nome"],
-            similaridade=best_match["similaridade"]
-        )
-
         return TestarBiometriaResponse(
             status="COMPARADO" if best_match["user_id"] else "NENHUM_CONFERENTE",
             usuario_id=best_match["user_id"],
@@ -187,52 +177,5 @@ class AutenticacaoService:
         except Exception as e:
             print(f"Erro ao salvar e notificar log de acesso: {e}")
 
-    #debug 
-    @staticmethod
-    async def _enviar_debug_esp32(
-        usuario_id: int | None,
-        aprovado: bool,
-        nome: str | None,
-        similaridade: float,
-    ) -> None:
-        """
-        Envia o resultado da biometria para o endpoint que,
-        futuramente, será responsável pela comunicação com o hardware.
-
-        Atualmente o endpoint apenas simula o recebimento
-        pelo ESP32/Mega através do console.
-        """
-
-        url = "http://localhost:8001/api/v1/arduino/resultado-biometria" #substituir pelo .env que vai apontar para o endpoint real do ESP32/Mega
-
-        payload = {
-            "usuario_id": usuario_id,
-            "nome": nome,
-            "aprovado": aprovado,
-            "similaridade": round(similaridade, 4),
-        }
-
-        try:
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    url,
-                    json=payload,
-                    timeout=2.0,
-                )
-
-            response.raise_for_status()
-
-            print(
-                f"[BIOMETRIA → HARDWARE] "
-                f"Resultado enviado | "
-                f"aprovado={aprovado} | "
-                f"status={response.status_code}"
-            )
-
-        except httpx.HTTPError as e:
-            print(
-                f"[BIOMETRIA → HARDWARE] "
-                f"Falha ao enviar resultado: {e}"
-            )
 
 autenticacao_service = AutenticacaoService()

@@ -1,12 +1,29 @@
-import { Component, inject, OnDestroy, ViewChild, ElementRef, signal, OnInit, HostListener } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  HostListener,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+  inject,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
-import { Observable, Subscription } from 'rxjs';
-import { ApiService, HistoricoAcessoResponse, LocalResponse, UsuarioResponse } from '../../services/api.service';
+import { Subscription } from 'rxjs';
+
+import {
+  ApiService,
+  DispositivoResponse,
+  HistoricoAcessoResponse,
+  LocalResponse,
+  UsuarioResponse,
+} from '../../services/api.service';
 import { SpeechService } from '../../services/speech.service';
 import { WebcamService } from '../../services/webcam.service';
 import { WebSocketLogsService } from '../../services/websocket-logs.service';
@@ -16,6 +33,7 @@ import { WebSocketLogsService } from '../../services/websocket-logs.service';
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
@@ -36,8 +54,10 @@ export class CompararPage implements OnInit, OnDestroy {
   @ViewChild('webcamContainer') webcamContainer?: ElementRef<HTMLDivElement>;
 
   scanning = signal(false);
+  iniciandoTentativa = signal(false);
   similaridade = signal(0);
   minSimilaridade = signal(0.8);
+  tempoRespostaMs = signal<number | null>(null);
   aprovado = signal(false);
   usuarioEncontrado = signal<string | null>(null);
   mensagemStatus = signal<string | null>(null);
@@ -48,8 +68,14 @@ export class CompararPage implements OnInit, OnDestroy {
   modoKioskFullscreen = signal(false);
   exibirOverlayTotem = signal(false);
   historicoRecente = signal<HistoricoAcessoResponse[]>([]);
+
   usuarios: UsuarioResponse[] = [];
   locais: LocalResponse[] = [];
+  dispositivos: DispositivoResponse[] = [];
+
+  usuarioSimuladoId: number | null = null;
+  dispositivoSimuladoId: number | null = null;
+  uidManual = '';
 
   private timeoutOverlay: ReturnType<typeof setTimeout> | null = null;
   private wsSubscription: Subscription | null = null;
@@ -62,29 +88,39 @@ export class CompararPage implements OnInit, OnDestroy {
     this.wsSubscription = this.wsLogs.obterLogsEmTempoReal().subscribe({
       next: (evento) => {
         if (evento.type === 'RFID_APROVADO' && evento.data.tentativa_id) {
-          this.tentativaId.set(evento.data.tentativa_id);
-          this.aprovado.set(false);
-          this.similaridade.set(0);
-          this.usuarioEncontrado.set(evento.data.nome_usuario || null);
-          this.mensagemStatus.set(
-            'Cartão reconhecido. Aguardando validação facial...'
+          // A simulação usa este mesmo endpoint e também gera o broadcast.
+          // Nesse caso, a resposta HTTP é a fonte da tentativa para evitar
+          // abrir/reiniciar a webcam duas vezes.
+          if (this.iniciandoTentativa()) return;
+
+          this.prepararTentativa(
+            evento.data.tentativa_id,
+            evento.data.nome_usuario || null,
           );
 
           if (this.modoTotem() && !this.webcam.webcamAtiva()) {
             void this.iniciarWebcam();
           }
 
-          this.speech.falar('Cartão reconhecido. Agora olhe para a câmera.', true);
+          this.speech.falar(
+            'Cartão reconhecido. Agora olhe para a câmera.',
+            true,
+          );
           return;
         }
 
         if (evento.type === 'RFID_NEGADO') {
+          if (this.iniciandoTentativa()) return;
+
           this.tentativaId.set(null);
           this.pararWebcam();
           this.aprovado.set(false);
           this.similaridade.set(0);
+          this.tempoRespostaMs.set(null);
           this.usuarioEncontrado.set(null);
-          this.mensagemStatus.set(evento.data.motivo || 'Cartão recusado.');
+          this.mensagemStatus.set(
+            evento.data.motivo || 'Cartão recusado.',
+          );
           return;
         }
 
@@ -96,15 +132,144 @@ export class CompararPage implements OnInit, OnDestroy {
   }
 
   carregarAuxiliares(): void {
-    this.api.getUsuarios().subscribe({ next: (u) => (this.usuarios = u) });
-    this.api.getLocais().subscribe({ next: (l) => (this.locais = l) });
+    this.api.getUsuarios({ ativo: true }).subscribe({
+      next: (usuarios) => {
+        this.usuarios = usuarios;
+
+        const primeiroComCartao = usuarios.find((usuario) => usuario.uid_card);
+        if (primeiroComCartao && this.usuarioSimuladoId === null) {
+          this.usuarioSimuladoId = primeiroComCartao.user_id;
+          this.uidManual = primeiroComCartao.uid_card || '';
+        }
+      },
+    });
+
+    this.api.getLocais().subscribe({
+      next: (locais) => (this.locais = locais),
+    });
+
+    this.api.getDispositivos({ ativo: true }).subscribe({
+      next: (dispositivos) => {
+        this.dispositivos = dispositivos;
+        if (dispositivos.length && this.dispositivoSimuladoId === null) {
+          this.dispositivoSimuladoId = dispositivos[0].dispositivo_id;
+        }
+      },
+    });
+  }
+
+  get usuarioSimulado(): UsuarioResponse | null {
+    if (this.usuarioSimuladoId === null) return null;
+    return (
+      this.usuarios.find(
+        (usuario) => usuario.user_id === this.usuarioSimuladoId,
+      ) || null
+    );
+  }
+
+  get dispositivoSimulado(): DispositivoResponse | null {
+    if (this.dispositivoSimuladoId === null) return null;
+    return (
+      this.dispositivos.find(
+        (dispositivo) =>
+          dispositivo.dispositivo_id === this.dispositivoSimuladoId,
+      ) || null
+    );
+  }
+
+  onUsuarioSimuladoChange(): void {
+    this.uidManual = this.usuarioSimulado?.uid_card || '';
+  }
+
+  simularLeituraRfid(): void {
+    if (this.iniciandoTentativa()) return;
+
+    const dispositivo = this.dispositivoSimulado;
+    const uid = this.normalizarUid(this.uidManual);
+
+    if (!dispositivo) {
+      this.snackBar.open(
+        'Selecione um dispositivo ativo para simular a leitura.',
+        'Fechar',
+        { duration: 4500 },
+      );
+      return;
+    }
+
+    if (!uid) {
+      this.snackBar.open(
+        'Selecione um usuário com cartão ou informe um UID válido.',
+        'Fechar',
+        { duration: 4500 },
+      );
+      return;
+    }
+
+    this.iniciandoTentativa.set(true);
+    this.mensagemStatus.set('Simulando leitura RFID no fluxo real...');
+
+    this.api.verificarCartao(uid, dispositivo.identificador).subscribe({
+      next: (resultado) => {
+        this.iniciandoTentativa.set(false);
+
+        if (!resultado.tentativa_id) {
+          this.mensagemStatus.set(
+            resultado.mensagem || 'O backend não criou uma tentativa.',
+          );
+          return;
+        }
+
+        this.prepararTentativa(
+          resultado.tentativa_id,
+          resultado.nome || this.usuarioSimulado?.nome || null,
+        );
+
+        this.snackBar.open(
+          'RFID simulado. Tentativa 1:1 criada pelo backend.',
+          'OK',
+          { duration: 3500 },
+        );
+
+        void this.iniciarWebcam();
+      },
+      error: (error) => {
+        this.iniciandoTentativa.set(false);
+        this.tentativaId.set(null);
+        this.aprovado.set(false);
+        this.usuarioEncontrado.set(null);
+        this.mensagemStatus.set(
+          error.error?.detail ||
+            'A leitura simulada foi recusada pelo backend.',
+        );
+      },
+    });
+  }
+
+  private prepararTentativa(
+    tentativaId: string,
+    nomeUsuario: string | null,
+  ): void {
+    this.tentativaId.set(tentativaId);
+    this.aprovado.set(false);
+    this.similaridade.set(0);
+    this.tempoRespostaMs.set(null);
+    this.usuarioEncontrado.set(nomeUsuario);
+    this.mensagemStatus.set(
+      'Cartão reconhecido. Aguardando validação facial 1:1...',
+    );
+  }
+
+  private normalizarUid(uid: string): string {
+    return uid.replace(/[\s:-]/g, '').toUpperCase();
   }
 
   obterNomeUsuario(log: HistoricoAcessoResponse): string {
     if (log.nome_usuario) return log.nome_usuario;
     if (log.usuario_id) {
-      const u = this.usuarios.find((item) => item.user_id === log.usuario_id);
-      if (u) return u.nome;
+      const usuario = this.usuarios.find(
+        (item) => item.user_id === log.usuario_id,
+      );
+      if (usuario) return usuario.nome;
     }
     return 'Não identificado';
   }
@@ -112,8 +277,10 @@ export class CompararPage implements OnInit, OnDestroy {
   obterNomeLocal(log: HistoricoAcessoResponse): string {
     if (log.nome_local) return log.nome_local;
     if (log.local_id) {
-      const l = this.locais.find((item) => item.local_id === log.local_id);
-      if (l) return l.nome;
+      const local = this.locais.find(
+        (item) => item.local_id === log.local_id,
+      );
+      if (local) return local.nome;
     }
     return 'Arduino ESP32 (Leitor)';
   }
@@ -130,13 +297,20 @@ export class CompararPage implements OnInit, OnDestroy {
   async iniciarWebcam(): Promise<void> {
     const tentativaPendente = this.tentativaId();
 
-    this.resetar();
+    if (!tentativaPendente) {
+      this.mensagemStatus.set(
+        'Inicie uma tentativa com RFID físico ou pelo simulador.',
+      );
+      return;
+    }
+
+    this.limparResultadoPreservandoTentativa();
     this.tentativaId.set(tentativaPendente);
 
     await this.webcam.iniciarWebcam(
       () => this.videoElement,
       this.modoTotem(),
-      () => this.capturarEComparar()
+      () => this.capturarEValidar(),
     );
   }
 
@@ -145,7 +319,7 @@ export class CompararPage implements OnInit, OnDestroy {
     this.scanning.set(false);
   }
 
-/**
+  /**
    * Mapeia as coordenadas da Bounding Box para o círculo dinâmico
    * ajustado de forma proporcional ao rosto.
    */
@@ -160,14 +334,14 @@ export class CompararPage implements OnInit, OnDestroy {
 
     const scaleX = container.clientWidth / video.videoWidth;
     const scaleY = container.clientHeight / video.videoHeight;
-
-    // Fator ajustado para 0.85 (circunda o rosto sem cobrir a tela inteira)
     const scaleFactor = 0.85;
-    const size = Math.max(box.width * scaleX, box.height * scaleY) * scaleFactor;
+    const size =
+      Math.max(box.width * scaleX, box.height * scaleY) * scaleFactor;
 
-    // Centralização com leve ajuste de elevação (-10px) para enquadrar a cabeça
-    const left = (box.x + box.width / 2) * scaleX - size / 2;
-    const top = (box.y + box.height / 2) * scaleY - size / 2 - 10;
+    const left =
+      (box.x + box.width / 2) * scaleX - size / 2;
+    const top =
+      (box.y + box.height / 2) * scaleY - size / 2 - 10;
 
     return {
       left: `${left}px`,
@@ -178,13 +352,15 @@ export class CompararPage implements OnInit, OnDestroy {
     };
   }
 
-  async capturarEComparar(): Promise<void> {
+  async capturarEValidar(): Promise<void> {
     if (this.webcam.emCooldown()) return;
 
     const tentativaAtual = this.tentativaId();
 
-    if (this.modoTotem() && !tentativaAtual) {
-      this.mensagemStatus.set('Aguardando leitura de cartão RFID...');
+    if (!tentativaAtual) {
+      this.mensagemStatus.set(
+        'Nenhuma tentativa ativa. Leia ou simule um cartão primeiro.',
+      );
       return;
     }
 
@@ -194,62 +370,35 @@ export class CompararPage implements OnInit, OnDestroy {
     if (!resCapture) return;
 
     this.fotoPreviewUrl = resCapture.previewUrl;
-    this.mensagemStatus.set(
-      tentativaAtual
-        ? 'Validando biometria...'
-        : 'Comparando biometria...'
-    );
+    this.mensagemStatus.set('Validando titular do cartão em 1:1...');
     this.scanning.set(true);
 
-    let request$: Observable<any>;
-    if (tentativaAtual) {
-      request$ = this.api.verificarFace(tentativaAtual, resCapture.blob);
-    } else {
-      const formData = new FormData();
-      formData.append('file', resCapture.blob, 'comparacao.jpg');
-      request$ = this.api.testarBiometria(formData);
-    }
-
-    request$.subscribe({
-      next: (res: any) => {
+    this.api.verificarFace(tentativaAtual, resCapture.blob).subscribe({
+      next: (res) => {
         this.scanning.set(false);
-
-        if (res.min_similarity) {
-          this.minSimilaridade.set(res.min_similarity);
-        }
-
         this.similaridade.set(Number(res.similaridade ?? 0));
+        this.tempoRespostaMs.set(res.tempo_resposta_ms ?? null);
         this.aprovado.set(!!res.aprovado);
-        this.usuarioEncontrado.set(
-          res.nome ||
-          res.usuario?.nome ||
-          res.usuario ||
-          null
-        );
-
+        this.usuarioEncontrado.set(res.nome || null);
         this.mensagemStatus.set(
           res.aprovado
             ? 'Acesso Liberado'
-            : (res.mensagem || 'Acesso Negado')
+            : res.mensagem || 'Acesso Negado',
         );
 
         if (res.aprovado) {
           this.speech.falar(
             'Acesso liberado. Seja bem-vindo, ' +
-            (this.usuarioEncontrado() || 'usuário') +
-            '.',
-            true
+              (this.usuarioEncontrado() || 'usuário') +
+              '.',
+            true,
           );
         } else {
-          this.speech.falar(
-            res.mensagem || 'Acesso negado.',
-            true
-          );
+          this.speech.falar(res.mensagem || 'Acesso negado.', true);
         }
 
-        if (tentativaAtual) {
-          this.tentativaId.set(null);
-        }
+        this.tentativaId.set(null);
+        this.carregarHistorico();
 
         if (this.modoTotem()) {
           this.exibirOverlayTotem.set(true);
@@ -257,23 +406,24 @@ export class CompararPage implements OnInit, OnDestroy {
             this.exibirOverlayTotem.set(false);
             this.fotoPreviewUrl = null;
             this.webcam.ativarCooldownPosAcesso(
-              this.aprovado() ? 5000 : 1500
+              this.aprovado() ? 5000 : 1500,
             );
           }, 3000);
         }
       },
-      error: (err) => {
+      error: (error) => {
         this.scanning.set(false);
         this.tentativaId.set(null);
         this.aprovado.set(false);
         this.similaridade.set(0);
+        this.tempoRespostaMs.set(null);
         this.mensagemStatus.set(
-          err.error?.detail ||
-          'Não foi possível concluir a validação facial.'
+          error.error?.detail ||
+            'Não foi possível concluir a validação facial 1:1.',
         );
         this.speech.falar(
           'Não foi possível concluir a validação facial.',
-          true
+          true,
         );
 
         if (this.modoTotem()) {
@@ -290,20 +440,26 @@ export class CompararPage implements OnInit, OnDestroy {
 
   toggleModoTotem(): void {
     this.modoTotem.set(!this.modoTotem());
-    if (this.webcam.webcamAtiva()) {
-      this.iniciarWebcam();
+    if (this.webcam.webcamAtiva() && this.tentativaId()) {
+      void this.iniciarWebcam();
     }
   }
 
   toggleKioskFullscreen(): void {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().then(() => {
-        this.modoKioskFullscreen.set(true);
-      }).catch(() => {});
+      document.documentElement
+        .requestFullscreen()
+        .then(() => {
+          this.modoKioskFullscreen.set(true);
+        })
+        .catch(() => {});
     } else {
-      document.exitFullscreen().then(() => {
-        this.modoKioskFullscreen.set(false);
-      }).catch(() => {});
+      document
+        .exitFullscreen()
+        .then(() => {
+          this.modoKioskFullscreen.set(false);
+        })
+        .catch(() => {});
     }
   }
 
@@ -312,14 +468,18 @@ export class CompararPage implements OnInit, OnDestroy {
     if (event.key === 'F11') {
       event.preventDefault();
       this.toggleKioskFullscreen();
-    } else if (event.code === 'Space' && !this.exibirOverlayTotem()) {
+    } else if (
+      event.code === 'Space' &&
+      !this.exibirOverlayTotem() &&
+      this.tentativaId()
+    ) {
       if (!this.webcam.webcamAtiva()) {
-        this.iniciarWebcam();
+        void this.iniciarWebcam();
       }
     }
   }
 
-  resetar(): void {
+  private limparResultadoPreservandoTentativa(): void {
     if (this.timeoutOverlay) {
       clearTimeout(this.timeoutOverlay);
       this.timeoutOverlay = null;
@@ -328,16 +488,19 @@ export class CompararPage implements OnInit, OnDestroy {
     this.pararWebcam();
     this.fotoPreviewUrl = null;
     this.similaridade.set(0);
+    this.tempoRespostaMs.set(null);
     this.aprovado.set(false);
-    this.usuarioEncontrado.set(null);
     this.mensagemStatus.set(null);
+  }
+
+  resetar(): void {
+    this.limparResultadoPreservandoTentativa();
+    this.usuarioEncontrado.set(null);
     this.tentativaId.set(null);
   }
 
   ngOnDestroy(): void {
     this.pararWebcam();
-    if (this.wsSubscription) {
-      this.wsSubscription.unsubscribe();
-    }
+    this.wsSubscription?.unsubscribe();
   }
 }

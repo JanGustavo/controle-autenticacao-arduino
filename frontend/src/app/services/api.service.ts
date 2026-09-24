@@ -123,6 +123,7 @@ export interface VerificarBiometriaResponse {
   similaridade: number;
   comando: 'liberar' | 'negar';
   mensagem: string;
+  tempo_resposta_ms: number | null;
 }
 
 export interface CadastrarCartaoResponse {
@@ -267,26 +268,6 @@ export class ApiService {
         usuario_id: usuarioId,
       },
     );
-  }
-
-  testarBiometria(foto: FormData): Observable<{
-    status: string;
-    usuario_id?: number;
-    nome?: string;
-    similaridade: number;
-    aprovado: boolean;
-    mensagem: string;
-    min_similarity?: number;
-  }> {
-    return this.http.post<{
-      status: string;
-      usuario_id?: number;
-      nome?: string;
-      similaridade: number;
-      min_similarity?: number;
-      aprovado: boolean;
-      mensagem: string;
-    }>(`${API_BASE}/autenticacao/testar-biometria`, foto);
   }
 
   loginAdm(usuario: string, senha: string): Observable<LoginResponse> {
