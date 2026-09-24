@@ -1,4 +1,4 @@
-import { Component, inject, input, OnInit, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, input, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -17,6 +17,7 @@ import { ApiService, HistoricoAcessoResponse, LocalResponse, PermissaoRequest, P
 export class TuplePage implements OnInit {
   private route = inject(ActivatedRoute);
   private api = inject(ApiService);
+  private cdr = inject(ChangeDetectorRef);
 
   configInput = input<TuplePageConfig | undefined>(undefined, { alias: 'config' });
   rowsFromApi = signal<Record<string, unknown>[] | null>(null);
@@ -107,6 +108,7 @@ export class TuplePage implements OnInit {
     error: (err) => {
       console.error('Erro ao excluir usuário:', err);
       this.dataNotice.set('Não foi possível excluir o usuário.');
+      this.cdr.markForCheck();
     },
   });
 }
@@ -127,6 +129,7 @@ export class TuplePage implements OnInit {
           this.usuarios = usuarios;
           if (this.config?.resource === 'historico') this.atualizarLinhasHistorico();
           if (this.config?.resource === 'permissoes') this.atualizarLinhasPermissoes();
+          this.cdr.markForCheck();
         },
       });
       this.api.getLocais().subscribe({
@@ -134,6 +137,7 @@ export class TuplePage implements OnInit {
           this.locais = locais;
           if (this.config?.resource === 'historico') this.atualizarLinhasHistorico();
           if (this.config?.resource === 'permissoes') this.atualizarLinhasPermissoes();
+          this.cdr.markForCheck();
         },
       });
     }
@@ -158,9 +162,11 @@ export class TuplePage implements OnInit {
             this.historico = historico;
             this.atualizarLinhasHistorico();
             this.dataNotice.set(null);
+            this.cdr.markForCheck();
           },
           error: () => {
             this.rowsFromApi.set([]);
+            this.cdr.markForCheck();
             this.dataNotice.set('Não foi possível carregar o histórico de acesso da API.');
           },
         });
@@ -179,9 +185,11 @@ export class TuplePage implements OnInit {
             this.permissoes = permissoes;
             this.atualizarLinhasPermissoes();
             this.dataNotice.set(null);
+            this.cdr.markForCheck();
           },
           error: () => {
             this.rowsFromApi.set([]);
+            this.cdr.markForCheck();
             this.dataNotice.set('Não foi possível carregar as permissões da API.');
           },
         });
@@ -291,11 +299,13 @@ export class TuplePage implements OnInit {
         this.rowsFromApi.set(this.permissoes.map((item) => this.toPermissionRow(item)));
         this.acaoNotice = 'Permissão salva com sucesso.';
         this.cancelarEdicao();
+        this.cdr.markForCheck();
       },
       error: (error) => {
         this.acaoNotice = error.status === 409
           ? 'Já existe uma permissão para este usuário e local.'
           : 'Não foi possível salvar a permissão.';
+        this.cdr.markForCheck();
       },
     });
   }
@@ -308,8 +318,12 @@ export class TuplePage implements OnInit {
         this.permissoes = this.permissoes.filter((item) => item.permissao_id !== id);
         this.rowsFromApi.set(this.permissoes.map((item) => this.toPermissionRow(item)));
         this.acaoNotice = 'Permissão excluída com sucesso.';
+        this.cdr.markForCheck();
       },
-      error: () => (this.acaoNotice = 'Não foi possível excluir a permissão.'),
+      error: () => {
+        this.acaoNotice = 'Não foi possível excluir a permissão.';
+        this.cdr.markForCheck();
+      },
     });
   }
 
