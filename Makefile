@@ -31,7 +31,7 @@ setup: ## Instala todas as dependências do projeto e inicializa o banco de dado
 up: ## Sobe toda a aplicação com Docker (Frontend + Backend + PostgreSQL)
 	@echo "🗄️  Subindo PostgreSQL para aplicar migrations..."
 	docker compose up -d db
-	@until docker compose exec -T db pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-controle_acesso} >/dev/null 2>&1; do sleep 1; done
+	@until docker compose exec -T db pg_isready -U postgres -d controle_acesso >/dev/null 2>&1; do sleep 1; done
 	@$(MAKE) migrate-docker
 	docker compose up -d --build
 	@echo ""
