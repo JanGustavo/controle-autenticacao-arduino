@@ -1,3 +1,9 @@
+@use '../../styles/form-pattern' as forms;
+@use '../../styles/table-pattern' as tables;
+
+@include forms.ard-form-pattern;
+@include tables.ard-table-pattern;
+
 :host { display: block; }
 
 .locations-page {
