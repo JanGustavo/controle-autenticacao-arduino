@@ -36,14 +36,28 @@ export interface PermissaoCreateRequest {
 export interface LocalResponse {
   local_id: number;
   nome: string;
-  identificador_dispositivo: string;
   ativo: boolean;
   criado_em: string;
 }
 
 export interface LocalRequest {
   nome: string;
-  identificador_dispositivo: string;
+  ativo: boolean;
+}
+
+export interface DispositivoResponse {
+  dispositivo_id: number;
+  local_id: number;
+  nome: string;
+  identificador: string;
+  ativo: boolean;
+  criado_em: string;
+}
+
+export interface DispositivoRequest {
+  local_id: number;
+  nome: string;
+  identificador: string;
   ativo: boolean;
 }
 
@@ -154,6 +168,26 @@ export class ApiService {
 
   deletarLocal(id: number): Observable<{ mensagem: string }> {
     return this.http.delete<{ mensagem: string }>(`${API_BASE}/locais/${id}`);
+  }
+
+  getDispositivos(filtros?: { q?: string; local_id?: number; ativo?: boolean }): Observable<DispositivoResponse[]> {
+    let params = new HttpParams();
+    if (filtros?.q) params = params.set('q', filtros.q);
+    if (filtros?.local_id) params = params.set('local_id', filtros.local_id);
+    if (filtros?.ativo !== undefined && filtros?.ativo !== null) params = params.set('ativo', filtros.ativo);
+    return this.http.get<DispositivoResponse[]>(`${API_BASE}/dispositivos`, { params });
+  }
+
+  criarDispositivo(dispositivo: DispositivoRequest): Observable<DispositivoResponse> {
+    return this.http.post<DispositivoResponse>(`${API_BASE}/dispositivos`, dispositivo);
+  }
+
+  atualizarDispositivo(id: number, dispositivo: Partial<DispositivoRequest>): Observable<DispositivoResponse> {
+    return this.http.patch<DispositivoResponse>(`${API_BASE}/dispositivos/${id}`, dispositivo);
+  }
+
+  deletarDispositivo(id: number): Observable<{ mensagem: string }> {
+    return this.http.delete<{ mensagem: string }>(`${API_BASE}/dispositivos/${id}`);
   }
 
   getPermissoes(filtros?: { q?: string; usuario_id?: number; local_id?: number }): Observable<PermissaoResponse[]> {
