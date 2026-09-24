@@ -21,9 +21,19 @@ CREATE TABLE IF NOT EXISTS tentativa_acesso (
 CREATE INDEX IF NOT EXISTS idx_tentativa_acesso_status_expira
     ON tentativa_acesso (status, expira_em);
 
-CREATE INDEX IF NOT EXISTS idx_tentativa_acesso_dispositivo_uid
-    ON tentativa_acesso (
-        identificador_dispositivo,
-        uid_card_lido,
-        criado_em DESC
-    );
+DO $
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'tentativa_acesso'
+          AND column_name = 'identificador_dispositivo'
+    ) THEN
+        CREATE INDEX IF NOT EXISTS idx_tentativa_acesso_dispositivo_uid
+            ON tentativa_acesso (
+                identificador_dispositivo,
+                uid_card_lido,
+                criado_em DESC
+            );
+    END IF;
+END $;
