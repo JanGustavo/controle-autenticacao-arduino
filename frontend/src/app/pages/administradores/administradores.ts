@@ -5,6 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
+import { finalize } from 'rxjs/operators';
 
 import {
   ApiService,
@@ -35,7 +36,9 @@ export class AdministradoresPage implements OnInit {
   private snackBar = inject(MatSnackBar);
 
   administradores: AdministradorResponse[] = [];
-  carregando = true;
+  carregando = false;
+  carregado = false;
+  erroLista = '';
   salvando = false;
   editandoId: number | null = null;
   editandoPrincipal = false;
@@ -130,24 +133,31 @@ export class AdministradoresPage implements OnInit {
   }
 
   carregar(): void {
-    console.log('[DEBUG - AdminPage] Carregando administradores...');
     this.carregando = true;
-    this.api.getAdministradores().subscribe({
-      next: (admins) => {
-        console.log('[DEBUG - AdminPage] Administradores carregados da API:', admins);
-        this.administradores = admins;
-        for (const a of admins) {
-          this.sincronizarSessaoSeUsuarioAtual(a);
-        }
-        this.erro = '';
-        this.carregando = false;
-      },
-      error: (err) => {
-        console.error('[DEBUG - AdminPage] Erro ao carregar administradores:', err);
-        this.erro = 'Não foi possível carregar a lista de administradores.';
-        this.carregando = false;
-      },
-    });
+    this.erroLista = '';
+
+    this.api
+      .getAdministradores()
+      .pipe(
+        finalize(() => {
+          this.carregando = false;
+          this.carregado = true;
+        })
+      )
+      .subscribe({
+        next: (admins) => {
+          this.administradores = admins;
+
+          for (const admin of admins) {
+            this.sincronizarSessaoSeUsuarioAtual(admin);
+          }
+        },
+        error: () => {
+          this.administradores = [];
+          this.erroLista =
+            'Não foi possível carregar a lista de administradores.';
+        },
+      });
   }
 
   salvar(): void {
