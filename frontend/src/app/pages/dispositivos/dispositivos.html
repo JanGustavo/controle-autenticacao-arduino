@@ -21,7 +21,7 @@
 
     <div class="form-grid">
       <label>
-        Local
+        <span class="floating-label">Local</span>
         <select [(ngModel)]="form.local_id">
           <option [ngValue]="0" disabled>Selecione...</option>
           @for (local of locais; track local.local_id) {
@@ -31,7 +31,7 @@
       </label>
 
       <label>
-        Nome do dispositivo
+        <span class="floating-label">Nome do dispositivo</span>
         <input
           [(ngModel)]="form.nome"
           maxlength="255"
@@ -40,7 +40,7 @@
       </label>
 
       <label>
-        Identificador
+        <span class="floating-label">Identificador</span>
         <input
           [(ngModel)]="form.identificador"
           maxlength="100"
