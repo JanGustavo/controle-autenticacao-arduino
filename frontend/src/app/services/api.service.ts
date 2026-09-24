@@ -123,6 +123,7 @@ export interface VerificarBiometriaResponse {
   similaridade: number;
   comando: 'liberar' | 'negar';
   mensagem: string;
+  tempo_resposta_ms: number | null;
 }
 
 export interface CadastrarCartaoResponse {
