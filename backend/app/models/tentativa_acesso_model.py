@@ -147,6 +147,44 @@ class TentativaAcessoModel:
         )
         return dict(zip(campos, row, strict=True))
 
+    def buscar_resultado_por_dispositivo(
+        self,
+        tentativa_id: UUID,
+        identificador_dispositivo: str,
+    ):
+        with get_connection() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT t.tentativa_id,
+                           t.status,
+                           t.percentual_similaridade,
+                           t.motivo_recusa,
+                           t.criado_em,
+                           t.concluido_em
+                    FROM tentativa_acesso t
+                    JOIN dispositivo d
+                      ON d.dispositivo_id = t.dispositivo_id
+                    WHERE t.tentativa_id = %s
+                      AND d.identificador = %s
+                    """,
+                    (tentativa_id, identificador_dispositivo),
+                )
+                row = cursor.fetchone()
+
+        if row is None:
+            return None
+
+        campos = (
+            "tentativa_id",
+            "status",
+            "percentual_similaridade",
+            "motivo_recusa",
+            "criado_em",
+            "concluido_em",
+        )
+        return dict(zip(campos, row, strict=True))
+
     @staticmethod
     def buscar_estado_com_cursor(cursor, tentativa_id: UUID):
         cursor.execute(
