@@ -1,3 +1,7 @@
+@use '../../styles/table-pattern' as tables;
+
+@include tables.ard-table-pattern;
+
 .page-wrapper {
   padding: 32px;
   max-width: 1400px;
