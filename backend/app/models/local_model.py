@@ -2,7 +2,7 @@ from app.database.connection import get_connection
 
 
 class LocalModel:
-    _campos = ("local_id", "nome", "identificador_dispositivo", "ativo", "criado_em")
+    _campos = ("local_id", "nome", "ativo", "criado_em")
 
     @classmethod
     def _row_to_dict(cls, row):
@@ -13,11 +13,8 @@ class LocalModel:
         params: list[object] = []
 
         if q is not None and q.strip():
-            term = f"%{q.strip().lower()}%"
-            conditions.append(
-                "(LOWER(nome) LIKE %s OR LOWER(identificador_dispositivo) LIKE %s)"
-            )
-            params.extend([term, term])
+            conditions.append("LOWER(nome) LIKE %s")
+            params.append(f"%{q.strip().lower()}%")
 
         if ativo is not None:
             conditions.append("ativo = %s")
@@ -29,7 +26,7 @@ class LocalModel:
             with connection.cursor() as cursor:
                 cursor.execute(
                     f"""
-                    SELECT local_id, nome, identificador_dispositivo, ativo, criado_em
+                    SELECT local_id, nome, ativo, criado_em
                     FROM local
                     {where_clause}
                     ORDER BY local_id
@@ -43,7 +40,7 @@ class LocalModel:
             with connection.cursor() as cursor:
                 cursor.execute(
                     """
-                    SELECT local_id, nome, identificador_dispositivo, ativo, criado_em
+                    SELECT local_id, nome, ativo, criado_em
                     FROM local
                     WHERE local_id = %s
                     """,
@@ -53,31 +50,16 @@ class LocalModel:
 
         return self._row_to_dict(row) if row else None
 
-    def buscar_por_dispositivo(self, identificador_dispositivo: str):
+    def criar(self, nome: str, ativo: bool):
         with get_connection() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
                     """
-                    SELECT local_id, nome, identificador_dispositivo, ativo, criado_em
-                    FROM local
-                    WHERE identificador_dispositivo = %s
+                    INSERT INTO local (nome, ativo)
+                    VALUES (%s, %s)
+                    RETURNING local_id, nome, ativo, criado_em
                     """,
-                    (identificador_dispositivo,),
-                )
-                row = cursor.fetchone()
-
-        return self._row_to_dict(row) if row else None
-
-    def criar(self, nome: str, identificador_dispositivo: str, ativo: bool):
-        with get_connection() as connection:
-            with connection.cursor() as cursor:
-                cursor.execute(
-                    """
-                    INSERT INTO local (nome, identificador_dispositivo, ativo)
-                    VALUES (%s, %s, %s)
-                    RETURNING local_id, nome, identificador_dispositivo, ativo, criado_em
-                    """,
-                    (nome, identificador_dispositivo, ativo),
+                    (nome, ativo),
                 )
                 row = cursor.fetchone()
 
@@ -98,7 +80,7 @@ class LocalModel:
                     UPDATE local
                     SET {atribuicoes}
                     WHERE local_id = %s
-                    RETURNING local_id, nome, identificador_dispositivo, ativo, criado_em
+                    RETURNING local_id, nome, ativo, criado_em
                     """,
                     valores,
                 )
