@@ -5,6 +5,7 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from app.database.connection import get_connection
+from app.models.dispositivo_model import dispositivo_model
 from app.models.historico_acesso_model import historico_acesso_model
 from app.models.local_model import local_model
 from app.models.permissao_model import permissao_model
@@ -93,18 +94,32 @@ class AcessoService:
         timeout_segundos = int(os.getenv("ACCESS_ATTEMPT_TIMEOUT_SECONDS", "15"))
         tentativa_id = uuid4()
 
-        local = local_model.buscar_por_dispositivo(identificador_dispositivo)
+        dispositivo = dispositivo_model.buscar_por_identificador(
+            identificador_dispositivo
+        )
+        local = (
+            local_model.buscar_por_id(dispositivo["local_id"])
+            if dispositivo
+            else None
+        )
         usuario = usuario_model.buscar_por_uid(uid_card)
 
+        dispositivo_id = (
+            dispositivo["dispositivo_id"] if dispositivo else None
+        )
         local_id = local["local_id"] if local else None
         usuario_id = usuario["user_id"] if usuario else None
 
         negacao: str | None = None
 
-        if not local:
+        if not dispositivo:
             negacao = "Dispositivo não cadastrado no sistema."
+        elif not dispositivo["ativo"]:
+            negacao = "Dispositivo desativado."
+        elif not local:
+            negacao = "Local do dispositivo não encontrado."
         elif not local["ativo"]:
-            negacao = "Local/dispositivo desativado."
+            negacao = "Local desativado."
         elif not usuario:
             negacao = "Cartão não cadastrado no sistema."
         elif not usuario["ativo"]:
@@ -131,6 +146,7 @@ class AcessoService:
             historico_acesso_model.criar(
                 usuario_id=usuario_id,
                 local_id=local_id,
+                dispositivo_id=dispositivo_id,
                 uid_card_lido=uid_card,
                 data_hora=agora,
                 autorizado=False,
@@ -148,8 +164,8 @@ class AcessoService:
                     tentativa_id=tentativa_id,
                     usuario_id=usuario_id,
                     local_id=local_id,
+                    dispositivo_id=dispositivo_id,
                     uid_card_lido=uid_card,
-                    identificador_dispositivo=identificador_dispositivo,
                     status=cls._STATUS_PENDENTE,
                     criado_em=agora,
                     expira_em=expira_em,
@@ -380,7 +396,11 @@ class AcessoService:
                     aprovado_final = False
                 elif not contexto["local_ativo"]:
                     status_final = cls._STATUS_NEGADO
-                    motivo_final = "Local/dispositivo está inativo."
+                    motivo_final = "Local está inativo."
+                    aprovado_final = False
+                elif not contexto["dispositivo_ativo"]:
+                    status_final = cls._STATUS_NEGADO
+                    motivo_final = "Dispositivo está inativo."
                     aprovado_final = False
                 elif (
                     not contexto["horario_inicio"]
@@ -426,6 +446,7 @@ class AcessoService:
                     cursor,
                     usuario_id=usuario_id,
                     local_id=local_id,
+                    dispositivo_id=contexto["dispositivo_id"],
                     uid_card_lido=uid_card,
                     data_hora=agora,
                     autorizado=aprovado_final,
