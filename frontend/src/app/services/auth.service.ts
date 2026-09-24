@@ -60,14 +60,12 @@ function extrairUserDoToken(token: string | null): UserSession | null {
 function carregarSessaoInicial(): UserSession | null {
   const token = localStorage.getItem('adm_token');
   const sessaoToken = extrairUserDoToken(token);
-  console.log('[DEBUG - AuthService] Sessao do token:', sessaoToken);
   if (!sessaoToken) return null;
 
   const overrideSalvo = localStorage.getItem('adm_user_session');
   if (overrideSalvo) {
     try {
       const parsed = JSON.parse(overrideSalvo);
-      console.log('[DEBUG - AuthService] Override salvo em localStorage:', parsed);
       if (parsed) {
         return { ...sessaoToken, ...parsed };
       }
@@ -98,14 +96,12 @@ export class AuthService {
   }
 
   setToken(token: string): void {
-    console.log('[DEBUG - AuthService] setToken chamado');
     localStorage.setItem('adm_token', token);
     localStorage.removeItem('adm_user_session');
     this.userSession.set(extrairUserDoToken(token));
   }
 
   updateUserSession(dadosNovos: Partial<UserSession>): void {
-    console.log('[DEBUG - AuthService] updateUserSession chamado com:', dadosNovos);
     const atual = this.userSession();
     const nova: UserSession = {
       admin_id: dadosNovos.admin_id !== undefined ? dadosNovos.admin_id : atual?.admin_id,
@@ -113,13 +109,11 @@ export class AuthService {
       email: dadosNovos.email !== undefined ? dadosNovos.email : (atual?.email || 'admin@ardlock.local'),
       foto_url: dadosNovos.foto_url !== undefined ? dadosNovos.foto_url : atual?.foto_url,
     };
-    console.log('[DEBUG - AuthService] Nova sessão reativa definida:', nova);
     this.userSession.set(nova);
     localStorage.setItem('adm_user_session', JSON.stringify(nova));
   }
 
   clearToken(): void {
-    console.log('[DEBUG - AuthService] clearToken chamado');
     localStorage.removeItem('adm_token');
     localStorage.removeItem('adm_user_session');
     this.userSession.set(null);
