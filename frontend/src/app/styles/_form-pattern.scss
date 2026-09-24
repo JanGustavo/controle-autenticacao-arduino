@@ -130,19 +130,4 @@
       }
     }
   }
-
-  :host-context(body.dark-mode) & {
-    input:not([type='checkbox']),
-    select,
-    textarea {
-      background: #0f172a;
-      border-color: #475569;
-      color: #f8fafc;
-    }
-
-    input::placeholder,
-    textarea::placeholder {
-      color: #64748b;
-    }
-  }
 }
