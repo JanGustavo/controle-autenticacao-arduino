@@ -1,4 +1,4 @@
-CREATE TABLE tentativa_acesso (
+CREATE TABLE IF NOT EXISTS tentativa_acesso (
     tentativa_id UUID PRIMARY KEY,
     usuario_id INT NOT NULL,
     local_id INT NOT NULL,
@@ -18,10 +18,10 @@ CREATE TABLE tentativa_acesso (
         CHECK (status IN ('PENDENTE', 'AUTORIZADO', 'NEGADO', 'EXPIRADO'))
 );
 
-CREATE INDEX idx_tentativa_acesso_status_expira
+CREATE INDEX IF NOT EXISTS idx_tentativa_acesso_status_expira
     ON tentativa_acesso (status, expira_em);
 
-CREATE INDEX idx_tentativa_acesso_dispositivo_uid
+CREATE INDEX IF NOT EXISTS idx_tentativa_acesso_dispositivo_uid
     ON tentativa_acesso (
         identificador_dispositivo,
         uid_card_lido,
