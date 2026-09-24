@@ -204,10 +204,10 @@ class AcessoService:
         image_bytes: bytes,
     ) -> VerificarBiometriaArduinoResponse:
         """
-        Etapa temporária 1:N.
+        Validação facial estrita 1:1.
 
-        Mesmo usando 1:N, a aprovação continua vinculada ao usuário
-        identificado pelo RFID.
+        Compara o rosto capturado EXCLUSIVAMENTE contra o vetor facial
+        do usuário previamente identificado e validado pelo cartão RFID (RF04).
         """
         tentativa = tentativa_acesso_model.buscar_por_id(tentativa_id)
 
@@ -231,60 +231,42 @@ class AcessoService:
                 motivo_recusa=face_result.message,
             )
 
-        usuarios = usuario_model.listar_ativos_com_biometria()
-        usuarios_validos: list[tuple[int, str, list[float]]] = []
-        vetores: list[list[float]] = []
-
-        for usuario in usuarios:
-            vetor = cls._normalizar_vetor(usuario["vetor_facial"])
-            if vetor is None:
-                continue
-
-            usuarios_validos.append(
-                (usuario["user_id"], usuario["nome"], vetor)
-            )
-            vetores.append(vetor)
-
-        if not usuarios_validos:
+        # Busca EXCLUSIVAMENTE o usuário vinculado a esta tentativa (1:1)
+        usuario = usuario_model.buscar_por_id(tentativa["usuario_id"])
+        if not usuario or not usuario.get("vetor_facial"):
             return cls._finalizar_tentativa(
                 tentativa_id=tentativa_id,
                 aprovado=False,
                 similaridade=0.0,
-                motivo_recusa=(
-                    "Nenhum usuário com vetor biométrico válido no sistema."
-                ),
+                motivo_recusa="Usuário não possui biometria facial cadastrada no sistema.",
             )
 
-        resultados = FaceService.calculate_batch_similarities(
-            vetores,
+        vetor_esperado = cls._normalizar_vetor(usuario["vetor_facial"])
+        if vetor_esperado is None:
+            return cls._finalizar_tentativa(
+                tentativa_id=tentativa_id,
+                aprovado=False,
+                similaridade=0.0,
+                motivo_recusa="Vetor biométrico cadastrado do usuário é inválido.",
+            )
+
+        # Comparação direta 1:1 (vetor do usuário x vetor da face detectada)
+        resultado_sim = FaceService.calculate_similarity(
+            vetor_esperado,
             face_result.vector,
         )
 
-        melhor_indice = max(
-            range(len(resultados)),
-            key=lambda index: resultados[index].similarity,
-        )
+        aprovado = resultado_sim.is_match
+        motivo = None if aprovado else "Similaridade facial insuficiente com o titular do cartão."
 
-        melhor_usuario_id = usuarios_validos[melhor_indice][0]
-        melhor_resultado = resultados[melhor_indice]
-
-        if melhor_usuario_id != tentativa["usuario_id"]:
-            aprovado = False
-            motivo = (
-                "Rosto identificado como outro usuário; "
-                "não corresponde ao cartão apresentado."
-            )
-        elif not melhor_resultado.is_match:
-            aprovado = False
-            motivo = "Similaridade facial insuficiente."
-        else:
-            aprovado = True
-            motivo = None
+        # Similaridade de cosseno varia entre -1.0 e 1.0, mas o schema de resposta/histórico
+        # e as regras de negócio de match tratam similaridades menores que 0 como 0.0 (sem correlação/opostas)
+        sim_val = max(0.0, min(1.0, resultado_sim.similarity))
 
         return cls._finalizar_tentativa(
             tentativa_id=tentativa_id,
             aprovado=aprovado,
-            similaridade=melhor_resultado.similarity,
+            similaridade=sim_val,
             motivo_recusa=motivo,
         )
 
