@@ -1,71 +1,86 @@
-# 📡 Endpoint de Verificação RFID
+# 📡 Contrato RFID do ESP32
 
-**URL:** `POST http://localhost:8001/api/v1/arduino/verificar-cartao`
+## 1. Iniciar tentativa
 
-**Content-Type:** `application/json`
+**Endpoint**
 
-## 📥 Payload de Envio (Request)
+```http
+POST /api/v1/arduino/verificar-cartao
+Content-Type: application/json
+```
 
-O ESP32 deve ler o cartão e enviar o UID em formato de texto hexadecimal.
-
-O sistema aceita UIDs de **8, 14 ou 20 caracteres**, utilizando letras maiúsculas ou minúsculas.
+O ESP32 envia apenas evidência física e sua identidade lógica:
 
 ```json
 {
-  "uid_card": "A1B2C3D4"
+  "uid_card": "A1B2C3D4",
+  "identificador_dispositivo": "ESP32-ENTRADA-01"
 }
 ```
 
-## 📤 Respostas Esperadas (Responses)
+Antes de iniciar a biometria, o backend valida:
 
-### 🟢 Cenário 1: Cartão válido e encontrado no banco
+1. dispositivo cadastrado e ativo;
+2. local cadastrado e ativo;
+3. cartão cadastrado;
+4. usuário ativo;
+5. permissão para o local;
+6. dia da semana;
+7. janela de horário.
 
-**HTTP 200**
+Se alguma dessas regras falhar, a biometria não é executada.
 
-**Ação do ESP32:** Liberar o fluxo para a próxima etapa e aguardar a validação facial do Totem.
+Quando elegível, o backend retorna uma tentativa:
 
 ```json
 {
-  "valido": true,
+  "existe": true,
+  "tentativa_id": "3b75c2c1-1e6d-4f52-9aa3-45f59ce77700",
   "usuario_id": 17,
   "nome": "Jan",
-  "mensagem": "Cartão reconhecido. Aguardando validação facial."
+  "mensagem": "Cartão reconhecido e dentro da permissão. Aguardando validação facial.",
+  "proxima_etapa": "BIOMETRIA"
 }
 ```
 
-### 🟡 Cenário 2: Cartão lido corretamente, mas não cadastrado
+## 2. Consultar decisão
 
-**HTTP 200**
+O ESP32 não envia um resultado biométrico. Ele consulta a decisão calculada
+pelo backend:
 
-**Ação do ESP32:** Negar o acesso imediatamente, acionando o LED vermelho e o buzzer de erro.
+```http
+GET /api/v1/arduino/resultado-acesso?tentativa_id=<UUID>&identificador_dispositivo=ESP32-ENTRADA-01
+```
+
+Enquanto a face ainda não foi processada:
 
 ```json
 {
-  "valido": false,
-  "usuario_id": null,
-  "nome": null,
-  "mensagem": "Cartão não cadastrado no sistema."
+  "status": "PENDENTE",
+  "comando": "aguardar",
+  "aprovado": null,
+  "similaridade": 0.0,
+  "mensagem": "Validação facial ainda em andamento.",
+  "tempo_resposta_ms": null
 }
 ```
 
-### 🔴 Cenário 3: Erro de formato, UID vazio ou tamanho incorreto
-
-**HTTP 422**
-
-**Ação do ESP32:** Tratar como erro de leitura do sensor RFID.
+Quando concluída:
 
 ```json
 {
-  "detail": [
-    {
-      "type": "value_error",
-      "loc": [
-        "body",
-        "uid_card"
-      ],
-      "msg": "Value error, Formato de UID inválido. Esperado uma string hexadecimal (0-9, A-F) com exatamente 8, 14 ou 20 caracteres.",
-      "input": "123XZ"
-    }
-  ]
+  "status": "AUTORIZADO",
+  "comando": "liberar",
+  "aprovado": true,
+  "similaridade": 0.91,
+  "mensagem": "Acesso autorizado.",
+  "tempo_resposta_ms": 1432
 }
 ```
+
+O firmware executa apenas `aguardar`, `liberar` ou `negar`.
+A decisão pertence ao backend.
+
+> Segurança: autenticação HMAC por dispositivo será adicionada posteriormente
+> às rotas físicas. O contrato já usa `identificador_dispositivo` para essa
+> evolução sem alterar o payload de domínio.
