@@ -7,7 +7,7 @@ FRONTEND_PORT := 4200
 DOCKER_BACKEND_PORT := 8001
 
 .PHONY: setup up down build logs ps restart \
-	dev db-local dev-backend dev-frontend kill-port \
+	dev db-local migrate-local migrate-docker dev-backend dev-frontend kill-port \
 	db-reset help
 
 # ── Configuração Inicial & Dependências ────────────────────────────────────────
@@ -29,6 +29,10 @@ setup: ## Instala todas as dependências do projeto e inicializa o banco de dado
 # ── Docker Compose (Todos os serviços integrados) ──────────────────────────────
 
 up: ## Sobe toda a aplicação com Docker (Frontend + Backend + PostgreSQL)
+	@echo "🗄️  Subindo PostgreSQL para aplicar migrations..."
+	docker compose up -d db
+	@until docker compose exec -T db pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-controle_acesso} >/dev/null 2>&1; do sleep 1; done
+	@$(MAKE) migrate-docker
 	docker compose up -d --build
 	@echo ""
 	@echo "✅ Aplicação iniciada via Docker:"
@@ -62,23 +66,38 @@ kill-port: ## Encerra processos em portas ocupadas (PORT=XXXX)
 		echo "✅ Porta $(PORT) liberada."; \
 	fi
 
-db-local: ## Prepara o banco de dados PostgreSQL local com schema e dados iniciais
+db-local: ## Prepara o banco de dados PostgreSQL local com schema e migrations
 	@echo "🗄️  Preparando PostgreSQL local..."
 	@PGPASSWORD=JGustavo2106 psql -h localhost -U postgres -v ON_ERROR_STOP=1 -c "ALTER ROLE postgres WITH PASSWORD 'JGustavo2106';" >/dev/null 2>&1 || \
 	 psql -h localhost -U postgres -v ON_ERROR_STOP=1 -c "ALTER ROLE postgres WITH PASSWORD 'JGustavo2106';" >/dev/null 2>&1 || true
 	@if ! PGPASSWORD=JGustavo2106 psql -h localhost -U postgres -tAc "SELECT 1 FROM pg_database WHERE datname = 'controle_acesso'" | grep -q 1; then \
 		echo "⚙️  Criando banco de dados controle_acesso..."; \
 		PGPASSWORD=JGustavo2106 createdb -h localhost -U postgres controle_acesso; \
+		echo "📄 Inicializando schema base..."; \
+		PGPASSWORD=JGustavo2106 psql -h localhost -U postgres -v ON_ERROR_STOP=1 -d controle_acesso -f backend/init.sql >/dev/null; \
 	fi
-	@echo "📄 Executando init.sql..."
-	@PGPASSWORD=JGustavo2106 psql -h localhost -U postgres -v ON_ERROR_STOP=1 -d controle_acesso -f backend/init.sql >/dev/null 2>&1 || true
-	@for mig in backend/migrations/*.sql; do \
-		if [ -f "$$mig" ]; then \
-			PGPASSWORD=JGustavo2106 psql -h localhost -U postgres -v ON_ERROR_STOP=1 -d controle_acesso -f "$$mig" >/dev/null 2>&1 || true; \
-		fi \
-	done
+	@$(MAKE) migrate-local
 	@echo "✅ Banco PostgreSQL local pronto."
 
+migrate-local: ## Executa migrations SQL no PostgreSQL local
+	@echo "🔄 Executando migrations locais..."
+	@for mig in backend/migrations/*.sql; do \
+		if [ -f "$$mig" ]; then \
+			echo "   → $$mig"; \
+			PGPASSWORD=JGustavo2106 psql -h localhost -U postgres -v ON_ERROR_STOP=1 -d controle_acesso -f "$$mig" >/dev/null; \
+		fi; \
+	done
+	@echo "✅ Migrations locais aplicadas."
+
+migrate-docker: ## Executa migrations SQL no PostgreSQL do Docker
+	@echo "🔄 Executando migrations no PostgreSQL Docker..."
+	@for mig in backend/migrations/*.sql; do \
+		if [ -f "$$mig" ]; then \
+			echo "   → $$mig"; \
+			docker compose exec -T db psql -U "$${POSTGRES_USER:-postgres}" -d "$${POSTGRES_DB:-controle_acesso}" -v ON_ERROR_STOP=1 < "$$mig" >/dev/null; \
+		fi; \
+	done
+	@echo "✅ Migrations Docker aplicadas."
 
 db-reset: ## Restaura o banco de dados local para os dados padrão iniciais
 	@echo "⚠️  Apagando e recriando banco controle_acesso..."
@@ -86,11 +105,7 @@ db-reset: ## Restaura o banco de dados local para os dados padrão iniciais
 	@PGPASSWORD=JGustavo2106 dropdb -h localhost -U postgres --if-exists controle_acesso
 	@PGPASSWORD=JGustavo2106 createdb -h localhost -U postgres controle_acesso
 	@PGPASSWORD=JGustavo2106 psql -h localhost -U postgres -v ON_ERROR_STOP=1 -d controle_acesso -f backend/init.sql
-	@for mig in backend/migrations/*.sql; do \
-		if [ -f "$$mig" ]; then \
-			PGPASSWORD=JGustavo2106 psql -h localhost -U postgres -v ON_ERROR_STOP=1 -d controle_acesso -f "$$mig" >/dev/null 2>&1 || true; \
-		fi \
-	done
+	@$(MAKE) migrate-local
 	@echo "✅ Banco de dados restaurado."
 
 dev: db-local ## Inicia ambiente completo de desenvolvimento local com Hot-Reload
