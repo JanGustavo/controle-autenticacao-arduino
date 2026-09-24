@@ -30,9 +30,31 @@
 
   .form-field > span:first-child,
   .field > span:first-child,
-  .form-grid > label,
-  .permission-form > label {
+  .field:not(.checkbox-field) > label,
+  .form-grid > label > .floating-label,
+  .permission-form > label > .floating-label {
+    position: absolute;
+    z-index: 1;
+    top: -3px;
+    left: 10px;
+    width: auto;
+    padding: 0 6px;
+    background: var(--surface, #fff);
     color: var(--muted, #64748b);
+    font-size: 0.72rem;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: 0.02em;
+  }
+
+  .field:not(.checkbox-field) > input,
+  .field:not(.checkbox-field) > select,
+  .field:not(.checkbox-field) > textarea,
+  .form-grid > label > input,
+  .form-grid > label > select,
+  .permission-form > label > input,
+  .permission-form > label > select {
+    margin-top: 5px;
   }
 
   input:not([type='checkbox']),
