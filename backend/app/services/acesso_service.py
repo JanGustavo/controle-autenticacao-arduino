@@ -12,7 +12,7 @@ from app.models.permissao_model import permissao_model
 from app.models.tentativa_acesso_model import tentativa_acesso_model
 from app.models.usuario_model import usuario_model
 from app.schemas.rfid_schema import (
-    VerificarBiometriaArduinoRequest,
+    ResultadoTentativaResponse,
     VerificarBiometriaArduinoResponse,
     VerificarCartaoResponse,
 )
@@ -271,37 +271,73 @@ class AcessoService:
         )
 
     @classmethod
-    def finalizar_resultado_arduino(
+    def obter_resultado_tentativa(
         cls,
-        dados: VerificarBiometriaArduinoRequest,
-    ) -> VerificarBiometriaArduinoResponse:
+        tentativa_id: UUID,
+        identificador_dispositivo: str,
+    ) -> ResultadoTentativaResponse:
         """
-        Compatibilidade temporária com o firmware atual.
+        Retorna somente a decisão calculada pelo backend para o dispositivo
+        que originou a tentativa.
 
-        O firmware ainda não envia tentativa_id, então buscamos a tentativa
-        PENDENTE mais recente do cartão + dispositivo.
+        O cliente físico nunca informa "aprovado". Enquanto a biometria
+        ainda não terminou, recebe comando "aguardar".
         """
-        tentativa_id = tentativa_acesso_model.buscar_pendente_por_cartao_dispositivo(
-            dados.uid_card.upper(),
-            dados.identificador_dispositivo,
-            cls._STATUS_PENDENTE,
+        resultado = tentativa_acesso_model.buscar_resultado_por_dispositivo(
+            tentativa_id,
+            identificador_dispositivo,
         )
 
-        if tentativa_id is None:
+        if resultado is None:
             raise TentativaAcessoNaoEncontradaError(
-                "Nenhuma tentativa PENDENTE encontrada para "
-                "este cartão e dispositivo."
+                "Tentativa não encontrada para este dispositivo."
             )
 
-        return cls._finalizar_tentativa(
+        status_tentativa = resultado["status"]
+        similaridade = float(resultado["percentual_similaridade"] or 0.0)
+
+        if status_tentativa == cls._STATUS_PENDENTE:
+            return ResultadoTentativaResponse(
+                tentativa_id=tentativa_id,
+                status=status_tentativa,
+                comando="aguardar",
+                aprovado=None,
+                similaridade=similaridade,
+                mensagem="Validação facial ainda em andamento.",
+                tempo_resposta_ms=None,
+            )
+
+        aprovado = status_tentativa == cls._STATUS_AUTORIZADO
+        comando = "liberar" if aprovado else "negar"
+        mensagem = (
+            "Acesso autorizado."
+            if aprovado
+            else (
+                resultado["motivo_recusa"]
+                or (
+                    "Tentativa expirada."
+                    if status_tentativa == cls._STATUS_EXPIRADO
+                    else "Acesso negado."
+                )
+            )
+        )
+
+        tempo_resposta_ms = None
+        if resultado["criado_em"] and resultado["concluido_em"]:
+            delta = resultado["concluido_em"] - resultado["criado_em"]
+            tempo_resposta_ms = max(
+                0,
+                int(delta.total_seconds() * 1000),
+            )
+
+        return ResultadoTentativaResponse(
             tentativa_id=tentativa_id,
-            aprovado=dados.aprovado,
-            similaridade=dados.similaridade,
-            motivo_recusa=(
-                None
-                if dados.aprovado
-                else "Biometria recusada pelo módulo facial."
-            ),
+            status=status_tentativa,
+            comando=comando,
+            aprovado=aprovado,
+            similaridade=similaridade,
+            mensagem=mensagem,
+            tempo_resposta_ms=tempo_resposta_ms,
         )
 
     @classmethod
