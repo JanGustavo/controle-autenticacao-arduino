@@ -1,0 +1,135 @@
+@mixin ard-table-pattern {
+  .table-card,
+  .list-card {
+    background: var(--surface, #fff);
+    border: 1px solid var(--line, #e2e8f0);
+    border-radius: 16px;
+    box-shadow: 0 8px 26px rgba(15, 23, 42, 0.045);
+  }
+
+  .table-container,
+  .table-card {
+    overflow-x: auto;
+  }
+
+  table,
+  .tuple-table,
+  .locais-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+  }
+
+  th {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line, #e2e8f0);
+    background: color-mix(in srgb, var(--surface, #fff) 92%, #64748b 8%);
+    color: var(--muted, #64748b);
+    font-size: 0.76rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 16px;
+    border-bottom: 1px solid var(--line, #e2e8f0);
+    color: var(--ink, #0f172a);
+    vertical-align: middle;
+  }
+
+  tbody tr {
+    transition: background-color 120ms ease;
+  }
+
+  tbody tr:hover td {
+    background: color-mix(in srgb, var(--surface, #fff) 95%, var(--accent, #2563eb) 5%);
+  }
+
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .empty,
+  .empty-state,
+  .loading,
+  .loading-state {
+    color: var(--muted, #64748b);
+    text-align: center;
+  }
+
+  .empty-state,
+  .loading-state {
+    display: grid;
+    place-items: center;
+    gap: 10px;
+    min-height: 180px;
+    padding: 32px;
+  }
+
+  .empty-state mat-icon,
+  .loading-state mat-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 36px;
+  }
+
+  .skeleton-table {
+    padding: 16px;
+    display: grid;
+    gap: 12px;
+  }
+
+  .skeleton-row {
+    display: grid;
+    grid-template-columns: 72px 1.4fr 1fr 1fr 110px;
+    gap: 14px;
+    align-items: center;
+  }
+
+  .skeleton-cell {
+    display: block;
+    height: 16px;
+    border-radius: 999px;
+    background:
+      linear-gradient(
+        90deg,
+        rgba(148, 163, 184, 0.16) 20%,
+        rgba(148, 163, 184, 0.3) 50%,
+        rgba(148, 163, 184, 0.16) 80%
+      );
+    background-size: 200% 100%;
+    animation: ard-skeleton 1.25s ease-in-out infinite;
+  }
+
+  .filter-bar,
+  .list-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 760px) {
+    .skeleton-row {
+      grid-template-columns: 60px 1fr 90px;
+    }
+
+    .skeleton-row .skeleton-cell:nth-child(4),
+    .skeleton-row .skeleton-cell:nth-child(5) {
+      display: none;
+    }
+
+    table,
+    .tuple-table,
+    .locais-table {
+      min-width: 720px;
+    }
+  }
+}
+
+@keyframes ard-skeleton {
+  from { background-position: 180% 0; }
+  to { background-position: -20% 0; }
+}
