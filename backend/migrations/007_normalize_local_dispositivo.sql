@@ -61,14 +61,13 @@ END $$;
 -- exatamente um identificador físico por local, então usamos o dispositivo
 -- migrado daquele local para preservar a rastreabilidade possível.
 UPDATE historico_acesso h
-SET dispositivo_id = d.dispositivo_id
-FROM LATERAL (
-    SELECT dispositivo_id
-    FROM dispositivo
-    WHERE local_id = h.local_id
-    ORDER BY dispositivo_id
+SET dispositivo_id = (
+    SELECT d.dispositivo_id
+    FROM dispositivo d
+    WHERE d.local_id = h.local_id
+    ORDER BY d.dispositivo_id
     LIMIT 1
-) d
+)
 WHERE h.dispositivo_id IS NULL
   AND h.local_id IS NOT NULL;
 
