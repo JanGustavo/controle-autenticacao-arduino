@@ -4,6 +4,7 @@ from app.auth.dependencies import obter_administrador_atual
 from app.schemas.dispositivo_schema import (
     DispositivoCreate,
     DispositivoResponse,
+    DispositivoSimplesResponse,
     DispositivoUpdate,
 )
 from app.services.audit_service import audit_service
@@ -23,6 +24,19 @@ def listar_dispositivos(
         local_id=local_id,
         ativo=ativo,
     )
+
+
+@router.get(
+    "/dispositivos/simples",
+    response_model=list[DispositivoSimplesResponse],
+    summary="Listar dispositivos leves para dropdowns",
+)
+def listar_dispositivos_simples(
+    q: str | None = None,
+    ativo: bool | None = None,
+):
+    """Lista dispositivos sem JOIN com local (para dropdowns/seletores)."""
+    return dispositivo_service.listar_dispositivos_simples(q=q, ativo=ativo)
 
 
 @router.get("/dispositivos/{dispositivo_id}", response_model=DispositivoResponse)

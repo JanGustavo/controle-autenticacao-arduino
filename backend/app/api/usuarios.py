@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Request
 
 from app.auth.dependencies import obter_administrador_atual
-from app.schemas.usuario_schema import UsuarioCreate, UsuarioResponse, UsuarioUpdate
+from app.schemas.usuario_schema import UsuarioCreate, UsuarioResponse, UsuarioSimplesResponse, UsuarioUpdate
 from app.services.usuario_service import usuario_service
 from app.services.audit_service import audit_service
 
@@ -15,6 +15,15 @@ router = APIRouter(dependencies=[Depends(obter_administrador_atual)])
 )
 def listar_usuarios(q: str | None = None, ativo: bool | None = None):
     return usuario_service.listar_usuarios(q=q, ativo=ativo)
+
+
+@router.get(
+    "/usuarios/simples",
+    response_model=list[UsuarioSimplesResponse],
+    summary="Listar usuários (versão leve para dropdowns)",
+)
+def listar_usuarios_simples(q: str | None = None, ativo: bool | None = None):
+    return usuario_service.listar_usuarios_simples(q=q, ativo=ativo)
 
 
 @router.get(

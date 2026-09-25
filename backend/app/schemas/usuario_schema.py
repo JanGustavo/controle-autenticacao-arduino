@@ -34,3 +34,12 @@ class UsuarioResponse(BaseModel):
     vetor_facial: list[float] | None
     ativo: bool
     criado_em: datetime
+
+
+class UsuarioSimplesResponse(BaseModel):
+    """Versão leve sem vetor_facial para dropdowns/seletores."""
+    user_id: int
+    nome: str
+    uid_card: str | None
+    ativo: bool
+    criado_em: datetime

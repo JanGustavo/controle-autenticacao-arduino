@@ -7,7 +7,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { TuplePageConfig } from '../../models/tuple-page.model';
-import { ApiService, HistoricoAcessoResponse, LocalResponse, PermissaoRequest, PermissaoResponse, UsuarioResponse } from '../../services/api.service';
+import { ApiService, HistoricoAcessoResponse, LocalResponse, PermissaoRequest, PermissaoResponse, UsuarioSimplesResponse } from '../../services/api.service';
 import { UserEditDialog } from './user-edit-dialog';
 import { WebSocketLogsService, WebSocketLogEvent } from '../../services/websocket-logs.service';
 
@@ -36,7 +36,7 @@ export class TuplePage implements OnInit, OnDestroy {
   rowsFromApi = signal<Record<string, unknown>[] | null>(null);
   usingMock = signal(false);
   dataNotice = signal<string | null>(null);
-  usuarios: UsuarioResponse[] = [];
+  usuarios: UsuarioSimplesResponse[] = [];
   locais: LocalResponse[] = [];
   editandoPermissaoId: number | null = null;
   permissaoForm: PermissaoRequest = this.novaPermissaoForm();
@@ -170,7 +170,7 @@ export class TuplePage implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     if (this.config?.resource === 'historico' || this.config?.resource === 'permissoes') {
-      this.api.getUsuarios().subscribe({
+      this.api.getUsuariosSimples().subscribe({
         next: (usuarios) => {
           this.usuarios = usuarios;
           if (this.config?.resource === 'historico') this.atualizarLinhasHistorico();

@@ -19,6 +19,10 @@ class UsuarioService:
     def listar_usuarios(self, q: str | None = None, ativo: bool | None = None):
         return usuario_model.listar(q=q, ativo=ativo)
 
+    def listar_usuarios_simples(self, q: str | None = None, ativo: bool | None = None):
+        """Lista usuários sem vetor_facial (para dropdowns/seletores)."""
+        return usuario_model.listar_simples(q=q, ativo=ativo)
+
     def obter_usuario(self, usuario_id: int):
         usuario = usuario_model.buscar_por_id(usuario_id)
         if usuario is None:

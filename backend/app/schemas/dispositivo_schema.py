@@ -24,3 +24,10 @@ class DispositivoResponse(BaseModel):
     identificador: str
     ativo: bool
     criado_em: datetime
+
+
+class DispositivoSimplesResponse(BaseModel):
+    """Payload mínimo para dropdowns e leitores RFID."""
+    dispositivo_id: int
+    nome: str
+    identificador: str

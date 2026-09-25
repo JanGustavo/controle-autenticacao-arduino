@@ -18,6 +18,10 @@ class DispositivoService:
     ):
         return dispositivo_model.listar(q=q, local_id=local_id, ativo=ativo)
 
+    def listar_dispositivos_simples(self, q: str | None = None, ativo: bool | None = None):
+        """Lista dispositivos sem JOIN com local (para dropdowns/seletores)."""
+        return dispositivo_model.listar_simples(q=q, ativo=ativo)
+
     def obter_dispositivo(self, dispositivo_id: int):
         dispositivo = dispositivo_model.buscar_por_id(dispositivo_id)
         if dispositivo is None:
