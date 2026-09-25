@@ -5,10 +5,15 @@ from app.database.connection import get_connection
 
 class UsuarioModel:
     _campos = ("user_id", "nome", "uid_card", "vetor_facial", "ativo", "criado_em")
+    _campos_simples = ("user_id", "nome", "uid_card", "ativo", "criado_em")
 
     @classmethod
     def _row_to_dict(cls, row):
         return dict(zip(cls._campos, row, strict=True))
+
+    @classmethod
+    def _row_to_dict_simples(cls, row):
+        return dict(zip(cls._campos_simples, row, strict=True))
 
     def listar(self, q: str | None = None, ativo: bool | None = None):
         conditions: list[str] = []
@@ -39,6 +44,37 @@ class UsuarioModel:
                     params if params else None,
                 )
                 return [self._row_to_dict(row) for row in cursor.fetchall()]
+
+    def listar_simples(self, q: str | None = None, ativo: bool | None = None):
+        """Lista usuários sem vetor_facial (para dropdowns/seletores)."""
+        conditions: list[str] = []
+        params: list[object] = []
+
+        if q is not None and q.strip():
+            term = f"%{q.strip().lower()}%"
+            conditions.append(
+                "(LOWER(nome) LIKE %s OR LOWER(COALESCE(uid_card, '')) LIKE %s)"
+            )
+            params.extend([term, term])
+
+        if ativo is not None:
+            conditions.append("ativo = %s")
+            params.append(ativo)
+
+        where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+
+        with get_connection() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"""
+                    SELECT user_id, nome, uid_card, ativo, criado_em
+                    FROM usuario
+                    {where_clause}
+                    ORDER BY user_id
+                    """,
+                    params if params else None,
+                )
+                return [self._row_to_dict_simples(row) for row in cursor.fetchall()]
 
     def buscar_por_id(self, usuario_id: int):
         with get_connection() as connection:

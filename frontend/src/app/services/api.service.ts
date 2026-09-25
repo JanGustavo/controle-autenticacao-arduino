@@ -17,6 +17,14 @@ export interface UsuarioResponse {
   criado_em: string;
 }
 
+export interface UsuarioSimplesResponse {
+  user_id: number;
+  nome: string;
+  uid_card: string | null;
+  ativo: boolean;
+  criado_em: string;
+}
+
 export interface UsuarioCreateRequest {
   nome: string;
   uid_card: string | null;
@@ -153,6 +161,13 @@ export class ApiService {
     return this.http.get<UsuarioResponse[]>(`${API_BASE}/usuarios`, { params });
   }
 
+  getUsuariosSimples(filtros?: { q?: string; ativo?: boolean }): Observable<UsuarioSimplesResponse[]> {
+    let params = new HttpParams();
+    if (filtros?.q) params = params.set('q', filtros.q);
+    if (filtros?.ativo !== undefined && filtros?.ativo !== null) params = params.set('ativo', filtros.ativo);
+    return this.http.get<UsuarioSimplesResponse[]>(`${API_BASE}/usuarios/simples`, { params });
+  }
+
   getUsuario(id: number): Observable<UsuarioResponse> {
     return this.http.get<UsuarioResponse>(`${API_BASE}/usuarios/${id}`);
   }
@@ -196,6 +211,13 @@ export class ApiService {
     if (filtros?.local_id) params = params.set('local_id', filtros.local_id);
     if (filtros?.ativo !== undefined && filtros?.ativo !== null) params = params.set('ativo', filtros.ativo);
     return this.http.get<DispositivoResponse[]>(`${API_BASE}/dispositivos`, { params });
+  }
+
+  getDispositivosSimples(filtros?: { q?: string; ativo?: boolean }): Observable<DispositivoResponse[]> {
+    let params = new HttpParams();
+    if (filtros?.q) params = params.set('q', filtros.q);
+    if (filtros?.ativo !== undefined && filtros?.ativo !== null) params = params.set('ativo', filtros.ativo);
+    return this.http.get<DispositivoResponse[]>(`${API_BASE}/dispositivos/simples`, { params });
   }
 
   criarDispositivo(dispositivo: DispositivoRequest): Observable<DispositivoResponse> {

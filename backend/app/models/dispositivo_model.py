@@ -57,6 +57,38 @@ class DispositivoModel:
                 )
                 return [self._row_to_dict(row) for row in cursor.fetchall()]
 
+    def listar_simples(self, q: str | None = None, ativo: bool | None = None):
+        """Lista dispositivos sem JOIN com local (para dropdowns/seletores)."""
+        conditions: list[str] = []
+        params: list[object] = []
+
+        if q is not None and q.strip():
+            term = f"%{q.strip().lower()}%"
+            conditions.append(
+                "(LOWER(nome) LIKE %s OR LOWER(identificador) LIKE %s)"
+            )
+            params.extend([term, term])
+
+        if ativo is not None:
+            conditions.append("ativo = %s")
+            params.append(ativo)
+
+        where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+
+        with get_connection() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"""
+                    SELECT dispositivo_id, local_id, nome,
+                           identificador, ativo, criado_em
+                    FROM dispositivo
+                    {where_clause}
+                    ORDER BY dispositivo_id
+                    """,
+                    params if params else None,
+                )
+                return [self._row_to_dict(row) for row in cursor.fetchall()]
+
     def buscar_por_id(self, dispositivo_id: int):
         with get_connection() as connection:
             with connection.cursor() as cursor:

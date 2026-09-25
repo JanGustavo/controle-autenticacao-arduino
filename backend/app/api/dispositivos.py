@@ -25,6 +25,15 @@ def listar_dispositivos(
     )
 
 
+@router.get("/dispositivos/simples", response_model=list[DispositivoResponse])
+def listar_dispositivos_simples(
+    q: str | None = None,
+    ativo: bool | None = None,
+):
+    """Lista dispositivos sem JOIN com local (para dropdowns/seletores)."""
+    return dispositivo_service.listar_dispositivos_simples(q=q, ativo=ativo)
+
+
 @router.get("/dispositivos/{dispositivo_id}", response_model=DispositivoResponse)
 def obter_dispositivo(dispositivo_id: int):
     return dispositivo_service.obter_dispositivo(dispositivo_id)

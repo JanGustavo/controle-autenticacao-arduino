@@ -23,6 +23,7 @@ import {
   HistoricoAcessoResponse,
   LocalResponse,
   UsuarioResponse,
+  UsuarioSimplesResponse,
 } from '../../services/api.service';
 import { SpeechService } from '../../services/speech.service';
 import { WebcamService } from '../../services/webcam.service';
@@ -69,7 +70,7 @@ export class CompararPage implements OnInit, OnDestroy {
   exibirOverlayTotem = signal(false);
   historicoRecente = signal<HistoricoAcessoResponse[]>([]);
 
-  usuarios: UsuarioResponse[] = [];
+  usuarios: (UsuarioResponse | UsuarioSimplesResponse)[] = [];
   locais: LocalResponse[] = [];
   dispositivos: DispositivoResponse[] = [];
 
@@ -132,7 +133,7 @@ export class CompararPage implements OnInit, OnDestroy {
   }
 
   carregarAuxiliares(): void {
-    this.api.getUsuarios({ ativo: true }).subscribe({
+    this.api.getUsuariosSimples({ ativo: true }).subscribe({
       next: (usuarios) => {
         this.usuarios = usuarios;
 
@@ -148,7 +149,7 @@ export class CompararPage implements OnInit, OnDestroy {
       next: (locais) => (this.locais = locais),
     });
 
-    this.api.getDispositivos({ ativo: true }).subscribe({
+    this.api.getDispositivosSimples({ ativo: true }).subscribe({
       next: (dispositivos) => {
         this.dispositivos = dispositivos;
         if (dispositivos.length && this.dispositivoSimuladoId === null) {
@@ -158,7 +159,7 @@ export class CompararPage implements OnInit, OnDestroy {
     });
   }
 
-  get usuarioSimulado(): UsuarioResponse | null {
+  get usuarioSimulado(): UsuarioResponse | UsuarioSimplesResponse | null {
     if (this.usuarioSimuladoId === null) return null;
     return (
       this.usuarios.find(

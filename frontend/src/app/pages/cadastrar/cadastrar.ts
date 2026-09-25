@@ -104,7 +104,7 @@ export class CadastrarPage implements OnInit, OnDestroy {
       },
     });
 
-    this.api.getDispositivos({ ativo: true }).subscribe({
+    this.api.getDispositivosSimples({ ativo: true }).subscribe({
       next: (dispositivos) => {
         this.dispositivosRfid = dispositivos;
         this.dispositivosCarregando = false;
