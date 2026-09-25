@@ -63,6 +63,11 @@
             <option value="inativo">Inativos</option>
           </select>
         </div>
+
+        <a routerLink="/cadastrar" mat-flat-button color="primary" class="create-user-action">
+          <mat-icon>person_add</mat-icon>
+          Novo usuário
+        </a>
       }
 
       <!-- Filtros de Usuário e Local para Permissões -->
@@ -269,7 +274,21 @@
                   }
                   @if (cfg.resource === 'usuarios') {
                     <td class="row-actions">
-                      <button type="button" mat-icon-button class="danger-action" title="Excluir Usuário" (click)="excluirUsuario(row)">
+                      <button
+                        type="button"
+                        mat-icon-button
+                        title="Editar usuário"
+                        (click)="editarUsuario(row)"
+                      >
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                      <button
+                        type="button"
+                        mat-icon-button
+                        class="danger-action"
+                        title="Excluir usuário"
+                        (click)="excluirUsuario(row)"
+                      >
                         <mat-icon>delete</mat-icon>
                       </button>
                     </td>
