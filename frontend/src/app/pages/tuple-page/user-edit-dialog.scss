@@ -1,0 +1,301 @@
+.user-edit-dialog {
+  width: min(860px, 92vw);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  color: #172033;
+}
+
+.dialog-header,
+.dialog-footer,
+.section-title,
+.section-actions,
+.status-summary {
+  display: flex;
+  align-items: center;
+}
+
+.dialog-header {
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 26px;
+  border-bottom: 1px solid #e2e8f0;
+
+  .eyebrow {
+    color: #d97706;
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  h2 {
+    margin: 4px 0 0;
+    font-size: 1.55rem;
+  }
+
+  p {
+    margin: 5px 0 0;
+    color: #64748b;
+  }
+}
+
+.dialog-body {
+  overflow-y: auto;
+  padding: 22px 26px;
+  display: grid;
+  gap: 18px;
+}
+
+.edit-section {
+  padding: 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.section-title {
+  gap: 12px;
+  margin-bottom: 16px;
+
+  > mat-icon {
+    color: #d97706;
+  }
+
+  h3,
+  p {
+    margin: 0;
+  }
+
+  p {
+    margin-top: 3px;
+    color: #64748b;
+    font-size: .88rem;
+  }
+}
+
+.basic-grid,
+.rfid-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+
+  label:not(.switch-field) {
+    display: grid;
+    gap: 7px;
+
+    > span {
+      color: #475569;
+      font-size: .8rem;
+      font-weight: 700;
+    }
+  }
+
+  input,
+  select {
+    min-height: 42px;
+    padding: 9px 11px;
+    border: 1px solid #cbd5e1;
+    border-radius: 9px;
+    background: #fff;
+    color: #172033;
+    font: inherit;
+    box-sizing: border-box;
+
+    &:focus {
+      outline: none;
+      border-color: #d97706;
+      box-shadow: 0 0 0 3px rgba(217, 119, 6, .12);
+    }
+  }
+}
+
+.switch-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 20px;
+
+  > input {
+    width: 18px;
+    height: 18px;
+  }
+
+  > span:last-child {
+    display: grid;
+
+    small {
+      margin-top: 2px;
+      color: #64748b;
+    }
+  }
+}
+
+.section-actions {
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+
+  mat-progress-spinner {
+    display: inline-block;
+    margin-right: 7px;
+  }
+}
+
+.notice {
+  margin: 14px 26px 0;
+  padding: 10px 13px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .9rem;
+  font-weight: 650;
+
+  &.success {
+    background: #ecfdf5;
+    color: #047857;
+  }
+
+  &.error {
+    background: #fef2f2;
+    color: #b91c1c;
+  }
+}
+
+.camera-box {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #020617;
+  aspect-ratio: 16 / 9;
+
+  video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .camera-status {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, .85);
+    color: #fff;
+    font-size: .78rem;
+    font-weight: 700;
+
+    &.ready {
+      background: rgba(22, 163, 74, .9);
+    }
+  }
+}
+
+.biometric-preview {
+  min-height: 150px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  overflow: hidden;
+  color: #64748b;
+
+  mat-icon {
+    width: 42px;
+    height: 42px;
+    font-size: 42px;
+  }
+
+  img {
+    width: 100%;
+    max-height: 260px;
+    object-fit: contain;
+    background: #0f172a;
+  }
+}
+
+.dialog-footer {
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 26px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.status-summary {
+  gap: 14px;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: #475569;
+    font-size: .82rem;
+    font-weight: 700;
+  }
+
+  mat-icon {
+    color: #16a34a;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+:host-context(body.dark-mode) {
+  .user-edit-dialog {
+    background: #0f172a;
+    color: #f8fafc;
+  }
+
+  .dialog-header,
+  .dialog-footer {
+    border-color: #334155;
+  }
+
+  .dialog-header p,
+  .section-title p,
+  .switch-field small,
+  .status-summary span {
+    color: #94a3b8;
+  }
+
+  .edit-section {
+    background: #111827;
+    border-color: #334155;
+  }
+
+  .basic-grid,
+  .rfid-grid {
+    label:not(.switch-field) > span {
+      color: #cbd5e1;
+    }
+
+    input,
+    select {
+      background: #0f172a;
+      border-color: #475569;
+      color: #f8fafc;
+    }
+  }
+
+  .biometric-preview {
+    border-color: #475569;
+    color: #94a3b8;
+  }
+}
+
+@media (max-width: 680px) {
+  .basic-grid,
+  .rfid-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dialog-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
