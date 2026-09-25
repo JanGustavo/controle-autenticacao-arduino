@@ -122,10 +122,12 @@
         >
           @if (iniciandoTentativa()) {
             <mat-spinner diameter="18"></mat-spinner>
-            Validando RFID...
+            <span>Validando RFID...</span>
           } @else {
-            <mat-icon>contactless</mat-icon>
-            Simular cartão
+            <span class="btn-content">
+              <mat-icon>contactless</mat-icon>
+              <span>Simular cartão</span>
+            </span>
           }
         </button>
 
@@ -384,19 +386,18 @@
 
         <div class="totem-details">
           @if (similaridade() > 0) {
-            <span>
-              Similaridade:
-              {{ similaridade() * 100 | number: '1.2-2' }}%
+            <span class="totem-similaridade">
+              Similaridade: {{ similaridade() * 100 | number: '1.2-2' }}%
               (mínimo {{ minSimilaridade() * 100 | number: '1.0-0' }}%)
             </span>
           }
 
           @if (tempoRespostaMs() !== null) {
-            <span>Tempo total: {{ tempoRespostaMs() }} ms</span>
+            <span class="totem-tempo">Tempo total: {{ tempoRespostaMs() }} ms</span>
           }
 
           @if (mensagemStatus() && !aprovado()) {
-            <span>{{ mensagemStatus() }}</span>
+            <span class="totem-motivo">{{ mensagemStatus() }}</span>
           }
         </div>
       </div>
