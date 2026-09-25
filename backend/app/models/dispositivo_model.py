@@ -55,10 +55,13 @@ class DispositivoModel:
                     """,
                     params if params else None,
                 )
-                return [self._row_to_dict(row) for row in cursor.fetchall()]
+                return [
+                    dict(zip(("dispositivo_id", "nome", "identificador"), row, strict=True))
+                    for row in cursor.fetchall()
+                ]
 
     def listar_simples(self, q: str | None = None, ativo: bool | None = None):
-        """Lista dispositivos sem JOIN com local (para dropdowns/seletores)."""
+        """Lista somente os campos usados por dropdowns/seletores."""
         conditions: list[str] = []
         params: list[object] = []
 
