@@ -37,9 +37,8 @@ class UsuarioResponse(BaseModel):
 
 
 class UsuarioSimplesResponse(BaseModel):
-    """Versão leve sem vetor_facial para dropdowns/seletores."""
+    """Versão leve sem vetor_facial e sem criado_em para dropdowns/seletores."""
     user_id: int
     nome: str
     uid_card: str | None
     ativo: bool
-    criado_em: datetime

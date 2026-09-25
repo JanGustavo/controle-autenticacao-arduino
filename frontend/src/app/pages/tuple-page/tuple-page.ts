@@ -7,7 +7,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { TuplePageConfig } from '../../models/tuple-page.model';
-import { ApiService, HistoricoAcessoResponse, LocalResponse, PermissaoRequest, PermissaoResponse, UsuarioSimplesResponse } from '../../services/api.service';
+import { ApiService, HistoricoAcessoResponse, LocalResponse, PermissaoRequest, PermissaoResponse, UsuarioResponse, UsuarioSimplesResponse } from '../../services/api.service';
 import { UserEditDialog } from './user-edit-dialog';
 import { WebSocketLogsService, WebSocketLogEvent } from '../../services/websocket-logs.service';
 
