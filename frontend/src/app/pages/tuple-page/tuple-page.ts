@@ -3,14 +3,23 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TuplePageConfig } from '../../models/tuple-page.model';
 import { ApiService, HistoricoAcessoResponse, LocalResponse, PermissaoRequest, PermissaoResponse, UsuarioResponse } from '../../services/api.service';
+import { UserEditDialog } from './user-edit-dialog';
 
 @Component({
   selector: 'app-tuple-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatButtonModule, MatIconModule, RouterLink],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatButtonModule,
+    MatIconModule,
+    MatDialogModule,
+    RouterLink,
+  ],
   templateUrl: './tuple-page.html',
   styleUrl: './tuple-page.scss',
 })
@@ -18,6 +27,7 @@ export class TuplePage implements OnInit {
   private route = inject(ActivatedRoute);
   private api = inject(ApiService);
   private cdr = inject(ChangeDetectorRef);
+  private dialog = inject(MatDialog);
 
   configInput = input<TuplePageConfig | undefined>(undefined, { alias: 'config' });
   rowsFromApi = signal<Record<string, unknown>[] | null>(null);
@@ -94,6 +104,37 @@ export class TuplePage implements OnInit {
     }
 
     return rows;
+  }
+
+  editarUsuario(row: Record<string, unknown>): void {
+    const usuarioId = Number(row['user_id']);
+    if (!usuarioId) return;
+
+    this.acaoNotice = '';
+    this.api.getUsuario(usuarioId).subscribe({
+      next: (usuario) => {
+        const ref = this.dialog.open(UserEditDialog, {
+          data: { usuario },
+          autoFocus: false,
+          restoreFocus: true,
+          maxWidth: '96vw',
+          panelClass: 'ard-user-edit-dialog',
+        });
+
+        ref.afterClosed().subscribe((resultado) => {
+          if (!resultado?.atualizado) return;
+          this.acaoNotice = 'Usuário atualizado com sucesso.';
+          this.carregarDados();
+          this.cdr.markForCheck();
+        });
+      },
+      error: (error) => {
+        this.dataNotice.set(
+          error.error?.detail || 'Não foi possível carregar o usuário para edição.',
+        );
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   excluirUsuario(row: Record<string, unknown>): void {
