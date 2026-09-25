@@ -289,19 +289,20 @@ export class UserEditDialog implements OnInit, OnDestroy {
         next: (resultado) => {
           this.salvandoBiometria = false;
           this.alterado = true;
-          this.usuario = {
-            ...this.usuario,
-            vetor_facial: Array.from(
-              { length: resultado.vector_length },
-              () => 0,
-            ),
-          };
           this.fotoCapturada = null;
           this.fotoPreviewUrl = null;
           this.aviso =
             `Biometria cadastrada com sucesso (${resultado.vector_length} dimensões).`;
           this.snackBar.open('Biometria facial atualizada.', 'OK', {
             duration: 3500,
+          });
+
+          // Recarrega o usuário real para atualizar o estado do modal sem
+          // fabricar um vetor placeholder no frontend.
+          this.api.getUsuario(this.usuario.user_id).subscribe({
+            next: (usuario) => {
+              this.usuario = usuario;
+            },
           });
         },
         error: (error) => {
