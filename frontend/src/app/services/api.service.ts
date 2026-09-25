@@ -22,7 +22,12 @@ export interface UsuarioSimplesResponse {
   nome: string;
   uid_card: string | null;
   ativo: boolean;
-  criado_em: string;
+}
+
+export interface DispositivoSimplesResponse {
+  dispositivo_id: number;
+  nome: string;
+  identificador: string;
 }
 
 export interface UsuarioCreateRequest {
@@ -213,11 +218,11 @@ export class ApiService {
     return this.http.get<DispositivoResponse[]>(`${API_BASE}/dispositivos`, { params });
   }
 
-  getDispositivosSimples(filtros?: { q?: string; ativo?: boolean }): Observable<DispositivoResponse[]> {
+  getDispositivosSimples(filtros?: { q?: string; ativo?: boolean }): Observable<DispositivoSimplesResponse[]> {
     let params = new HttpParams();
     if (filtros?.q) params = params.set('q', filtros.q);
     if (filtros?.ativo !== undefined && filtros?.ativo !== null) params = params.set('ativo', filtros.ativo);
-    return this.http.get<DispositivoResponse[]>(`${API_BASE}/dispositivos/simples`, { params });
+    return this.http.get<DispositivoSimplesResponse[]>(`${API_BASE}/dispositivos/simples`, { params });
   }
 
   criarDispositivo(dispositivo: DispositivoRequest): Observable<DispositivoResponse> {
