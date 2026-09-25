@@ -19,10 +19,9 @@ import { Subscription } from 'rxjs';
 
 import {
   ApiService,
-  DispositivoResponse,
+  DispositivoSimplesResponse,
   HistoricoAcessoResponse,
   LocalResponse,
-  UsuarioResponse,
   UsuarioSimplesResponse,
 } from '../../services/api.service';
 import { SpeechService } from '../../services/speech.service';
@@ -70,9 +69,9 @@ export class CompararPage implements OnInit, OnDestroy {
   exibirOverlayTotem = signal(false);
   historicoRecente = signal<HistoricoAcessoResponse[]>([]);
 
-  usuarios: (UsuarioResponse | UsuarioSimplesResponse)[] = [];
+  usuarios: UsuarioSimplesResponse[] = [];
   locais: LocalResponse[] = [];
-  dispositivos: DispositivoResponse[] = [];
+  dispositivos: DispositivoSimplesResponse[] = [];
 
   usuarioSimuladoId: number | null = null;
   dispositivoSimuladoId: number | null = null;
@@ -168,7 +167,7 @@ export class CompararPage implements OnInit, OnDestroy {
     );
   }
 
-  get dispositivoSimulado(): DispositivoResponse | null {
+  get dispositivoSimulado(): DispositivoSimplesResponse | null {
     if (this.dispositivoSimuladoId === null) return null;
     return (
       this.dispositivos.find(
