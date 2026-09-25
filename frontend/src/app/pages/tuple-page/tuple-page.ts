@@ -118,6 +118,7 @@ export class TuplePage implements OnInit {
           autoFocus: false,
           restoreFocus: true,
           maxWidth: '96vw',
+          disableClose: true,
           panelClass: 'ard-user-edit-dialog',
         });
 
