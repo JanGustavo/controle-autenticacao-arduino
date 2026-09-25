@@ -237,10 +237,27 @@ export class CompararPage implements OnInit, OnDestroy {
         this.tentativaId.set(null);
         this.aprovado.set(false);
         this.usuarioEncontrado.set(null);
-        this.mensagemStatus.set(
-          error.error?.detail ||
-            'A leitura simulada foi recusada pelo backend.',
-        );
+
+        let mensagemErro = 'A leitura simulada foi recusada pelo backend.';
+
+        if (error.error?.detail) {
+          // FastAPI validation errors (422) return detail as array of objects
+          if (Array.isArray(error.error.detail)) {
+            const msgs = error.error.detail
+              .map((e: any) => e?.msg || e?.message || JSON.stringify(e))
+              .filter(Boolean)
+              .join('; ');
+            if (msgs) mensagemErro = msgs;
+          } else if (typeof error.error.detail === 'string') {
+            mensagemErro = error.error.detail;
+          }
+        } else if (error.error?.message) {
+          mensagemErro = error.error.message;
+        } else if (error.message) {
+          mensagemErro = error.message;
+        }
+
+        this.mensagemStatus.set(mensagemErro);
       },
     });
   }
@@ -415,10 +432,26 @@ export class CompararPage implements OnInit, OnDestroy {
         this.aprovado.set(false);
         this.similaridade.set(0);
         this.tempoRespostaMs.set(null);
-        this.mensagemStatus.set(
-          error.error?.detail ||
-            'Não foi possível concluir a validação facial 1:1.',
-        );
+
+        let mensagemErro = 'Não foi possível concluir a validação facial 1:1.';
+
+        if (error.error?.detail) {
+          if (Array.isArray(error.error.detail)) {
+            const msgs = error.error.detail
+              .map((e: any) => e?.msg || e?.message || JSON.stringify(e))
+              .filter(Boolean)
+              .join('; ');
+            if (msgs) mensagemErro = msgs;
+          } else if (typeof error.error.detail === 'string') {
+            mensagemErro = error.error.detail;
+          }
+        } else if (error.error?.message) {
+          mensagemErro = error.error.message;
+        } else if (error.message) {
+          mensagemErro = error.message;
+        }
+
+        this.mensagemStatus.set(mensagemErro);
         this.speech.falar(
           'Não foi possível concluir a validação facial.',
           true,

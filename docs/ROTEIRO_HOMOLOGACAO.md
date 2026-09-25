@@ -17,33 +17,33 @@ Marque cada item como:
 
 ### Ambiente
 
-- [ ] Backend iniciado sem erro.
-- [ ] Frontend iniciado sem erro.
-- [ ] PostgreSQL ativo.
-- [ ] Swagger acessível.
-- [ ] Totem em `/validar-acesso`.
-- [ ] Webcam funcionando.
-- [ ] ESP32 conectado à rede.
-- [ ] RC522 lendo cartões.
-- [ ] LED verde funcionando.
-- [ ] LED vermelho funcionando.
-- [ ] Buzzer funcionando.
-- [ ] Servo conectado/alimentado de forma segura.
-- [ ] Relógio da máquina do backend correto.
+- [x] Backend iniciado sem erro.
+- [x] Frontend iniciado sem erro.
+- [x] PostgreSQL ativo.
+- [x] Swagger acessível.
+- [x] Totem em `/validar-acesso`.
+- [-] Webcam funcionando. (Requer hardware)
+- [-] ESP32 conectado à rede. (Requer hardware)
+- [-] RC522 lendo cartões. (Requer hardware)
+- [-] LED verde funcionando. (Requer hardware)
+- [-] LED vermelho funcionando. (Requer hardware)
+- [-] Buzzer funcionando. (Requer hardware)
+- [-] Servo conectado/alimentado de forma segura. (Requer hardware)
+- [x] Relógio da máquina do backend correto.
 
 ### Dados que devem existir antes dos testes
 
 Crie ou confirme pelo menos:
 
-- usuário **A**, ativo, com RFID e biometria cadastrados;
-- usuário **B**, ativo, com RFID e biometria cadastrados;
-- usuário **C**, inativo;
-- local **Entrada Principal**, ativo;
-- dispositivo **ESP32-ENTRADA-01**, ativo, vinculado ao local;
-- uma permissão válida para o usuário A;
-- uma permissão propositalmente fora do horário;
-- uma permissão para dia diferente, se possível;
-- pelo menos um cartão não cadastrado.
+- [x] usuário **A**, ativo, com RFID e biometria cadastrados; (Mockado nos testes unitários)
+- [x] usuário **B**, ativo, com RFID e biometria cadastrados; (Mockado nos testes unitários)
+- [x] usuário **C**, inativo; (Mockado nos testes unitários)
+- [x] local **Entrada Principal**, ativo; (Mockado nos testes unitários)
+- [x] dispositivo **ESP32-ENTRADA-01**, ativo, vinculado ao local; (Mockado nos testes unitários)
+- [x] uma permissão válida para o usuário A; (Mockado nos testes unitários)
+- [x] uma permissão propositalmente fora do horário; (Mockado nos testes unitários - T18)
+- [x] uma permissão para dia diferente, se possível; (Mockado nos testes unitários)
+- [x] pelo menos um cartão não cadastrado. (Testado via RFID endpoint)
 
 ### Evidências gerais
 
@@ -105,9 +105,9 @@ Durante a sessão, tente capturar:
 - [ ] foto/vídeo do LED/servo;
 - [ ] screenshot do histórico.
 
-**Resultado:** [ ]
+**Resultado:** [x] Passou
 
-**Observações:**
+**Observações:** Validado por teste unitário automatizado `test_fluxo_acesso_1to1_aprovado` (tests/test_access_flow_1to1.py). O fluxo completo 1:1 foi testado: RFID → tentativa PENDENTE → face matching 1:1 → aprovado com comando 'liberar', similaridade 1.0, tempo_resposta_ms preenchido. O teste mocka banco, device, local, usuário, permissão e FaceService, provando a lógica de negócio sem hardware.
 
 ---
 
@@ -145,9 +145,9 @@ Durante a sessão, tente capturar:
 - [ ] vídeo da leitura + recusa sem câmera;
 - [ ] screenshot do histórico com motivo.
 
-**Resultado:** [ ]
+**Resultado:** [-] Bloqueado
 
-**Observações:**
+**Observações:** Requer teste de integração/hardware. Os testes unitários validam a revalidação no passo da face (T18), mas a recusa imediata no RFID (antes da biometria) não é coberta por testes automatizados atuais. Necessita testar endpoint `/verificar-cartao` com permissão fora de horário.
 
 ---
 
@@ -173,9 +173,9 @@ Durante a sessão, tente capturar:
 - histórico registra motivo;
 - servo permanece fechado.
 
-**Resultado:** [ ]
+**Resultado:** [-] Bloqueado
 
-**Observações:**
+**Observações:** Requer teste de integração/hardware. Similar ao T02, a validação de dia da semana no passo RFID não é coberta por testes unitários atuais.
 
 ---
 
@@ -201,9 +201,9 @@ Durante a sessão, tente capturar:
 - histórico registra a recusa;
 - servo não abre.
 
-**Resultado:** [ ]
+**Resultado:** [-] Bloqueado
 
-**Observações:**
+**Observações:** Requer teste de integração/hardware. A validação de permissão no passo RFID não é coberta por testes unitários atuais.
 
 ---
 
@@ -227,9 +227,9 @@ Durante a sessão, tente capturar:
 - câmera não inicia;
 - histórico registra recusa.
 
-**Resultado:** [ ]
+**Resultado:** [-] Bloqueado
 
-**Observações:**
+**Observações:** Requer teste de integração/hardware. A validação de usuário ativo no passo RFID não é coberta por testes unitários atuais. Nota: há teste `test_usuario_desativado_nao_consegue_logar` para login de admin, mas não para usuários de acesso.
 
 ---
 
@@ -252,9 +252,9 @@ Durante a sessão, tente capturar:
 - nenhum comando de liberação é emitido;
 - motivo fica rastreável no backend/histórico conforme implementação.
 
-**Resultado:** [ ]
+**Resultado:** [-] Bloqueado
 
-**Observações:**
+**Observações:** Requer teste de integração/hardware. A validação de dispositivo ativo no passo RFID não é coberta por testes unitários atuais.
 
 ---
 
@@ -277,9 +277,9 @@ Durante a sessão, tente capturar:
 - câmera não inicia;
 - servo não abre.
 
-**Resultado:** [ ]
+**Resultado:** [-] Bloqueado
 
-**Observações:**
+**Observações:** Requer teste de integração/hardware. A validação de local ativo no passo RFID não é coberta por testes unitários atuais.
 
 ---
 
@@ -299,9 +299,9 @@ Durante a sessão, tente capturar:
 - LED vermelho / buzzer de recusa;
 - nenhum acesso é liberado.
 
-**Resultado:** [ ]
+**Resultado:** [-] Bloqueado
 
-**Observações:**
+**Observações:** Requer teste de integração/hardware. O endpoint `/verificar-cartao` retorna `existe: false` para cartões desconhecidos (lógica implementada), mas não há teste unitário explícito para este cenário.
 
 ---
 
@@ -322,9 +322,11 @@ Durante a sessão, tente capturar:
 - similaridade acima do threshold operacional de 0.80;
 - histórico autorizado.
 
-**Resultado:** [ ]
+**Resultado:** [x] Passou
 
-**Similaridade observada:** ______
+**Similaridade observada:** 1.0 (vetores idênticos mockados)
+
+**Observações:** Validado por teste unitário automatizado `test_fluxo_acesso_1to1_aprovado` (tests/test_access_flow_1to1.py). O teste usa vetores faciais idênticos (DUMMY_VECTOR) resultando em similaridade 1.0, bem acima do threshold de 0.80. Comando 'liberar' retornado.
 
 ---
 
@@ -351,9 +353,11 @@ Durante a sessão, tente capturar:
 - [ ] screenshot do resultado negado;
 - [ ] histórico com similaridade.
 
-**Resultado:** [ ]
+**Resultado:** [x] Passou
 
-**Similaridade observada:** ______
+**Similaridade observada:** -1.0 (vetores opostos mockados)
+
+**Observações:** Validado por teste unitário automatizado `test_fluxo_acesso_1to1_rosto_diferente_negado` (tests/test_access_flow_1to1.py). O teste usa vetor facial diferente (DUMMY_DIFF_VECTOR = [-0.05] * 512) vs titular (DUMMY_VECTOR = [0.05] * 512), resultando em similaridade -1.0, bem abaixo do threshold 0.80. Comando 'negar' retornado com mensagem contendo 'insuficiente'.
 
 ---
 
@@ -371,9 +375,9 @@ Durante a sessão, tente capturar:
 - mensagem de iluminação/rosto não detectado;
 - captura automática não dispara enquanto o enquadramento estiver inválido.
 
-**Resultado:** [ ]
+**Resultado:** [-] Bloqueado
 
-**Observações:**
+**Observações:** Requer hardware (webcam) e frontend Totem. A validação de qualidade facial ocorre no frontend antes do envio ao backend. Não coberto por testes unitários.
 
 ---
 
@@ -391,7 +395,9 @@ Durante a sessão, tente capturar:
 - feedback para aproximar-se;
 - captura não ocorre.
 
-**Resultado:** [ ]
+**Resultado:** [-] Bloqueado
+
+**Observações:** Requer hardware (webcam) e frontend Totem. Validação de enquadramento ocorre no frontend. Não coberto por testes unitários.
 
 ---
 
@@ -407,7 +413,9 @@ Durante a sessão, tente capturar:
 - feedback para afastar-se;
 - captura não ocorre.
 
-**Resultado:** [ ]
+**Resultado:** [-] Bloqueado
+
+**Observações:** Requer hardware (webcam) e frontend Totem. Validação de enquadramento ocorre no frontend. Não coberto por testes unitários.
 
 ---
 
@@ -423,7 +431,9 @@ Durante a sessão, tente capturar:
 - feedback para manter olhos abertos;
 - auto-captura não conclui enquanto a condição persistir.
 
-**Resultado:** [ ]
+**Resultado:** [-] Bloqueado
+
+**Observações:** Requer hardware (webcam) e frontend Totem. Validação de olhos abertos ocorre no frontend. Não coberto por testes unitários.
 
 ---
 
@@ -439,7 +449,9 @@ Durante a sessão, tente capturar:
 - feedback solicitando expressão neutra;
 - auto-captura não conclui enquanto o sorriso for detectado.
 
-**Resultado:** [ ]
+**Resultado:** [-] Bloqueado
+
+**Observações:** Requer hardware (webcam) e frontend Totem. Validação de expressão neutra ocorre no frontend. Não coberto por testes unitários.
 
 ---
 
@@ -463,7 +475,9 @@ Durante a sessão, tente capturar:
 - tela volta a "Aguardando novo cartão RFID";
 - nenhuma nova captura facial ocorre.
 
-**Resultado:** [ ]
+**Resultado:** [-] Bloqueado
+
+**Observações:** Requer frontend Totem e hardware. O comportamento do frontend (webcam, overlay) não é coberto por testes unitários. A finalização da `tentativa_id` no backend ocorre após `/verificar-face`, mas o ciclo completo requer integração.
 
 ---
 
@@ -485,7 +499,9 @@ Durante a sessão, tente capturar:
 - comando para ESP32 é `negar`;
 - servo não abre.
 
-**Resultado:** [ ]
+**Resultado:** [-] Bloqueado
+
+**Observações:** Requer teste de integração com controle de tempo. A lógica de expiração (`ACCESS_ATTEMPT_TIMEOUT_SECONDS`) existe no backend mas não há teste unitário que valide o fluxo completo de expiração.
 
 ---
 
@@ -512,9 +528,11 @@ Durante a sessão, tente capturar:
 - backend revalida regras antes de finalizar;
 - histórico registra a negação.
 
-**Resultado:** [ ]
+**Resultado:** [x] Passou
 
-**Regra alterada:** ______
+**Regra alterada:** Horário de permissão (horario_fim 18:00 vs horário teste 19:00)
+
+**Observações:** Validado por teste unitário automatizado `test_revalidacao_final_nega_mesmo_com_face_compativel` (tests/test_access_flow_1to1.py). O teste cria uma tentativa com permissão válida no RFID, mas no momento da verificação facial o horário atual (19:00) está fora do permitido (horario_fim 18:00). Mesmo com face compatível (similaridade 1.0), o acesso é negado com comando 'negar' e mensagem contendo 'horário'. O mock `AcessoService._agora` força o horário para validar a revalidação.
 
 ---
 
@@ -533,7 +551,9 @@ Durante a sessão, tente capturar:
 - não deve duplicar histórico;
 - resposta deve indicar tentativa já concluída/indisponível.
 
-**Resultado:** [ ]
+**Resultado:** [-] Bloqueado
+
+**Observações:** Não há teste unitário explícito para idempotência de `verificar-face` com mesma `tentativa_id`. Requer teste de integração.
 
 ---
 
@@ -551,7 +571,9 @@ Durante a sessão, tente capturar:
 - sistema não abre dois fluxos de câmera;
 - não ocorre liberação duplicada.
 
-**Resultado:** [ ]
+**Resultado:** [-] Bloqueado
+
+**Observações:** Requer teste de integração/concorrência. A proteção contra dupla leitura rápida não é coberta por testes unitários atuais.
 
 ---
 
@@ -573,7 +595,14 @@ Authorization: Bearer <JWT>
 
 - nenhuma rota administrativa protegida deve funcionar sem token.
 
-**Resultado:** [ ]
+**Resultado:** [x] Passou
+
+**Observações:** Validado por múltiplos testes unitários:
+- `test_login_valido_retorna_http_200` e `test_login_valido_com_alias_admin` (tests/test_auth.py) - login retorna JWT bearer token
+- `test_endpoints_protegidos_sem_token_retornam_401` (tests/test_bearer_auth.py) - 27 endpoints protegidos retornam 401 sem token
+- `test_endpoint_protegido_com_token_valido` e `test_fluxo_integracao_autenticacao` (tests/test_bearer_auth.py) - endpoints funcionam com token válido
+- `test_token_expirado_retorna_401`, `test_token_malformado_retorna_401`, `test_token_assinatura_invalida_retorna_401`, `test_token_sem_sub_retorna_401`, `test_token_admin_inexistente_retorna_401`, `test_token_admin_desativado_retorna_401` - validação robusta de JWT
+- `test_endpoints_publicos_respondem_sem_token` - endpoints públicos (/health, /health/db) funcionam sem token
 
 ---
 
@@ -597,7 +626,9 @@ Authorization: Bearer <JWT>
 - usa `POST /arduino/verificar-face`;
 - histórico real é atualizado.
 
-**Resultado:** [ ]
+**Resultado:** [-] Bloqueado
+
+**Observações:** Requer frontend Angular rodando. O fluxo completo do simulador RFID é testado indiretamente pelos testes de API (`test_fluxo_acesso_1to1_aprovado`), mas a integração com a UI `/validar-acesso` requer teste manual.
 
 ---
 
@@ -613,7 +644,9 @@ Authorization: Bearer <JWT>
 - novo acesso aparece sem precisar recarregar manualmente a página;
 - usuário, local, resultado e similaridade coerentes.
 
-**Resultado:** [ ]
+**Resultado:** [-] Bloqueado
+
+**Observações:** Requer frontend Angular com WebSocket/polling para atualização em tempo real. O backend cria o histórico corretamente (testado em `test_fluxo_acesso_1to1_aprovado` via `historico_acesso_model.criar_com_cursor`), mas a atualização automática no frontend requer teste manual.
 
 ---
 
@@ -629,7 +662,9 @@ Repita pelo menos três recusas:
 
 Cada caso deve mostrar mensagem correspondente ao motivo real. Evite mensagens genéricas como "erro" quando o backend já fornece o motivo.
 
-**Resultado geral:** [ ]
+**Resultado geral:** [-] Bloqueado
+
+**Observações:** Requer frontend para validar mensagens de erro exibidas ao usuário. O backend retorna motivos específicos (testado: horário em T18, face insuficiente em T10, auth em T21), mas a exibição no frontend requer teste manual.
 
 ---
 
@@ -639,25 +674,33 @@ Cada caso deve mostrar mensagem correspondente ao motivo real. Evite mensagens g
 
 **Esperado:** somente acesso autorizado acende/aciona padrão verde.
 
-**Resultado:** [ ]
+**Resultado:** [-] Bloqueado
+
+**Observações:** Requer hardware ESP32 + LEDs. Não testável via testes automatizados.
 
 ## T26 — LED vermelho
 
 **Esperado:** recusas acionam padrão vermelho.
 
-**Resultado:** [ ]
+**Resultado:** [-] Bloqueado
+
+**Observações:** Requer hardware ESP32 + LEDs. Não testável via testes automatizados.
 
 ## T27 — Buzzer de sucesso
 
 **Esperado:** padrão sonoro de sucesso somente em autorização.
 
-**Resultado:** [ ]
+**Resultado:** [-] Bloqueado
+
+**Observações:** Requer hardware ESP32 + buzzer. Não testável via testes automatizados.
 
 ## T28 — Buzzer de negação
 
 **Esperado:** padrão sonoro de recusa em negação.
 
-**Resultado:** [ ]
+**Resultado:** [-] Bloqueado
+
+**Observações:** Requer hardware ESP32 + buzzer. Não testável via testes automatizados.
 
 ## T29 — Servo
 
@@ -667,7 +710,9 @@ Cada caso deve mostrar mensagem correspondente ao motivo real. Evite mensagens g
 - acesso negado -> não abre;
 - após intervalo configurado -> retorna à posição fechada.
 
-**Resultado:** [ ]
+**Resultado:** [-] Bloqueado
+
+**Observações:** Requer hardware ESP32 + servo. Não testável via testes automatizados.
 
 **Fonte utilizada para o servo:** ______
 
@@ -698,7 +743,9 @@ Faça pelo menos 10 tentativas válidas e anote:
 
 **Máximo:** ______ ms
 
-**Resultado:** [ ]
+**Resultado:** [-] Bloqueado
+
+**Observações:** Requer 10 tentativas reais com hardware. O backend retorna `tempo_resposta_ms` (validado em `test_fluxo_acesso_1to1_aprovado` - campo presente e >= 0), mas a medição real end-to-end requer hardware ESP32 + frontend.
 
 ---
 
@@ -708,19 +755,25 @@ Faça pelo menos 10 tentativas válidas e anote:
 
 **Esperado:** ação aparece em `audit_logs`.
 
-**Resultado:** [ ]
+**Resultado:** [-] Bloqueado
+
+**Observações:** Requer verificação direta no banco `audit_logs`. Os testes unitários de admin (`test_criar_administrador_valido`, etc.) mockam o banco e não verificam a tabela `audit_logs`.
 
 ## T32 — Alterar permissão
 
 **Esperado:** alteração auditada com admin, recurso, IP e horário.
 
-**Resultado:** [ ]
+**Resultado:** [-] Bloqueado
+
+**Observações:** Requer verificação direta no banco `audit_logs`. Não coberto por testes unitários atuais.
 
 ## T33 — Cadastrar/substituir biometria
 
 **Esperado:** ação administrativa registrada.
 
-**Resultado:** [ ]
+**Resultado:** [-] Bloqueado
+
+**Observações:** Requer verificação direta no banco `audit_logs`. Não coberto por testes unitários atuais.
 
 ---
 
@@ -748,14 +801,14 @@ Antes de encerrar a sessão, tente sair com pelo menos:
 
 | Categoria | Passou | Falhou | Bloqueado |
 |---|---:|---:|---:|
-| Fluxo principal |  |  |  |
-| Regras de acesso |  |  |  |
-| Biometria 1:1 |  |  |  |
-| Frontend / UX |  |  |  |
-| Segurança de estado |  |  |  |
-| Hardware |  |  |  |
-| Tempo de resposta |  |  |  |
-| Auditoria |  |  |  |
+| Fluxo principal | 1 | 0 | 7 |
+| Regras de acesso | 1 | 0 | 6 |
+| Biometria 1:1 | 2 | 0 | 5 |
+| Frontend / UX | 1 | 0 | 3 |
+| Segurança de estado | 1 | 0 | 4 |
+| Hardware | 0 | 0 | 5 |
+| Tempo de resposta | 0 | 0 | 1 |
+| Auditoria | 0 | 0 | 3 |
 
 ## Bugs encontrados
 
