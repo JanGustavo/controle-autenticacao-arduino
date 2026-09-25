@@ -166,10 +166,18 @@ async carregarModelos(): Promise<void> {
     }
   }
 
-  ativarCooldownPosAcesso(duracaoMs = 5000): void {
+  ativarCooldownPosAcesso(
+    aprovado: boolean,
+    duracaoMs = 5000,
+  ): void {
     this.emCooldown.set(true);
+    this.autoCapturaHabilitada.set(false);
     this.resetAutoCaptura();
-    this.statusValidacao.set('Catraca liberada — Aguardando passagem');
+    this.statusValidacao.set(
+      aprovado
+        ? 'Acesso liberado — aguardando próxima leitura RFID'
+        : 'Acesso negado — aguardando próxima leitura RFID',
+    );
     this.tipoStatus.set('info');
     this.faceBox.set(null);
     this.currentBox = null;
@@ -177,10 +185,11 @@ async carregarModelos(): Promise<void> {
     if (this.cooldownTimer) clearTimeout(this.cooldownTimer);
     this.cooldownTimer = setTimeout(() => {
       this.emCooldown.set(false);
-      this.statusValidacao.set('Centralize o rosto');
+      this.statusValidacao.set('Aguardando cartão RFID');
       this.tipoStatus.set('info');
       this.ultimoEstadoEnquadramento = null;
-      this.iniciarLoopValidacao();
+      // Não reinicia a detecção automaticamente. Um novo fluxo RFID
+      // deve criar uma tentativa antes da próxima captura facial.
     }, duracaoMs);
   }
 
