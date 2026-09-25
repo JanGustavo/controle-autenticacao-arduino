@@ -45,20 +45,27 @@ export class WebSocketLogsService {
       return;
     }
 
+    // Use environment-aware WebSocket URL
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//localhost:8001/ws/logs`;
+    const host = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? 'localhost:8001'
+      : window.location.host; // Use same host if not localhost
+    const wsUrl = `${protocol}//${host}/ws/logs`;
+
+    console.log(`🔌 [WebSocket] Conectando em: ${wsUrl}`);
 
     try {
       this.socket = new WebSocket(wsUrl);
 
       this.socket.onopen = () => {
-        console.log('⚡ [WebSocket] Conectado ao servidor de logs em tempo real.');
+        console.log('✅ [WebSocket] Conectado ao servidor de logs em tempo real.');
         this.conectado.set(true);
       };
 
       this.socket.onmessage = (event) => {
         try {
           const parsed: WebSocketLogEvent = JSON.parse(event.data);
+          console.log('📨 [WebSocket] Evento recebido:', parsed.type, parsed.data);
           this.logSubject.next(parsed);
         } catch (e) {
           console.warn('[WebSocket] Erro ao parsear mensagem recebida:', e);
@@ -66,17 +73,17 @@ export class WebSocketLogsService {
       };
 
       this.socket.onerror = (err) => {
-        console.warn('[WebSocket] Erro na conexão:', err);
+        console.error('[WebSocket] Erro na conexão:', err);
         this.conectado.set(false);
       };
 
-      this.socket.onclose = () => {
-        console.log('⚡ [WebSocket] Conexão encerrada. Tentando reconectar em 5s...');
+      this.socket.onclose = (event) => {
+        console.log(`⚡ [WebSocket] Conexão encerrada (code: ${event.code}, reason: ${event.reason}). Tentando reconectar em 5s...`);
         this.conectado.set(false);
         setTimeout(() => this.conectar(), 5000);
       };
     } catch (e) {
-      console.warn('[WebSocket] Falha ao instanciar WebSocket:', e);
+      console.error('[WebSocket] Falha ao instanciar WebSocket:', e);
       setTimeout(() => this.conectar(), 5000);
     }
   }

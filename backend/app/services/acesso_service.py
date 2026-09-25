@@ -17,6 +17,7 @@ from app.schemas.rfid_schema import (
     VerificarCartaoResponse,
 )
 from app.services.face_service import FaceService
+from app.schemas.websocket_schema import manager
 
 
 class AcessoServiceError(Exception):
@@ -79,7 +80,7 @@ class AcessoService:
         return True, None
 
     @classmethod
-    def iniciar_tentativa(
+    async def iniciar_tentativa(
         cls,
         uid_card: str,
         identificador_dispositivo: str,
@@ -153,6 +154,26 @@ class AcessoService:
                 percentual_similaridade=None,
                 motivo_recusa=negacao,
             )
+
+            # Broadcast NOVO_ACESSO para atualização em tempo real no dashboard/histórico
+            await manager.broadcast(
+                {
+                    "type": "NOVO_ACESSO",
+                    "data": {
+                        "id": None,
+                        "usuario_id": usuario_id,
+                        "nome_usuario": usuario["nome"] if usuario else None,
+                        "local_id": local_id,
+                        "autorizado": False,
+                        "percentual_similaridade": None,
+                        "motivo_recusa": negacao,
+                        "data_hora": agora.isoformat(),
+                        "tentativa_id": None,
+                        "tempo_resposta_ms": None,
+                    },
+                }
+            )
+
             raise AcessoNegadoError(negacao)
 
         expira_em = agora + timedelta(seconds=timeout_segundos)

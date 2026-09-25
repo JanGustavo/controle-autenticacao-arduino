@@ -60,7 +60,7 @@ async def verificar_cartao(request: VerificarCartaoRequest):
             }
         )
 
-        resultado = acesso_service.iniciar_tentativa(
+        resultado = await acesso_service.iniciar_tentativa(
             uid_card=request.uid_card,
             identificador_dispositivo=request.identificador_dispositivo,
         )

@@ -1,13 +1,15 @@
-import { ChangeDetectorRef, Component, inject, input, OnInit, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, input, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { TuplePageConfig } from '../../models/tuple-page.model';
 import { ApiService, HistoricoAcessoResponse, LocalResponse, PermissaoRequest, PermissaoResponse, UsuarioResponse } from '../../services/api.service';
 import { UserEditDialog } from './user-edit-dialog';
+import { WebSocketLogsService, WebSocketLogEvent } from '../../services/websocket-logs.service';
 
 @Component({
   selector: 'app-tuple-page',
@@ -23,11 +25,12 @@ import { UserEditDialog } from './user-edit-dialog';
   templateUrl: './tuple-page.html',
   styleUrl: './tuple-page.scss',
 })
-export class TuplePage implements OnInit {
+export class TuplePage implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private api = inject(ApiService);
   private cdr = inject(ChangeDetectorRef);
   private dialog = inject(MatDialog);
+  private wsLogs = inject(WebSocketLogsService);
 
   configInput = input<TuplePageConfig | undefined>(undefined, { alias: 'config' });
   rowsFromApi = signal<Record<string, unknown>[] | null>(null);
@@ -40,6 +43,7 @@ export class TuplePage implements OnInit {
   acaoNotice = '';
   private historico: HistoricoAcessoResponse[] = [];
   private permissoes: PermissaoResponse[] = [];
+  private wsSubscription: Subscription | null = null;
 
   // Filtros de busca
   filtroTexto = signal('');
@@ -184,7 +188,37 @@ export class TuplePage implements OnInit {
       });
     }
 
+    // Subscribe to WebSocket for real-time historico updates
+    if (this.config?.resource === 'historico') {
+      this.wsSubscription = this.wsLogs.obterLogsEmTempoReal().subscribe({
+        next: (evento) => {
+          if (evento.type === 'NOVO_ACESSO' && evento.data) {
+            // Prepend new access to local history array
+            const novoRegistro: HistoricoAcessoResponse = {
+              id: evento.data.id ?? Date.now(), // fallback ID
+              usuario_id: evento.data.usuario_id ?? null,
+              local_id: evento.data.local_id ?? null,
+              uid_card_lido: null, // not in WebSocket event
+              data_hora: new Date().toISOString(), // real-time timestamp
+              autorizado: evento.data.autorizado ?? false,
+              percentual_similaridade: evento.data.percentual_similaridade ?? null,
+              motivo_recusa: evento.data.motivo_recusa ?? null,
+              nome_usuario: evento.data.nome_usuario ?? null,
+              nome_local: null, // will be resolved via this.locais
+            };
+            this.historico.unshift(novoRegistro);
+            this.atualizarLinhasHistorico();
+            this.cdr.markForCheck();
+          }
+        },
+      });
+    }
+
     this.carregarDados();
+  }
+
+  ngOnDestroy(): void {
+    this.wsSubscription?.unsubscribe();
   }
 
   carregarDados(): void {
