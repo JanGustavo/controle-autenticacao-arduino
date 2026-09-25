@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.permissao_schema import PermissaoVinculoCreate
 
@@ -14,6 +14,8 @@ class UsuarioCreate(BaseModel):
 
 
 class UsuarioUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     """
     Edição dos dados cadastrais do usuário.
 
