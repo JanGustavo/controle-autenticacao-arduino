@@ -55,10 +55,7 @@ class DispositivoModel:
                     """,
                     params if params else None,
                 )
-                return [
-                    dict(zip(("dispositivo_id", "nome", "identificador"), row, strict=True))
-                    for row in cursor.fetchall()
-                ]
+                return [self._row_to_dict(row) for row in cursor.fetchall()]
 
     def listar_simples(self, q: str | None = None, ativo: bool | None = None):
         """Lista somente os campos usados por dropdowns/seletores."""
@@ -82,15 +79,23 @@ class DispositivoModel:
             with connection.cursor() as cursor:
                 cursor.execute(
                     f"""
-                    SELECT dispositivo_id, local_id, nome,
-                           identificador, ativo, criado_em
+                    SELECT dispositivo_id, nome, identificador
                     FROM dispositivo
                     {where_clause}
                     ORDER BY dispositivo_id
                     """,
                     params if params else None,
                 )
-                return [self._row_to_dict(row) for row in cursor.fetchall()]
+                return [
+                    dict(
+                        zip(
+                            ("dispositivo_id", "nome", "identificador"),
+                            row,
+                            strict=True,
+                        )
+                    )
+                    for row in cursor.fetchall()
+                ]
 
     def buscar_por_id(self, dispositivo_id: int):
         with get_connection() as connection:
