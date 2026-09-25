@@ -341,7 +341,7 @@
               @if (log.percentual_similaridade !== null) {
                 <p>
                   Similaridade:
-                  {{ log.percentual_similaridade * 100 | number: '1.2-2' }}%
+                  {{ (log.percentual_similaridade > 1 ? log.percentual_similaridade : log.percentual_similaridade * 100) | number: '1.2-2' }}%
                 </p>
               }
 

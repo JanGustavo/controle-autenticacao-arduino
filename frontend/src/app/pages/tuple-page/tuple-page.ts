@@ -328,13 +328,19 @@ export class TuplePage implements OnInit, OnDestroy {
   }
 
   private toHistoryRow(registro: HistoricoAcessoResponse): Record<string, unknown> {
+    const sim = registro.percentual_similaridade;
+    // Backend envia similaridade como decimal (0.0 a 1.0). Converter para % se necessário.
+    const simDisplay = sim !== null && sim !== undefined
+      ? (sim > 1 ? `${sim.toFixed(2)}%` : `${(sim * 100).toFixed(2)}%`)
+      : '-';
+
     return {
       usuario_id: registro.usuario_id === null ? 'Não identificado' : this.nomeUsuario(registro.usuario_id),
       local_id: registro.local_id === null ? 'Não identificado' : this.nomeLocal(registro.local_id),
       uid_card_lido: registro.uid_card_lido ?? '-',
       data_hora: registro.data_hora,
       autorizado: registro.autorizado ? 'Sim' : 'Não',
-      percentual_similaridade: registro.percentual_similaridade ?? '-',
+      percentual_similaridade: simDisplay,
       motivo_recusa: registro.motivo_recusa ?? '-',
     };
   }
