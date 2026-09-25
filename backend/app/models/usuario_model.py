@@ -5,7 +5,7 @@ from app.database.connection import get_connection
 
 class UsuarioModel:
     _campos = ("user_id", "nome", "uid_card", "vetor_facial", "ativo", "criado_em")
-    _campos_simples = ("user_id", "nome", "uid_card", "ativo", "criado_em")
+    _campos_simples = ("user_id", "nome", "uid_card", "ativo")
 
     @classmethod
     def _row_to_dict(cls, row):
@@ -67,7 +67,7 @@ class UsuarioModel:
             with connection.cursor() as cursor:
                 cursor.execute(
                     f"""
-                    SELECT user_id, nome, uid_card, ativo, criado_em
+                    SELECT user_id, nome, uid_card, ativo
                     FROM usuario
                     {where_clause}
                     ORDER BY user_id
