@@ -403,12 +403,10 @@ export class CompararPage implements OnInit, OnDestroy {
         if (this.modoTotem()) {
           this.exibirOverlayTotem.set(true);
           this.timeoutOverlay = setTimeout(() => {
-            this.exibirOverlayTotem.set(false);
-            this.fotoPreviewUrl = null;
-            this.webcam.ativarCooldownPosAcesso(
-              this.aprovado() ? 5000 : 1500,
-            );
+            this.encerrarCicloAcesso();
           }, 3000);
+        } else {
+          this.pararWebcam();
         }
       },
       error: (error) => {
@@ -429,10 +427,10 @@ export class CompararPage implements OnInit, OnDestroy {
         if (this.modoTotem()) {
           this.exibirOverlayTotem.set(true);
           this.timeoutOverlay = setTimeout(() => {
-            this.exibirOverlayTotem.set(false);
-            this.fotoPreviewUrl = null;
-            this.webcam.ativarCooldownPosAcesso(1500);
+            this.encerrarCicloAcesso();
           }, 3000);
+        } else {
+          this.pararWebcam();
         }
       },
     });
@@ -477,6 +475,26 @@ export class CompararPage implements OnInit, OnDestroy {
         void this.iniciarWebcam();
       }
     }
+  }
+
+  private encerrarCicloAcesso(): void {
+    if (this.timeoutOverlay) {
+      clearTimeout(this.timeoutOverlay);
+      this.timeoutOverlay = null;
+    }
+
+    this.exibirOverlayTotem.set(false);
+    this.fotoPreviewUrl = null;
+
+    // A tentativa já foi concluída. A câmera deve voltar ao estado ocioso
+    // e só será aberta novamente após um novo RFID_APROVADO/tentativa_id.
+    this.pararWebcam();
+    this.tentativaId.set(null);
+    this.mensagemStatus.set(
+      this.aprovado()
+        ? 'Acesso concluído. Aguardando novo cartão RFID.'
+        : 'Tentativa encerrada. Aguardando novo cartão RFID.',
+    );
   }
 
   private limparResultadoPreservandoTentativa(): void {
