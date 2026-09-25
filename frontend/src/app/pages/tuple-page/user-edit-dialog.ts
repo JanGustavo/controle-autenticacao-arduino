@@ -17,7 +17,7 @@ import { Subscription } from 'rxjs';
 
 import {
   ApiService,
-  DispositivoResponse,
+  DispositivoSimplesResponse,
   UsuarioResponse,
 } from '../../services/api.service';
 import { WebcamService } from '../../services/webcam.service';
@@ -65,7 +65,7 @@ export class UserEditDialog implements OnInit, OnDestroy {
   salvandoCartao = false;
   salvandoBiometria = false;
 
-  dispositivos: DispositivoResponse[] = [];
+  dispositivos: DispositivoSimplesResponse[] = [];
   dispositivoSelecionadoId: number | null = null;
   carregandoDispositivos = true;
   aguardandoRfid = false;
@@ -80,7 +80,7 @@ export class UserEditDialog implements OnInit, OnDestroy {
 
   private wsSubscription: Subscription | null = null;
 
-  get dispositivoSelecionado(): DispositivoResponse | null {
+  get dispositivoSelecionado(): DispositivoSimplesResponse | null {
     if (this.dispositivoSelecionadoId === null) return null;
     return (
       this.dispositivos.find(
@@ -99,7 +99,7 @@ export class UserEditDialog implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.api.getDispositivos({ ativo: true }).subscribe({
+    this.api.getDispositivosSimples({ ativo: true }).subscribe({
       next: (dispositivos) => {
         this.dispositivos = dispositivos;
         this.carregandoDispositivos = false;
