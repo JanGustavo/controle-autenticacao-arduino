@@ -7,7 +7,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { ApiService, DispositivoResponse, PermissaoCreateRequest } from '../../services/api.service';
+import { ApiService, DispositivoSimplesResponse, PermissaoCreateRequest } from '../../services/api.service';
 import { SpeechService } from '../../services/speech.service';
 import { WebcamService } from '../../services/webcam.service';
 import { WebSocketLogsService } from '../../services/websocket-logs.service';
@@ -59,14 +59,14 @@ export class CadastrarPage implements OnInit, OnDestroy {
   successMessage = '';
   errorMessage = '';
   locaisPermissao: LocalPermissaoItem[] = [];
-  dispositivosRfid: DispositivoResponse[] = [];
+  dispositivosRfid: DispositivoSimplesResponse[] = [];
   locaisCarregando = true;
   locaisErro = '';
   fotoPreviewUrl: string | null = null;
   private fotoCapturada: Blob | File | null = null;
   private wsSubscription: Subscription | null = null;
 
-  get dispositivoRfidSelecionado(): DispositivoResponse | null {
+  get dispositivoRfidSelecionado(): DispositivoSimplesResponse | null {
     if (this.dispositivoRfidSelecionadoId === null) return null;
 
     return this.dispositivosRfid.find(
