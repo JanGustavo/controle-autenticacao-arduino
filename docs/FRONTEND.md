@@ -36,6 +36,33 @@ O `authInterceptor`:
 3. injeta `Authorization: Bearer <token>`;
 4. em `401`, limpa a sessão e redireciona para `/login`.
 
+## Gestão de usuários
+
+A listagem em `/usuarios` fecha o CRUD administrativo com criação, consulta,
+edição e exclusão.
+
+A edição usa um modal único com três blocos independentes:
+
+```text
+Dados básicos
+  -> PATCH /usuarios/{id}
+  -> nome + ativo
+
+Cartão RFID
+  -> leitura via WebSocket RFID_LIDO ou UID informado
+  -> POST /arduino/cadastrar-cartao
+  -> substitui/associa o cartão do usuário
+
+Biometria facial
+  -> webcam ou arquivo
+  -> POST /biometria/cadastrar/{usuario_id}
+  -> substitui o embedding facial
+```
+
+RFID e vetor facial não são alterados diretamente pelo `PATCH /usuarios/{id}`.
+Essa separação preserva validações específicas, auditoria e o contrato com o
+hardware.
+
 ## Tela de validação de acesso
 
 Rota principal:

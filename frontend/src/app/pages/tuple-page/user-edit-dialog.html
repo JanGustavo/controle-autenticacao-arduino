@@ -1,0 +1,257 @@
+<section class="user-edit-dialog">
+  <header class="dialog-header">
+    <div>
+      <span class="eyebrow">Usuário #{{ usuario.user_id }}</span>
+      <h2>Editar usuário</h2>
+      <p>Atualize identificação, cartão RFID e biometria sem recriar o cadastro.</p>
+    </div>
+    <button type="button" mat-icon-button (click)="fechar()" title="Fechar">
+      <mat-icon>close</mat-icon>
+    </button>
+  </header>
+
+  @if (aviso) {
+    <div class="notice success" role="status">
+      <mat-icon>check_circle</mat-icon>
+      <span>{{ aviso }}</span>
+    </div>
+  }
+
+  @if (erro) {
+    <div class="notice error" role="alert">
+      <mat-icon>error</mat-icon>
+      <span>{{ erro }}</span>
+    </div>
+  }
+
+  <div class="dialog-body">
+    <section class="edit-section">
+      <div class="section-title">
+        <mat-icon>person</mat-icon>
+        <div>
+          <h3>Dados básicos</h3>
+          <p>Nome e disponibilidade do usuário no controle de acesso.</p>
+        </div>
+      </div>
+
+      <div class="basic-grid">
+        <label>
+          <span>Nome</span>
+          <input
+            type="text"
+            [(ngModel)]="nome"
+            maxlength="255"
+            [disabled]="salvandoDados"
+          />
+        </label>
+
+        <label class="switch-field">
+          <input type="checkbox" [(ngModel)]="ativo" [disabled]="salvandoDados" />
+          <span class="switch"></span>
+          <span>
+            <strong>Usuário ativo</strong>
+            <small>Usuários inativos são negados antes da biometria.</small>
+          </span>
+        </label>
+      </div>
+
+      <div class="section-actions">
+        <button
+          type="button"
+          mat-flat-button
+          color="primary"
+          (click)="salvarDadosBasicos()"
+          [disabled]="salvandoDados"
+        >
+          @if (salvandoDados) {
+            <mat-progress-spinner diameter="18"></mat-progress-spinner>
+          } @else {
+            <mat-icon>save</mat-icon>
+          }
+          Salvar dados
+        </button>
+      </div>
+    </section>
+
+    <section class="edit-section">
+      <div class="section-title">
+        <mat-icon>contactless</mat-icon>
+        <div>
+          <h3>Cartão RFID</h3>
+          <p>
+            Atual:
+            <strong>{{ usuario.uid_card || 'Não cadastrado' }}</strong>
+          </p>
+        </div>
+      </div>
+
+      <div class="rfid-grid">
+        <label>
+          <span>Dispositivo que realizará a leitura</span>
+          <select
+            [(ngModel)]="dispositivoSelecionadoId"
+            [disabled]="carregandoDispositivos || aguardandoRfid || salvandoCartao"
+          >
+            <option [ngValue]="null">
+              {{ carregandoDispositivos ? 'Carregando...' : 'Selecione o leitor' }}
+            </option>
+            @for (dispositivo of dispositivos; track dispositivo.dispositivo_id) {
+              <option [ngValue]="dispositivo.dispositivo_id">
+                {{ dispositivo.nome }} · {{ dispositivo.identificador }}
+              </option>
+            }
+          </select>
+        </label>
+
+        <label>
+          <span>Novo UID</span>
+          <input
+            type="text"
+            [(ngModel)]="uidNovo"
+            maxlength="20"
+            placeholder="A1B2C3D4"
+            [disabled]="aguardandoRfid || salvandoCartao"
+          />
+        </label>
+      </div>
+
+      <div class="section-actions">
+        @if (aguardandoRfid) {
+          <button type="button" mat-stroked-button (click)="cancelarLeituraRfid()">
+            <mat-progress-spinner diameter="18"></mat-progress-spinner>
+            Aguardando cartão...
+          </button>
+        } @else {
+          <button
+            type="button"
+            mat-stroked-button
+            (click)="iniciarLeituraRfid()"
+            [disabled]="!identificadorDispositivo || salvandoCartao"
+          >
+            <mat-icon>sensors</mat-icon>
+            Ler cartão no ESP32
+          </button>
+        }
+
+        <button
+          type="button"
+          mat-flat-button
+          color="primary"
+          (click)="salvarNovoCartao()"
+          [disabled]="!uidNovo || !identificadorDispositivo || salvandoCartao"
+        >
+          @if (salvandoCartao) {
+            <mat-progress-spinner diameter="18"></mat-progress-spinner>
+          } @else {
+            <mat-icon>credit_card</mat-icon>
+          }
+          Cadastrar novo cartão
+        </button>
+      </div>
+    </section>
+
+    <section class="edit-section">
+      <div class="section-title">
+        <mat-icon>face</mat-icon>
+        <div>
+          <h3>Biometria facial</h3>
+          <p>
+            Status:
+            <strong>{{ temBiometria ? 'Cadastrada' : 'Não cadastrada' }}</strong>
+          </p>
+        </div>
+      </div>
+
+      @if (webcam.webcamAtiva()) {
+        <div class="camera-box">
+          <video
+            #editVideo
+            autoplay
+            playsinline
+            muted
+            style="transform: scaleX(-1)"
+          ></video>
+
+          <div class="camera-status" [class.ready]="webcam.capturaPronta()">
+            {{ webcam.statusValidacao() }}
+          </div>
+        </div>
+
+        <div class="section-actions">
+          <button
+            type="button"
+            mat-flat-button
+            color="primary"
+            (click)="capturarFoto()"
+            [disabled]="!webcam.capturaPronta()"
+          >
+            <mat-icon>photo_camera</mat-icon>
+            Capturar
+          </button>
+          <button type="button" mat-button (click)="pararWebcam()">
+            Cancelar câmera
+          </button>
+        </div>
+      } @else {
+        <div class="biometric-preview">
+          @if (fotoPreviewUrl) {
+            <img [src]="fotoPreviewUrl" alt="Prévia da nova biometria" />
+          } @else {
+            <mat-icon>face_retouching_natural</mat-icon>
+            <span>Nenhuma nova captura selecionada.</span>
+          }
+        </div>
+
+        <input
+          #biometriaInput
+          type="file"
+          accept="image/*"
+          hidden
+          (change)="selecionarImagem($event)"
+        />
+
+        <div class="section-actions">
+          <button type="button" mat-stroked-button (click)="iniciarWebcam()">
+            <mat-icon>videocam</mat-icon>
+            Abrir webcam
+          </button>
+          <button type="button" mat-stroked-button (click)="biometriaInput.click()">
+            <mat-icon>upload</mat-icon>
+            Carregar imagem
+          </button>
+          <button
+            type="button"
+            mat-flat-button
+            color="primary"
+            (click)="salvarBiometria()"
+            [disabled]="!fotoCapturada || salvandoBiometria"
+          >
+            @if (salvandoBiometria) {
+              <mat-progress-spinner diameter="18"></mat-progress-spinner>
+            } @else {
+              <mat-icon>fingerprint</mat-icon>
+            }
+            {{ temBiometria ? 'Substituir biometria' : 'Cadastrar biometria' }}
+          </button>
+        </div>
+      }
+    </section>
+  </div>
+
+  <footer class="dialog-footer">
+    <div class="status-summary">
+      <span>
+        <mat-icon>{{ usuario.uid_card ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+        RFID
+      </span>
+      <span>
+        <mat-icon>{{ temBiometria ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+        Facial
+      </span>
+    </div>
+
+    <button type="button" mat-flat-button color="primary" (click)="fechar()">
+      Concluir edição
+    </button>
+  </footer>
+</section>

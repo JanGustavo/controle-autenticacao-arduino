@@ -97,3 +97,16 @@ def test_deletar_usuario():
 	assert response.json() == {"mensagem": "Usuário excluído com sucesso."}
 	deletar.assert_called_once_with(1)
 
+
+
+
+def test_atualizar_usuario_rejeita_rfid_direto():
+	payload = {"uid_card": "A1B2C3D4"}
+
+	response = client.patch(
+		"/api/v1/usuarios/1",
+		json=payload,
+		headers=auth_headers(),
+	)
+
+	assert response.status_code == 422

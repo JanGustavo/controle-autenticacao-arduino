@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.permissao_schema import PermissaoVinculoCreate
 
@@ -14,9 +14,16 @@ class UsuarioCreate(BaseModel):
 
 
 class UsuarioUpdate(BaseModel):
-    nome: str | None = None
-    uid_card: str | None = None
-    vetor_facial: list[float] | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    """
+    Edição dos dados cadastrais do usuário.
+
+    RFID e biometria possuem endpoints próprios para preservar validações,
+    auditoria e o contrato com o hardware.
+    """
+
+    nome: str | None = Field(default=None, min_length=2, max_length=255)
     ativo: bool | None = None
 
 

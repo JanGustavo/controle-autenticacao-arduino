@@ -25,6 +25,11 @@ export interface UsuarioCreateRequest {
   permissoes: PermissaoCreateRequest[];
 }
 
+export interface UsuarioUpdateRequest {
+  nome?: string;
+  ativo?: boolean;
+}
+
 export interface PermissaoCreateRequest {
   local_id: number;
   horario_inicio: string;
@@ -146,6 +151,20 @@ export class ApiService {
     if (filtros?.q) params = params.set('q', filtros.q);
     if (filtros?.ativo !== undefined && filtros?.ativo !== null) params = params.set('ativo', filtros.ativo);
     return this.http.get<UsuarioResponse[]>(`${API_BASE}/usuarios`, { params });
+  }
+
+  getUsuario(id: number): Observable<UsuarioResponse> {
+    return this.http.get<UsuarioResponse>(`${API_BASE}/usuarios/${id}`);
+  }
+
+  atualizarUsuario(
+    id: number,
+    usuario: UsuarioUpdateRequest,
+  ): Observable<UsuarioResponse> {
+    return this.http.patch<UsuarioResponse>(
+      `${API_BASE}/usuarios/${id}`,
+      usuario,
+    );
   }
 
   deletarUsuario(id: number): Observable<{ mensagem: string }> {

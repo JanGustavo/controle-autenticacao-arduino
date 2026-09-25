@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 
 from app.schemas.rfid_schema import (
     CadastrarCartaoRequest,
@@ -11,6 +11,7 @@ from app.schemas.rfid_schema import (
     VerificarCartaoResponse,
 )
 from app.auth.dependencies import obter_administrador_atual
+from app.services.audit_service import audit_service
 from app.services.acesso_service import (
     AcessoNegadoError,
     TentativaAcessoNaoEncontradaError,
@@ -222,22 +223,40 @@ async def resultado_acesso(
     },
 )
 async def cadastrar_cartao(
-    request: CadastrarCartaoRequest,
-    _admin: dict = Depends(obter_administrador_atual),
+    dados: CadastrarCartaoRequest,
+    request: Request,
+    admin: dict = Depends(obter_administrador_atual),
 ):
     """
-    Cadastra e vincula o UID lido pelo ESP32 a um usuario_id específico.
+    Cadastra, substitui ou confirma o UID RFID de um usuário.
+
+    O vínculo é uma ação administrativa auditada. O dispositivo informado
+    representa o leitor usado para obter o cartão.
     """
     try:
         print(
-            f"[CADASTRO] Dispositivo: {request.identificador_dispositivo} "
-            f"| UID: {request.uid_card} -> User: {request.usuario_id}"
+            f"[CADASTRO] Dispositivo: {dados.identificador_dispositivo} "
+            f"| UID: {dados.uid_card} -> User: {dados.usuario_id}"
         )
-        return rfid_service.cadastrar_cartao(
-            identificador_dispositivo=request.identificador_dispositivo,
-            uid_card=request.uid_card,
-            usuario_id=request.usuario_id,
+        resultado = rfid_service.cadastrar_cartao(
+            identificador_dispositivo=dados.identificador_dispositivo,
+            uid_card=dados.uid_card,
+            usuario_id=dados.usuario_id,
         )
+
+        audit_service.registrar(
+            action="UPDATE_USER_RFID",
+            admin_id=admin.get("admin_id"),
+            resource_type="USER_RFID",
+            resource_id=dados.usuario_id,
+            description=(
+                f"Cartão RFID atualizado para usuário {dados.usuario_id} "
+                f"via {dados.identificador_dispositivo}"
+            ),
+            request=request,
+        )
+
+        return resultado
     except CartaoJaCadastradoError as error:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
