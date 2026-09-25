@@ -158,7 +158,7 @@ export class CompararPage implements OnInit, OnDestroy {
     });
   }
 
-  get usuarioSimulado(): UsuarioResponse | UsuarioSimplesResponse | null {
+  get usuarioSimulado(): UsuarioSimplesResponse | null {
     if (this.usuarioSimuladoId === null) return null;
     return (
       this.usuarios.find(
