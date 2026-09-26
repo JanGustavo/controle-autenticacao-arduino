@@ -18,11 +18,10 @@
 #define SPI_MISO 34
 #define SPI_MOSI 32
 
-
 // Objetos e configurações
 const char *ssid = WIFI_SSID;
 const char *password = WIFI_PASSWORD;
-const char *identificadorDispositivo = DEVICE_ID;
+const char *identificadorDispositivo = "ESP32-ENTRADA-01";
 
 // Endpoints
 const char *api_health = API_URL "/api/v1/health";
@@ -189,7 +188,7 @@ void acionarServoPorta(bool abrir)
     }
     else
     {
-        servo.write(0);  // Tranca novamente
+        servo.write(0); // Tranca novamente
     }
 }
 
@@ -217,7 +216,7 @@ void animacaoAprovado()
         delay(300);
     }
 
-    delay(2000); // Tempo para o usuário atravessar
+    delay(2000);              // Tempo para o usuário atravessar
     acionarServoPorta(false); // Fecha novamente
 }
 
@@ -270,8 +269,7 @@ String extrairCampoJson(const String &json, const String &campo)
         fim < json.length() &&
         json[fim] != ',' &&
         json[fim] != '}' &&
-        json[fim] != '\n'
-    )
+        json[fim] != '\n')
     {
         fim++;
     }
@@ -300,8 +298,7 @@ bool iniciarTentativaAcesso(const char *uuid, String &tentativaId)
         sizeof(payload),
         "{\"uid_card\":\"%s\",\"identificador_dispositivo\":\"%s\"}",
         uuid,
-        identificadorDispositivo
-    );
+        identificadorDispositivo);
 
     int httpCode = http.POST((uint8_t *)payload, strlen(payload));
 
