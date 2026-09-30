@@ -73,9 +73,9 @@ def deletar_usuario(usuario_id: int, request: Request, admin: dict = Depends(obt
 @router.patch(
     "/usuarios/{usuario_id}",
     response_model=UsuarioResponse,
-    summary="Editar nome ou status do usuário",
+    summary="Editar dados cadastrais do usuário",
     description=(
-        "Atualiza somente dados cadastrais. Use /arduino/cadastrar-cartao "
+        "Atualiza nome, CPF, tipo e status. Use /arduino/cadastrar-cartao "
         "para trocar RFID e /biometria/cadastrar/{usuario_id} para biometria."
     ),
     responses={404: {"description": "Usuário não encontrado"}},
