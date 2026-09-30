@@ -15,6 +15,8 @@
   --ard-success: #15803d;
   --ard-danger: #b91c1c;
   --ard-warning: #b45309;
+  --ard-table-row-odd: #ffffff;
+  --ard-table-row-even: #f3f6fa;
   --ard-radius-sm: 10px;
   --ard-radius-md: 14px;
   --ard-radius-lg: 18px;
@@ -57,6 +59,8 @@ body.dark-mode {
   --ard-muted: #94a3b8;
   --ard-line: rgba(255, 255, 255, 0.1);
   --ard-primary: #60a5fa;
+  --ard-table-row-odd: #111827;
+  --ard-table-row-even: #172033;
 
   color-scheme: dark;
   background-color: #0f172a !important;
@@ -156,4 +160,22 @@ body.dark-mode {
       }
     }
   }
+}
+
+
+/* Zebra global para tabelas HTML que não importam o mixin compartilhado. */
+table tbody tr:nth-child(odd) > td {
+  background-color: var(--ard-table-row-odd);
+}
+
+table tbody tr:nth-child(even) > td {
+  background-color: var(--ard-table-row-even);
+}
+
+table tbody tr:hover > td {
+  filter: brightness(0.985);
+}
+
+body.dark-mode table tbody tr:hover > td {
+  filter: brightness(1.08);
 }
