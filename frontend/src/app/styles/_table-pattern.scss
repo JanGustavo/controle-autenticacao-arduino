@@ -48,6 +48,14 @@
     transition: background-color 120ms ease;
   }
 
+  tbody tr:nth-child(odd) td {
+    background: var(--ard-table-row-odd, #ffffff);
+  }
+
+  tbody tr:nth-child(even) td {
+    background: var(--ard-table-row-even, #f8fafc);
+  }
+
   tbody tr:hover td {
     background: color-mix(in srgb, var(--surface, #fff) 95%, var(--accent, #2563eb) 5%);
   }
