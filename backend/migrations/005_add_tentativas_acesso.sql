@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS tentativa_acesso (
 CREATE INDEX IF NOT EXISTS idx_tentativa_acesso_status_expira
     ON tentativa_acesso (status, expira_em);
 
-DO $
+DO $$
 BEGIN
     IF EXISTS (
         SELECT 1
@@ -36,4 +36,4 @@ BEGIN
                 criado_em DESC
             );
     END IF;
-END $;
+END $$;
