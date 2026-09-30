@@ -25,7 +25,20 @@ class AcessoServiceError(Exception):
 
 
 class AcessoNegadoError(AcessoServiceError):
-    """RFID não pode iniciar uma tentativa de acesso."""
+    """RFID foi processado, mas não pode iniciar uma tentativa de acesso."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        existe: bool = False,
+        usuario_id: int | None = None,
+        nome: str | None = None,
+    ):
+        super().__init__(message)
+        self.existe = existe
+        self.usuario_id = usuario_id
+        self.nome = nome
 
 
 class TentativaAcessoNaoEncontradaError(AcessoServiceError):
@@ -174,7 +187,12 @@ class AcessoService:
                 }
             )
 
-            raise AcessoNegadoError(negacao)
+            raise AcessoNegadoError(
+                negacao,
+                existe=usuario is not None,
+                usuario_id=usuario_id,
+                nome=usuario["nome"] if usuario else None,
+            )
 
         expira_em = agora + timedelta(seconds=timeout_segundos)
 
