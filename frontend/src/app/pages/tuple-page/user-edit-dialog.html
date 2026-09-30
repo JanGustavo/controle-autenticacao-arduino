@@ -203,13 +203,17 @@
       </div>
 
       @if (webcam.webcamAtiva()) {
-        <div class="webcam-viewport" #webcamContainer>
+        <div
+          class="webcam-viewport"
+          [class.droidcam-portrait]="webcam.droidCamRetrato()"
+          #webcamContainer
+        >
           <video
             #editVideo
             autoplay
             playsinline
             muted
-            style="transform: scaleX(-1)"
+           
           ></video>
 
           @if (webcam.dispararFlash()) {

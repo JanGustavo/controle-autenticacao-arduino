@@ -169,8 +169,12 @@
       </div>
 
       @if (webcam.webcamAtiva()) {
-        <div class="webcam-viewport" #webcamContainer>
-          <video #videoElement autoplay playsinline muted style="transform: scaleX(-1); -webkit-transform: scaleX(-1);"></video>
+        <div
+          class="webcam-viewport"
+          [class.droidcam-portrait]="webcam.droidCamRetrato()"
+          #webcamContainer
+        >
+          <video #videoElement autoplay playsinline muted></video>
 
           @if (webcam.dispararFlash()) {
             <div class="camera-flash-overlay"></div>

@@ -22,6 +22,10 @@ export class WebcamService {
   statusValidacao = signal<string>('Centralize o rosto');
   tipoStatus = signal<'info' | 'warn' | 'success'>('info');
   capturaPronta = signal(false);
+  cameraAtivaLabel = signal<string>('');
+  droidCamRetrato = signal(false);
+  larguraFrameProcessado = signal(0);
+  alturaFrameProcessado = signal(0);
 
   // Círculo Dinâmico (Bounding Box Suavizado)
   faceBox = signal<FaceBoxPosition | null>(null);
@@ -51,6 +55,9 @@ export class WebcamService {
   private ultimoEstadoEnquadramento: EstadoEnquadramento = null;
   private processandoDeteccao = false;
   private videoElementRef: ElementRef<HTMLVideoElement> | null = null;
+  private frameProcessamentoCanvas: HTMLCanvasElement = document.createElement('canvas');
+  private frameProcessamentoCtx: CanvasRenderingContext2D | null =
+    this.frameProcessamentoCanvas.getContext('2d', { willReadFrequently: true });
 
   // Buffer Canvas Reutilizável (Evita Garbage Collection contínuo)
   private lumaCanvas: HTMLCanvasElement = document.createElement('canvas');
@@ -109,40 +116,105 @@ async carregarModelos(): Promise<void> {
     try {
       await this.carregarModelos();
 
+      // Primeiro abre qualquer câmera para liberar os labels/deviceIds no navegador.
+      // Sem uma permissão inicial, enumerateDevices() pode retornar labels vazios.
       let streamInicial = await navigator.mediaDevices.getUserMedia({
-        video: { width: 1280, height: 720 },
+        video: true,
       });
 
       const devices = await navigator.mediaDevices.enumerateDevices();
       const cameras = devices.filter((d) => d.kind === 'videoinput');
 
-      const palavrasExterna = ['cubeternet', 'usb', 'webcam', 'logitech', 'external'];
-      const palavrasInterna = ['positivo', 'theia', 'integrated', 'built-in', 'interno'];
+      console.log(
+        '[Webcam] Câmeras disponíveis:',
+        cameras.map((camera) => `${camera.label || 'sem label'} (${camera.deviceId.slice(0, 8)}...)`),
+      );
 
-      let cameraExterna = cameras.find((c) => {
-        const label = c.label.toLowerCase();
+      const normalizarLabel = (label: string) => label.trim().toLowerCase();
+
+      // Para a demonstração, DroidCam tem prioridade absoluta quando estiver disponível.
+      const cameraDroidCam = cameras.find((camera) =>
+        normalizarLabel(camera.label).includes('droidcam'),
+      );
+
+      const palavrasExterna = [
+        'usb',
+        'webcam',
+        'logitech',
+        'external',
+        'virtual',
+        'obs',
+        'ndi',
+        'epoccam',
+        'ivcam',
+        'snap',
+      ];
+      const palavrasInterna = [
+        'positivo',
+        'theia',
+        'integrated',
+        'built-in',
+        'interno',
+        'facetime',
+      ];
+
+      const cameraExterna = cameras.find((camera) => {
+        const label = normalizarLabel(camera.label);
         return palavrasExterna.some((kw) => label.includes(kw))
           && !palavrasInterna.some((kw) => label.includes(kw));
       });
 
-      if (!cameraExterna && cameras.length > 1) {
-        cameraExterna = cameras.find((c) => {
-          const label = c.label.toLowerCase();
-          return !palavrasInterna.some((kw) => label.includes(kw));
-        });
-      }
+      const cameraNaoInterna = cameras.length > 1
+        ? cameras.find((camera) => {
+            const label = normalizarLabel(camera.label);
+            return !palavrasInterna.some((kw) => label.includes(kw));
+          })
+        : undefined;
+
+      const cameraPreferida = cameraDroidCam ?? cameraExterna ?? cameraNaoInterna;
 
       const trackAtual = streamInicial.getVideoTracks()[0];
       const deviceIdAtual = trackAtual?.getSettings()?.deviceId;
 
-      if (cameraExterna && cameraExterna.deviceId !== deviceIdAtual) {
-        streamInicial.getTracks().forEach((t) => t.stop());
-        streamInicial = await navigator.mediaDevices.getUserMedia({
-          video: { deviceId: { exact: cameraExterna.deviceId }, width: 1280, height: 720 },
-        });
+      console.log('[Webcam] Câmera selecionada pelo sistema:', trackAtual?.label || 'desconhecida');
+      console.log('[Webcam] Câmera preferida encontrada:', cameraPreferida?.label ?? 'nenhuma');
+
+      if (cameraPreferida && cameraPreferida.deviceId !== deviceIdAtual) {
+        streamInicial.getTracks().forEach((track) => track.stop());
+
+        try {
+          streamInicial = await navigator.mediaDevices.getUserMedia({
+            video: {
+              deviceId: { exact: cameraPreferida.deviceId },
+            },
+          });
+        } catch (erroCameraPreferida) {
+          console.warn(
+            '[Webcam] Não foi possível abrir a câmera preferida com exact; tentando ideal.',
+            erroCameraPreferida,
+          );
+
+          streamInicial = await navigator.mediaDevices.getUserMedia({
+            video: {
+              deviceId: { ideal: cameraPreferida.deviceId },
+            },
+          });
+        }
       }
 
       this.stream = streamInicial;
+      const trackAtivo = streamInicial.getVideoTracks()[0];
+      const settingsAtivos = trackAtivo?.getSettings();
+
+      this.cameraAtivaLabel.set(trackAtivo?.label || cameraPreferida?.label || 'Câmera padrão');
+
+      console.log(
+        '[Webcam] Stream ativo:',
+        this.cameraAtivaLabel(),
+        '| Settings:',
+        settingsAtivos,
+      );
+
       this.webcamAtiva.set(true);
       this.carregandoHardware.set(false);
 
@@ -150,18 +222,97 @@ async carregarModelos(): Promise<void> {
         this.speech.falar('Centralize o rosto e mantenha uma expressão séria.');
       }
 
-      setTimeout(() => {
-        const el = getVideoElement();
-        if (el?.nativeElement) {
-          this.videoElementRef = el;
-          el.nativeElement.srcObject = this.stream;
-          this.iniciarLoopValidacao();
+      // O elemento pode aparecer depois que webcamAtiva muda o template.
+      const esperarElemento = (): Promise<HTMLVideoElement> =>
+        new Promise((resolve, reject) => {
+          let tentativas = 0;
+
+          const verificar = () => {
+            tentativas++;
+            const el = getVideoElement();
+
+            if (el?.nativeElement) {
+              resolve(el.nativeElement);
+              return;
+            }
+
+            if (tentativas > 30) {
+              reject(new Error('Elemento de vídeo não encontrado após 3 segundos.'));
+              return;
+            }
+
+            setTimeout(verificar, 100);
+          };
+
+          verificar();
+        });
+
+      const videoEl = await esperarElemento();
+      this.videoElementRef = getVideoElement()!;
+      videoEl.srcObject = this.stream;
+
+      // Câmeras virtuais podem não iniciar somente com autoplay.
+      try {
+        await videoEl.play();
+      } catch (playErr) {
+        console.warn('[Webcam] video.play() retornou erro não crítico:', playErr);
+      }
+
+      // Não inicia a IA enquanto a câmera virtual ainda reporta 0x0.
+      await new Promise<void>((resolve) => {
+        if (videoEl.videoWidth > 0 && videoEl.videoHeight > 0) {
+          resolve();
+          return;
         }
-      }, 100);
-    } catch {
+
+        let concluido = false;
+        const concluir = () => {
+          if (concluido) return;
+          concluido = true;
+          videoEl.removeEventListener('loadedmetadata', concluir);
+          videoEl.removeEventListener('canplay', concluir);
+          resolve();
+        };
+
+        videoEl.addEventListener('loadedmetadata', concluir);
+        videoEl.addEventListener('canplay', concluir);
+
+        setTimeout(concluir, 5000);
+      });
+
+      const ehDroidCam = this.cameraAtivaLabel().toLowerCase().includes('droidcam');
+      const precisaRotacionarDroidCam =
+        ehDroidCam && videoEl.videoWidth > videoEl.videoHeight;
+
+      this.droidCamRetrato.set(precisaRotacionarDroidCam);
+      this.atualizarDimensoesProcessamento(videoEl);
+
+      console.log(
+        '[Webcam] Resolução do stream:',
+        videoEl.videoWidth,
+        'x',
+        videoEl.videoHeight,
+      );
+      console.log(
+        '[Webcam] Orientação aplicada:',
+        precisaRotacionarDroidCam
+          ? 'DroidCam retrato (90° anti-horário)'
+          : 'normal',
+        '| Frame IA:',
+        this.larguraFrameProcessado(),
+        'x',
+        this.alturaFrameProcessado(),
+      );
+
+      this.iniciarLoopValidacao();
+    } catch (err) {
+      console.error('[Webcam] Erro ao iniciar:', err);
       this.webcamAtiva.set(false);
       this.carregandoHardware.set(false);
-      this.webcamErro.set('Erro ao acessar a webcam. Verifique as permissões.');
+      this.cameraAtivaLabel.set('');
+      this.webcamErro.set(
+        'Erro ao acessar a webcam. Verifique as permissões e se o DroidCam está ativo.',
+      );
       this.speech.falar('Erro ao acessar a câmera.');
     }
   }
@@ -213,8 +364,11 @@ async carregarModelos(): Promise<void> {
           return;
         }
 
+        const fonteProcessamento = this.obterFonteProcessamento(video);
+        const larguraProcessamento = this.larguraFrameProcessado() || video.videoWidth;
+
         // Checagem de Iluminação Reutilizando Buffer Canvas
-        const brilhoMedio = this.calcularLuminanciaOtimizada(video);
+        const brilhoMedio = this.calcularLuminanciaOtimizada(fonteProcessamento);
         this.valorLuma.set(Math.round(brilhoMedio));
         if (brilhoMedio < 30) {
           this.capturaPronta.set(false);
@@ -230,7 +384,7 @@ async carregarModelos(): Promise<void> {
 
         // Detecção com TinyFaceDetector em Resolução Otimizada (224px)
         const detection = await faceapi
-          .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 }))
+          .detectSingleFace(fonteProcessamento, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 }))
           .withFaceLandmarks()
           .withFaceExpressions();
 
@@ -257,7 +411,7 @@ async carregarModelos(): Promise<void> {
           height: rawBox.height,
         });
 
-        const proporcaoRosto = rawBox.width / video.videoWidth;
+        const proporcaoRosto = rawBox.width / larguraProcessamento;
         this.proporcaoAtual.set(Math.round(proporcaoRosto * 100));
 
         if (proporcaoRosto < 0.18) {
@@ -367,9 +521,56 @@ async carregarModelos(): Promise<void> {
     this.progressoAutoCaptura.set(0);
   }
 
-  private calcularLuminanciaOtimizada(video: HTMLVideoElement): number {
+  private atualizarDimensoesProcessamento(video: HTMLVideoElement): void {
+    if (this.droidCamRetrato()) {
+      this.larguraFrameProcessado.set(video.videoHeight);
+      this.alturaFrameProcessado.set(video.videoWidth);
+      return;
+    }
+
+    this.larguraFrameProcessado.set(video.videoWidth);
+    this.alturaFrameProcessado.set(video.videoHeight);
+  }
+
+  private obterFonteProcessamento(
+    video: HTMLVideoElement,
+  ): HTMLVideoElement | HTMLCanvasElement {
+    if (!this.droidCamRetrato()) {
+      this.atualizarDimensoesProcessamento(video);
+      return video;
+    }
+
+    const largura = video.videoHeight;
+    const altura = video.videoWidth;
+
+    if (
+      this.frameProcessamentoCanvas.width !== largura
+      || this.frameProcessamentoCanvas.height !== altura
+    ) {
+      this.frameProcessamentoCanvas.width = largura;
+      this.frameProcessamentoCanvas.height = altura;
+    }
+
+    this.larguraFrameProcessado.set(largura);
+    this.alturaFrameProcessado.set(altura);
+
+    const ctx = this.frameProcessamentoCtx;
+    if (!ctx) return video;
+
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, largura, altura);
+    ctx.translate(0, altura);
+    ctx.rotate(-Math.PI / 2);
+    ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+    ctx.restore();
+
+    return this.frameProcessamentoCanvas;
+  }
+
+  private calcularLuminanciaOtimizada(fonte: CanvasImageSource): number {
     if (!this.lumaCtx) return 100;
-    this.lumaCtx.drawImage(video, 0, 0, 64, 48);
+    this.lumaCtx.drawImage(fonte, 0, 0, 64, 48);
     const imgData = this.lumaCtx.getImageData(0, 0, 64, 48);
     const data = imgData.data;
     let somaLuma = 0;
@@ -399,6 +600,10 @@ async carregarModelos(): Promise<void> {
     }
     this.webcamAtiva.set(false);
     this.capturaPronta.set(false);
+    this.cameraAtivaLabel.set('');
+    this.droidCamRetrato.set(false);
+    this.larguraFrameProcessado.set(0);
+    this.alturaFrameProcessado.set(0);
     this.videoElementRef = null;
     this.emCooldown.set(false);
   }
@@ -415,18 +620,20 @@ async capturarFrameComPreview(): Promise<{ blob: Blob; previewUrl: string } | nu
     this.executarEfeitoFlash();
     this.pararLoopValidacao();
 
+    const fonteProcessamento = this.obterFonteProcessamento(video);
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
+    canvas.width = this.larguraFrameProcessado() || video.videoWidth || 640;
+    canvas.height = this.alturaFrameProcessado() || video.videoHeight || 480;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return Promise.resolve(null);
 
-    // Inverte a imagem horizontalmente no Canvas
+    // Mantém a experiência de espelho, mas a foto já sai orientada em retrato
+    // quando a fonte ativa é DroidCam horizontal.
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
 
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(fonteProcessamento, 0, 0, canvas.width, canvas.height);
     const previewUrl = canvas.toDataURL('image/jpeg', 0.85);
 
     return new Promise((resolve) => {
