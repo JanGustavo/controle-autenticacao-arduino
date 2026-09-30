@@ -12,7 +12,7 @@ TipoUsuario = Literal["INTERNO", "VISITANTE"]
 class UsuarioCreate(BaseModel):
     nome: str
     cpf: str | None = Field(default=None, max_length=14)
-    tipo_usuario: TipoUsuario
+    tipo_usuario: TipoUsuario = "INTERNO"
     uid_card: str | None = None
     vetor_facial: list[float] | None = None
     ativo: bool = True
@@ -38,8 +38,8 @@ class UsuarioUpdate(BaseModel):
 class UsuarioResponse(BaseModel):
     user_id: int
     nome: str
-    cpf: str | None
-    tipo_usuario: TipoUsuario
+    cpf: str | None = None
+    tipo_usuario: TipoUsuario = "INTERNO"
     uid_card: str | None
     vetor_facial: list[float] | None
     ativo: bool
