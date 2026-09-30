@@ -182,16 +182,22 @@ export class CadastrarPage implements OnInit, OnDestroy {
     const video = this.videoElement?.nativeElement;
     const container = this.webcamContainer?.nativeElement;
 
-    if (!box || !video || !container || !video.videoWidth) {
+    const larguraFrame = this.webcam.larguraFrameProcessado() || video?.videoWidth || 0;
+    const alturaFrame = this.webcam.alturaFrameProcessado() || video?.videoHeight || 0;
+
+    if (!box || !video || !container || !larguraFrame || !alturaFrame) {
       return {};
     }
 
-    const scaleX = container.clientWidth / video.videoWidth;
-    const scaleY = container.clientHeight / video.videoHeight;
+    const scaleX = container.clientWidth / larguraFrame;
+    const scaleY = container.clientHeight / alturaFrame;
     const scaleFactor = 0.85;
     const size = Math.max(box.width * scaleX, box.height * scaleY) * scaleFactor;
 
-    const left = (box.x + box.width / 2) * scaleX - size / 2;
+    // A prévia é espelhada para navegação natural. A bounding box vem
+    // do frame não espelhado, então refletimos o eixo X para coincidir.
+    const boxXEspelhado = larguraFrame - box.x - box.width;
+    const left = (boxXEspelhado + box.width / 2) * scaleX - size / 2;
     const top = (box.y + box.height / 2) * scaleY - size / 2 - 10;
 
     return {
