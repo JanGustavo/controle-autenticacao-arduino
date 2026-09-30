@@ -147,8 +147,16 @@ h2 em {
   color: #dc2626;
 }
 
+.optional-label {
+  margin-left: 5px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
 input:not([type='checkbox']),
-textarea {
+textarea,
+.field select {
   width: 100%;
   padding: 12px 13px;
   box-sizing: border-box;
@@ -163,7 +171,8 @@ textarea {
 }
 
 input:not([type='checkbox']):focus,
-textarea:focus {
+textarea:focus,
+.field select:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
@@ -584,7 +593,8 @@ textarea:focus {
   }
 
   input:not([type='checkbox']),
-  textarea {
+  textarea,
+  .field select {
     background: #0f172a !important;
     border-color: #475569 !important;
     color: #f8fafc !important;
