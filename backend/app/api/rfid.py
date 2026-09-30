@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, Upl
 from app.schemas.rfid_schema import (
     CadastrarCartaoRequest,
     CadastrarCartaoResponse,
+    ConsultarCartaoResponse,
     ResultadoTentativaResponse,
     VerificarBiometriaArduinoResponse,
     VerificarCartaoRequest,
@@ -33,7 +34,7 @@ router = APIRouter()
     summary="Validar RFID e iniciar tentativa",
     response_description="Tentativa PENDENTE criada para a etapa facial",
     responses={
-        404: {"description": "Elegibilidade recusada pelo backend"},
+        200: {"description": "Leitura processada; pode iniciar biometria ou retornar NEGADO"},
         422: {"description": "Payload RFID inválido"},
         500: {"description": "Erro interno ao iniciar a tentativa"},
     },
@@ -90,10 +91,14 @@ async def verificar_cartao(request: VerificarCartaoRequest):
                 },
             }
         )
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(error),
-        ) from error
+        return VerificarCartaoResponse(
+            existe=error.existe,
+            tentativa_id=None,
+            usuario_id=error.usuario_id,
+            nome=error.nome,
+            mensagem=str(error),
+            proxima_etapa="NEGADO",
+        )
     except Exception as error:
         print(f"[RFID API Erro] {error}")
         raise HTTPException(
@@ -207,6 +212,37 @@ async def resultado_acesso(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Erro interno ao consultar a decisão de acesso.",
         ) from error
+
+
+@router.get(
+    "/cartao-status",
+    response_model=ConsultarCartaoResponse,
+    summary="Consultar disponibilidade de cartão RFID",
+    responses={
+        401: {"description": "JWT administrativo ausente ou inválido"},
+        422: {"description": "UID inválido"},
+    },
+)
+async def consultar_cartao(
+    uid_card: str = Query(
+        ...,
+        min_length=8,
+        max_length=20,
+        pattern=r"^[0-9A-Fa-f]{8}$|^[0-9A-Fa-f]{14}$|^[0-9A-Fa-f]{20}$",
+    ),
+    usuario_id: int | None = Query(default=None, gt=0),
+    _admin: dict = Depends(obter_administrador_atual),
+):
+    """
+    Consulta se o cartão já possui dono.
+
+    Em edição, informe usuario_id. O cartão do próprio usuário continua
+    válido; um cartão de outro usuário é retornado como indisponível.
+    """
+    return rfid_service.consultar_cartao(
+        uid_card=uid_card,
+        usuario_id=usuario_id,
+    )
 
 
 @router.post(

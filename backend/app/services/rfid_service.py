@@ -1,7 +1,7 @@
 from psycopg.errors import IntegrityError
 
 from app.models.usuario_model import usuario_model
-from app.schemas.rfid_schema import CadastrarCartaoResponse
+from app.schemas.rfid_schema import CadastrarCartaoResponse, ConsultarCartaoResponse
 
 
 class RFIDServiceError(Exception):
@@ -22,6 +22,57 @@ class UsuarioNaoEncontradoError(RFIDServiceError):
 
 
 class RFIDService:
+    @staticmethod
+    def consultar_cartao(
+        uid_card: str,
+        usuario_id: int | None = None,
+    ) -> ConsultarCartaoResponse:
+        """
+        Consulta se um UID já pertence a algum usuário.
+
+        Em edição, o mesmo cartão do próprio usuário continua disponível;
+        cartão pertencente a outro usuário é marcado como indisponível.
+        """
+        uid_normalizado = uid_card.strip().upper()
+        dono = usuario_model.buscar_por_uid(uid_normalizado)
+
+        if dono is None:
+            return ConsultarCartaoResponse(
+                uid_card=uid_normalizado,
+                cadastrado=False,
+                usuario_id=None,
+                nome=None,
+                disponivel_para_usuario=True,
+                mensagem="Cartão disponível para cadastro.",
+            )
+
+        mesmo_usuario = (
+            usuario_id is not None
+            and dono["user_id"] == usuario_id
+        )
+
+        if mesmo_usuario:
+            return ConsultarCartaoResponse(
+                uid_card=uid_normalizado,
+                cadastrado=True,
+                usuario_id=dono["user_id"],
+                nome=dono["nome"],
+                disponivel_para_usuario=True,
+                mensagem="Cartão já está associado a este usuário.",
+            )
+
+        return ConsultarCartaoResponse(
+            uid_card=uid_normalizado,
+            cadastrado=True,
+            usuario_id=dono["user_id"],
+            nome=dono["nome"],
+            disponivel_para_usuario=False,
+            mensagem=(
+                f"Cartão já está associado ao usuário {dono['nome']} "
+                f"(ID {dono['user_id']})."
+            ),
+        )
+
     @staticmethod
     def cadastrar_cartao(
         identificador_dispositivo: str,

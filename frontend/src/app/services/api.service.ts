@@ -151,6 +151,15 @@ export interface CadastrarCartaoResponse {
   mensagem: string;
 }
 
+export interface ConsultarCartaoResponse {
+  uid_card: string;
+  cadastrado: boolean;
+  usuario_id: number | null;
+  nome: string | null;
+  disponivel_para_usuario: boolean;
+  mensagem: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private http = inject(HttpClient);
@@ -297,6 +306,21 @@ export class ApiService {
     return this.http.post<VerificarBiometriaResponse>(
       `${API_BASE}/arduino/verificar-face`,
       dados,
+      { params },
+    );
+  }
+
+  consultarCartao(
+    uidCard: string,
+    usuarioId?: number,
+  ): Observable<ConsultarCartaoResponse> {
+    let params = new HttpParams().set('uid_card', uidCard);
+    if (usuarioId !== undefined && usuarioId !== null) {
+      params = params.set('usuario_id', usuarioId);
+    }
+
+    return this.http.get<ConsultarCartaoResponse>(
+      `${API_BASE}/arduino/cartao-status`,
       { params },
     );
   }
