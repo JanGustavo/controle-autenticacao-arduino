@@ -34,8 +34,8 @@
         </div>
       </div>
 
-      <div class="basic-grid">
-        <label>
+      <div class="basic-grid profile-grid">
+        <label class="profile-name">
           <span>Nome</span>
           <input
             type="text"
@@ -45,7 +45,27 @@
           />
         </label>
 
-        <label class="switch-field">
+        <label>
+          <span>CPF <small class="optional-label">opcional</small></span>
+          <input
+            type="text"
+            [(ngModel)]="cpf"
+            maxlength="14"
+            inputmode="numeric"
+            placeholder="000.000.000-00"
+            [disabled]="salvandoDados"
+          />
+        </label>
+
+        <label>
+          <span>Tipo de usuário</span>
+          <select [(ngModel)]="tipoUsuario" [disabled]="salvandoDados">
+            <option value="INTERNO">Interno</option>
+            <option value="VISITANTE">Visitante</option>
+          </select>
+        </label>
+
+        <label class="switch-field profile-status">
           <input type="checkbox" [(ngModel)]="ativo" [disabled]="salvandoDados" />
           <span class="switch"></span>
           <span>
