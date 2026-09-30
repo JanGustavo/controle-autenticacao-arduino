@@ -1,4 +1,5 @@
 import asyncio
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -190,6 +191,9 @@ app = FastAPI(
 # Configuração de CORS
 # ─────────────────────────────────────────────
 
+ardlock_domain = os.getenv("ARDLOCK_DOMAIN", "ardlock.jangostavo.com.br").strip()
+origens_https = [f"https://{ardlock_domain}"] if ardlock_domain else []
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -201,6 +205,7 @@ app.add_middleware(
         "http://127.0.0.1:4200",
         "http://127.0.0.1:8000",
         "http://127.0.0.1:8001",
+        *origens_https,
     ],
     allow_origin_regex=r"http\://(localhost|127\.0\.0\.1)(:\d+)?",
     allow_credentials=True,
