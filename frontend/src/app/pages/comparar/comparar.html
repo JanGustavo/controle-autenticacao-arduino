@@ -156,7 +156,11 @@
       }
 
       @if (webcam.webcamAtiva() && !webcam.carregandoHardware()) {
-        <div class="webcam-viewport" #webcamContainer>
+        <div
+          class="webcam-viewport"
+          [class.droidcam-portrait]="webcam.droidCamRetrato()"
+          #webcamContainer
+        >
           @if (webcam.dispararFlash()) {
             <div class="camera-flash-overlay"></div>
           }
