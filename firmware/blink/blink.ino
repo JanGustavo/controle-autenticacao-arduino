@@ -21,7 +21,7 @@
 // Objetos e configurações
 const char *ssid = WIFI_SSID;
 const char *password = WIFI_PASSWORD;
-const char *identificadorDispositivo = "ESP32-ENTRADA-01";
+const char *identificadorDispositivo = DEVICE_ID;
 
 // Endpoints
 const char *api_health = API_URL "/api/v1/health";

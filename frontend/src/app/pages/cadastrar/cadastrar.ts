@@ -1,4 +1,4 @@
-import { Component, ElementRef, inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -39,6 +39,7 @@ export interface LocalPermissaoItem {
 })
 export class CadastrarPage implements OnInit, OnDestroy {
   @ViewChild('videoElement') videoElement?: ElementRef<HTMLVideoElement>;
+  @ViewChild('webcamContainer') webcamContainer?: ElementRef<HTMLDivElement>;
 
   private formBuilder = inject(FormBuilder);
   private api = inject(ApiService);
@@ -47,6 +48,7 @@ export class CadastrarPage implements OnInit, OnDestroy {
   public webcam = inject(WebcamService);
   public wsLogs = inject(WebSocketLogsService);
 
+  modoTotem = signal(true);
   cameraOpened = false;
   scanning = false;
   submitted = false;
@@ -67,11 +69,11 @@ export class CadastrarPage implements OnInit, OnDestroy {
   private wsSubscription: Subscription | null = null;
 
   get dispositivoRfidSelecionado(): DispositivoSimplesResponse | null {
-    if (this.dispositivoRfidSelecionadoId === null) return null;
+    if (this.dispositivoRfidSelecionadoId === null || this.dispositivoRfidSelecionadoId === undefined) return null;
 
     return this.dispositivosRfid.find(
       (dispositivo) =>
-        dispositivo.dispositivo_id === this.dispositivoRfidSelecionadoId
+        Number(dispositivo.dispositivo_id) === Number(this.dispositivoRfidSelecionadoId)
     ) ?? null;
   }
 
@@ -133,9 +135,15 @@ export class CadastrarPage implements OnInit, OnDestroy {
         if (
           evento.type !== 'RFID_LIDO' ||
           !this.aguardandoRfid ||
-          evento.data.identificador_dispositivo !== this.identificadorRfidSelecionado ||
           !evento.data.uid_card
         ) {
+          return;
+        }
+
+        const eventoDisp = (evento.data.identificador_dispositivo || '').trim().toUpperCase();
+        const leitorAtual = (this.identificadorRfidSelecionado || '').trim().toUpperCase();
+
+        if (eventoDisp && leitorAtual && eventoDisp !== leitorAtual) {
           return;
         }
 
@@ -151,8 +159,54 @@ export class CadastrarPage implements OnInit, OnDestroy {
     this.wsSubscription?.unsubscribe();
   }
 
+  toggleModoTotem(): void {
+    this.modoTotem.set(!this.modoTotem());
+    this.speech.falar(
+      this.modoTotem()
+        ? 'Modo totem ativado. Auto-captura habilitada.'
+        : 'Modo assistido ativado. Captura manual.',
+      true
+    );
+    if (this.webcam.webcamAtiva()) {
+      void this.iniciarWebcam();
+    }
+  }
+
+  obterEstiloOvalDinamico(): { [key: string]: string } {
+    const box = this.webcam.faceBox();
+    const video = this.videoElement?.nativeElement;
+    const container = this.webcamContainer?.nativeElement;
+
+    if (!box || !video || !container || !video.videoWidth) {
+      return {};
+    }
+
+    const scaleX = container.clientWidth / video.videoWidth;
+    const scaleY = container.clientHeight / video.videoHeight;
+    const scaleFactor = 0.85;
+    const size = Math.max(box.width * scaleX, box.height * scaleY) * scaleFactor;
+
+    const left = (box.x + box.width / 2) * scaleX - size / 2;
+    const top = (box.y + box.height / 2) * scaleY - size / 2 - 10;
+
+    return {
+      left: `${left}px`,
+      top: `${top}px`,
+      width: `${size}px`,
+      height: `${size}px`,
+      transform: 'none',
+    };
+  }
+
   async iniciarWebcam(): Promise<void> {
-    await this.webcam.iniciarWebcam(() => this.videoElement);
+    if (this.modoTotem()) {
+      this.speech.falar('Centralize o rosto na moldura para cadastro.');
+    }
+    await this.webcam.iniciarWebcam(
+      () => this.videoElement,
+      this.modoTotem(),
+      () => void this.capturarFrameWebcam()
+    );
   }
 
   pararWebcam(): void {
@@ -161,7 +215,7 @@ export class CadastrarPage implements OnInit, OnDestroy {
   }
 
   async capturarFrameWebcam(): Promise<void> {
-    if (!this.webcam.capturaPronta()) return;
+    if (!this.webcam.capturaPronta() && !this.modoTotem()) return;
 
     const res = await this.webcam.capturarFrameComPreview();
     if (!res) return;

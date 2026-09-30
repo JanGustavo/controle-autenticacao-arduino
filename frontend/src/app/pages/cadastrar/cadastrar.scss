@@ -56,6 +56,15 @@
   text-transform: uppercase;
 }
 
+.heading-with-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
 h1 {
   margin: 8px 0;
   font-size: clamp(2rem, 4vw, 3.1rem);

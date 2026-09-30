@@ -4,6 +4,7 @@ import {
   ElementRef,
   OnDestroy,
   OnInit,
+  signal,
   ViewChild,
   inject,
 } from '@angular/core';
@@ -21,6 +22,7 @@ import {
   DispositivoSimplesResponse,
   UsuarioResponse,
 } from '../../services/api.service';
+import { SpeechService } from '../../services/speech.service';
 import { WebcamService } from '../../services/webcam.service';
 import { WebSocketLogsService } from '../../services/websocket-logs.service';
 
@@ -48,10 +50,12 @@ export interface UserEditDialogResult {
 })
 export class UserEditDialog implements OnInit, OnDestroy {
   @ViewChild('editVideo') videoElement?: ElementRef<HTMLVideoElement>;
+  @ViewChild('webcamContainer') webcamContainer?: ElementRef<HTMLDivElement>;
 
   private api = inject(ApiService);
   private cdr = inject(ChangeDetectorRef);
   private snackBar = inject(MatSnackBar);
+  private speech = inject(SpeechService);
   private dialogRef = inject(
     MatDialogRef<UserEditDialog, UserEditDialogResult>,
   );
@@ -59,6 +63,7 @@ export class UserEditDialog implements OnInit, OnDestroy {
   private wsLogs = inject(WebSocketLogsService);
   public webcam = inject(WebcamService);
 
+  modoTotem = signal(true);
   usuario: UsuarioResponse = { ...this.data.usuario };
   nome = this.usuario.nome;
   ativo = this.usuario.ativo;
@@ -85,10 +90,10 @@ export class UserEditDialog implements OnInit, OnDestroy {
   private wsSubscription: Subscription | null = null;
 
   get dispositivoSelecionado(): DispositivoSimplesResponse | null {
-    if (this.dispositivoSelecionadoId === null) return null;
+    if (this.dispositivoSelecionadoId === null || this.dispositivoSelecionadoId === undefined) return null;
     return (
       this.dispositivos.find(
-        (item) => item.dispositivo_id === this.dispositivoSelecionadoId,
+        (item) => Number(item.dispositivo_id) === Number(this.dispositivoSelecionadoId),
       ) ?? null
     );
   }
@@ -110,10 +115,12 @@ export class UserEditDialog implements OnInit, OnDestroy {
         if (dispositivos.length) {
           this.dispositivoSelecionadoId = dispositivos[0].dispositivo_id;
         }
+        this.cdr.markForCheck();
       },
       error: () => {
         this.carregandoDispositivos = false;
         this.erro = 'Não foi possível carregar os dispositivos RFID.';
+        this.cdr.markForCheck();
       },
     });
 
@@ -123,19 +130,20 @@ export class UserEditDialog implements OnInit, OnDestroy {
           evento.type !== 'RFID_LIDO'
           || !this.aguardandoRfid
           || !evento.data.uid_card
-          || evento.data.identificador_dispositivo !== this.identificadorDispositivo
         ) {
+          return;
+        }
+
+        const eventoDisp = (evento.data.identificador_dispositivo || '').trim().toUpperCase();
+        const leitorAtual = (this.identificadorDispositivo || '').trim().toUpperCase();
+
+        if (eventoDisp && leitorAtual && eventoDisp !== leitorAtual) {
           return;
         }
 
         this.uidNovo = this.normalizarUid(evento.data.uid_card);
         this.aguardandoRfid = false;
-
-        // O WebSocket nativo pode entregar eventos fora do ciclo de
-        // renderização do Angular. Força a atualização imediata para o
-        // UID aparecer no input e o estado "Aguardando cartão" encerrar.
         this.cdr.detectChanges();
-
         this.validarUidAtual();
       },
     });
@@ -293,11 +301,57 @@ export class UserEditDialog implements OnInit, OnDestroy {
       });
   }
 
+  toggleModoTotem(): void {
+    this.modoTotem.set(!this.modoTotem());
+    this.speech.falar(
+      this.modoTotem()
+        ? 'Modo totem ativado. Auto-captura habilitada.'
+        : 'Modo assistido ativado. Captura manual.',
+      true
+    );
+    if (this.webcam.webcamAtiva()) {
+      void this.iniciarWebcam();
+    }
+  }
+
+  obterEstiloOvalDinamico(): { [key: string]: string } {
+    const box = this.webcam.faceBox();
+    const video = this.videoElement?.nativeElement;
+    const container = this.webcamContainer?.nativeElement;
+
+    if (!box || !video || !container || !video.videoWidth) {
+      return {};
+    }
+
+    const scaleX = container.clientWidth / video.videoWidth;
+    const scaleY = container.clientHeight / video.videoHeight;
+    const scaleFactor = 0.85;
+    const size = Math.max(box.width * scaleX, box.height * scaleY) * scaleFactor;
+
+    const left = (box.x + box.width / 2) * scaleX - size / 2;
+    const top = (box.y + box.height / 2) * scaleY - size / 2 - 10;
+
+    return {
+      left: `${left}px`,
+      top: `${top}px`,
+      width: `${size}px`,
+      height: `${size}px`,
+      transform: 'none',
+    };
+  }
+
   async iniciarWebcam(): Promise<void> {
     this.fotoCapturada = null;
     this.fotoPreviewUrl = null;
     this.erro = '';
-    await this.webcam.iniciarWebcam(() => this.videoElement);
+    if (this.modoTotem()) {
+      this.speech.falar('Centralize o rosto na moldura para atualizar a biometria.');
+    }
+    await this.webcam.iniciarWebcam(
+      () => this.videoElement,
+      this.modoTotem(),
+      () => void this.capturarFoto()
+    );
   }
 
   pararWebcam(): void {
@@ -305,7 +359,7 @@ export class UserEditDialog implements OnInit, OnDestroy {
   }
 
   async capturarFoto(): Promise<void> {
-    if (!this.webcam.capturaPronta()) return;
+    if (!this.webcam.capturaPronta() && !this.modoTotem()) return;
     const captura = await this.webcam.capturarFrameComPreview();
     if (!captura) {
       this.erro = 'Não foi possível capturar a imagem da webcam.';
@@ -316,6 +370,8 @@ export class UserEditDialog implements OnInit, OnDestroy {
     this.fotoPreviewUrl = captura.previewUrl;
     this.pararWebcam();
     this.aviso = 'Captura pronta para cadastrar a biometria.';
+    this.speech.falar('Foto capturada com sucesso.');
+    this.cdr.detectChanges();
   }
 
   selecionarImagem(event: Event): void {

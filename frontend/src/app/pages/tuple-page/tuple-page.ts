@@ -295,7 +295,7 @@ export class TuplePage implements OnInit, OnDestroy {
       uid_card: usuario.uid_card ?? '-',
       vetor_facial: usuario.vetor_facial && qtdVetor > 0 ? `${qtdVetor} dimensões` : 'Não Cadastrado',
       ativo: usuario.ativo ? 'Sim' : 'Não',
-      criado_em: usuario.criado_em,
+      criado_em: this.formatarDataHora(usuario.criado_em, false),
     };
   }
 
@@ -313,6 +313,28 @@ export class TuplePage implements OnInit, OnDestroy {
   private formatarDias(dias: number[]): string {
     const nomes = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
     return dias.length ? dias.map((dia) => nomes[dia - 1] ?? `Dia ${dia}`).join(', ') : 'Nenhum dia definido';
+  }
+
+  private formatarDataHora(dataStr: string | null | undefined, incluirSegundos: boolean = true): string {
+    if (!dataStr) return '-';
+    try {
+      const d = new Date(dataStr);
+      if (isNaN(d.getTime())) return String(dataStr);
+
+      const dia = String(d.getDate()).padStart(2, '0');
+      const mes = String(d.getMonth() + 1).padStart(2, '0');
+      const ano = d.getFullYear();
+      const horas = String(d.getHours()).padStart(2, '0');
+      const minutos = String(d.getMinutes()).padStart(2, '0');
+      const segundos = String(d.getSeconds()).padStart(2, '0');
+
+      if (incluirSegundos) {
+        return `${dia}/${mes}/${ano} ${horas}:${minutos}:${segundos}`;
+      }
+      return `${dia}/${mes}/${ano} ${horas}:${minutos}`;
+    } catch {
+      return String(dataStr);
+    }
   }
 
   private atualizarLinhasPermissoes(): void {
@@ -338,7 +360,7 @@ export class TuplePage implements OnInit, OnDestroy {
       usuario_id: registro.usuario_id === null ? 'Não identificado' : this.nomeUsuario(registro.usuario_id),
       local_id: registro.local_id === null ? 'Não identificado' : this.nomeLocal(registro.local_id),
       uid_card_lido: registro.uid_card_lido ?? '-',
-      data_hora: registro.data_hora,
+      data_hora: this.formatarDataHora(registro.data_hora, true),
       autorizado: registro.autorizado ? 'Sim' : 'Não',
       percentual_similaridade: simDisplay,
       motivo_recusa: registro.motivo_recusa ?? '-',

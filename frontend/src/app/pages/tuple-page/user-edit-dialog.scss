@@ -1,3 +1,5 @@
+@use '../../styles/webcam';
+
 .user-edit-dialog {
   width: min(860px, 92vw);
   max-height: 88vh;
@@ -14,6 +16,18 @@
 .status-summary {
   display: flex;
   align-items: center;
+}
+
+.heading-with-action {
+  justify-content: space-between;
+  width: 100%;
+  flex-wrap: wrap;
+
+  .title-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
 }
 
 .dialog-header {

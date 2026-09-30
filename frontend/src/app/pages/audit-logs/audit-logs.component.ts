@@ -50,8 +50,19 @@ export class AuditLogsComponent implements OnInit {
   }
 
   formatDate(isoDate: string): string {
-    if (!isoDate) return '';
-    const date = new Date(isoDate);
-    return date.toLocaleString();
+    if (!isoDate) return '-';
+    try {
+      const d = new Date(isoDate);
+      if (isNaN(d.getTime())) return isoDate;
+      const dia = String(d.getDate()).padStart(2, '0');
+      const mes = String(d.getMonth() + 1).padStart(2, '0');
+      const ano = d.getFullYear();
+      const horas = String(d.getHours()).padStart(2, '0');
+      const minutos = String(d.getMinutes()).padStart(2, '0');
+      const segundos = String(d.getSeconds()).padStart(2, '0');
+      return `${dia}/${mes}/${ano} ${horas}:${minutos}:${segundos}`;
+    } catch {
+      return isoDate;
+    }
   }
 }

@@ -159,19 +159,31 @@
     </section>
 
     <section class="edit-section">
-      <div class="section-title">
-        <mat-icon>face</mat-icon>
-        <div>
-          <h3>Biometria facial</h3>
-          <p>
-            Status:
-            <strong>{{ temBiometria ? 'Cadastrada' : 'Não cadastrada' }}</strong>
-          </p>
+      <div class="section-title heading-with-action">
+        <div class="title-left">
+          <mat-icon>face</mat-icon>
+          <div>
+            <h3>Biometria facial</h3>
+            <p>
+              Status:
+              <strong>{{ temBiometria ? 'Cadastrada' : 'Não cadastrada' }}</strong>
+            </p>
+          </div>
         </div>
+        <button
+          type="button"
+          mat-stroked-button
+          class="btn-totem-toggle"
+          [color]="modoTotem() ? 'accent' : 'primary'"
+          (click)="toggleModoTotem()"
+        >
+          <mat-icon>{{ modoTotem() ? 'touch_app' : 'center_focus_strong' }}</mat-icon>
+          {{ modoTotem() ? 'Modo Totem (Auto)' : 'Modo Assistido' }}
+        </button>
       </div>
 
       @if (webcam.webcamAtiva()) {
-        <div class="camera-box">
+        <div class="webcam-viewport" #webcamContainer>
           <video
             #editVideo
             autoplay
@@ -180,23 +192,61 @@
             style="transform: scaleX(-1)"
           ></video>
 
-          <div class="camera-status" [class.ready]="webcam.capturaPronta()">
-            {{ webcam.statusValidacao() }}
+          @if (webcam.dispararFlash()) {
+            <div class="camera-flash-overlay"></div>
+          }
+
+          <!-- Badge Visual Dinâmico de IA -->
+          <div class="status-badge" [ngClass]="webcam.tipoStatus()">
+            <mat-icon>{{ webcam.tipoStatus() === 'success' ? 'check_circle' : 'warning' }}</mat-icon>
+            <span>{{ webcam.statusValidacao() }}</span>
+          </div>
+
+          <!-- Guia Oval de Centralização Facial -->
+          <div class="face-overlay">
+            <div
+              class="face-oval"
+              [class.valid]="webcam.tipoStatus() === 'success'"
+              [class.dynamic]="!!webcam.faceBox()"
+              [style]="obterEstiloOvalDinamico()"
+            >
+              @if (webcam.progressoAutoCaptura() > 0) {
+                <svg class="progress-ring">
+                  <circle
+                    r="48%"
+                    cx="50%"
+                    cy="50%"
+                    [style.strokeDashoffset]="
+                      600 - (600 * webcam.progressoAutoCaptura()) / 100
+                    "
+                  />
+                </svg>
+              }
+            </div>
+            <span class="guide-text">
+              {{
+                modoTotem()
+                  ? 'Mantenha a posição para auto-captura'
+                  : 'Centralize o rosto no círculo e clique em Capturar'
+              }}
+            </span>
           </div>
         </div>
 
         <div class="section-actions">
-          <button
-            type="button"
-            mat-flat-button
-            color="primary"
-            (click)="capturarFoto()"
-            [disabled]="!webcam.capturaPronta()"
-          >
-            <mat-icon>photo_camera</mat-icon>
-            Capturar
-          </button>
-          <button type="button" mat-button (click)="pararWebcam()">
+          @if (!modoTotem()) {
+            <button
+              type="button"
+              mat-flat-button
+              color="primary"
+              (click)="capturarFoto()"
+              [disabled]="!webcam.capturaPronta()"
+            >
+              <mat-icon>photo_camera</mat-icon>
+              Capturar Foto
+            </button>
+          }
+          <button type="button" mat-button color="warn" (click)="pararWebcam()">
             Cancelar câmera
           </button>
         </div>

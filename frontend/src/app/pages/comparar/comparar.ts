@@ -305,7 +305,7 @@ export class CompararPage implements OnInit, OnDestroy {
   carregarHistorico(): void {
     this.api.getHistoricoAcesso().subscribe({
       next: (data) => {
-        this.historicoRecente.set(data.slice(-5).reverse());
+        this.historicoRecente.set(data.slice(0, 5));
       },
       error: () => {},
     });
