@@ -319,3 +319,83 @@ def test_revalidacao_final_nega_mesmo_com_face_compativel():
 
     mock_finalizar.assert_called_once()
     assert mock_finalizar.call_args.kwargs["status"] == "NEGADO"
+
+
+def test_verificar_cartao_desconhecido_retorna_200_com_negado():
+    with patch(
+        "app.services.acesso_service.dispositivo_model.buscar_por_identificador"
+    ) as mock_disp, patch(
+        "app.services.acesso_service.local_model.buscar_por_id"
+    ) as mock_local, patch(
+        "app.services.acesso_service.usuario_model.buscar_por_uid"
+    ) as mock_user, patch(
+        "app.services.acesso_service.historico_acesso_model.criar"
+    ), patch(
+        "app.api.rfid.manager.broadcast"
+    ):
+        mock_disp.return_value = {
+            "dispositivo_id": 1,
+            "local_id": 1,
+            "identificador": "ESP32-ENTRADA-01",
+            "ativo": True,
+        }
+        mock_local.return_value = {
+            "local_id": 1,
+            "nome": "Entrada principal",
+            "ativo": True,
+        }
+        mock_user.return_value = None
+
+        response = client.post(
+            "/api/v1/arduino/verificar-cartao",
+            json={
+                "uid_card": "DEADBEEF",
+                "identificador_dispositivo": "ESP32-ENTRADA-01",
+            },
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["existe"] is False
+    assert body["tentativa_id"] is None
+    assert body["proxima_etapa"] == "NEGADO"
+    assert "não cadastrado" in body["mensagem"].lower()
+
+
+def test_cartao_status_informa_conflito_com_outro_usuario():
+    payload = {
+        "uid_card": "A1B2C3D4",
+        "cadastrado": True,
+        "usuario_id": 22,
+        "nome": "Outro Usuário",
+        "disponivel_para_usuario": False,
+        "mensagem": "Cartão já está associado ao usuário Outro Usuário (ID 22).",
+    }
+
+    with patch(
+        "app.api.rfid.rfid_service.consultar_cartao",
+        return_value=payload,
+    ) as consultar:
+        with _auth_override():
+            response = client.get(
+                "/api/v1/arduino/cartao-status",
+                params={
+                    "uid_card": "A1B2C3D4",
+                    "usuario_id": 10,
+                },
+            )
+
+    assert response.status_code == 200
+    assert response.json() == payload
+    consultar.assert_called_once_with(
+        uid_card="A1B2C3D4",
+        usuario_id=10,
+    )
+
+
+def test_cartao_status_exige_autenticacao():
+    response = client.get(
+        "/api/v1/arduino/cartao-status",
+        params={"uid_card": "A1B2C3D4"},
+    )
+    assert response.status_code == 401
