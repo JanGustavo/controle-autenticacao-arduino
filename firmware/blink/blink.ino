@@ -307,20 +307,38 @@ bool iniciarTentativaAcesso(const char *uuid, String &tentativaId)
 
     if (httpCode != 200)
     {
-        Serial.print("RFID/eligibilidade recusado. HTTP: ");
+        Serial.print("Falha HTTP ao processar RFID: ");
         Serial.println(httpCode);
         http.end();
         return false;
     }
 
     String response = http.getString();
+    String proximaEtapa = extrairCampoJson(response, "proxima_etapa");
+    String mensagem = extrairCampoJson(response, "mensagem");
+
+    if (proximaEtapa == "NEGADO")
+    {
+        Serial.print("RFID processado, acesso negado: ");
+        Serial.println(mensagem);
+        http.end();
+        return false;
+    }
+
     tentativaId = extrairCampoJson(response, "tentativa_id");
+
+    if (tentativaId.length() == 0)
+    {
+        Serial.println("Resposta valida, mas sem tentativa_id.");
+        http.end();
+        return false;
+    }
 
     Serial.print("Tentativa criada: ");
     Serial.println(tentativaId);
 
     http.end();
-    return tentativaId.length() > 0;
+    return true;
 }
 
 bool aguardarDecisaoAcesso(const String &tentativaId)
