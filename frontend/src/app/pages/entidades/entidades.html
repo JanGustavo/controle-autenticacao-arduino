@@ -43,6 +43,7 @@
       <div class="entity-relations">
         <span class="rel-tag"><strong>1 : N</strong> permissao</span>
         <span class="rel-tag"><strong>1 : N</strong> historico_acesso</span>
+        <span class="rel-tag"><strong>1 : N</strong> tentativa_acesso</span>
       </div>
     </article>
 
@@ -95,7 +96,7 @@
           <li><mat-icon>contactless</mat-icon><span><strong>uid_card_lido</strong><small>VARCHAR(100)</small></span></li>
           <li><mat-icon>event</mat-icon><span><strong>data_hora</strong><small>TIMESTAMP</small></span></li>
           <li><mat-icon>verified</mat-icon><span><strong>autorizado</strong><small>BOOLEAN</small></span></li>
-          <li><mat-icon>percent</mat-icon><span><strong>percentual_similaridade</strong><small>FLOAT8</small></span></li>
+          <li><mat-icon>percent</mat-icon><span><strong>percentual_similaridade</strong><small>FLOAT</small></span></li>
           <li><mat-icon>block</mat-icon><span><strong>motivo_recusa</strong><small>VARCHAR(255)</small></span></li>
         </ul>
       }
