@@ -2,7 +2,12 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-const API_BASE = 'http://localhost:8001/api/v1';
+const isLocalDev =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+const API_BASE = isLocalDev
+  ? 'http://localhost:8001/api/v1'
+  : `${window.location.origin}/api/v1`;
 
 export interface HealthResponse {
   message: string;
