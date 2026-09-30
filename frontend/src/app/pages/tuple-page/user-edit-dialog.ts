@@ -20,6 +20,7 @@ import { Subscription } from 'rxjs';
 import {
   ApiService,
   DispositivoSimplesResponse,
+  TipoUsuario,
   UsuarioResponse,
 } from '../../services/api.service';
 import { SpeechService } from '../../services/speech.service';
@@ -66,6 +67,8 @@ export class UserEditDialog implements OnInit, OnDestroy {
   modoTotem = signal(true);
   usuario: UsuarioResponse = { ...this.data.usuario };
   nome = this.usuario.nome;
+  cpf = this.formatarCpf(this.usuario.cpf);
+  tipoUsuario: TipoUsuario = this.usuario.tipo_usuario;
   ativo = this.usuario.ativo;
 
   salvandoDados = false;
@@ -161,19 +164,30 @@ export class UserEditDialog implements OnInit, OnDestroy {
       return;
     }
 
-    this.salvandoDados = true;
     this.erro = '';
     this.aviso = '';
+
+    const cpf = this.normalizarCpf(this.cpf);
+    if (cpf !== null && cpf.length !== 11) {
+      this.erro = 'CPF deve conter 11 dígitos.';
+      return;
+    }
+
+    this.salvandoDados = true;
 
     this.api
       .atualizarUsuario(this.usuario.user_id, {
         nome,
+        cpf,
+        tipo_usuario: this.tipoUsuario,
         ativo: this.ativo,
       })
       .subscribe({
         next: (usuario) => {
           this.usuario = usuario;
           this.nome = usuario.nome;
+          this.cpf = this.formatarCpf(usuario.cpf);
+          this.tipoUsuario = usuario.tipo_usuario;
           this.ativo = usuario.ativo;
           this.salvandoDados = false;
           this.alterado = true;
@@ -436,6 +450,18 @@ export class UserEditDialog implements OnInit, OnDestroy {
 
   fechar(): void {
     this.dialogRef.close({ atualizado: this.alterado });
+  }
+
+  private normalizarCpf(cpf: string): string | null {
+    const digitos = cpf.replace(/\D/g, '');
+    return digitos || null;
+  }
+
+  private formatarCpf(cpf: string | null): string {
+    if (!cpf) return '';
+    const digitos = cpf.replace(/\D/g, '');
+    if (digitos.length !== 11) return cpf;
+    return digitos.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
   }
 
   private normalizarUid(uid: string): string {

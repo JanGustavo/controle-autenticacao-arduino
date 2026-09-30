@@ -292,6 +292,8 @@ export class TuplePage implements OnInit, OnDestroy {
     return {
       user_id: usuario.user_id,
       nome: usuario.nome,
+      cpf: this.formatarCpf(usuario.cpf),
+      tipo_usuario: usuario.tipo_usuario === 'VISITANTE' ? 'Visitante' : 'Interno',
       uid_card: usuario.uid_card ?? '-',
       vetor_facial: usuario.vetor_facial && qtdVetor > 0 ? `${qtdVetor} dimensões` : 'Não Cadastrado',
       ativo: usuario.ativo ? 'Sim' : 'Não',
@@ -308,6 +310,13 @@ export class TuplePage implements OnInit, OnDestroy {
       horario_fim: permissao.horario_fim,
       dias_semana: this.formatarDias(permissao.dias_semana),
     };
+  }
+
+  private formatarCpf(cpf: string | null | undefined): string {
+    if (!cpf) return '-';
+    const digitos = cpf.replace(/\D/g, '');
+    if (digitos.length !== 11) return cpf;
+    return digitos.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
   }
 
   private formatarDias(dias: number[]): string {

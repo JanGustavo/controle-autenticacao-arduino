@@ -133,6 +133,21 @@
     border-color: #22c55e;
     box-shadow: 0 0 25px rgba(34, 197, 94, 0.6);
   }
+
+  // Quando a IA fornece uma bounding box, as coordenadas são relativas
+  // ao canto superior esquerdo do vídeo. O guia precisa sair do fluxo
+  // flex centralizado para usar essas coordenadas corretamente.
+  &.dynamic {
+    position: absolute !important;
+    margin: 0;
+    transition:
+      left 0.12s ease-out,
+      top 0.12s ease-out,
+      width 0.12s ease-out,
+      height 0.12s ease-out,
+      border-color 0.3s ease,
+      box-shadow 0.3s ease;
+  }
 }
 
 /* Anel SVG de Progresso da Auto-captura */

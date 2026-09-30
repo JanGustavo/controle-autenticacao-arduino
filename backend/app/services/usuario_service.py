@@ -11,6 +11,20 @@ from app.schemas.usuario_schema import UsuarioCreate, UsuarioUpdate
 
 class UsuarioService:
     @staticmethod
+    def _normalizar_cpf(cpf: str | None) -> str | None:
+        if cpf is None:
+            return None
+        normalizado = re.sub(r"\D", "", cpf)
+        if not normalizado:
+            return None
+        if len(normalizado) != 11:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="CPF deve conter 11 dígitos.",
+            )
+        return normalizado
+
+    @staticmethod
     def _normalizar_uid(uid_card: str | None) -> str | None:
         if uid_card is None:
             return None
@@ -41,6 +55,8 @@ class UsuarioService:
                     criado = usuario_model.criar_com_cursor(
                         cursor,
                         nome=usuario.nome,
+                        cpf=self._normalizar_cpf(usuario.cpf),
+                        tipo_usuario=usuario.tipo_usuario,
                         uid_card=self._normalizar_uid(usuario.uid_card),
                         vetor_facial=usuario.vetor_facial,
                         ativo=usuario.ativo,
@@ -60,13 +76,16 @@ class UsuarioService:
         except IntegrityError as error:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="O cartão informado já está cadastrado.",
+                detail="CPF ou cartão informado já está cadastrado.",
             ) from error
 
     def atualizar_usuario(self, usuario_id: int, usuario: UsuarioUpdate):
         campos = usuario.model_dump(exclude_unset=True)
         if not campos:
             return self.obter_usuario(usuario_id)
+
+        if "cpf" in campos:
+            campos["cpf"] = self._normalizar_cpf(campos["cpf"])
 
         if "uid_card" in campos:
             campos["uid_card"] = self._normalizar_uid(campos["uid_card"])
@@ -76,7 +95,7 @@ class UsuarioService:
         except IntegrityError as error:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="O cartão informado já está cadastrado.",
+                detail="CPF ou cartão informado já está cadastrado.",
             ) from error
 
         if atualizado is None:

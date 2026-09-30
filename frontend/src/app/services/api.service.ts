@@ -8,9 +8,13 @@ export interface HealthResponse {
   message: string;
 }
 
+export type TipoUsuario = 'INTERNO' | 'VISITANTE';
+
 export interface UsuarioResponse {
   user_id: number;
   nome: string;
+  cpf: string | null;
+  tipo_usuario: TipoUsuario;
   uid_card: string | null;
   vetor_facial: number[] | null;
   ativo: boolean;
@@ -20,6 +24,8 @@ export interface UsuarioResponse {
 export interface UsuarioSimplesResponse {
   user_id: number;
   nome: string;
+  cpf: string | null;
+  tipo_usuario: TipoUsuario;
   uid_card: string | null;
   ativo: boolean;
 }
@@ -32,6 +38,8 @@ export interface DispositivoSimplesResponse {
 
 export interface UsuarioCreateRequest {
   nome: string;
+  cpf: string | null;
+  tipo_usuario: TipoUsuario;
   uid_card: string | null;
   vetor_facial: number[] | null;
   ativo: boolean;
@@ -40,6 +48,8 @@ export interface UsuarioCreateRequest {
 
 export interface UsuarioUpdateRequest {
   nome?: string;
+  cpf?: string | null;
+  tipo_usuario?: TipoUsuario;
   ativo?: boolean;
 }
 

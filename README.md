@@ -199,7 +199,7 @@ O PostgreSQL possui as entidades normalizadas:
 
 - `administrador` — usuários administrativos do painel e controle de conta principal (`principal = TRUE`).
 - `audit_logs` — trilha de auditoria administrativa completa (ações, recurso alterado, IP e data/hora).
-- `usuario` — indivíduos autorizáveis no sistema com seus UIDs de cartão RFID e embeddings faciais (`JSONB`).
+- `usuario` — indivíduos autorizáveis com nome, CPF opcional, categoria (`INTERNO`/`VISITANTE`), UID RFID, embedding facial (`JSONB`) e status.
 - `local` — portas, salas e ambientes físicos monitorados.
 - `dispositivo` — controladoras físicas (ESP32) vinculadas a um local (relação 1:N Local -> Dispositivos).
 - `permissao` — regras de acesso por usuário, local, janela horária (`horario_inicio` / `horario_fim`) e dias da semana.
