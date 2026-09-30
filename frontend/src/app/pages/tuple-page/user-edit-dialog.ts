@@ -164,7 +164,6 @@ export class UserEditDialog implements OnInit, OnDestroy {
       return;
     }
 
-    this.salvandoDados = true;
     this.erro = '';
     this.aviso = '';
 
@@ -173,6 +172,8 @@ export class UserEditDialog implements OnInit, OnDestroy {
       this.erro = 'CPF deve conter 11 dígitos.';
       return;
     }
+
+    this.salvandoDados = true;
 
     this.api
       .atualizarUsuario(this.usuario.user_id, {
