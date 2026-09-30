@@ -36,10 +36,11 @@ up: ## Sobe toda a aplicação com Docker (Frontend + Backend + PostgreSQL)
 	docker compose up -d --build
 	@echo ""
 	@echo "✅ Aplicação iniciada via Docker:"
-	@echo "   🅰️  Frontend  → http://localhost"
-	@echo "   🐍 Backend   → http://localhost:$(DOCKER_BACKEND_PORT)"
-	@echo "   📖 Swagger   → http://localhost:$(DOCKER_BACKEND_PORT)/docs"
-	@echo "   ⚡ WebSocket → ws://localhost:$(DOCKER_BACKEND_PORT)/ws/logs"
+	@echo "   🅰️  Frontend local → http://localhost"
+	@echo "   🔒 HTTPS público   → https://${ARDLOCK_DOMAIN:-ardlock.jangostavo.com.br}"
+	@echo "   🐍 Backend debug   → http://localhost:$(DOCKER_BACKEND_PORT)"
+	@echo "   📖 Swagger debug   → http://localhost:$(DOCKER_BACKEND_PORT)/docs"
+	@echo "   ⚡ WSS público     → wss://${ARDLOCK_DOMAIN:-ardlock.jangostavo.com.br}/ws/logs"
 	@echo ""
 
 down: ## Para e remove os containers (mantém os dados salvos)
