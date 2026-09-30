@@ -69,7 +69,6 @@ services:
     restart: unless-stopped
     environment:
       ARDLOCK_DOMAIN: ${ARDLOCK_DOMAIN:-ardlock.jangostavo.com.br}
-      ACME_EMAIL: ${ACME_EMAIL:-}
     ports:
       - "80:80"
       - "443:443"
