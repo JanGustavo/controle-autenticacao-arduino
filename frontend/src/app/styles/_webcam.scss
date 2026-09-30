@@ -19,6 +19,24 @@
     display: block;
     transform: scaleX(-1); // Espelha a imagem para navegação natural
   }
+
+  // DroidCam no Linux frequentemente entrega 640x480 mesmo com o celular
+  // fisicamente em retrato. Nesse caso a UI gira o preview para 480x640.
+  &.droidcam-portrait {
+    aspect-ratio: 3 / 4;
+
+    video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 133.3333%;
+      max-width: none;
+      height: auto;
+      transform-origin: center;
+      translate: -50% -50%;
+      transform: scaleX(-1) rotate(90deg);
+    }
+  }
 }
 
 /* Skeleton Loading de Inicialização de Câmera/IA */
