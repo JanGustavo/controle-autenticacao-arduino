@@ -32,6 +32,29 @@
           }
         </label>
 
+        <label class="field">
+          <span>CPF <small class="optional-label">opcional</small></span>
+          <input
+            formControlName="cpf"
+            type="text"
+            maxlength="14"
+            inputmode="numeric"
+            placeholder="000.000.000-00"
+          />
+          @if (hasError('cpf', 'pattern')) {
+            <small>Informe um CPF com 11 dígitos.</small>
+          }
+        </label>
+
+        <label class="field">
+          <span>Tipo de usuário <b>*</b></span>
+          <select formControlName="tipo_usuario">
+            <option value="INTERNO">Interno</option>
+            <option value="VISITANTE">Visitante</option>
+          </select>
+          <small>Define se o acesso pertence a uma pessoa interna ou visitante.</small>
+        </label>
+
         <div class="field full-width uid-field">
           <label for="rfid-device-select">
             <span>Dispositivo RFID <b>*</b></span>
