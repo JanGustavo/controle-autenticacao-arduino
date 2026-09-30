@@ -12,6 +12,8 @@ client = TestClient(app)
 USUARIO = {
 	"user_id": 1,
 	"nome": "Maria Silva",
+	"cpf": "12345678901",
+	"tipo_usuario": "INTERNO",
 	"uid_card": "RFID-001",
 	"vetor_facial": [0.1, 0.2, 0.3],
 	"ativo": True,
@@ -54,6 +56,8 @@ def test_obter_usuario():
 def test_criar_usuario():
 	payload = {
 		"nome": "Maria Silva",
+		"cpf": "12345678901",
+		"tipo_usuario": "INTERNO",
 		"uid_card": "RFID-001",
 		"vetor_facial": [0.1, 0.2, 0.3],
 		"ativo": True,
