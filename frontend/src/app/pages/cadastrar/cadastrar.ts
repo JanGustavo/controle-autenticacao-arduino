@@ -7,7 +7,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { ApiService, DispositivoSimplesResponse, PermissaoCreateRequest } from '../../services/api.service';
+import { ApiService, DispositivoSimplesResponse, PermissaoCreateRequest, TipoUsuario } from '../../services/api.service';
 import { SpeechService } from '../../services/speech.service';
 import { WebcamService } from '../../services/webcam.service';
 import { WebSocketLogsService } from '../../services/websocket-logs.service';
@@ -83,6 +83,11 @@ export class CadastrarPage implements OnInit, OnDestroy {
 
   form = this.formBuilder.nonNullable.group({
     nome: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(255)]],
+    cpf: ['', [
+      Validators.maxLength(14),
+      Validators.pattern(/^$|^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$/),
+    ]],
+    tipo_usuario: ['INTERNO' as TipoUsuario, [Validators.required]],
     uid_card: ['', [Validators.maxLength(100)]],
     ativo: [true],
   });
@@ -308,8 +313,9 @@ export class CadastrarPage implements OnInit, OnDestroy {
       return;
     }
 
-    const { nome, uid_card, ativo } = this.form.getRawValue();
+    const { nome, cpf, tipo_usuario, uid_card, ativo } = this.form.getRawValue();
     const uidNormalizado = this.normalizarUid(uid_card);
+    const cpfNormalizado = this.normalizarCpf(cpf);
 
     if (!uidNormalizado) {
       this.errorMessage = 'Faça a leitura do cartão RFID antes de salvar.';
@@ -329,6 +335,8 @@ export class CadastrarPage implements OnInit, OnDestroy {
     // específico de RFID, usando o dispositivo que realizou a leitura.
     this.api.criarUsuario({
       nome,
+      cpf: cpfNormalizado,
+      tipo_usuario,
       uid_card: null,
       vetor_facial: null,
       ativo,
@@ -383,7 +391,7 @@ export class CadastrarPage implements OnInit, OnDestroy {
 
   reset(): void {
     this.pararWebcam();
-    this.form.reset({ nome: '', uid_card: '', ativo: true });
+    this.form.reset({ nome: '', cpf: '', tipo_usuario: 'INTERNO', uid_card: '', ativo: true });
     this.cameraOpened = false;
     this.scanning = false;
     this.submitted = false;
@@ -441,6 +449,11 @@ export class CadastrarPage implements OnInit, OnDestroy {
     item.dias_semana = item.dias_semana.includes(dia)
       ? item.dias_semana.filter((d) => d !== dia)
       : [...item.dias_semana, dia].sort();
+  }
+
+  private normalizarCpf(cpf: string): string | null {
+    const normalizado = cpf.replace(/\D/g, '');
+    return normalizado || null;
   }
 
   private normalizarUid(uid: string): string | null {
