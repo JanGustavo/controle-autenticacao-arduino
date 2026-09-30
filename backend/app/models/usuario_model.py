@@ -4,8 +4,11 @@ from app.database.connection import get_connection
 
 
 class UsuarioModel:
-    _campos = ("user_id", "nome", "uid_card", "vetor_facial", "ativo", "criado_em")
-    _campos_simples = ("user_id", "nome", "uid_card", "ativo")
+    _campos = (
+        "user_id", "nome", "cpf", "tipo_usuario",
+        "uid_card", "vetor_facial", "ativo", "criado_em",
+    )
+    _campos_simples = ("user_id", "nome", "cpf", "tipo_usuario", "uid_card", "ativo")
 
     @classmethod
     def _row_to_dict(cls, row):
@@ -22,9 +25,11 @@ class UsuarioModel:
         if q is not None and q.strip():
             term = f"%{q.strip().lower()}%"
             conditions.append(
-                "(LOWER(nome) LIKE %s OR LOWER(COALESCE(uid_card, '')) LIKE %s)"
+                "(LOWER(nome) LIKE %s OR LOWER(COALESCE(cpf, '')) LIKE %s "
+                "OR LOWER(COALESCE(uid_card, '')) LIKE %s "
+                "OR LOWER(tipo_usuario::text) LIKE %s)"
             )
-            params.extend([term, term])
+            params.extend([term, term, term, term])
 
         if ativo is not None:
             conditions.append("ativo = %s")
@@ -36,7 +41,7 @@ class UsuarioModel:
             with connection.cursor() as cursor:
                 cursor.execute(
                     f"""
-                    SELECT user_id, nome, uid_card, vetor_facial, ativo, criado_em
+                    SELECT user_id, nome, cpf, tipo_usuario, uid_card, vetor_facial, ativo, criado_em
                     FROM usuario
                     {where_clause}
                     ORDER BY user_id
@@ -53,9 +58,11 @@ class UsuarioModel:
         if q is not None and q.strip():
             term = f"%{q.strip().lower()}%"
             conditions.append(
-                "(LOWER(nome) LIKE %s OR LOWER(COALESCE(uid_card, '')) LIKE %s)"
+                "(LOWER(nome) LIKE %s OR LOWER(COALESCE(cpf, '')) LIKE %s "
+                "OR LOWER(COALESCE(uid_card, '')) LIKE %s "
+                "OR LOWER(tipo_usuario::text) LIKE %s)"
             )
-            params.extend([term, term])
+            params.extend([term, term, term, term])
 
         if ativo is not None:
             conditions.append("ativo = %s")
@@ -67,7 +74,7 @@ class UsuarioModel:
             with connection.cursor() as cursor:
                 cursor.execute(
                     f"""
-                    SELECT user_id, nome, uid_card, ativo
+                    SELECT user_id, nome, cpf, tipo_usuario, uid_card, ativo
                     FROM usuario
                     {where_clause}
                     ORDER BY user_id
@@ -81,7 +88,7 @@ class UsuarioModel:
             with connection.cursor() as cursor:
                 cursor.execute(
                     """
-                    SELECT user_id, nome, uid_card, vetor_facial, ativo, criado_em
+                    SELECT user_id, nome, cpf, tipo_usuario, uid_card, vetor_facial, ativo, criado_em
                     FROM usuario
                     WHERE user_id = %s
                     """,
@@ -96,7 +103,7 @@ class UsuarioModel:
             with connection.cursor() as cursor:
                 cursor.execute(
                     """
-                    SELECT user_id, nome, uid_card, vetor_facial, ativo, criado_em
+                    SELECT user_id, nome, cpf, tipo_usuario, uid_card, vetor_facial, ativo, criado_em
                     FROM usuario
                     WHERE uid_card = %s
                     """,
@@ -111,7 +118,7 @@ class UsuarioModel:
             with connection.cursor() as cursor:
                 cursor.execute(
                     """
-                    SELECT user_id, nome, uid_card, vetor_facial, ativo, criado_em
+                    SELECT user_id, nome, cpf, tipo_usuario, uid_card, vetor_facial, ativo, criado_em
                     FROM usuario
                     WHERE ativo = TRUE
                       AND vetor_facial IS NOT NULL
@@ -125,18 +132,22 @@ class UsuarioModel:
         cls,
         cursor,
         nome: str,
+        cpf: str | None,
+        tipo_usuario: str,
         uid_card: str | None,
         vetor_facial: list[float] | None,
         ativo: bool,
     ):
         cursor.execute(
             """
-            INSERT INTO usuario (nome, uid_card, vetor_facial, ativo)
-            VALUES (%s, %s, %s, %s)
-            RETURNING user_id, nome, uid_card, vetor_facial, ativo, criado_em
+            INSERT INTO usuario (nome, cpf, tipo_usuario, uid_card, vetor_facial, ativo)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING user_id, nome, cpf, tipo_usuario, uid_card, vetor_facial, ativo, criado_em
             """,
             (
                 nome,
+                cpf,
+                tipo_usuario,
                 uid_card,
                 Jsonb(vetor_facial) if vetor_facial is not None else None,
                 ativo,
@@ -164,7 +175,7 @@ class UsuarioModel:
                     UPDATE usuario
                     SET {atribuicoes}
                     WHERE user_id = %s
-                    RETURNING user_id, nome, uid_card, vetor_facial, ativo, criado_em
+                    RETURNING user_id, nome, cpf, tipo_usuario, uid_card, vetor_facial, ativo, criado_em
                     """,
                     valores,
                 )
