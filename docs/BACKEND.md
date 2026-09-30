@@ -145,7 +145,7 @@ Entidades principais:
 
 - `administrador`
 - `audit_logs`
-- `usuario`
+- `usuario` — nome, CPF opcional, tipo obrigatório (`INTERNO`/`VISITANTE`), RFID, biometria e status
 - `local`
 - `dispositivo`
 - `permissao`
