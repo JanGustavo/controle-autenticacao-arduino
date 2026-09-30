@@ -1,7 +1,3 @@
-{
-    email {$ACME_EMAIL}
-}
-
 {$ARDLOCK_DOMAIN:ardlock.jangostavo.com.br} {
     encode zstd gzip
 
