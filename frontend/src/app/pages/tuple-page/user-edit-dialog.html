@@ -108,9 +108,11 @@
           <input
             type="text"
             [(ngModel)]="uidNovo"
+            (ngModelChange)="onUidManualChange()"
+            (blur)="validarUidAtual()"
             maxlength="20"
             placeholder="A1B2C3D4"
-            [disabled]="aguardandoRfid || salvandoCartao"
+            [disabled]="aguardandoRfid || salvandoCartao || verificandoCartao"
           />
         </label>
       </div>
@@ -138,7 +140,13 @@
           mat-flat-button
           color="primary"
           (click)="salvarNovoCartao()"
-          [disabled]="!uidNovo || !identificadorDispositivo || salvandoCartao"
+          [disabled]="
+            !uidNovo
+            || !identificadorDispositivo
+            || salvandoCartao
+            || verificandoCartao
+            || cartaoDisponivel === false
+          "
         >
           @if (salvandoCartao) {
             <mat-progress-spinner diameter="18"></mat-progress-spinner>
