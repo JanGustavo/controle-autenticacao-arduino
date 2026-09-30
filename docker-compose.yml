@@ -47,7 +47,7 @@ services:
     networks:
       - acesso-net
 
-  # ── Frontend (Angular Totem → Nginx com Reverse Proxy p/ WebSocket) ───────────
+  # ── Frontend (Angular estático em Nginx, interno ao gateway TLS) ─────────────
   frontend:
     build:
       context: ./frontend
@@ -55,15 +55,38 @@ services:
     container_name: controle-acesso-frontend
     restart: unless-stopped
     ports:
-      - "80:80"
       - "4200:80"
     depends_on:
       - backend
     networks:
       - acesso-net
 
+  # ── Gateway HTTPS/WSS (Caddy + ACME automático) ───────────────────────────────
+  caddy:
+    image: caddy:2-alpine
+    container_name: controle-acesso-caddy
+    restart: unless-stopped
+    environment:
+      ARDLOCK_DOMAIN: ${ARDLOCK_DOMAIN:-ardlock.jangostavo.com.br}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - acesso-net
+
 volumes:
   pgdata:
+  caddy_data:
+  caddy_config:
 
 networks:
   acesso-net:
