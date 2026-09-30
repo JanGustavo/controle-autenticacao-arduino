@@ -63,6 +63,7 @@ export class UserEditDialog implements OnInit, OnDestroy {
 
   salvandoDados = false;
   salvandoCartao = false;
+  verificandoCartao = false;
   salvandoBiometria = false;
 
   dispositivos: DispositivoSimplesResponse[] = [];
@@ -70,6 +71,7 @@ export class UserEditDialog implements OnInit, OnDestroy {
   carregandoDispositivos = true;
   aguardandoRfid = false;
   uidNovo = this.usuario.uid_card ?? '';
+  cartaoDisponivel: boolean | null = this.usuario.uid_card ? true : null;
 
   fotoCapturada: Blob | File | null = null;
   fotoPreviewUrl: string | null = null;
@@ -126,8 +128,7 @@ export class UserEditDialog implements OnInit, OnDestroy {
 
         this.uidNovo = this.normalizarUid(evento.data.uid_card);
         this.aguardandoRfid = false;
-        this.aviso = `Cartão lido: ${this.uidNovo}`;
-        this.erro = '';
+        this.validarUidAtual();
       },
     });
   }
@@ -179,12 +180,59 @@ export class UserEditDialog implements OnInit, OnDestroy {
 
     this.erro = '';
     this.aviso = 'Aguardando aproximação do cartão no leitor selecionado...';
+    this.cartaoDisponivel = null;
     this.aguardandoRfid = true;
   }
 
   cancelarLeituraRfid(): void {
     this.aguardandoRfid = false;
     this.aviso = '';
+  }
+
+  validarUidAtual(): void {
+    const uid = this.normalizarUid(this.uidNovo);
+
+    if (![8, 14, 20].includes(uid.length) || !/^[0-9A-F]+$/.test(uid)) {
+      this.cartaoDisponivel = null;
+      this.erro = uid
+        ? 'UID inválido. Use hexadecimal com 8, 14 ou 20 caracteres.'
+        : '';
+      return;
+    }
+
+    this.verificandoCartao = true;
+    this.erro = '';
+    this.aviso = 'Verificando se o cartão já possui vínculo...';
+
+    this.api.consultarCartao(uid, this.usuario.user_id).subscribe({
+      next: (resultado) => {
+        this.verificandoCartao = false;
+        this.uidNovo = resultado.uid_card;
+        this.cartaoDisponivel = resultado.disponivel_para_usuario;
+
+        if (resultado.disponivel_para_usuario) {
+          this.erro = '';
+          this.aviso = resultado.mensagem;
+          return;
+        }
+
+        this.aviso = '';
+        this.erro = resultado.mensagem;
+      },
+      error: (error) => {
+        this.verificandoCartao = false;
+        this.cartaoDisponivel = null;
+        this.aviso = '';
+        this.erro =
+          error.error?.detail || 'Não foi possível verificar o cartão.';
+      },
+    });
+  }
+
+  onUidManualChange(): void {
+    this.cartaoDisponivel = null;
+    this.aviso = '';
+    this.erro = '';
   }
 
   salvarNovoCartao(): void {
@@ -196,6 +244,11 @@ export class UserEditDialog implements OnInit, OnDestroy {
 
     if (![8, 14, 20].includes(uid.length) || !/^[0-9A-F]+$/.test(uid)) {
       this.erro = 'UID inválido. Use hexadecimal com 8, 14 ou 20 caracteres.';
+      return;
+    }
+
+    if (this.cartaoDisponivel === false) {
+      this.erro = 'Este cartão já pertence a outro usuário.';
       return;
     }
 
@@ -215,6 +268,7 @@ export class UserEditDialog implements OnInit, OnDestroy {
           this.alterado = true;
           this.uidNovo = resultado.uid_card ?? uid;
           this.usuario = { ...this.usuario, uid_card: this.uidNovo };
+          this.cartaoDisponivel = true;
           this.aviso = resultado.mensagem || 'Cartão atualizado com sucesso.';
           this.snackBar.open('Cartão RFID atualizado.', 'OK', {
             duration: 3500,
