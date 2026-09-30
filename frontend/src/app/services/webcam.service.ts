@@ -296,7 +296,7 @@ async carregarModelos(): Promise<void> {
       console.log(
         '[Webcam] Orientação aplicada:',
         precisaRotacionarDroidCam
-          ? 'DroidCam retrato (90° horário)'
+          ? 'DroidCam retrato (90° anti-horário)'
           : 'normal',
         '| Frame IA:',
         this.larguraFrameProcessado(),
@@ -560,8 +560,8 @@ async carregarModelos(): Promise<void> {
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, largura, altura);
-    ctx.translate(largura, 0);
-    ctx.rotate(Math.PI / 2);
+    ctx.translate(0, altura);
+    ctx.rotate(-Math.PI / 2);
     ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
     ctx.restore();
 
