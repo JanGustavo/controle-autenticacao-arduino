@@ -63,6 +63,8 @@ export const USUARIOS_MOCK: TuplePageConfig = {
   columns: [
     { key: 'user_id', label: 'ID' },
     { key: 'nome', label: 'Nome' },
+    { key: 'cpf', label: 'CPF' },
+    { key: 'tipo_usuario', label: 'Tipo' },
     { key: 'uid_card', label: 'UID Card' },
     { key: 'vetor_facial', label: 'Vetor Facial' },
     { key: 'ativo', label: 'Ativo' },
