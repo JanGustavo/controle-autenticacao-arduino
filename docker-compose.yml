@@ -34,6 +34,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-4f697b0a8c2d5e3f1a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f}
       JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
       JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-60}
+      ARDLOCK_DOMAIN: ${ARDLOCK_DOMAIN:-ardlock.jangostavo.com.br}
       PYTHONPATH: /app
     volumes:
       - ./backend/app:/app/app   # Hot-reload ao vivo em ambiente de dev
