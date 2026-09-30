@@ -81,7 +81,7 @@ db-local: ## Prepara o banco de dados PostgreSQL local com schema e migrations
 
 migrate-local: ## Executa migrations SQL no PostgreSQL local
 	@echo "🔄 Executando migrations locais..."
-	@for mig in backend/migrations/*.sql; do \
+	@set -e; for mig in backend/migrations/*.sql; do \
 		if [ -f "$$mig" ]; then \
 			echo "   → $$mig"; \
 			PGPASSWORD=JGustavo2106 psql -h localhost -U postgres -v ON_ERROR_STOP=1 -d controle_acesso -f "$$mig" >/dev/null; \
@@ -91,7 +91,7 @@ migrate-local: ## Executa migrations SQL no PostgreSQL local
 
 migrate-docker: ## Executa migrations SQL no PostgreSQL do Docker
 	@echo "🔄 Executando migrations no PostgreSQL Docker..."
-	@for mig in backend/migrations/*.sql; do \
+	@set -e; for mig in backend/migrations/*.sql; do \
 		if [ -f "$$mig" ]; then \
 			echo "   → $$mig"; \
 			docker compose exec -T db psql -U "$${POSTGRES_USER:-postgres}" -d "$${POSTGRES_DB:-controle_acesso}" -v ON_ERROR_STOP=1 < "$$mig" >/dev/null; \
