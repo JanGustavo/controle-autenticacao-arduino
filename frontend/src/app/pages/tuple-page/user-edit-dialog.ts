@@ -1,4 +1,5 @@
 import {
+  ChangeDetectorRef,
   Component,
   ElementRef,
   OnDestroy,
@@ -49,6 +50,7 @@ export class UserEditDialog implements OnInit, OnDestroy {
   @ViewChild('editVideo') videoElement?: ElementRef<HTMLVideoElement>;
 
   private api = inject(ApiService);
+  private cdr = inject(ChangeDetectorRef);
   private snackBar = inject(MatSnackBar);
   private dialogRef = inject(
     MatDialogRef<UserEditDialog, UserEditDialogResult>,
@@ -128,6 +130,12 @@ export class UserEditDialog implements OnInit, OnDestroy {
 
         this.uidNovo = this.normalizarUid(evento.data.uid_card);
         this.aguardandoRfid = false;
+
+        // O WebSocket nativo pode entregar eventos fora do ciclo de
+        // renderização do Angular. Força a atualização imediata para o
+        // UID aparecer no input e o estado "Aguardando cartão" encerrar.
+        this.cdr.detectChanges();
+
         this.validarUidAtual();
       },
     });
@@ -213,11 +221,13 @@ export class UserEditDialog implements OnInit, OnDestroy {
         if (resultado.disponivel_para_usuario) {
           this.erro = '';
           this.aviso = resultado.mensagem;
+          this.cdr.detectChanges();
           return;
         }
 
         this.aviso = '';
         this.erro = resultado.mensagem;
+        this.cdr.detectChanges();
       },
       error: (error) => {
         this.verificandoCartao = false;
@@ -225,6 +235,7 @@ export class UserEditDialog implements OnInit, OnDestroy {
         this.aviso = '';
         this.erro =
           error.error?.detail || 'Não foi possível verificar o cartão.';
+        this.cdr.detectChanges();
       },
     });
   }
