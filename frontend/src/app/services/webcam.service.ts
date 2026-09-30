@@ -23,6 +23,9 @@ export class WebcamService {
   tipoStatus = signal<'info' | 'warn' | 'success'>('info');
   capturaPronta = signal(false);
   cameraAtivaLabel = signal<string>('');
+  droidCamRetrato = signal(false);
+  larguraFrameProcessado = signal(0);
+  alturaFrameProcessado = signal(0);
 
   // Círculo Dinâmico (Bounding Box Suavizado)
   faceBox = signal<FaceBoxPosition | null>(null);
@@ -52,6 +55,9 @@ export class WebcamService {
   private ultimoEstadoEnquadramento: EstadoEnquadramento = null;
   private processandoDeteccao = false;
   private videoElementRef: ElementRef<HTMLVideoElement> | null = null;
+  private frameProcessamentoCanvas: HTMLCanvasElement = document.createElement('canvas');
+  private frameProcessamentoCtx: CanvasRenderingContext2D | null =
+    this.frameProcessamentoCanvas.getContext('2d', { willReadFrequently: true });
 
   // Buffer Canvas Reutilizável (Evita Garbage Collection contínuo)
   private lumaCanvas: HTMLCanvasElement = document.createElement('canvas');
@@ -274,11 +280,28 @@ async carregarModelos(): Promise<void> {
         setTimeout(concluir, 5000);
       });
 
+      const ehDroidCam = this.cameraAtivaLabel().toLowerCase().includes('droidcam');
+      const precisaRotacionarDroidCam =
+        ehDroidCam && videoEl.videoWidth > videoEl.videoHeight;
+
+      this.droidCamRetrato.set(precisaRotacionarDroidCam);
+      this.atualizarDimensoesProcessamento(videoEl);
+
       console.log(
         '[Webcam] Resolução do stream:',
         videoEl.videoWidth,
         'x',
         videoEl.videoHeight,
+      );
+      console.log(
+        '[Webcam] Orientação aplicada:',
+        precisaRotacionarDroidCam
+          ? 'DroidCam retrato (90° horário)'
+          : 'normal',
+        '| Frame IA:',
+        this.larguraFrameProcessado(),
+        'x',
+        this.alturaFrameProcessado(),
       );
 
       this.iniciarLoopValidacao();
@@ -341,8 +364,11 @@ async carregarModelos(): Promise<void> {
           return;
         }
 
+        const fonteProcessamento = this.obterFonteProcessamento(video);
+        const larguraProcessamento = this.larguraFrameProcessado() || video.videoWidth;
+
         // Checagem de Iluminação Reutilizando Buffer Canvas
-        const brilhoMedio = this.calcularLuminanciaOtimizada(video);
+        const brilhoMedio = this.calcularLuminanciaOtimizada(fonteProcessamento);
         this.valorLuma.set(Math.round(brilhoMedio));
         if (brilhoMedio < 30) {
           this.capturaPronta.set(false);
@@ -358,7 +384,7 @@ async carregarModelos(): Promise<void> {
 
         // Detecção com TinyFaceDetector em Resolução Otimizada (224px)
         const detection = await faceapi
-          .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 }))
+          .detectSingleFace(fonteProcessamento, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 }))
           .withFaceLandmarks()
           .withFaceExpressions();
 
@@ -385,7 +411,7 @@ async carregarModelos(): Promise<void> {
           height: rawBox.height,
         });
 
-        const proporcaoRosto = rawBox.width / video.videoWidth;
+        const proporcaoRosto = rawBox.width / larguraProcessamento;
         this.proporcaoAtual.set(Math.round(proporcaoRosto * 100));
 
         if (proporcaoRosto < 0.18) {
@@ -495,9 +521,56 @@ async carregarModelos(): Promise<void> {
     this.progressoAutoCaptura.set(0);
   }
 
-  private calcularLuminanciaOtimizada(video: HTMLVideoElement): number {
+  private atualizarDimensoesProcessamento(video: HTMLVideoElement): void {
+    if (this.droidCamRetrato()) {
+      this.larguraFrameProcessado.set(video.videoHeight);
+      this.alturaFrameProcessado.set(video.videoWidth);
+      return;
+    }
+
+    this.larguraFrameProcessado.set(video.videoWidth);
+    this.alturaFrameProcessado.set(video.videoHeight);
+  }
+
+  private obterFonteProcessamento(
+    video: HTMLVideoElement,
+  ): HTMLVideoElement | HTMLCanvasElement {
+    if (!this.droidCamRetrato()) {
+      this.atualizarDimensoesProcessamento(video);
+      return video;
+    }
+
+    const largura = video.videoHeight;
+    const altura = video.videoWidth;
+
+    if (
+      this.frameProcessamentoCanvas.width !== largura
+      || this.frameProcessamentoCanvas.height !== altura
+    ) {
+      this.frameProcessamentoCanvas.width = largura;
+      this.frameProcessamentoCanvas.height = altura;
+    }
+
+    this.larguraFrameProcessado.set(largura);
+    this.alturaFrameProcessado.set(altura);
+
+    const ctx = this.frameProcessamentoCtx;
+    if (!ctx) return video;
+
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, largura, altura);
+    ctx.translate(largura, 0);
+    ctx.rotate(Math.PI / 2);
+    ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+    ctx.restore();
+
+    return this.frameProcessamentoCanvas;
+  }
+
+  private calcularLuminanciaOtimizada(fonte: CanvasImageSource): number {
     if (!this.lumaCtx) return 100;
-    this.lumaCtx.drawImage(video, 0, 0, 64, 48);
+    this.lumaCtx.drawImage(fonte, 0, 0, 64, 48);
     const imgData = this.lumaCtx.getImageData(0, 0, 64, 48);
     const data = imgData.data;
     let somaLuma = 0;
@@ -528,6 +601,9 @@ async carregarModelos(): Promise<void> {
     this.webcamAtiva.set(false);
     this.capturaPronta.set(false);
     this.cameraAtivaLabel.set('');
+    this.droidCamRetrato.set(false);
+    this.larguraFrameProcessado.set(0);
+    this.alturaFrameProcessado.set(0);
     this.videoElementRef = null;
     this.emCooldown.set(false);
   }
@@ -544,18 +620,20 @@ async capturarFrameComPreview(): Promise<{ blob: Blob; previewUrl: string } | nu
     this.executarEfeitoFlash();
     this.pararLoopValidacao();
 
+    const fonteProcessamento = this.obterFonteProcessamento(video);
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
+    canvas.width = this.larguraFrameProcessado() || video.videoWidth || 640;
+    canvas.height = this.alturaFrameProcessado() || video.videoHeight || 480;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return Promise.resolve(null);
 
-    // Inverte a imagem horizontalmente no Canvas
+    // Mantém a experiência de espelho, mas a foto já sai orientada em retrato
+    // quando a fonte ativa é DroidCam horizontal.
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
 
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(fonteProcessamento, 0, 0, canvas.width, canvas.height);
     const previewUrl = canvas.toDataURL('image/jpeg', 0.85);
 
     return new Promise((resolve) => {
