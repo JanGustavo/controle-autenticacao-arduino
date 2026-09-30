@@ -21,6 +21,18 @@
 #define SPI_MISO 34
 #define SPI_MOSI 32
 
+// Falha na compilacao se o mapa tiver colisao entre pinos usados neste teste.
+static_assert(LED_VERDE != LED_VERMELHO, "LEDs nao podem compartilhar GPIO.");
+static_assert(SS_PIN != RST_PIN, "SS e RST do RC522 nao podem compartilhar GPIO.");
+static_assert(SPI_SCK != SPI_MISO && SPI_SCK != SPI_MOSI && SPI_MISO != SPI_MOSI,
+              "SCK, MISO e MOSI precisam usar GPIOs distintos.");
+static_assert(LED_VERDE != SS_PIN && LED_VERDE != RST_PIN &&
+              LED_VERDE != SPI_SCK && LED_VERDE != SPI_MISO && LED_VERDE != SPI_MOSI,
+              "LED verde conflita com um pino do RC522.");
+static_assert(LED_VERMELHO != SS_PIN && LED_VERMELHO != RST_PIN &&
+              LED_VERMELHO != SPI_SCK && LED_VERMELHO != SPI_MISO && LED_VERMELHO != SPI_MOSI,
+              "LED vermelho conflita com um pino do RC522.");
+
 MFRC522 rfid(SS_PIN, RST_PIN);
 
 bool rfidDisponivel = false;
