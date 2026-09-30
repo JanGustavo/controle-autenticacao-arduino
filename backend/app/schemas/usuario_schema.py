@@ -50,5 +50,7 @@ class UsuarioSimplesResponse(BaseModel):
     """Versão leve sem vetor_facial e sem criado_em para dropdowns/seletores."""
     user_id: int
     nome: str
+    cpf: str | None = None
+    tipo_usuario: TipoUsuario = "INTERNO"
     uid_card: str | None
     ativo: bool
