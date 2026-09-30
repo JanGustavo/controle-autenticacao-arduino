@@ -382,7 +382,7 @@ export class CadastrarPage implements OnInit, OnDestroy {
       error: (error) => {
         this.saving = false;
         this.errorMessage = error.status === 409
-          ? 'Este UID de cartão já está cadastrado.'
+          ? (error.error?.detail || 'CPF ou cartão já está cadastrado.')
           : 'Não foi possível criar o usuário. Verifique se o backend está disponível.';
         this.snackBar.open(this.errorMessage, 'Fechar', { duration: 6000 });
       },
