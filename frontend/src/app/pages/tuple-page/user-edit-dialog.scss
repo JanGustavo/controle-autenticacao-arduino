@@ -1,7 +1,7 @@
 @use '../../styles/webcam';
 
 .user-edit-dialog {
-  width: min(860px, 92vw);
+  width: min(980px, 94vw);
   max-height: 88vh;
   display: flex;
   flex-direction: column;
@@ -33,8 +33,9 @@
 .dialog-header {
   justify-content: space-between;
   gap: 20px;
-  padding: 22px 26px;
+  padding: 22px 28px;
   border-bottom: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, #ffffff 0%, #fffaf3 100%);
 
   .eyebrow {
     color: #d97706;
@@ -63,7 +64,7 @@
 }
 
 .edit-section {
-  padding: 18px;
+  padding: 20px;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
   background: #f8fafc;
@@ -123,6 +124,30 @@
       box-shadow: 0 0 0 3px rgba(217, 119, 6, .12);
     }
   }
+}
+
+.profile-grid {
+  grid-template-columns: minmax(0, 1.35fr) minmax(180px, .85fr);
+
+  .profile-name {
+    grid-column: 1 / -1;
+  }
+
+  .profile-status {
+    min-height: 42px;
+    align-self: end;
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #fff;
+  }
+}
+
+.optional-label {
+  margin-left: 4px;
+  color: #94a3b8;
+  font-size: .72rem;
+  font-weight: 500;
 }
 
 .switch-field {
@@ -270,6 +295,10 @@
     border-color: #334155;
   }
 
+  .dialog-header {
+    background: linear-gradient(135deg, #0f172a 0%, #172033 100%);
+  }
+
   .dialog-header p,
   .section-title p,
   .switch-field small,
@@ -294,6 +323,11 @@
       border-color: #475569;
       color: #f8fafc;
     }
+  }
+
+  .profile-grid .profile-status {
+    background: #0f172a;
+    border-color: #475569;
   }
 
   .biometric-preview {
