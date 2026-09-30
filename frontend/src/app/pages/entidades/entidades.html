@@ -32,7 +32,9 @@
         <ul class="field-list">
           <li><mat-icon>key</mat-icon><span><strong>user_id</strong><small>INTEGER · PK</small></span></li>
           <li><mat-icon>badge</mat-icon><span><strong>nome</strong><small>VARCHAR(255)</small></span></li>
-          <li><mat-icon>contactless</mat-icon><span><strong>uid_card</strong><small>VARCHAR(100)</small></span></li>
+          <li><mat-icon>fingerprint</mat-icon><span><strong>cpf</strong><small>VARCHAR(11) · UNIQUE · opcional</small></span></li>
+          <li><mat-icon>groups</mat-icon><span><strong>tipo_usuario</strong><small>ENUM · INTERNO | VISITANTE</small></span></li>
+          <li><mat-icon>contactless</mat-icon><span><strong>uid_card</strong><small>VARCHAR(100) · UNIQUE</small></span></li>
           <li><mat-icon>face</mat-icon><span><strong>vetor_facial</strong><small>JSONB</small></span></li>
           <li><mat-icon>toggle_on</mat-icon><span><strong>ativo</strong><small>BOOLEAN</small></span></li>
           <li><mat-icon>calendar_today</mat-icon><span><strong>criado_em</strong><small>TIMESTAMP</small></span></li>
@@ -89,6 +91,7 @@
           <li><mat-icon>key</mat-icon><span><strong>id</strong><small>INTEGER · PK</small></span></li>
           <li class="foreign-key"><mat-icon>link</mat-icon><span><strong>usuario_id</strong><small>INT · FK → usuario</small></span></li>
           <li class="foreign-key"><mat-icon>link</mat-icon><span><strong>local_id</strong><small>INT · FK → local</small></span></li>
+          <li class="foreign-key"><mat-icon>link</mat-icon><span><strong>dispositivo_id</strong><small>INT · FK → dispositivo</small></span></li>
           <li><mat-icon>contactless</mat-icon><span><strong>uid_card_lido</strong><small>VARCHAR(100)</small></span></li>
           <li><mat-icon>event</mat-icon><span><strong>data_hora</strong><small>TIMESTAMP</small></span></li>
           <li><mat-icon>verified</mat-icon><span><strong>autorizado</strong><small>BOOLEAN</small></span></li>
@@ -99,6 +102,41 @@
       <div class="entity-relations">
         <span class="rel-tag"><strong>FK →</strong> usuario</span>
         <span class="rel-tag"><strong>FK →</strong> local</span>
+        <span class="rel-tag"><strong>FK →</strong> dispositivo</span>
+      </div>
+    </article>
+
+    <!-- TENTATIVA_ACESSO -->
+    <article class="entity-card history-entity" [class.collapsed]="!expandido['tentativa_acesso']">
+      <header class="entity-header" (click)="toggleEntity('tentativa_acesso')">
+        <div class="header-main">
+          <div class="entity-icon"><mat-icon>hourglass_top</mat-icon></div>
+          <div>
+            <span class="entity-kind">Estado temporário do acesso</span>
+            <h2>tentativa_acesso</h2>
+          </div>
+        </div>
+        <mat-icon class="expand-icon">{{ expandido['tentativa_acesso'] ? 'expand_less' : 'expand_more' }}</mat-icon>
+      </header>
+      @if (expandido['tentativa_acesso']) {
+        <ul class="field-list">
+          <li><mat-icon>key</mat-icon><span><strong>tentativa_id</strong><small>UUID · PK</small></span></li>
+          <li class="foreign-key"><mat-icon>link</mat-icon><span><strong>usuario_id</strong><small>INT · FK → usuario</small></span></li>
+          <li class="foreign-key"><mat-icon>link</mat-icon><span><strong>local_id</strong><small>INT · FK → local</small></span></li>
+          <li class="foreign-key"><mat-icon>link</mat-icon><span><strong>dispositivo_id</strong><small>INT · FK → dispositivo</small></span></li>
+          <li><mat-icon>contactless</mat-icon><span><strong>uid_card_lido</strong><small>VARCHAR(100)</small></span></li>
+          <li><mat-icon>flag</mat-icon><span><strong>status</strong><small>VARCHAR(20)</small></span></li>
+          <li><mat-icon>schedule</mat-icon><span><strong>criado_em</strong><small>TIMESTAMP</small></span></li>
+          <li><mat-icon>timer</mat-icon><span><strong>expira_em</strong><small>TIMESTAMP</small></span></li>
+          <li><mat-icon>done_all</mat-icon><span><strong>concluido_em</strong><small>TIMESTAMP · opcional</small></span></li>
+          <li><mat-icon>percent</mat-icon><span><strong>percentual_similaridade</strong><small>FLOAT</small></span></li>
+          <li><mat-icon>block</mat-icon><span><strong>motivo_recusa</strong><small>VARCHAR(255)</small></span></li>
+        </ul>
+      }
+      <div class="entity-relations">
+        <span class="rel-tag"><strong>FK →</strong> usuario</span>
+        <span class="rel-tag"><strong>FK →</strong> local</span>
+        <span class="rel-tag"><strong>FK →</strong> dispositivo</span>
       </div>
     </article>
 
@@ -118,13 +156,43 @@
         <ul class="field-list">
           <li><mat-icon>key</mat-icon><span><strong>local_id</strong><small>INTEGER · PK</small></span></li>
           <li><mat-icon>place</mat-icon><span><strong>nome</strong><small>VARCHAR(255)</small></span></li>
-          <li><mat-icon>memory</mat-icon><span><strong>identificador_dispositivo</strong><small>VARCHAR(100)</small></span></li>
           <li><mat-icon>toggle_on</mat-icon><span><strong>ativo</strong><small>BOOLEAN</small></span></li>
           <li><mat-icon>calendar_today</mat-icon><span><strong>criado_em</strong><small>TIMESTAMP</small></span></li>
         </ul>
       }
       <div class="entity-relations">
+        <span class="rel-tag"><strong>1 : N</strong> dispositivo</span>
         <span class="rel-tag"><strong>1 : N</strong> permissao</span>
+        <span class="rel-tag"><strong>1 : N</strong> historico_acesso</span>
+        <span class="rel-tag"><strong>1 : N</strong> tentativa_acesso</span>
+      </div>
+    </article>
+
+    <!-- DISPOSITIVO -->
+    <article class="entity-card local-entity" [class.collapsed]="!expandido['dispositivo']">
+      <header class="entity-header" (click)="toggleEntity('dispositivo')">
+        <div class="header-main">
+          <div class="entity-icon"><mat-icon>memory</mat-icon></div>
+          <div>
+            <span class="entity-kind">Controladora física</span>
+            <h2>dispositivo</h2>
+          </div>
+        </div>
+        <mat-icon class="expand-icon">{{ expandido['dispositivo'] ? 'expand_less' : 'expand_more' }}</mat-icon>
+      </header>
+      @if (expandido['dispositivo']) {
+        <ul class="field-list">
+          <li><mat-icon>key</mat-icon><span><strong>dispositivo_id</strong><small>INTEGER · PK</small></span></li>
+          <li class="foreign-key"><mat-icon>link</mat-icon><span><strong>local_id</strong><small>INT · FK → local</small></span></li>
+          <li><mat-icon>badge</mat-icon><span><strong>nome</strong><small>VARCHAR(255)</small></span></li>
+          <li><mat-icon>fingerprint</mat-icon><span><strong>identificador</strong><small>VARCHAR(100) · UNIQUE</small></span></li>
+          <li><mat-icon>toggle_on</mat-icon><span><strong>ativo</strong><small>BOOLEAN</small></span></li>
+          <li><mat-icon>calendar_today</mat-icon><span><strong>criado_em</strong><small>TIMESTAMP</small></span></li>
+        </ul>
+      }
+      <div class="entity-relations">
+        <span class="rel-tag"><strong>FK →</strong> local</span>
+        <span class="rel-tag"><strong>1 : N</strong> tentativa_acesso</span>
         <span class="rel-tag"><strong>1 : N</strong> historico_acesso</span>
       </div>
     </article>
