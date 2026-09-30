@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, NgZone, inject, signal } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 
 export interface WebSocketEventData {
@@ -27,6 +27,7 @@ export interface WebSocketLogEvent {
  */
 @Injectable({ providedIn: 'root' })
 export class WebSocketLogsService {
+  private zone = inject(NgZone);
   private socket: WebSocket | null = null;
   private logSubject = new Subject<WebSocketLogEvent>();
 
@@ -66,7 +67,9 @@ export class WebSocketLogsService {
         try {
           const parsed: WebSocketLogEvent = JSON.parse(event.data);
           console.log('📨 [WebSocket] Evento recebido:', parsed.type, parsed.data);
-          this.logSubject.next(parsed);
+          this.zone.run(() => {
+            this.logSubject.next(parsed);
+          });
         } catch (e) {
           console.warn('[WebSocket] Erro ao parsear mensagem recebida:', e);
         }
