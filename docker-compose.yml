@@ -35,6 +35,7 @@ services:
       JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
       JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-60}
       ARDLOCK_DOMAIN: ${ARDLOCK_DOMAIN:-ardlock.jangustavo.me}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4200}
       PYTHONPATH: /app
     volumes:
       - ./backend/app:/app/app   # Hot-reload ao vivo em ambiente de dev
