@@ -191,7 +191,7 @@ app = FastAPI(
 # Configuração de CORS
 # ─────────────────────────────────────────────
 
-ardlock_domain = os.getenv("ARDLOCK_DOMAIN", "ardlock.jangostavo.com.br").strip()
+ardlock_domain = os.getenv("ARDLOCK_DOMAIN", "ardlock.jangustavo.me").strip()
 origens_https = [f"https://{ardlock_domain}"] if ardlock_domain else []
 
 app.add_middleware(
