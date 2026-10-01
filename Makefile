@@ -37,10 +37,10 @@ up: ## Sobe toda a aplicação com Docker (Frontend + Backend + PostgreSQL)
 	@echo ""
 	@echo "✅ Aplicação iniciada via Docker:"
 	@echo "   🅰️  Frontend local → http://localhost"
-	@echo "   🔒 HTTPS público   → https://${ARDLOCK_DOMAIN:-ardlock.jangostavo.com.br}"
+	@echo "   🔒 HTTPS público   → https://${ARDLOCK_DOMAIN:-ardlock.jangustavo.me}"
 	@echo "   🐍 Backend debug   → http://localhost:$(DOCKER_BACKEND_PORT)"
 	@echo "   📖 Swagger debug   → http://localhost:$(DOCKER_BACKEND_PORT)/docs"
-	@echo "   ⚡ WSS público     → wss://${ARDLOCK_DOMAIN:-ardlock.jangostavo.com.br}/ws/logs"
+	@echo "   ⚡ WSS público     → wss://${ARDLOCK_DOMAIN:-ardlock.jangustavo.me}/ws/logs"
 	@echo ""
 
 down: ## Para e remove os containers (mantém os dados salvos)
