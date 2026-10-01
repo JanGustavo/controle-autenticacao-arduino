@@ -48,7 +48,7 @@ services:
     networks:
       - acesso-net
 
-  # ── Frontend (Angular estático em Nginx, interno ao gateway TLS) ─────────────
+  # ── Frontend (Angular + Nginx, mantém funcionamento local) ──────────────────
   frontend:
     build:
       context: ./frontend
@@ -56,37 +56,37 @@ services:
     container_name: controle-acesso-frontend
     restart: unless-stopped
     ports:
+      - "80:80"
       - "4200:80"
     depends_on:
       - backend
     networks:
       - acesso-net
 
-  # ── Gateway HTTPS/WSS (Caddy + ACME automático) ───────────────────────────────
-  caddy:
-    image: caddy:2-alpine
-    container_name: controle-acesso-caddy
+  # ── Tunnel HTTPS/WSS opcional (Cloudflare Tunnel) ────────────────────────────
+  # Só sobe com o profile "tunnel", acionado pelo Makefile quando
+  # TUNNEL_ENABLED=true. O hostname público deve apontar para http://frontend:80
+  # no painel do Cloudflare Tunnel.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: controle-acesso-cloudflared
     restart: unless-stopped
-    environment:
-      ARDLOCK_DOMAIN: ${ARDLOCK_DOMAIN:-ardlock.jangustavo.me}
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
+    profiles:
+      - tunnel
+    command:
+      - tunnel
+      - --no-autoupdate
+      - run
+      - --token
+      - ${CLOUDFLARE_TUNNEL_TOKEN}
     depends_on:
       - frontend
-      - backend
     networks:
       - acesso-net
 
+
 volumes:
   pgdata:
-  caddy_data:
-  caddy_config:
 
 networks:
   acesso-net:
