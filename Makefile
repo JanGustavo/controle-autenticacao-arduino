@@ -12,39 +12,43 @@ DOCKER_BACKEND_PORT := 8001
 
 # ── Configuração Inicial & Dependências ────────────────────────────────────────
 
-setup: ## Instala todas as dependências do projeto e inicializa o banco de dados local
-	@echo "📦 Instalação completa de dependências para novos membros..."
-	@echo "1/3 🅰️  Instalando dependências do Frontend (npm)..."
-	@cd $(FRONTEND_DIR) && npm install
-	@echo "2/3 🐍 Instalando dependências do Backend (Python venv)..."
-	@cd $(BACKEND_DIR) && \
-	if [[ ! -d venv ]]; then python3 -m venv venv; fi && \
-	venv/bin/pip install --upgrade pip && \
-	venv/bin/pip install -r requirements.txt
-	@echo "3/3 🗄️  Inicializando banco de dados local com init.sql..."
-	@$(MAKE) db-local || echo "⚠️  Aviso: Não foi possível rodar db-local via sudo postgres. Se for usar Docker, o 'make up' carregará o init.sql automaticamente."
-	@echo ""
-	@echo "✅ Instalação concluída com sucesso! Execute 'make dev' ou 'make up' para iniciar."
-
-# ── Docker Compose (Todos os serviços integrados) ──────────────────────────────
-
-up: ## Sobe toda a aplicação com Docker (Frontend + Backend + PostgreSQL)
+setup: ## Sobe Docker; TUNNEL_ENABLED=true adiciona HTTPS/WSS via Cloudflare Tunnel
 	@echo "🗄️  Subindo PostgreSQL para aplicar migrations..."
 	docker compose up -d db
 	@until docker compose exec -T db pg_isready -U postgres -d controle_acesso >/dev/null 2>&1; do sleep 1; done
 	@$(MAKE) migrate-docker
-	docker compose up -d --build
+	@set -a; [ -f .env ] && source .env; set +a; \
+	DOMAIN="$${ARDLOCK_DOMAIN:-ardlock.jangustavo.me}"; \
+	if [[ "$${TUNNEL_ENABLED:-false}" == "true" ]]; then \
+		if [[ -z "$${CLOUDFLARE_TUNNEL_TOKEN:-}" ]]; then \
+			echo "❌ TUNNEL_ENABLED=true, mas CLOUDFLARE_TUNNEL_TOKEN está vazio."; \
+			exit 1; \
+		fi; \
+		export FRONTEND_URL="https://$$DOMAIN"; \
+		echo "🔐 Modo tunnel habilitado para https://$$DOMAIN"; \
+		docker compose --profile tunnel up -d --build; \
+	else \
+		export FRONTEND_URL="$${FRONTEND_URL:-http://localhost:4200}"; \
+		echo "🧪 Modo local habilitado (HTTP/WS)."; \
+		docker compose up -d --build; \
+	fi
 	@echo ""
-	@echo "✅ Aplicação iniciada via Docker:"
-	@echo "   🅰️  Frontend local → http://localhost"
-	@echo "   🔒 HTTPS público   → https://${ARDLOCK_DOMAIN:-ardlock.jangustavo.me}"
-	@echo "   🐍 Backend debug   → http://localhost:$(DOCKER_BACKEND_PORT)"
-	@echo "   📖 Swagger debug   → http://localhost:$(DOCKER_BACKEND_PORT)/docs"
-	@echo "   ⚡ WSS público     → wss://${ARDLOCK_DOMAIN:-ardlock.jangustavo.me}/ws/logs"
+	@set -a; [ -f .env ] && source .env; set +a; \
+	DOMAIN="$${ARDLOCK_DOMAIN:-ardlock.jangustavo.me}"; \
+	echo "✅ Aplicação iniciada via Docker:"; \
+	echo "   🅰️  Frontend local → http://localhost"; \
+	echo "   🐍 Backend debug   → http://localhost:$(DOCKER_BACKEND_PORT)"; \
+	echo "   📖 Swagger debug   → http://localhost:$(DOCKER_BACKEND_PORT)/docs"; \
+	if [[ "$${TUNNEL_ENABLED:-false}" == "true" ]]; then \
+		echo "   🔒 HTTPS público   → https://$$DOMAIN"; \
+		echo "   ⚡ WSS público     → wss://$$DOMAIN/ws/logs"; \
+	else \
+		echo "   ⚡ WebSocket local → ws://localhost:$(DOCKER_BACKEND_PORT)/ws/logs"; \
+	fi
 	@echo ""
 
 down: ## Para e remove os containers (mantém os dados salvos)
-	docker compose down
+	docker compose --profile tunnel down
 
 build: ## Força a reconstrução de todas as imagens Docker sem cache
 	docker compose build --no-cache
