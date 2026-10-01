@@ -111,6 +111,12 @@ migrate-local: ## Executa migrations SQL no PostgreSQL local
 	@echo "✅ Migrations locais aplicadas."
 
 migrate-docker: ## Executa migrations SQL no PostgreSQL do Docker
+	@set -e; \
+	tables=$$(docker compose exec -T db psql -U "$${POSTGRES_USER:-postgres}" -d "$${POSTGRES_DB:-controle_acesso}" -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema NOT IN ('pg_catalog', 'information_schema') AND table_type = 'BASE TABLE';"); \
+	if [ "$$tables" = "0" ]; then \
+		echo "📄 Banco vazio: inicializando schema base antes das migrations..."; \
+		docker compose exec -T db psql -U "$${POSTGRES_USER:-postgres}" -d "$${POSTGRES_DB:-controle_acesso}" -v ON_ERROR_STOP=1 --single-transaction < backend/init.sql >/dev/null; \
+	fi
 	@echo "🔄 Executando migrations no PostgreSQL Docker..."
 	@set -e; for mig in backend/migrations/*.sql; do \
 		if [ -f "$$mig" ]; then \
