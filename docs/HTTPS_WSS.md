@@ -5,8 +5,8 @@ O stack Docker usa **Caddy** como gateway TLS na frente do frontend Nginx e do F
 ## Endereço planejado
 
 ```text
-https://ardlock.jangostavo.com.br
-wss://ardlock.jangostavo.com.br/ws/logs
+https://ardlock.jangustavo.me
+wss://ardlock.jangustavo.me/ws/logs
 ```
 
 O tráfego externo termina no Caddy:
@@ -37,13 +37,13 @@ Value: <IPv4 público da sua rede>
 TTL:   Automatic
 ```
 
-O host é somente `ardlock`, não `ardlock.jangostavo.com.br`.
+O host é somente `ardlock`, não `ardlock.jangustavo.me`.
 
 ## Pré-requisitos de certificado público
 
 Para o Caddy obter um certificado público automaticamente:
 
-1. `ardlock.jangostavo.com.br` deve resolver para o IPv4 público correto;
+1. `ardlock.jangustavo.me` deve resolver para o IPv4 público correto;
 2. as portas TCP 80 e 443 do roteador devem chegar à máquina que executa o Docker;
 3. o firewall local deve permitir 80/443;
 4. não pode haver outro processo ocupando essas portas;
@@ -54,7 +54,7 @@ Para o Caddy obter um certificado público automaticamente:
 No `.env`:
 
 ```env
-ARDLOCK_DOMAIN=ardlock.jangostavo.com.br
+ARDLOCK_DOMAIN=ardlock.jangustavo.me
 ```
 
 ## Subir
@@ -67,7 +67,7 @@ docker compose logs -f caddy
 Quando o certificado for emitido:
 
 ```text
-https://ardlock.jangostavo.com.br
+https://ardlock.jangustavo.me
 ```
 
 deve abrir sem aviso de certificado.
