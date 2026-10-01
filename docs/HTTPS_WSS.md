@@ -1,85 +1,134 @@
 # HTTPS e WSS no ArdLock
 
-O stack Docker usa **Caddy** como gateway TLS na frente do frontend Nginx e do FastAPI.
+O modo seguro usa **Cloudflare Tunnel** sem exigir IPv4 público, port forwarding ou certificado local.
+O modo local continua funcionando como antes.
 
-## Endereço planejado
+## Modos
+
+### Local
+
+```env
+TUNNEL_ENABLED=false
+```
+
+```text
+http://localhost
+http://localhost:8001
+ws://localhost:8001/ws/logs
+```
+
+### Tunnel
+
+```env
+TUNNEL_ENABLED=true
+ARDLOCK_DOMAIN=ardlock.jangustavo.me
+CLOUDFLARE_TUNNEL_TOKEN=token-do-tunnel
+```
 
 ```text
 https://ardlock.jangustavo.me
 wss://ardlock.jangustavo.me/ws/logs
 ```
 
-O tráfego externo termina no Caddy:
+Quando `make up` encontra `TUNNEL_ENABLED=true`, ele ativa o profile Docker `tunnel` e sobe o container `cloudflared`.
+Quando a variável é `false`, o container nem é iniciado.
+
+## Arquitetura
 
 ```text
-Internet/LAN
-    |
-  80/443
-    |
-  Caddy
-   |  \
-   |   \-- /api/* e /ws/* -> backend:8000
-   |
-   \------ restante -> frontend:80
+Navegador / Postman / cliente
+          |
+       HTTPS/WSS
+          |
+     Cloudflare
+          |
+  conexão de saída
+          |
+     cloudflared
+          |
+   http://frontend:80
+          |
+        Nginx
+       /     \
+    /api     /ws
+      \       /
+       FastAPI
 ```
 
-O WebSocket não precisa de configuração TLS separada: quando a página abre por HTTPS,
-o Angular usa `wss://` e o Caddy faz o upgrade WebSocket no mesmo domínio.
+O TLS público termina na Cloudflare. O trecho entre `cloudflared` e o Nginx permanece interno à rede Docker.
 
-## DNS na Namecheap
+## Configuração do domínio
 
-Crie um registro:
+`jangustavo.me` precisa estar ativo no Cloudflare DNS. Se o domínio ainda usa os nameservers da Namecheap,
+adicione o domínio à Cloudflare e troque os nameservers na Namecheap pelos dois nameservers informados pela Cloudflare.
+
+Depois crie um tunnel remoto no painel Cloudflare:
 
 ```text
-Type:  A Record
-Host:  ardlock
-Value: <IPv4 público da sua rede>
-TTL:   Automatic
+Nome do tunnel: ardlock
+Public hostname: ardlock.jangustavo.me
+Service URL: http://frontend:80
 ```
 
-O host é somente `ardlock`, não `ardlock.jangustavo.me`.
+O Service URL usa `frontend` porque `cloudflared` e o frontend estão na mesma rede Docker.
 
-## Pré-requisitos de certificado público
+## Subir localmente
 
-Para o Caddy obter um certificado público automaticamente:
-
-1. `ardlock.jangustavo.me` deve resolver para o IPv4 público correto;
-2. as portas TCP 80 e 443 do roteador devem chegar à máquina que executa o Docker;
-3. o firewall local deve permitir 80/443;
-4. não pode haver outro processo ocupando essas portas;
-5. se o provedor usar CGNAT, o encaminhamento IPv4 tradicional pode não funcionar.
-
-## Variável de ambiente
-
-No `.env`:
+`.env`:
 
 ```env
-ARDLOCK_DOMAIN=ardlock.jangustavo.me
+TUNNEL_ENABLED=false
 ```
-
-## Subir
 
 ```bash
-docker compose up -d --build
-docker compose logs -f caddy
+make up
 ```
 
-Quando o certificado for emitido:
+## Subir com HTTPS/WSS
+
+`.env`:
+
+```env
+TUNNEL_ENABLED=true
+ARDLOCK_DOMAIN=ardlock.jangustavo.me
+CLOUDFLARE_TUNNEL_TOKEN=cole-o-token-do-tunnel-aqui
+```
+
+```bash
+make up
+```
+
+O Makefile valida que o token não está vazio antes de iniciar o profile do tunnel.
+
+## Testes rápidos
+
+Local direto no FastAPI:
+
+```bash
+curl -i http://localhost:8001/api/v1/health
+```
+
+Local passando pelo Nginx:
+
+```bash
+curl -i http://localhost/api/v1/health
+```
+
+Com o tunnel ativo:
+
+```bash
+curl -i https://ardlock.jangustavo.me/api/v1/health
+```
+
+No Postman, use a mesma URL HTTPS. Para WebSocket, crie uma requisição WebSocket para:
 
 ```text
-https://ardlock.jangustavo.me
+wss://ardlock.jangustavo.me/ws/logs
 ```
 
-deve abrir sem aviso de certificado.
+Depois dispare uma leitura RFID ou uma chamada que gere evento para confirmar o recebimento em tempo real.
 
-## Desenvolvimento local
+## Segurança
 
-`make dev` continua usando:
-
-```text
-http://localhost:4200
-http://localhost:8001
-ws://localhost:8001/ws/logs
-```
-
-A camada HTTPS/WSS é voltada ao stack Docker e não quebra o fluxo local sem TLS.
+O token real do Cloudflare Tunnel nunca deve ser versionado. Guarde-o apenas no `.env` local.
+O Tunnel protege transporte e publicação do serviço; autenticação HMAC do ESP32 continua sendo uma fase separada.
