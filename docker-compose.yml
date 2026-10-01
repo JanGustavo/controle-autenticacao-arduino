@@ -79,7 +79,7 @@ services:
       - --no-autoupdate
       - run
       - --token
-      - ${CLOUDFLARE_TUNNEL_TOKEN}
+      - ${CLOUDFLARE_TUNNEL_TOKEN:-}
     depends_on:
       - frontend
     networks:

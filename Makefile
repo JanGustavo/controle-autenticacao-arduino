@@ -12,7 +12,23 @@ DOCKER_BACKEND_PORT := 8001
 
 # ── Configuração Inicial & Dependências ────────────────────────────────────────
 
-setup: ## Sobe Docker; TUNNEL_ENABLED=true adiciona HTTPS/WSS via Cloudflare Tunnel
+setup: ## Instala todas as dependências do projeto e inicializa o banco de dados local
+	@echo "📦 Instalação completa de dependências para novos membros..."
+	@echo "1/3 🅰️  Instalando dependências do Frontend (npm)..."
+	@cd $(FRONTEND_DIR) && npm install
+	@echo "2/3 🐍 Instalando dependências do Backend (Python venv)..."
+	@cd $(BACKEND_DIR) && \
+	if [[ ! -d venv ]]; then python3 -m venv venv; fi && \
+	venv/bin/pip install --upgrade pip && \
+	venv/bin/pip install -r requirements.txt
+	@echo "3/3 🗄️  Inicializando banco de dados local com init.sql..."
+	@$(MAKE) db-local || echo "⚠️  Aviso: Não foi possível rodar db-local via sudo postgres. Se for usar Docker, o 'make up' carregará o init.sql automaticamente."
+	@echo ""
+	@echo "✅ Instalação concluída com sucesso! Execute 'make dev' ou 'make up' para iniciar."
+
+# ── Docker Compose (Todos os serviços integrados) ──────────────────────────────
+
+up: ## Sobe Docker; TUNNEL_ENABLED=true adiciona HTTPS/WSS via Cloudflare Tunnel
 	@echo "🗄️  Subindo PostgreSQL para aplicar migrations..."
 	docker compose up -d db
 	@until docker compose exec -T db pg_isready -U postgres -d controle_acesso >/dev/null 2>&1; do sleep 1; done
