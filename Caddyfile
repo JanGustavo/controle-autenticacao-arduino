@@ -1,4 +1,4 @@
-{$ARDLOCK_DOMAIN:ardlock.jangostavo.com.br} {
+{$ARDLOCK_DOMAIN:ardlock.jangustavo.me} {
     encode zstd gzip
 
     handle /api/* {
