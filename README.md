@@ -85,6 +85,7 @@ controle-autenticacao-arduino/
 | [Backend](docs/BACKEND.md) | arquitetura, regras, persistência, autenticação e fluxo de acesso |
 | [Frontend](docs/FRONTEND.md) | Angular, Totem, WebSocket, webcam, padrões visuais e debug |
 | [API e Debug](docs/API_DEBUG.md) | roteiro de Swagger, códigos HTTP e diagnóstico ponta a ponta |
+| [HTTPS, WSS e Cloudflare Tunnel](docs/HTTPS_WSS.md) | modos local/Docker, domínio Namecheap, DNS, túnel, banco de dados e testes públicos |
 | [Arquitetura de camadas](backend/ARCHITECTURE.md) | convenção API → Service → Model |
 
 A documentação interativa da API está em `/docs` e a alternativa ReDoc em `/redoc`.
@@ -118,11 +119,10 @@ Revise as credenciais do PostgreSQL antes de utilizar o projeto fora de um ambie
 make up
 ```
 
-Ou diretamente:
-
-```bash
-docker compose up -d --build
-```
+O `make up` prepara o schema de um banco vazio, aplica as migrations e sobe os serviços.
+No `.env`, `TUNNEL_ENABLED=false` mantém HTTP/WS local; `TUNNEL_ENABLED=true`
+também inicia o Cloudflare Tunnel no Docker, usando `CLOUDFLARE_TUNNEL_TOKEN`.
+O Compose sozinho não interpreta esse booleano nem executa as migrations do Makefile.
 
 ### 4. Acesse
 
@@ -135,6 +135,25 @@ docker compose up -d --build
 | PostgreSQL | localhost:5432 |
 
 O Docker Compose publica o backend na porta `8001` do host, embora o FastAPI escute na porta `8000` dentro do container.
+
+### Domínio público com HTTPS/WSS
+
+O domínio registrado na Namecheap usa DNS da Cloudflare. O túnel remoto `ardlock`
+publica `ardlock.jangustavo.me` para `http://frontend:80` na rede Docker:
+
+```text
+Navegador → Cloudflare (HTTPS/WSS) → cloudflared → Nginx → FastAPI
+```
+
+Com o domínio ativo, a rota configurada e o token salvo somente no `.env`, execute
+`make up` e acesse `https://ardlock.jangustavo.me`. O WebSocket público é
+`wss://ardlock.jangustavo.me/ws/logs`. O computador precisa permanecer ligado e
+conectado à Internet; mudanças de Wi-Fi ou IP não exigem mudar a rota do domínio.
+
+O `make dev` usa o PostgreSQL local; o Docker usa seu próprio volume. Os dados não
+são sincronizados automaticamente, e ambos disputam a porta `5432` na configuração
+atual. Consulte o [guia completo](docs/HTTPS_WSS.md) para configurar o domínio,
+alternar os ambientes, copiar os dados e diagnosticar DNS.
 
 ## 🔐 Autenticação e Segurança
 

@@ -28,22 +28,43 @@ setup: ## Instala todas as dependências do projeto e inicializa o banco de dado
 
 # ── Docker Compose (Todos os serviços integrados) ──────────────────────────────
 
-up: ## Sobe toda a aplicação com Docker (Frontend + Backend + PostgreSQL)
+up: ## Sobe Docker; TUNNEL_ENABLED=true adiciona HTTPS/WSS via Cloudflare Tunnel
 	@echo "🗄️  Subindo PostgreSQL para aplicar migrations..."
 	docker compose up -d db
 	@until docker compose exec -T db pg_isready -U postgres -d controle_acesso >/dev/null 2>&1; do sleep 1; done
 	@$(MAKE) migrate-docker
-	docker compose up -d --build
+	@set -a; [ -f .env ] && source .env; set +a; \
+	DOMAIN="$${ARDLOCK_DOMAIN:-ardlock.jangustavo.me}"; \
+	if [[ "$${TUNNEL_ENABLED:-false}" == "true" ]]; then \
+		if [[ -z "$${CLOUDFLARE_TUNNEL_TOKEN:-}" ]]; then \
+			echo "❌ TUNNEL_ENABLED=true, mas CLOUDFLARE_TUNNEL_TOKEN está vazio."; \
+			exit 1; \
+		fi; \
+		export FRONTEND_URL="https://$$DOMAIN"; \
+		echo "🔐 Modo tunnel habilitado para https://$$DOMAIN"; \
+		docker compose --profile tunnel up -d --build; \
+	else \
+		export FRONTEND_URL="$${FRONTEND_URL:-http://localhost:4200}"; \
+		echo "🧪 Modo local habilitado (HTTP/WS)."; \
+		docker compose up -d --build; \
+	fi
 	@echo ""
-	@echo "✅ Aplicação iniciada via Docker:"
-	@echo "   🅰️  Frontend  → http://localhost"
-	@echo "   🐍 Backend   → http://localhost:$(DOCKER_BACKEND_PORT)"
-	@echo "   📖 Swagger   → http://localhost:$(DOCKER_BACKEND_PORT)/docs"
-	@echo "   ⚡ WebSocket → ws://localhost:$(DOCKER_BACKEND_PORT)/ws/logs"
+	@set -a; [ -f .env ] && source .env; set +a; \
+	DOMAIN="$${ARDLOCK_DOMAIN:-ardlock.jangustavo.me}"; \
+	echo "✅ Aplicação iniciada via Docker:"; \
+	echo "   🅰️  Frontend local → http://localhost"; \
+	echo "   🐍 Backend debug   → http://localhost:$(DOCKER_BACKEND_PORT)"; \
+	echo "   📖 Swagger debug   → http://localhost:$(DOCKER_BACKEND_PORT)/docs"; \
+	if [[ "$${TUNNEL_ENABLED:-false}" == "true" ]]; then \
+		echo "   🔒 HTTPS público   → https://$$DOMAIN"; \
+		echo "   ⚡ WSS público     → wss://$$DOMAIN/ws/logs"; \
+	else \
+		echo "   ⚡ WebSocket local → ws://localhost:$(DOCKER_BACKEND_PORT)/ws/logs"; \
+	fi
 	@echo ""
 
 down: ## Para e remove os containers (mantém os dados salvos)
-	docker compose down
+	docker compose --profile tunnel down
 
 build: ## Força a reconstrução de todas as imagens Docker sem cache
 	docker compose build --no-cache
@@ -90,6 +111,12 @@ migrate-local: ## Executa migrations SQL no PostgreSQL local
 	@echo "✅ Migrations locais aplicadas."
 
 migrate-docker: ## Executa migrations SQL no PostgreSQL do Docker
+	@set -e; \
+	tables=$$(docker compose exec -T db psql -U "$${POSTGRES_USER:-postgres}" -d "$${POSTGRES_DB:-controle_acesso}" -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema NOT IN ('pg_catalog', 'information_schema') AND table_type = 'BASE TABLE';"); \
+	if [ "$$tables" = "0" ]; then \
+		echo "📄 Banco vazio: inicializando schema base antes das migrations..."; \
+		docker compose exec -T db psql -U "$${POSTGRES_USER:-postgres}" -d "$${POSTGRES_DB:-controle_acesso}" -v ON_ERROR_STOP=1 --single-transaction < backend/init.sql >/dev/null; \
+	fi
 	@echo "🔄 Executando migrations no PostgreSQL Docker..."
 	@set -e; for mig in backend/migrations/*.sql; do \
 		if [ -f "$$mig" ]; then \
