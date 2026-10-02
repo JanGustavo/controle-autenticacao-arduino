@@ -6,7 +6,11 @@ BACKEND_PORT  := 8001
 FRONTEND_PORT := 4200
 DOCKER_BACKEND_PORT := 8001
 
-.PHONY: setup up down build logs ps restart \
+# These values identify the source and the build actually served by Docker.
+export APP_BUILD_REVISION := $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
+export APP_BUILD_TIME := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
+
+.PHONY: setup up down build logs ps restart version \
 	dev db-local migrate-local migrate-docker dev-backend dev-frontend kill-port \
 	db-reset help
 
@@ -28,12 +32,15 @@ setup: ## Instala todas as dependências do projeto e inicializa o banco de dado
 
 # ── Docker Compose (Todos os serviços integrados) ──────────────────────────────
 
-up: ## Sobe Docker; TUNNEL_ENABLED=true adiciona HTTPS/WSS via Cloudflare Tunnel
+up: ## Reconstrói sem cache e recria a aplicação; preserva o banco Docker
+	@echo "📂 Código: $$(pwd)"
+	@echo "🌿 Branch: $$(git branch --show-current) | commit: $(APP_BUILD_REVISION)"
 	@echo "🗄️  Subindo PostgreSQL para aplicar migrations..."
 	docker compose up -d db
 	@until docker compose exec -T db pg_isready -U postgres -d controle_acesso >/dev/null 2>&1; do sleep 1; done
 	@$(MAKE) migrate-docker
-	@set -a; [ -f .env ] && source .env; set +a; \
+	@$(MAKE) build
+	@set -e; set -a; [ -f .env ] && source .env; set +a; \
 	DOMAIN="$${ARDLOCK_DOMAIN:-ardlock.jangustavo.me}"; \
 	if [[ "$${TUNNEL_ENABLED:-false}" == "true" ]]; then \
 		if [[ -z "$${CLOUDFLARE_TUNNEL_TOKEN:-}" ]]; then \
@@ -42,11 +49,12 @@ up: ## Sobe Docker; TUNNEL_ENABLED=true adiciona HTTPS/WSS via Cloudflare Tunnel
 		fi; \
 		export FRONTEND_URL="https://$$DOMAIN"; \
 		echo "🔐 Modo tunnel habilitado para https://$$DOMAIN"; \
-		docker compose --profile tunnel up -d --build; \
+		docker compose --profile tunnel pull cloudflared; \
+		docker compose --profile tunnel up -d --no-build --force-recreate --no-deps backend frontend cloudflared; \
 	else \
 		export FRONTEND_URL="$${FRONTEND_URL:-http://localhost:4200}"; \
 		echo "🧪 Modo local habilitado (HTTP/WS)."; \
-		docker compose up -d --build; \
+		docker compose up -d --no-build --force-recreate --no-deps backend frontend; \
 	fi
 	@echo ""
 	@set -a; [ -f .env ] && source .env; set +a; \
@@ -67,7 +75,10 @@ down: ## Para e remove os containers (mantém os dados salvos)
 	docker compose --profile tunnel down
 
 build: ## Força a reconstrução de todas as imagens Docker sem cache
-	docker compose build --no-cache
+	docker compose build --no-cache --pull backend frontend
+
+version: ## Exibe o commit e a data do build servido pelo frontend
+	@curl --fail --silent --show-error http://localhost/version.json
 
 logs: ## Exibe os logs unificados de todos os containers em tempo real
 	docker compose logs -f
