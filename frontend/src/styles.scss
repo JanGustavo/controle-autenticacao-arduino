@@ -44,7 +44,7 @@ html {
 
 body {
   color-scheme: light;
-  background-color: var(--mat-sys-surface, #f8fafc);
+  background-color: var(--ard-canvas);
   color: var(--mat-sys-on-surface, #1e293b);
   font: var(--mat-sys-body-medium);
   margin: 0;
@@ -63,7 +63,7 @@ body.dark-mode {
   --ard-table-row-even: #172033;
 
   color-scheme: dark;
-  background-color: #0f172a !important;
+  background-color: var(--ard-canvas) !important;
   color: #f1f5f9 !important;
 
   .app-header {
@@ -75,7 +75,7 @@ body.dark-mode {
     border-bottom: 1px solid var(--line) !important;
 
     .user-profile {
-      background: #0f172a !important;
+      background: var(--ard-canvas) !important;
       border-color: var(--line) !important;
     }
   }
@@ -86,7 +86,7 @@ body.dark-mode {
     --ink: #f8fafc;
     --muted: #94a3b8;
     --line: rgba(255, 255, 255, 0.1);
-    background: #0f172a !important;
+    background: var(--ard-canvas) !important;
 
     .adm-header {
       h2 { color: #f8fafc !important; }
@@ -147,7 +147,7 @@ body.dark-mode {
 
     .tuple-table {
       th {
-        background: #0f172a !important;
+        background: var(--ard-canvas) !important;
         color: #94a3b8 !important;
         border-bottom-color: rgba(255, 255, 255, 0.1) !important;
       }
