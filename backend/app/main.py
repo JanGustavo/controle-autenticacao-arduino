@@ -25,6 +25,7 @@ from app.api.biometria import router as biometria
 from app.api.health import database_health, health
 from app.auth import router as auth
 from app.services.expiracao_service import loop_expiracao_periodica
+from app.services.face_service import FaceService
 # from app.api import rfid
 
 
@@ -150,6 +151,9 @@ async def lifespan(app: FastAPI):
     """
     Inicializa e encerra tarefas de infraestrutura da aplicação.
     """
+    # Uvicorn só aceita acessos após carregar e aquecer a inferência facial.
+    await asyncio.to_thread(FaceService._get_model)
+
     task_expiracao = asyncio.create_task(
         loop_expiracao_periodica(),
         name="expiracao-tentativas-acesso",

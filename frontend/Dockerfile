@@ -20,8 +20,14 @@ RUN rm -rf /usr/share/nginx/html/*
 # Copia o build do Angular
 COPY --from=builder /app/dist/controle-acesso/browser /usr/share/nginx/html
 
-# Configura Nginx como servidor estático + Reverse Proxy para WebSocket (/ws/logs) e REST (/api)
-RUN printf 'server {\n    listen 80;\n    root /usr/share/nginx/html;\n    index index.html;\n\n    resolver 127.0.0.11 valid=10s;\n\n    location / {\n        try_files $uri $uri/ /index.html;\n    }\n\n    location /api/ {\n        set $upstream http://backend:8000;\n        proxy_pass $upstream;\n        proxy_set_header Host $host;\n        proxy_set_header X-Real-IP $remote_addr;\n        rewrite ^/api/(.*)$ /api/$1 break;\n    }\n\n    location /ws/ {\n        set $upstream_ws http://backend:8000;\n        proxy_pass $upstream_ws;\n        proxy_http_version 1.1;\n        proxy_set_header Upgrade $http_upgrade;\n        proxy_set_header Connection "Upgrade";\n        proxy_set_header Host $host;\n    }\n}\n' > /etc/nginx/conf.d/default.conf
+# Configuração versionada, incluindo a política de cache.
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+ARG APP_BUILD_REVISION=unknown
+ARG APP_BUILD_TIME=unknown
+LABEL org.opencontainers.image.revision=$APP_BUILD_REVISION
+LABEL org.opencontainers.image.created=$APP_BUILD_TIME
+RUN printf '{"revision":"%s","built_at":"%s"}\n' "$APP_BUILD_REVISION" "$APP_BUILD_TIME" > /usr/share/nginx/html/version.json
 
 EXPOSE 80
 

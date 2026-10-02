@@ -17,7 +17,11 @@ O `.env` controla o túnel iniciado pelo **Makefile**. `make dev` não inicia o
 `make setup` instala as dependências para desenvolvimento local.
 
 O `make up` inicia o banco, aguarda disponibilidade, executa `migrate-docker` e
-constrói/inicia os demais containers. Se o banco estiver sem tabelas de aplicação,
+reconstrói backend e frontend com `--no-cache --pull`, depois recria os containers
+da aplicação com `--force-recreate --no-deps`. O banco não é recriado por essa etapa.
+O processo informa o diretório, a branch e o commit usados. O build usa os arquivos
+do checkout atual: reconstruir uma branch antiga não incorpora alterações de outras
+branches; atualize a branch antes de rodar `make up`. Se o banco estiver sem tabelas de aplicação,
 `migrate-docker` aplica `backend/init.sql` em uma transação antes das migrations.
 Um banco já preenchido não é reinicializado. Isso também atende volumes existentes
 que estejam com o banco vazio: o entrypoint do PostgreSQL só inicializa um diretório
@@ -262,3 +266,70 @@ não substitui a autenticação da API nem a autenticação dos dispositivos.
 - [Cloudflare: configurar Tunnel](https://developers.cloudflare.com/tunnel/get-started/)
 - [Cloudflare: trocar nameservers](https://developers.cloudflare.com/dns/zone-setups/full-setup/setup/)
 - [Cloudflare: tokens e rotação](https://developers.cloudflare.com/tunnel/reference/tunnel-tokens/)
+
+
+## Conferir versão e cache
+
+`make up` e `make build` descartam o cache de camadas e consultam as imagens base
+atualizadas. Isso torna a inicialização mais demorada, especialmente na instalação
+das dependências Python. Uma falha no build interrompe o processo antes de substituir
+os containers da aplicação. O volume PostgreSQL é preservado.
+
+O backend executa o código incluído na imagem. O Compose não monta mais a pasta
+`backend/app` sobre esse código; para desenvolvimento com hot reload, use `make dev`.
+
+O Nginx envia `Cache-Control: no-store, no-cache, must-revalidate, max-age=0` para
+os arquivos da interface. O Angular também mantém nomes de bundles com hash.
+`/version.json` informa o commit e a data UTC de criação da imagem do frontend:
+
+```bash
+make version
+curl -fsS https://ardlock.jangustavo.me/version.json
+curl -I https://ardlock.jangustavo.me/
+```
+
+A versão local e pública deve ser a mesma. Após a primeira implantação desta política,
+recarregue a página para substituir arquivos que já estavam abertos ou armazenados
+antes dela. Uma aba já aberta continua executando o JavaScript carregado até recarregar.
+Se houver uma regra personalizada na Cloudflare que ignore os cabeçalhos da origem,
+aplique cache bypass ao hostname da aplicação. A configuração atual foi conferida
+pelo domínio público, incluindo os cabeçalhos de cache e a versão servida.
+
+
+## Fuso fixo das permissões de acesso
+
+As permissões (horário inicial/final e dias da semana) usam sempre
+`America/Sao_Paulo`, independentemente do fuso do sistema operacional, do Docker ou
+do navegador. O RFID, a revalidação facial e a expiração automática compartilham o
+mesmo relógio. Por exemplo, `20:10 UTC` corresponde a `17:10` em Brasília; uma
+permissão até `18:00` ainda é válida nesse instante. JWT e reset de senha continuam
+usando seus relógios UTC próprios.
+
+As conexões PostgreSQL da aplicação também usam esse fuso, alinhando os defaults
+SQL e o relógio do backend. A migration `010_add_access_timezone.sql` acrescenta
+metadados de fuso ao histórico e às tentativas, sem alterar os valores originais.
+Datas antigas em UTC são convertidas ao ler; as novas são gravadas no horário de
+São Paulo. A conclusão/expiração de uma tentativa antiga preserva o fuso da linha.
+A API e os eventos `NOVO_ACESSO` informam o offset, evitando interpretar UTC como
+horário local na interface.
+
+Nesta instalação, o backup de origem identificou por ID e data exata 570 registros
+de histórico e 59 tentativas importados do PostgreSQL local, marcados como
+`America/Sao_Paulo`. Os registros restantes do Docker foram marcados como UTC.
+Em outro banco misturado, reconciliar a origem antes de interpretar dados antigos,
+conforme o procedimento de auditoria em `docs/FRONTEND.md`.
+
+
+### Primeira validação facial e versão em execução
+
+Os pesos do InsightFace são baixados durante a construção da imagem. O backend
+carrega e aquece o modelo no startup, antes de aceitar requisições. `make up`
+aguarda o healthcheck do backend antes de anunciar que a aplicação iniciou.
+Assim, a janela de 15 segundos de uma tentativa não inclui o download do modelo.
+O navegador antecipa os modelos locais de enquadramento, compartilha um único
+carregamento entre chamadas e prepara o detector sem solicitar a câmera.
+Permissões de câmera continuam sendo necessárias no primeiro uso do navegador.
+
+Use `make version` para conferir o commit servido. Reconstruir uma branch antiga
+continua produzindo código antigo, mesmo com `--no-cache`. Correções mescladas em
+uma branch de trabalho só chegam a `master` quando essa branch também é mesclada.

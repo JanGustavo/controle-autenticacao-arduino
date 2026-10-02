@@ -53,6 +53,7 @@ export class WebcamService {
   // ── Estado privado e Otimização de Performance ────────────────────
   private intervalValidacao: ReturnType<typeof setInterval> | null = null;
   private modelosCarregados = false;
+  private modelosPromise: Promise<void> | null = null;
   private aberturaId = 0;
   private ultimoEstadoEnquadramento: EstadoEnquadramento = null;
   private processandoDeteccao = false;
@@ -83,23 +84,33 @@ export class WebcamService {
     this.lumaCtx = this.lumaCanvas.getContext('2d', { willReadFrequently: true });
   }
 
-async carregarModelos(): Promise<void> {
-    if (this.modelosCarregados) return;
-    this.carregandoHardware.set(true);
-    try {
-      // Define explicitamente o backend de aceleração de hardware via faceapi.tf
-      if (faceapi.tf && 'setBackend' in faceapi.tf) {
-        await (faceapi.tf as any).setBackend('webgl').catch(() => (faceapi.tf as any).setBackend('cpu'));
-      }
-      await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
-      await faceapi.nets.faceExpressionNet.loadFromUri('/models');
-      await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
-      this.modelosCarregados = true;
-    } catch (e) {
-      console.warn('Não foi possível carregar os modelos locais do face-api:', e);
-    } finally {
-      this.carregandoHardware.set(false);
+  carregarModelos(): Promise<void> {
+    if (this.modelosCarregados) return Promise.resolve();
+    if (this.modelosPromise) return this.modelosPromise;
+    this.modelosPromise = this.prepararModelos().catch((erro) => {
+      this.modelosPromise = null;
+      throw erro;
+    });
+    return this.modelosPromise;
+  }
+
+  private async prepararModelos(): Promise<void> {
+    if (faceapi.tf && 'setBackend' in faceapi.tf) {
+      await (faceapi.tf as any).setBackend('webgl')
+        .catch(() => (faceapi.tf as any).setBackend('cpu'));
     }
+    await Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+      faceapi.nets.faceExpressionNet.loadFromUri('/models'),
+      faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+    ]);
+    // Compila os shaders antes da primeira leitura, inclusive no celular.
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 224;
+    await faceapi.detectSingleFace(canvas,
+      new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 }))
+      .withFaceLandmarks().withFaceExpressions();
+    this.modelosCarregados = true;
   }
 
   async iniciarWebcam(

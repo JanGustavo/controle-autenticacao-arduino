@@ -56,3 +56,30 @@ def test_calculate_batch_similarities():
 
     assert resultados[1].similarity == -1.0
     assert resultados[1].is_match is False
+
+def test_model_initialization_is_shared_and_warmed(monkeypatch):
+    """Acessos simultâneos não veem um modelo parcialmente preparado."""
+    from concurrent.futures import ThreadPoolExecutor
+    from unittest.mock import Mock
+    model = Mock()
+    factory = Mock(return_value=model)
+    monkeypatch.setattr(FaceService, "_app", None)
+    monkeypatch.setattr("app.services.face_service.FaceAnalysis", factory)
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        results = list(pool.map(lambda _: FaceService._get_model(), range(4)))
+    assert all(result is model for result in results)
+    factory.assert_called_once()
+    model.prepare.assert_called_once()
+    model.get.assert_called_once()
+    assert model.get.call_args.args[0].shape == (480, 480, 3)
+
+
+def test_failed_prepare_does_not_publish_model(monkeypatch):
+    from unittest.mock import Mock
+    model = Mock()
+    model.prepare.side_effect = RuntimeError("modelo indisponível")
+    monkeypatch.setattr(FaceService, "_app", None)
+    monkeypatch.setattr("app.services.face_service.FaceAnalysis", Mock(return_value=model))
+    with pytest.raises(RuntimeError):
+        FaceService._get_model()
+    assert FaceService._app is None

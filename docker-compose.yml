@@ -27,6 +27,9 @@ services:
     build:
       context: ./backend
       dockerfile: dockerfile
+      args:
+        APP_BUILD_REVISION: ${APP_BUILD_REVISION:-unknown}
+        APP_BUILD_TIME: ${APP_BUILD_TIME:-unknown}
     container_name: controle-acesso-backend
     restart: unless-stopped
     environment:
@@ -38,9 +41,14 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4200}
       PYTHONPATH: /app
     volumes:
-      - ./backend/app:/app/app   # Hot-reload ao vivo em ambiente de dev
       - ./backend/tests:/app/tests:ro
 
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      start_period: 60s
+      retries: 12
     ports:
       - "8001:8000"
     depends_on:
@@ -54,6 +62,9 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        APP_BUILD_REVISION: ${APP_BUILD_REVISION:-unknown}
+        APP_BUILD_TIME: ${APP_BUILD_TIME:-unknown}
     container_name: controle-acesso-frontend
     restart: unless-stopped
     ports:

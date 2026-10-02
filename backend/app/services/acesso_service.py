@@ -5,6 +5,7 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from app.database.connection import get_connection
+from app.utils.access_time import agora_acesso, iso_acesso
 from app.models.dispositivo_model import dispositivo_model
 from app.models.historico_acesso_model import historico_acesso_model
 from app.models.local_model import local_model
@@ -60,7 +61,7 @@ class AcessoService:
 
     @staticmethod
     def _agora() -> datetime:
-        return datetime.now()
+        return agora_acesso()
 
     @staticmethod
     def _permissao_valida(
@@ -180,7 +181,7 @@ class AcessoService:
                         "autorizado": False,
                         "percentual_similaridade": None,
                         "motivo_recusa": negacao,
-                        "data_hora": agora.isoformat(),
+                        "data_hora": iso_acesso(agora),
                         "tentativa_id": None,
                         "tempo_resposta_ms": None,
                     },
