@@ -83,6 +83,8 @@ export class CompararPage implements OnInit, OnDestroy {
   private wsSubscription: Subscription | null = null;
 
   ngOnInit(): void {
+    void this.webcam.carregarModelos().catch((erro) =>
+      console.warn("Falha ao preparar os modelos faciais:", erro));
     this.carregarHistorico();
     this.carregarAuxiliares();
 

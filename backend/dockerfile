@@ -45,6 +45,9 @@ COPY --from=builder /install/deps /usr/local
 # Copia o código da aplicação
 COPY app/ ./app/
 
+# Os pesos fazem parte da imagem: nenhuma tentativa precisa baixá-los.
+RUN python -c "from app.services.face_service import FaceService; FaceService._get_model()"
+
 EXPOSE 8000
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

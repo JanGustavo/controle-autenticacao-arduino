@@ -43,6 +43,12 @@ services:
     volumes:
       - ./backend/tests:/app/tests:ro
 
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      start_period: 60s
+      retries: 12
     ports:
       - "8001:8000"
     depends_on:

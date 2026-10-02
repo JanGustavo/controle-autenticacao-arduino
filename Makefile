@@ -50,11 +50,11 @@ up: ## Reconstrói sem cache e recria a aplicação; preserva o banco Docker
 		export FRONTEND_URL="https://$$DOMAIN"; \
 		echo "🔐 Modo tunnel habilitado para https://$$DOMAIN"; \
 		docker compose --profile tunnel pull cloudflared; \
-		docker compose --profile tunnel up -d --no-build --force-recreate --no-deps backend frontend cloudflared; \
+		docker compose --profile tunnel up -d --wait --wait-timeout 180 --no-build --force-recreate --no-deps backend frontend cloudflared; \
 	else \
 		export FRONTEND_URL="$${FRONTEND_URL:-http://localhost:4200}"; \
 		echo "🧪 Modo local habilitado (HTTP/WS)."; \
-		docker compose up -d --no-build --force-recreate --no-deps backend frontend; \
+		docker compose up -d --wait --wait-timeout 180 --no-build --force-recreate --no-deps backend frontend; \
 	fi
 	@echo ""
 	@set -a; [ -f .env ] && source .env; set +a; \

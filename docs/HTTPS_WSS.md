@@ -318,3 +318,18 @@ de histórico e 59 tentativas importados do PostgreSQL local, marcados como
 `America/Sao_Paulo`. Os registros restantes do Docker foram marcados como UTC.
 Em outro banco misturado, reconciliar a origem antes de interpretar dados antigos,
 conforme o procedimento de auditoria em `docs/FRONTEND.md`.
+
+
+### Primeira validação facial e versão em execução
+
+Os pesos do InsightFace são baixados durante a construção da imagem. O backend
+carrega e aquece o modelo no startup, antes de aceitar requisições. `make up`
+aguarda o healthcheck do backend antes de anunciar que a aplicação iniciou.
+Assim, a janela de 15 segundos de uma tentativa não inclui o download do modelo.
+O navegador antecipa os modelos locais de enquadramento, compartilha um único
+carregamento entre chamadas e prepara o detector sem solicitar a câmera.
+Permissões de câmera continuam sendo necessárias no primeiro uso do navegador.
+
+Use `make version` para conferir o commit servido. Reconstruir uma branch antiga
+continua produzindo código antigo, mesmo com `--no-cache`. Correções mescladas em
+uma branch de trabalho só chegam a `master` quando essa branch também é mesclada.
