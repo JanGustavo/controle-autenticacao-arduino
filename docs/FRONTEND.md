@@ -290,3 +290,24 @@ prende o foco durante o uso e devolve o foco ao botão ao fechar. Cancelar, fech
 pressionar Escape limpa o formulário; durante o envio essas ações ficam bloqueadas.
 A conta principal continua protegida contra exclusão e desativação, e deixar a senha
 vazia na edição preserva a senha atual.
+
+
+### Horários de auditoria
+
+A API de auditoria retorna `created_at` em ISO 8601 com fuso explícito (por exemplo,
+`2026-10-02T19:01:11+00:00`). A interface converte esse instante para o fuso do
+navegador: em Brasília, o exemplo aparece como `02/10/2026 16:01:11`.
+Cloudflare Tunnel não modifica esses horários.
+
+A migration `009_add_audit_timezone.sql` mantém a coluna de data original e adiciona
+`created_at_timezone`. Novos registros recebem o fuso da sessão PostgreSQL; a API
+interpreta cada data nesse fuso e ordena pelos instantes reais. A migration pode ser
+repetida sem sobrescrever os fusos já registrados.
+
+Em uma importação antiga de um banco com fuso diferente, os registros importados
+precisam ser reconciliados com o backup de origem: atualizar apenas
+`created_at_timezone` nos registros cujo ID e data original correspondam ao backup.
+Não subtraia três horas de toda a tabela, pois dados locais e Docker podem ter sido
+gravados em fusos diferentes. Nesta instalação, os 446 registros importados foram
+identificados por correspondência exata e marcados como `America/Sao_Paulo`; os
+registros posteriores do Docker permanecem em UTC. As datas originais foram preservadas.
