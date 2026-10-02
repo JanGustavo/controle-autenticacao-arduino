@@ -33,10 +33,20 @@ Características, restrições e condições de funcionamento do sistema.
 | ID | Nome do requisito | Descrição |
 |----|---|---|
 | RNF01 | Tempo de resposta | O tempo entre a leitura do cartão e a decisão final deverá ser, idealmente, inferior a 4 segundos. |
-| RNF02 | Precisão do reconhecimento facial | A similaridade mínima entre os vetores faciais para considerar a mesma pessoa deverá ser de 85%, podendo ser ajustada. |
+| RNF02 | Precisão do reconhecimento facial | A similaridade mínima entre os vetores faciais para considerar a mesma pessoa deverá ser de 80%, podendo ser ajustada. |
 | RNF03 | Privacidade dos dados | O sistema não deverá armazenar a foto do rosto capturado, apenas o vetor numérico gerado a partir dela. |
 | RNF04 | Processamento local | O reconhecimento facial deverá ser executado localmente, sem depender de serviços de nuvem pagos. |
 | RNF05 | Rastreabilidade dos eventos | Toda tentativa de acesso deverá ficar registrada e disponível para consulta no histórico do sistema. |
 | RNF06 | Custo do protótipo | Os componentes de hardware adicionais ao já disponível deverão custar entre R$ 60 e R$ 120. |
 
 > **Observação:** a regra de que o ESP32 apenas executa comandos e não toma decisões é uma definição de arquitetura do projeto, e não um requisito não funcional testável — por isso não consta nesta lista.
+
+
+## Decisões de validação em 02/10/2026
+
+- **RNF02:** limite operacional aprovado de similaridade de **80%**, alinhado ao
+  backend atual. A calibração com rostos reais continua sendo uma etapa de testes;
+  este percentual é o limiar de comparação, não uma medição de acurácia.
+- **RNF06:** orçamento do protótipo **aprovado pelo responsável pelo projeto**.
+  A câmera dedicada ainda não foi comprada e o buzzer será substituído por um
+  componente adequado. Esta aprovação do orçamento não aprova os testes do buzzer.

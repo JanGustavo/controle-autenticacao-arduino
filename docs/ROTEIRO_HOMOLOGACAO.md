@@ -13,6 +13,19 @@ Marque cada item como:
 
 ---
 
+## Decisões e próximos testes em 02/10/2026
+
+- [x] RNF06 — orçamento aprovado pelo responsável pelo projeto.
+- [x] RNF02 — limite operacional definido em 80%, alinhado ao código e aos requisitos.
+- [ ] Calibrar a comparação de rostos reais, incluindo titular e pessoa diferente.
+- [-] T27/T28 — buzzer aguardando substituição; orçamento aprovado não substitui teste físico.
+
+Priorizar T01/T09/T10 (fluxo nominal e rosto diferente), T02–T08 (regras de
+negação), T16–T20 (ciclo e expiração), T23/T24 (histórico e mensagens) e T30
+(ao menos dez medições RFID → decisão). Testes unitários com mocks não aprovam
+os testes equivalentes de bancada. Registrar resultado e evidência observados
+antes de marcar uma etapa como aprovada.
+
 ## 1. Preparação da sessão
 
 ### Ambiente
