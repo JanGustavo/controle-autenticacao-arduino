@@ -215,7 +215,7 @@
 
     <!-- CONTEÚDO PRINCIPAL (TABELA DE TUPLAS) -->
     <main class="tuple-content">
-      <div class="table-card">
+      <div class="table-card" tabindex="0" role="region" aria-label="Tabela de registros; deslize para ver todas as colunas">
         @if (rowsFromApi() === null) {
           <div class="skeleton-table" aria-label="Carregando dados">
             @for (item of [1, 2, 3, 4, 5]; track item) {

@@ -274,3 +274,19 @@ cartão autorizado e confira a navegação e a câmera escolhida. Repita com Dro
 indisponível e depois com USB indisponível. Outros navegadores autenticados que
 recebam o mesmo broadcast também podem entrar na validação; o fluxo não elege um
 único navegador operador nem identifica automaticamente a câmera de outra máquina.
+
+
+### Layout em telas menores e administradores
+
+O cabeçalho fica compacto no celular, preservando avatar, tema e saída. Até 760 px,
+formulários e filtros usam uma coluna e margens menores; campos usam fonte de 16 px
+para evitar zoom automático ao digitar em navegadores móveis. As tabelas preservam
+suas colunas, com rolagem horizontal dentro do cartão, sem alargar a página.
+
+Em **Administradores**, a lista ocupa o centro da página e as células ficam
+centralizadas. O botão **Cadastrar administrador** abre um modal sobre a lista;
+a edição usa o mesmo formulário. O modal limita sua altura à tela, permite rolagem,
+prende o foco durante o uso e devolve o foco ao botão ao fechar. Cancelar, fechar ou
+pressionar Escape limpa o formulário; durante o envio essas ações ficam bloqueadas.
+A conta principal continua protegida contra exclusão e desativação, e deixar a senha
+vazia na edição preserva a senha atual.

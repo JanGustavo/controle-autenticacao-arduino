@@ -179,3 +179,14 @@ table tbody tr:hover > td {
 body.dark-mode table tbody tr:hover > td {
   filter: brightness(1.08);
 }
+
+/* Keep wide tables inside their scroll areas instead of widening the page. */
+*, *::before, *::after { box-sizing: border-box; }
+app-root { display: block; min-width: 0; }
+@media (max-width: 760px) {
+ input:not([type='checkbox']):not([type='radio']), select, textarea {
+  font-size: 16px !important; min-width: 0; max-width: 100%;
+ }
+ .login-container, .forgot-password-container, .reset-password-container { padding: 16px; }
+ .login-card { padding: 24px 16px; }
+}

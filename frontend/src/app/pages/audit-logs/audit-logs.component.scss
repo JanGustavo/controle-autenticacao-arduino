@@ -165,3 +165,8 @@
     border-color: #334155;
   }
 }
+
+@media (max-width: 760px) {
+ .page-wrapper { padding: 24px 16px 32px; }
+ .list-card { padding: 16px; min-width: 0; }
+}

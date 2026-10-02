@@ -58,7 +58,7 @@
   width: min(1100px, 100%);
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 360px 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 24px;
   align-items: start;
 }
@@ -350,7 +350,7 @@
 .locais-table {
   width: 100%;
   border-collapse: collapse;
-  text-align: left;
+  text-align: center;
 
   th {
     padding: 12px 14px;
@@ -557,4 +557,66 @@
   .content-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.page-toolbar {
+  width: min(1100px, 100%);
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  color: var(--muted);
+}
+
+.admin-name-col, .action-buttons { justify-content: center; }
+.list-card, .content-grid > * { min-width: 0; }
+
+.admin-dialog {
+  --surface: var(--ard-surface);
+  --ink: var(--ard-ink);
+  --muted: var(--ard-muted);
+  --line: var(--ard-line);
+  --accent: var(--ard-primary);
+  border: 0;
+  border-radius: 0;
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  color: var(--ink);
+
+  .card-title { align-items: flex-start; }
+  .card-title > mat-icon { flex-shrink: 0; }
+  .card-title h3 { flex: 1; }
+  .close-dialog {
+    width: 40px;
+    height: 40px;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .field:not(.checkbox-field) > label {
+    position: static;
+    padding: 0;
+    font-size: .85rem;
+    line-height: 1.4;
+  }
+  .foto-input-wrapper input { min-width: 0; width: 0; }
+  .hint-warn, .hint-info { overflow-wrap: anywhere; }
+}
+
+@media (max-width: 700px) {
+  .locais-wrapper { padding: 24px 16px 32px; }
+  .list-card, .admin-dialog { padding: 16px; }
+  .page-toolbar .btn { width: 100%; min-height: 44px; }
+  .list-header .search-box { min-width: 0; flex-basis: 100%; }
+  .filter-box, .filter-box select { width: 100%; }
+  .action-buttons .btn-icon { min-width: 44px; min-height: 44px; }
+}
+
+.table-hint { display: none; }
+@media (max-width: 760px) {
+ .table-hint { display: block; color: var(--muted); font-size: .8rem; margin: 0 0 12px; }
 }

@@ -547,3 +547,14 @@
     }
   }
 }
+
+@media (max-width: 760px) {
+ .comparar-wrapper {
+  margin: 24px auto; padding: 0 16px;
+  .card-cam, .card-logs, .simulator-card { padding: 16px; min-width: 0; }
+  .totem-grid { grid-template-columns: minmax(0, 1fr); }
+  .card-cam .preview-cam, .card-cam .placeholder-cam { height: 280px; }
+  .header .header-actions button { white-space: normal; min-height: 44px; height: auto; }
+  .status-message { overflow-wrap: anywhere; }
+ }
+}

@@ -284,3 +284,16 @@
   from { transform: scale(0.9); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
+
+@media (max-width: 760px) {
+ .app-header {
+  .header-container { padding: 10px 12px; gap: 8px; }
+  .brand { gap: 8px; flex-shrink: 0; }
+  .brand .brand-text h1 { font-size: 1.2rem; }
+  .brand .brand-tag { display: none; }
+  .brand .brand-icon { width: 36px; height: 36px; }
+  .header-actions { gap: 4px; min-width: 0; }
+  .user-profile { padding: 4px; gap: 0; flex-shrink: 0; }
+  .user-profile .user-info { display: none; }
+ }
+}
