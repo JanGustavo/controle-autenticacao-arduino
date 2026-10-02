@@ -1,6 +1,7 @@
 import { Injectable, inject, signal, ElementRef } from '@angular/core';
 import * as faceapi from '@vladmandic/face-api';
 import { SpeechService } from './speech.service';
+import { abrirCameraPreferida } from './camera-selection';
 
 export type EstadoEnquadramento = 'ok' | 'sem_rosto' | 'sorriso' | 'olhos' | 'escuro' | null;
 
@@ -52,6 +53,7 @@ export class WebcamService {
   // ── Estado privado e Otimização de Performance ────────────────────
   private intervalValidacao: ReturnType<typeof setInterval> | null = null;
   private modelosCarregados = false;
+  private aberturaId = 0;
   private ultimoEstadoEnquadramento: EstadoEnquadramento = null;
   private processandoDeteccao = false;
   private videoElementRef: ElementRef<HTMLVideoElement> | null = null;
@@ -105,6 +107,7 @@ async carregarModelos(): Promise<void> {
     enableAutoCaptura: boolean = false,
     onAutoCaptura?: () => void
   ): Promise<void> {
+    const aberturaId = ++this.aberturaId;
     this.webcamErro.set('');
     this.carregandoHardware.set(true);
     this.statusValidacao.set('Iniciando câmera e sensores...');
@@ -115,98 +118,19 @@ async carregarModelos(): Promise<void> {
 
     try {
       await this.carregarModelos();
+      if (aberturaId !== this.aberturaId) return;
 
-      // Primeiro abre qualquer câmera para liberar os labels/deviceIds no navegador.
-      // Sem uma permissão inicial, enumerateDevices() pode retornar labels vazios.
-      let streamInicial = await navigator.mediaDevices.getUserMedia({
-        video: true,
-      });
-
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const cameras = devices.filter((d) => d.kind === 'videoinput');
-
-      console.log(
-        '[Webcam] Câmeras disponíveis:',
-        cameras.map((camera) => `${camera.label || 'sem label'} (${camera.deviceId.slice(0, 8)}...)`),
-      );
-
-      const normalizarLabel = (label: string) => label.trim().toLowerCase();
-
-      // Para a demonstração, DroidCam tem prioridade absoluta quando estiver disponível.
-      const cameraDroidCam = cameras.find((camera) =>
-        normalizarLabel(camera.label).includes('droidcam'),
-      );
-
-      const palavrasExterna = [
-        'usb',
-        'webcam',
-        'logitech',
-        'external',
-        'virtual',
-        'obs',
-        'ndi',
-        'epoccam',
-        'ivcam',
-        'snap',
-      ];
-      const palavrasInterna = [
-        'positivo',
-        'theia',
-        'integrated',
-        'built-in',
-        'interno',
-        'facetime',
-      ];
-
-      const cameraExterna = cameras.find((camera) => {
-        const label = normalizarLabel(camera.label);
-        return palavrasExterna.some((kw) => label.includes(kw))
-          && !palavrasInterna.some((kw) => label.includes(kw));
-      });
-
-      const cameraNaoInterna = cameras.length > 1
-        ? cameras.find((camera) => {
-            const label = normalizarLabel(camera.label);
-            return !palavrasInterna.some((kw) => label.includes(kw));
-          })
-        : undefined;
-
-      const cameraPreferida = cameraDroidCam ?? cameraExterna ?? cameraNaoInterna;
-
-      const trackAtual = streamInicial.getVideoTracks()[0];
-      const deviceIdAtual = trackAtual?.getSettings()?.deviceId;
-
-      console.log('[Webcam] Câmera selecionada pelo sistema:', trackAtual?.label || 'desconhecida');
-      console.log('[Webcam] Câmera preferida encontrada:', cameraPreferida?.label ?? 'nenhuma');
-
-      if (cameraPreferida && cameraPreferida.deviceId !== deviceIdAtual) {
+      const streamInicial = await abrirCameraPreferida(navigator.mediaDevices);
+      if (aberturaId !== this.aberturaId) {
         streamInicial.getTracks().forEach((track) => track.stop());
-
-        try {
-          streamInicial = await navigator.mediaDevices.getUserMedia({
-            video: {
-              deviceId: { exact: cameraPreferida.deviceId },
-            },
-          });
-        } catch (erroCameraPreferida) {
-          console.warn(
-            '[Webcam] Não foi possível abrir a câmera preferida com exact; tentando ideal.',
-            erroCameraPreferida,
-          );
-
-          streamInicial = await navigator.mediaDevices.getUserMedia({
-            video: {
-              deviceId: { ideal: cameraPreferida.deviceId },
-            },
-          });
-        }
+        return;
       }
 
       this.stream = streamInicial;
       const trackAtivo = streamInicial.getVideoTracks()[0];
       const settingsAtivos = trackAtivo?.getSettings();
 
-      this.cameraAtivaLabel.set(trackAtivo?.label || cameraPreferida?.label || 'Câmera padrão');
+      this.cameraAtivaLabel.set(trackAtivo?.label || 'Câmera padrão');
 
       console.log(
         '[Webcam] Stream ativo:',
@@ -248,6 +172,7 @@ async carregarModelos(): Promise<void> {
         });
 
       const videoEl = await esperarElemento();
+      if (aberturaId !== this.aberturaId) return;
       this.videoElementRef = getVideoElement()!;
       videoEl.srcObject = this.stream;
 
@@ -306,6 +231,8 @@ async carregarModelos(): Promise<void> {
 
       this.iniciarLoopValidacao();
     } catch (err) {
+      if (aberturaId !== this.aberturaId) return;
+      this.pararWebcam();
       console.error('[Webcam] Erro ao iniciar:', err);
       this.webcamAtiva.set(false);
       this.carregandoHardware.set(false);
@@ -591,6 +518,8 @@ async carregarModelos(): Promise<void> {
   }
 
   pararWebcam(): void {
+    this.aberturaId++;
+    this.carregandoHardware.set(false);
     this.pararLoopValidacao();
     if (this.cooldownTimer) clearTimeout(this.cooldownTimer);
     this.speech.parar();

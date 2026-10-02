@@ -27,6 +27,7 @@ import {
 import { SpeechService } from '../../services/speech.service';
 import { WebcamService } from '../../services/webcam.service';
 import { WebSocketLogsService } from '../../services/websocket-logs.service';
+import { RfidAccessService } from '../../services/rfid-access.service';
 
 @Component({
   selector: 'app-comparar-page',
@@ -49,6 +50,7 @@ export class CompararPage implements OnInit, OnDestroy {
   private speech = inject(SpeechService);
   public webcam = inject(WebcamService);
   public wsLogs = inject(WebSocketLogsService);
+  private rfidAccess = inject(RfidAccessService);
 
   @ViewChild('videoElement') videoElement?: ElementRef<HTMLVideoElement>;
   @ViewChild('webcamContainer') webcamContainer?: ElementRef<HTMLDivElement>;
@@ -80,8 +82,7 @@ export class CompararPage implements OnInit, OnDestroy {
   private timeoutOverlay: ReturnType<typeof setTimeout> | null = null;
   private wsSubscription: Subscription | null = null;
 
-  async ngOnInit(): Promise<void> {
-    await this.webcam.carregarModelos();
+  ngOnInit(): void {
     this.carregarHistorico();
     this.carregarAuxiliares();
 
@@ -93,18 +94,9 @@ export class CompararPage implements OnInit, OnDestroy {
           // abrir/reiniciar a webcam duas vezes.
           if (this.iniciandoTentativa()) return;
 
-          this.prepararTentativa(
+          this.receberRfid(
             evento.data.tentativa_id,
             evento.data.nome_usuario || null,
-          );
-
-          if (this.modoTotem() && !this.webcam.webcamAtiva()) {
-            void this.iniciarWebcam();
-          }
-
-          this.speech.falar(
-            'Cartão reconhecido. Agora olhe para a câmera.',
-            true,
           );
           return;
         }
@@ -129,6 +121,18 @@ export class CompararPage implements OnInit, OnDestroy {
         }
       },
     });
+
+    const pending = this.rfidAccess.consumirTentativa();
+    if (pending?.tentativa_id) {
+      this.receberRfid(pending.tentativa_id, pending.nome_usuario || null);
+    }
+  }
+
+  private receberRfid(tentativaId: string, nomeUsuario: string | null): void {
+    if (this.tentativaId() === tentativaId) return;
+    this.prepararTentativa(tentativaId, nomeUsuario);
+    void this.iniciarWebcam();
+    this.speech.falar('Cartão reconhecido. Agora olhe para a câmera.', true);
   }
 
   carregarAuxiliares(): void {
