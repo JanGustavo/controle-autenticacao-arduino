@@ -4,6 +4,8 @@ from contextlib import contextmanager
 
 import psycopg
 
+from app.utils.access_time import ACCESS_TIMEZONE
+
 
 def _database_url() -> str:
     database_url = os.getenv("DATABASE_URL")
@@ -14,5 +16,5 @@ def _database_url() -> str:
 
 @contextmanager
 def get_connection() -> Generator[psycopg.Connection, None, None]:
-    with psycopg.connect(_database_url()) as connection:
+    with psycopg.connect(_database_url(), options=f"-c timezone={ACCESS_TIMEZONE}") as connection:
         yield connection

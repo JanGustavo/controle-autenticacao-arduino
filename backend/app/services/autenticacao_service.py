@@ -1,9 +1,9 @@
 import os
 import json
-from datetime import datetime
 from fastapi import HTTPException, status
 from app.services.face_service import FaceService
 from app.database.connection import get_connection
+from app.utils.access_time import agora_acesso, iso_acesso
 from app.api.websocket import manager
 from app.schemas.autenticacao_schema import TestarBiometriaResponse
 from app.schemas.face_schema import SimilarityResult
@@ -141,7 +141,7 @@ class AutenticacaoService:
         nome_usuario: str | None = None
     ) -> None:
         """Insere registro no banco e transmite via WebSocket para todos os clientes conectados."""
-        agora = datetime.now()
+        agora = agora_acesso()
         log_id = None
         try:
             with get_connection() as connection:
@@ -167,7 +167,7 @@ class AutenticacaoService:
                     "id": log_id,
                     "usuario_id": usuario_id,
                     "nome_usuario": nome_usuario,
-                    "data_hora": agora.isoformat(),
+                    "data_hora": iso_acesso(agora),
                     "autorizado": autorizado,
                     "percentual_similaridade": similaridade,
                     "motivo_recusa": motivo_recusa,

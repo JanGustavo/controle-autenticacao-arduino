@@ -294,3 +294,27 @@ antes dela. Uma aba já aberta continua executando o JavaScript carregado até r
 Se houver uma regra personalizada na Cloudflare que ignore os cabeçalhos da origem,
 aplique cache bypass ao hostname da aplicação. A configuração atual foi conferida
 pelo domínio público, incluindo os cabeçalhos de cache e a versão servida.
+
+
+## Fuso fixo das permissões de acesso
+
+As permissões (horário inicial/final e dias da semana) usam sempre
+`America/Sao_Paulo`, independentemente do fuso do sistema operacional, do Docker ou
+do navegador. O RFID, a revalidação facial e a expiração automática compartilham o
+mesmo relógio. Por exemplo, `20:10 UTC` corresponde a `17:10` em Brasília; uma
+permissão até `18:00` ainda é válida nesse instante. JWT e reset de senha continuam
+usando seus relógios UTC próprios.
+
+As conexões PostgreSQL da aplicação também usam esse fuso, alinhando os defaults
+SQL e o relógio do backend. A migration `010_add_access_timezone.sql` acrescenta
+metadados de fuso ao histórico e às tentativas, sem alterar os valores originais.
+Datas antigas em UTC são convertidas ao ler; as novas são gravadas no horário de
+São Paulo. A conclusão/expiração de uma tentativa antiga preserva o fuso da linha.
+A API e os eventos `NOVO_ACESSO` informam o offset, evitando interpretar UTC como
+horário local na interface.
+
+Nesta instalação, o backup de origem identificou por ID e data exata 570 registros
+de histórico e 59 tentativas importados do PostgreSQL local, marcados como
+`America/Sao_Paulo`. Os registros restantes do Docker foram marcados como UTC.
+Em outro banco misturado, reconciliar a origem antes de interpretar dados antigos,
+conforme o procedimento de auditoria em `docs/FRONTEND.md`.
