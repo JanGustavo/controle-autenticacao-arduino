@@ -186,3 +186,12 @@ code { color: var(--accent); }
   .table-card { overflow-x: auto; }
   table { min-width: 700px; }
 }
+
+@media (max-width: 760px) {
+ .locations-page { padding: 24px 16px 32px; }
+ .editor, .table-card { padding: 16px; }
+ .editor-heading { flex-wrap: wrap; gap: 12px; }
+ .filter-bar .search-box { min-width: 0; flex-basis: 100%; }
+ .filter-bar .filter-group { width: 100%; flex-wrap: wrap; }
+ .filter-bar select { max-width: 100%; }
+}

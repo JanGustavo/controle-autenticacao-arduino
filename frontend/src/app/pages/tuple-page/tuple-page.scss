@@ -598,3 +598,26 @@
     }
   }
 }
+
+@media (max-width: 760px) {
+ .tuple-wrapper {
+  padding: 24px 16px 32px; gap: 18px;
+  .tuple-header { padding: 20px; }
+  .tuple-header .header-top { flex-wrap: wrap; gap: 12px; }
+  .tuple-header .header-main { gap: 12px; align-items: flex-start; }
+  .tuple-header .header-main .module-icon { flex: 0 0 44px; height: 44px; }
+  .tuple-header .header-main .title-group { min-width: 0; }
+  .tuple-header .header-main .title-group h2 { font-size: 1.6rem; overflow-wrap: anywhere; }
+  .filter-bar { padding: 12px; }
+  .filter-bar .search-box { min-width: 0; flex-basis: 100%; }
+  .filter-bar .create-user-action { width: 100%; margin-left: 0; min-height: 44px; }
+  .filter-bar .filter-group { width: 100%; }
+  .filter-bar .filter-group select { flex: 1; min-width: 0; }
+  .tuple-content { min-width: 0; }
+  .permission-form > label { flex: 1 1 100%; min-width: 0; }
+  .permission-form input, .permission-form select { min-width: 0; }
+  .permission-days { flex-wrap: wrap; }
+  .permission-days button { width: 36px; height: 40px; }
+  .editor-heading { flex-wrap: wrap; }
+ }
+}

@@ -5,16 +5,25 @@
       <mat-icon>arrow_back</mat-icon>
       Voltar ao menu
     </a>
-    <h2>Gerenciar Administradores do ArdLock</h2>
+    <h2>Administradores</h2>
     <p class="subtitle">Cadastre e controle as contas administrativas do sistema</p>
   </div>
 
+  <div class="page-toolbar">
+    <span>{{ administradores.length }} administrador(es) cadastrado(s)</span>
+    <button type="button" class="btn btn-primary" (click)="novo()">
+      <mat-icon>person_add</mat-icon> Cadastrar administrador
+    </button>
+  </div>
   <div class="content-grid">
-    <!-- FORMULÁRIO DE CRIAÇÃO / EDIÇÃO -->
-    <div class="form-card">
+    <ng-template #adminForm>
+    <div class="form-card admin-dialog">
       <div class="card-title">
         <mat-icon>{{ editandoId !== null ? 'edit' : 'admin_panel_settings' }}</mat-icon>
-        <h3>{{ editandoId !== null ? 'Editar Administrador' : 'Novo Administrador' }}</h3>
+        <h3 id="admin-dialog-title">{{ editandoId !== null ? 'Editar Administrador' : 'Novo Administrador' }}</h3>
+        <button type="button" class="btn-icon close-dialog" (click)="cancelar()" [disabled]="salvando" aria-label="Fechar formulário">
+          <mat-icon>close</mat-icon>
+        </button>
       </div>
 
       <form (ngSubmit)="salvar()">
@@ -112,11 +121,9 @@
         </div>
 
         <div class="actions">
-          @if (editandoId !== null) {
-            <button type="button" class="btn btn-secondary" (click)="cancelar()">
-              Cancelar
-            </button>
-          }
+          <button type="button" class="btn btn-secondary" (click)="cancelar()" [disabled]="salvando">
+            Cancelar
+          </button>
           <button type="submit" class="btn btn-primary" [disabled]="salvando">
             <mat-icon>{{ editandoId !== null ? 'save' : 'add' }}</mat-icon>
             {{ salvando ? 'Salvando...' : (editandoId !== null ? 'Salvar alterações' : 'Cadastrar') }}
@@ -125,6 +132,7 @@
       </form>
     </div>
 
+    </ng-template>
     <!-- LISTAGEM E FILTROS -->
     <div class="list-card">
       <div class="list-header">
@@ -133,12 +141,13 @@
           <input
             type="text"
             [(ngModel)]="filtroTexto"
+            aria-label="Buscar administrador por nome ou e-mail"
             placeholder="Buscar por nome ou e-mail..."
           />
         </div>
 
         <div class="filter-box">
-          <select [(ngModel)]="filtroAtivo">
+          <select [(ngModel)]="filtroAtivo" aria-label="Filtrar por status">
             <option value="todos">Todos os status</option>
             <option value="ativo">Somente Ativos</option>
             <option value="inativo">Somente Inativos</option>
@@ -174,7 +183,8 @@
           <p>Nenhum administrador corresponde ao filtro aplicado.</p>
         </div>
       } @else {
-        <div class="table-container">
+        <p class="table-hint">Deslize a tabela para ver todas as colunas.</p>
+        <div class="table-container" tabindex="0" role="region" aria-label="Tabela de administradores; deslize para ver todas as colunas">
           <table class="locais-table">
             <thead>
               <tr>
@@ -233,6 +243,7 @@
                         type="button"
                         class="btn-icon edit"
                         (click)="editar(admin)"
+                        aria-label="Editar administrador"
                         title="Editar Administrador"
                       >
                         <mat-icon>edit</mat-icon>
@@ -243,6 +254,7 @@
                           type="button"
                           class="btn-icon delete"
                           (click)="excluir(admin)"
+                          aria-label="Excluir administrador"
                           title="Excluir Administrador"
                         >
                           <mat-icon>delete</mat-icon>

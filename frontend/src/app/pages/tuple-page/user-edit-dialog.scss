@@ -347,3 +347,14 @@
     flex-direction: column;
   }
 }
+
+@media (max-width: 680px) {
+ .user-edit-dialog { width: 100%; max-height: calc(100dvh - 24px); }
+ .dialog-header { padding: 16px; gap: 12px; }
+ .dialog-header h2 { font-size: 1.3rem; }
+ .dialog-body { padding: 16px; }
+ .edit-section { padding: 14px; min-width: 0; }
+ .dialog-footer { padding: 16px; }
+ .section-title, .section-actions { flex-wrap: wrap; gap: 10px; }
+ .basic-grid > *, .rfid-grid > * { min-width: 0; }
+}
