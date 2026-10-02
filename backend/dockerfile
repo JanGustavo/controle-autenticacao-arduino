@@ -21,6 +21,11 @@ RUN pip install --upgrade pip \
 # ── runtime stage ───────────────────────────────────────────────────────────────
 FROM python:3.12-slim
 
+ARG APP_BUILD_REVISION=unknown
+ARG APP_BUILD_TIME=unknown
+LABEL org.opencontainers.image.revision=$APP_BUILD_REVISION
+LABEL org.opencontainers.image.created=$APP_BUILD_TIME
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 

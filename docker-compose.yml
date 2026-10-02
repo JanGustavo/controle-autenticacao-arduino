@@ -27,6 +27,9 @@ services:
     build:
       context: ./backend
       dockerfile: dockerfile
+      args:
+        APP_BUILD_REVISION: ${APP_BUILD_REVISION:-unknown}
+        APP_BUILD_TIME: ${APP_BUILD_TIME:-unknown}
     container_name: controle-acesso-backend
     restart: unless-stopped
     environment:
@@ -38,7 +41,6 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4200}
       PYTHONPATH: /app
     volumes:
-      - ./backend/app:/app/app   # Hot-reload ao vivo em ambiente de dev
       - ./backend/tests:/app/tests:ro
 
     ports:
@@ -54,6 +56,9 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        APP_BUILD_REVISION: ${APP_BUILD_REVISION:-unknown}
+        APP_BUILD_TIME: ${APP_BUILD_TIME:-unknown}
     container_name: controle-acesso-frontend
     restart: unless-stopped
     ports:
