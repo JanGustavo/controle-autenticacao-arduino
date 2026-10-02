@@ -96,7 +96,8 @@ export class WebcamService {
 
   private async prepararModelos(): Promise<void> {
     if (faceapi.tf && 'setBackend' in faceapi.tf) {
-      await faceapi.tf.setBackend('webgl').catch(() => faceapi.tf.setBackend('cpu'));
+      await (faceapi.tf as any).setBackend('webgl')
+        .catch(() => (faceapi.tf as any).setBackend('cpu'));
     }
     await Promise.all([
       faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
