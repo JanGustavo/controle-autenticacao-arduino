@@ -257,8 +257,10 @@ class AcessoService:
             )
 
         if tentativa["status"] != cls._STATUS_PENDENTE:
-            raise TentativaAcessoNaoEncontradaError(
-                "Tentativa de acesso já foi finalizada."
+            # Repetições retornam a decisão persistida sem inferir nem gravar de novo.
+            return cls._finalizar_tentativa(
+                tentativa_id=tentativa_id, aprovado=False,
+                similaridade=0.0, motivo_recusa=None,
             )
 
         face_result = FaceService.extract_face_vector_detailed(image_bytes)

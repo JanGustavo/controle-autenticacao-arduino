@@ -1,5 +1,7 @@
 import {
   Component,
+  effect,
+  untracked,
   ElementRef,
   HostListener,
   OnDestroy,
@@ -27,6 +29,7 @@ import {
 import { SpeechService } from '../../services/speech.service';
 import { WebcamService } from '../../services/webcam.service';
 import { WebSocketLogsService } from '../../services/websocket-logs.service';
+import { CaptureStationService } from '../../services/capture-station.service';
 import { RfidAccessService } from '../../services/rfid-access.service';
 
 @Component({
@@ -46,6 +49,22 @@ import { RfidAccessService } from '../../services/rfid-access.service';
 })
 export class CompararPage implements OnInit, OnDestroy {
   private api = inject(ApiService);
+  public captura = inject(CaptureStationService);
+
+  constructor() {
+    effect(() => {
+      if (!this.captura.ativa()) untracked(() => {
+        this.pararWebcam();
+        this.tentativaId.set(null);
+        this.scanning.set(false);
+      });
+    });
+  }
+
+  async selecionarAparelho(): Promise<void> {
+    try { await this.captura.ativar(); }
+    catch { this.snackBar.open('Não foi possível selecionar a câmera deste aparelho.', 'Fechar', { duration: 4000 }); }
+  }
   private snackBar = inject(MatSnackBar);
   private speech = inject(SpeechService);
   public webcam = inject(WebcamService);
@@ -83,6 +102,7 @@ export class CompararPage implements OnInit, OnDestroy {
   private wsSubscription: Subscription | null = null;
 
   ngOnInit(): void {
+    void this.selecionarAparelho();
     void this.webcam.carregarModelos().catch((erro) =>
       console.warn("Falha ao preparar os modelos faciais:", erro));
     this.carregarHistorico();
@@ -91,6 +111,7 @@ export class CompararPage implements OnInit, OnDestroy {
     this.wsSubscription = this.wsLogs.obterLogsEmTempoReal().subscribe({
       next: (evento) => {
         if (evento.type === 'RFID_APROVADO' && evento.data.tentativa_id) {
+          if (evento.data.cliente_id !== this.captura.clienteId) return;
           // A simulação usa este mesmo endpoint e também gera o broadcast.
           // Nesse caso, a resposta HTTP é a fonte da tentativa para evitar
           // abrir/reiniciar a webcam duas vezes.
@@ -104,6 +125,7 @@ export class CompararPage implements OnInit, OnDestroy {
         }
 
         if (evento.type === 'RFID_NEGADO') {
+          if (!this.captura.ativa()) return;
           if (this.iniciandoTentativa()) return;
 
           this.tentativaId.set(null);
@@ -187,7 +209,7 @@ export class CompararPage implements OnInit, OnDestroy {
     this.uidManual = this.usuarioSimulado?.uid_card || '';
   }
 
-  simularLeituraRfid(): void {
+  async simularLeituraRfid(): Promise<void> {
     if (this.iniciandoTentativa()) return;
 
     const dispositivo = this.dispositivoSimulado;
@@ -213,6 +235,8 @@ export class CompararPage implements OnInit, OnDestroy {
 
     this.iniciandoTentativa.set(true);
     this.mensagemStatus.set('Simulando leitura RFID no fluxo real...');
+    try { await this.captura.ativar(); }
+    catch { this.iniciandoTentativa.set(false); return; }
 
     this.api.verificarCartao(uid, dispositivo.identificador).subscribe({
       next: (resultado) => {
@@ -382,7 +406,7 @@ export class CompararPage implements OnInit, OnDestroy {
   }
 
   async capturarEValidar(): Promise<void> {
-    if (this.webcam.emCooldown()) return;
+    if (this.webcam.emCooldown() || this.scanning() || !this.captura.ativa()) return;
 
     const tentativaAtual = this.tentativaId();
 
@@ -395,15 +419,20 @@ export class CompararPage implements OnInit, OnDestroy {
 
     if (!this.webcam.capturaPronta() && !this.modoTotem()) return;
 
+    this.scanning.set(true);
     const resCapture = await this.webcam.capturarFrameComPreview();
-    if (!resCapture) return;
+    if (!resCapture || this.tentativaId() !== tentativaAtual || !this.captura.ativa()) {
+      this.scanning.set(false);
+      return;
+    }
 
     this.fotoPreviewUrl = resCapture.previewUrl;
     this.mensagemStatus.set('Validando titular do cartão em 1:1...');
     this.scanning.set(true);
 
-    this.api.verificarFace(tentativaAtual, resCapture.blob).subscribe({
+    this.api.verificarFace(tentativaAtual, resCapture.blob, this.captura.clienteId).subscribe({
       next: (res) => {
+        if (this.tentativaId() !== tentativaAtual) return;
         this.scanning.set(false);
         this.similaridade.set(Number(res.similaridade ?? 0));
         this.tempoRespostaMs.set(res.tempo_resposta_ms ?? null);
@@ -412,7 +441,9 @@ export class CompararPage implements OnInit, OnDestroy {
         this.mensagemStatus.set(
           res.aprovado
             ? 'Acesso Liberado'
-            : res.mensagem || 'Acesso Negado',
+            : res.mensagem === 'FACE_MULTIPLE'
+              ? 'Mais de um rosto detectado. Mantenha apenas o titular na imagem e leia o cartão novamente.'
+              : res.mensagem || 'Acesso Negado',
         );
 
         if (res.aprovado) {
@@ -423,7 +454,7 @@ export class CompararPage implements OnInit, OnDestroy {
             true,
           );
         } else {
-          this.speech.falar(res.mensagem || 'Acesso negado.', true);
+          this.speech.falar(this.mensagemStatus() || 'Acesso negado.', true);
         }
 
         this.tentativaId.set(null);
@@ -439,6 +470,7 @@ export class CompararPage implements OnInit, OnDestroy {
         }
       },
       error: (error) => {
+        if (this.tentativaId() !== tentativaAtual) return;
         this.scanning.set(false);
         this.tentativaId.set(null);
         this.aprovado.set(false);

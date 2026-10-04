@@ -311,12 +311,12 @@ export class ApiService {
     );
   }
 
-  verificarFace(tentativaId: string, foto: File | Blob): Observable<VerificarBiometriaResponse> {
+  verificarFace(tentativaId: string, foto: File | Blob, clienteId: string): Observable<VerificarBiometriaResponse> {
     const dados = new FormData();
     const nomeArquivo = foto instanceof File ? foto.name : 'comparacao.jpg';
     dados.append('file', foto, nomeArquivo);
 
-    const params = new HttpParams().set('tentativa_id', tentativaId);
+    const params = new HttpParams().set('tentativa_id', tentativaId).set('cliente_id', clienteId);
 
     return this.http.post<VerificarBiometriaResponse>(
       `${API_BASE}/arduino/verificar-face`,

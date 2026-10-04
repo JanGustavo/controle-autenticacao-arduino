@@ -66,11 +66,13 @@ async def verificar_cartao(request: VerificarCartaoRequest):
             identificador_dispositivo=request.identificador_dispositivo,
         )
 
+        capture_client = manager.bind_capture(resultado.tentativa_id)
         await manager.broadcast(
             {
                 "type": "RFID_APROVADO",
                 "data": {
                     "tentativa_id": str(resultado.tentativa_id),
+                    "cliente_id": capture_client,
                     "usuario_id": resultado.usuario_id,
                     "nome_usuario": resultado.nome,
                     "identificador_dispositivo": request.identificador_dispositivo,
@@ -123,6 +125,7 @@ async def verificar_face(
     tentativa_id: UUID = Query(...),
     file: UploadFile = File(...),
     _admin: dict = Depends(obter_administrador_atual),
+    cliente_id: UUID | None = Query(None),
 ):
     """
     Finaliza uma tentativa usando a câmera/backend.
@@ -130,6 +133,7 @@ async def verificar_face(
     A comparação é estritamente 1:1: a face capturada é comparada
     somente com o vetor do usuário identificado pelo RFID.
     """
+    manager.begin_capture(tentativa_id, str(cliente_id) if cliente_id else None)
     try:
         image_bytes = await file.read()
 
@@ -170,6 +174,9 @@ async def verificar_face(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Erro interno ao finalizar a validação facial.",
         ) from error
+
+    finally:
+        manager.processing.discard(str(tentativa_id))
 
 
 @router.get(

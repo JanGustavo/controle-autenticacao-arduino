@@ -1,7 +1,10 @@
 import { Injectable, NgZone, inject, signal } from '@angular/core';
+import { CaptureStationService } from './capture-station.service';
 import { Observable, Subject } from 'rxjs';
 
 export interface WebSocketEventData {
+  cliente_id?: string | null;
+  capture_revision?: number;
   id?: number | null;
   usuario_id?: number | null;
   nome_usuario?: string | null;
@@ -28,6 +31,7 @@ export interface WebSocketLogEvent {
 @Injectable({ providedIn: 'root' })
 export class WebSocketLogsService {
   private zone = inject(NgZone);
+  private captura = inject(CaptureStationService);
   private socket: WebSocket | null = null;
   private logSubject = new Subject<WebSocketLogEvent>();
 
@@ -51,7 +55,7 @@ export class WebSocketLogsService {
     const host = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
       ? 'localhost:8001'
       : window.location.host; // Use same host if not localhost
-    const wsUrl = `${protocol}//${host}/ws/logs`;
+    const wsUrl = `${protocol}//${host}/ws/logs?cliente_id=${this.captura.clienteId}`;
 
     console.log(`🔌 [WebSocket] Conectando em: ${wsUrl}`);
 
@@ -68,6 +72,7 @@ export class WebSocketLogsService {
           const parsed: WebSocketLogEvent = JSON.parse(event.data);
           console.log('📨 [WebSocket] Evento recebido:', parsed.type, parsed.data);
           this.zone.run(() => {
+            if (parsed.type === 'ESTACAO_CAPTURA') this.captura.atualizar(parsed.data.cliente_id, parsed.data.capture_revision ?? 0);
             this.logSubject.next(parsed);
           });
         } catch (e) {

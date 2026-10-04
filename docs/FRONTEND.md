@@ -311,3 +311,17 @@ Não subtraia três horas de toda a tabela, pois dados locais e Docker podem ter
 gravados em fusos diferentes. Nesta instalação, os 446 registros importados foram
 identificados por correspondência exata e marcados como `America/Sao_Paulo`; os
 registros posteriores do Docker permanecem em UTC. As datas originais foram preservadas.
+
+
+### Aparelho responsável pela validação facial
+
+Ao entrar em Validar Acesso, esse navegador seleciona sua câmera para as próximas
+leituras RFID. O botão "Usar câmera deste aparelho" transfere a seleção. Os outros
+navegadores continuam recebendo histórico, mas não abrem a câmera para a tentativa.
+Uma transferência durante uma tentativa exige nova leitura do cartão.
+No celular é solicitada a câmera frontal (`facingMode: user` obrigatório); não há
+substituição silenciosa pela traseira. No computador permanece DroidCam → USB → interna.
+O envio facial é bloqueado durante uma captura já em andamento; a API verifica
+qual aparelho recebeu a tentativa. A seleção usa o processo único do backend,
+como o gerenciador WebSocket atual, e precisa ser refeita após reiniciar o backend.
+Não executar múltiplos workers sem antes compartilhar esse estado entre processos.

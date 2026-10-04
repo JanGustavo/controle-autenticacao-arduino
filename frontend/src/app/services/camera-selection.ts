@@ -11,7 +11,14 @@ export function prioridadeCamera(camera: Pick<MediaDeviceInfo, 'label'>): number
 
 export async function abrirCameraPreferida(
   media: Pick<MediaDevices, 'enumerateDevices' | 'getUserMedia'>,
+  mobile = typeof navigator !== 'undefined' &&
+    (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)),
 ): Promise<MediaStream> {
+  if (mobile) {
+    // exact evita que Android/iOS substituam a frontal pela traseira.
+    return media.getUserMedia({ video: { facingMode: { exact: 'user' } }, audio: false });
+  }
   let cameras = (await media.enumerateDevices()).filter((device) => device.kind === 'videoinput');
   let inicial: MediaStream | null = null;
 
