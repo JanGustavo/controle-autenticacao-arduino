@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PORT="${PORT:-/dev/ttyUSB0}"
+BOARD="${BOARD:-esp32:esp32:esp32}"
+
+echo "Compilando teste de padroes sonoros..."
+arduino-cli compile --fqbn "$BOARD" "$SCRIPT_DIR"
+echo "Gravando teste em $PORT (substitui o firmware de acesso)..."
+arduino-cli upload -p "$PORT" --fqbn "$BOARD" "$SCRIPT_DIR"
+arduino-cli monitor -p "$PORT" -c baudrate=115200

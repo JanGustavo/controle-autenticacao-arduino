@@ -9,6 +9,9 @@
 #define LED_VERDE 4
 #define LED_VERMELHO 16
 #define BUZZER_PIN 2
+// O buzzer atual emite som com alimentacao continua (ativo).
+// Para buzzer passivo, use false e as frequencias de tone() abaixo.
+constexpr bool BUZZER_ATIVO = true;
 #define SERVO_PIN 13
 
 #define SS_PIN 14
@@ -56,6 +59,8 @@ void setup()
 
     Serial.println();
     Serial.println("Inicializando sistema...");
+    Serial.printf("Firmware buzzer: padroes-2-3 | compilado %s %s\n", __DATE__, __TIME__);
+    Serial.printf("Buzzer GPIO %d | modo %s\n", BUZZER_PIN, BUZZER_ATIVO ? "ATIVO" : "PASSIVO");
 
     // Inicialização dos LEDs, Buzzer e Servo
     pinMode(LED_VERDE, OUTPUT);
@@ -195,18 +200,34 @@ void acionarServoPorta(bool abrir)
 // Emissão de som pelo Buzzer
 void emitirBuzzer(int frequencia, int duracaoMs)
 {
-    tone(BUZZER_PIN, frequencia, duracaoMs);
+    Serial.printf("[BUZZER] GPIO %d ligado por %d ms\n", BUZZER_PIN, duracaoMs);
+    if (BUZZER_ATIVO)
+    {
+        digitalWrite(BUZZER_PIN, HIGH);
+    }
+    else
+    {
+        tone(BUZZER_PIN, frequencia, duracaoMs);
+    }
     delay(duracaoMs);
-    noTone(BUZZER_PIN);
+    if (!BUZZER_ATIVO)
+    {
+        noTone(BUZZER_PIN);
+    }
+    digitalWrite(BUZZER_PIN, LOW);
+    Serial.println("[BUZZER] bip concluido; aguardando proximo acionamento");
 }
 
 // Animação Acesso Aprovado: LED Verde, Buzzer duplo e abertura de Servo
 void animacaoAprovado()
 {
+    Serial.println("[SINALIZACAO] APROVADO: 2 bipes");
     acionarServoPorta(true);
-    emitirBuzzer(2500, 150);
-    delay(50);
-    emitirBuzzer(3000, 200);
+    digitalWrite(LED_VERMELHO, LOW);
+    digitalWrite(LED_VERDE, HIGH);
+    emitirBuzzer(2500, 500);
+    delay(250);
+    emitirBuzzer(3000, 500);
 
     for (int i = 0; i < 3; i++)
     {
@@ -220,16 +241,16 @@ void animacaoAprovado()
     acionarServoPorta(false); // Fecha novamente
 }
 
-// Animação Acesso Negado: LED Vermelho e Buzzer grave de erro
+// Animação Acesso Negado: LED Vermelho e tres bipes (graves no modo passivo)
 void animacaoNegado()
 {
+    Serial.println("[SINALIZACAO] RECUSADO: 3 bipes");
     acionarServoPorta(false);
-    emitirBuzzer(400, 400);
-
     for (int i = 0; i < 3; i++)
     {
         digitalWrite(LED_VERMELHO, HIGH);
-        delay(300);
+        emitirBuzzer(400, 150);
+        delay(150);
         digitalWrite(LED_VERMELHO, LOW);
         delay(300);
     }

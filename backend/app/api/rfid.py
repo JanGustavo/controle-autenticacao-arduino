@@ -16,6 +16,7 @@ from app.services.audit_service import audit_service
 from app.services.acesso_service import (
     AcessoNegadoError,
     TentativaAcessoNaoEncontradaError,
+    TentativaEmAndamentoError,
     acesso_service,
 )
 from app.schemas.websocket_schema import manager
@@ -36,6 +37,7 @@ router = APIRouter()
     responses={
         200: {"description": "Leitura processada; pode iniciar biometria ou retornar NEGADO"},
         422: {"description": "Payload RFID inválido"},
+        409: {"description": "Cartão já possui uma tentativa em andamento"},
         500: {"description": "Erro interno ao iniciar a tentativa"},
     },
 )
@@ -82,6 +84,8 @@ async def verificar_cartao(request: VerificarCartaoRequest):
 
         return resultado
 
+    except TentativaEmAndamentoError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
     except AcessoNegadoError as error:
         await manager.broadcast(
             {

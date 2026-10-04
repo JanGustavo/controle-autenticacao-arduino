@@ -18,7 +18,8 @@ Marque cada item como:
 - [x] RNF06 — orçamento aprovado pelo responsável pelo projeto.
 - [x] RNF02 — limite operacional definido em 80%, alinhado ao código e aos requisitos.
 - [ ] Calibrar a comparação de rostos reais, incluindo titular e pessoa diferente.
-- [-] T27/T28 — buzzer aguardando substituição; orçamento aprovado não substitui teste físico.
+- [x] T27/T28 — buzzer substituído e sinalização confirmada pelo responsável em
+  04/10/2026; volume baixo, conforme relato. Ver atualização da rodada abaixo.
 
 Priorizar T01/T09/T10 (fluxo nominal e rosto diferente), T02–T08 (regras de
 negação), T16–T20 (ciclo e expiração), T23/T24 (histórico e mensagens) e T30
@@ -40,7 +41,7 @@ antes de marcar uma etapa como aprovada.
 - [-] RC522 lendo cartões. (Requer hardware)
 - [-] LED verde funcionando. (Requer hardware)
 - [-] LED vermelho funcionando. (Requer hardware)
-- [-] Buzzer funcionando. (Requer hardware)
+- [x] Buzzer funcionando. (Relato do responsável em 04/10/2026; volume baixo)
 - [-] Servo conectado/alimentado de forma segura. (Requer hardware)
 - [x] Relógio da máquina do backend correto.
 
@@ -703,17 +704,21 @@ Cada caso deve mostrar mensagem correspondente ao motivo real. Evite mensagens g
 
 **Esperado:** padrão sonoro de sucesso somente em autorização.
 
-**Resultado:** [-] Bloqueado
+**Resultado:** [x] Passou por relato do responsável em 04/10/2026
 
-**Observações:** Requer hardware ESP32 + buzzer. Não testável via testes automatizados.
+**Observações:** Dois bipes observados após aprovação facial. Volume baixo e
+duração inicial pouco perceptível. Firmware atualizado para 500 ms por bip,
+com pausa de 250 ms e LED verde aceso durante o som; conferir esse ajuste na
+próxima gravação. Teste automatizado de compilação não substitui o relato físico.
 
 ## T28 — Buzzer de negação
 
 **Esperado:** padrão sonoro de recusa em negação.
 
-**Resultado:** [-] Bloqueado
+**Resultado:** [x] Passou por relato do responsável em 04/10/2026
 
-**Observações:** Requer hardware ESP32 + buzzer. Não testável via testes automatizados.
+**Observações:** Sinalização de recusa confirmada pelo responsável. Padrão atual:
+três bipes de 150 ms com LED vermelho. Volume baixo; não houve amplificação.
 
 ## T29 — Servo
 
@@ -870,3 +875,24 @@ Numeração correspondente à lista de nove testes apresentada na conversa:
 
 `FACE_MULTIPLE` significa mais de um rosto detectado na mesma captura; não é a
 soma de rostos de duas câmeras. A captura continua sendo rejeitada nesse caso.
+
+### Complemento da rodada: buzzer e releitura
+
+O responsável confirmou em 04/10/2026 que o buzzer toca tanto na recusa quanto
+na aprovação facial. RF08/T27/T28 ficam aprovados por relato; RF07/T29 e o item
+9 continuam bloqueados pela ausência do servo. Isso não aprova automaticamente
+os itens 5 e 8, que ainda exigem a rodada manual correspondente.
+
+Correção da releitura: uma tentativa ainda pendente para o mesmo cartão e
+dispositivo retorna HTTP 409 com orientação de aguardar, em vez de HTTP 500.
+Tentativas vencidas são expiradas, com histórico, antes de criar uma nova.
+Validação: 105 testes do backend e teste do índice/expiração com tabela temporária
+no PostgreSQL; três regressões também passaram na imagem publicada. O backend
+foi atualizado sem apagar dados.
+
+Firmware normal: `bash firmware/blink/update`. Teste contínuo de um segundo:
+`bash firmware/teste_buzzer/update`. Teste dos padrões de aprovação/recusa:
+`bash firmware/teste_sons/update`. Gravar um teste substitui temporariamente o
+programa de acesso; gravar `blink` restaura o fluxo normal. Fechar o monitor
+serial não interrompe o ESP32. A mensagem `bip concluido` indica apenas o fim
+de um pulso, não que o buzzer foi desabilitado.

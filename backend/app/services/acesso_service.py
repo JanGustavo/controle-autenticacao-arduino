@@ -3,6 +3,7 @@ import os
 from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid4
+from psycopg.errors import UniqueViolation
 
 from app.database.connection import get_connection
 from app.utils.access_time import agora_acesso, iso_acesso
@@ -44,6 +45,10 @@ class AcessoNegadoError(AcessoServiceError):
 
 class TentativaAcessoNaoEncontradaError(AcessoServiceError):
     """Tentativa inexistente ou não disponível para finalização."""
+
+
+class TentativaEmAndamentoError(AcessoServiceError):
+    """Outra leitura do mesmo cartão ainda aguarda a decisão facial."""
 
 
 class AcessoService:
@@ -197,19 +202,44 @@ class AcessoService:
 
         expira_em = agora + timedelta(seconds=timeout_segundos)
 
-        with get_connection() as connection:
-            with connection.cursor() as cursor:
-                tentativa_acesso_model.criar_com_cursor(
-                    cursor,
-                    tentativa_id=tentativa_id,
-                    usuario_id=usuario_id,
-                    local_id=local_id,
-                    dispositivo_id=dispositivo_id,
-                    uid_card_lido=uid_card,
-                    status=cls._STATUS_PENDENTE,
-                    criado_em=agora,
-                    expira_em=expira_em,
-                )
+        try:
+            with get_connection() as connection:
+                with connection.cursor() as cursor:
+                    # Não esperar a varredura periódica para liberar tentativas vencidas.
+                    motivo_expiracao = "Tempo máximo para validação facial excedido."
+                    expiradas = tentativa_acesso_model.expirar_pendentes_com_cursor(
+                        cursor, agora=agora, motivo_recusa=motivo_expiracao,
+                    )
+                    for expirada in expiradas:
+                        historico_acesso_model.criar_com_cursor(
+                            cursor,
+                            usuario_id=expirada["usuario_id"],
+                            local_id=expirada["local_id"],
+                            dispositivo_id=expirada["dispositivo_id"],
+                            uid_card_lido=expirada["uid_card_lido"],
+                            data_hora=agora,
+                            autorizado=False,
+                            percentual_similaridade=None,
+                            motivo_recusa=motivo_expiracao,
+                        )
+                    tentativa_acesso_model.criar_com_cursor(
+                        cursor,
+                        tentativa_id=tentativa_id,
+                        usuario_id=usuario_id,
+                        local_id=local_id,
+                        dispositivo_id=dispositivo_id,
+                        uid_card_lido=uid_card,
+                        status=cls._STATUS_PENDENTE,
+                        criado_em=agora,
+                        expira_em=expira_em,
+                    )
+        except UniqueViolation as error:
+            if error.diag.constraint_name != "uq_tentativa_pendente_dispositivo_cartao":
+                raise
+            raise TentativaEmAndamentoError(
+                "Já existe uma tentativa em andamento para este cartão. "
+                "Conclua a validação facial ou aguarde o prazo expirar."
+            ) from error
 
         return VerificarCartaoResponse(
             existe=True,

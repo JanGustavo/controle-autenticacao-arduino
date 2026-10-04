@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="490" viewBox="0 0 900 490">
+<rect width="900" height="490" fill="#f5f7fb"/>
+<g font-family="sans-serif" fill="#182334">
+<text x="35" y="43" font-size="25" font-weight="bold">Jumper do D2 até I8, ao lado do positivo em J8</text>
+<text x="35" y="75" font-size="17">Esquema de conexão — não representa a posição física do D2 na placa.</text>
+<rect x="35" y="130" width="170" height="225" rx="14" fill="#203449"/>
+<text x="65" y="173" font-size="24" fill="white">ESP32</text>
+<circle cx="185" cy="225" r="9" fill="#f39a25"/>
+<text x="75" y="233" font-size="24" fill="white">D2</text>
+<circle cx="185" cy="307" r="9" fill="#ccd2d9"/>
+<text x="65" y="315" font-size="24" fill="white">GND</text>
+<rect x="270" y="130" width="380" height="220" rx="14" fill="white" stroke="#c2cad5" stroke-width="2"/>
+<text x="295" y="162" font-size="19">Protoboard: lado F–J</text>
+<g font-size="22" text-anchor="middle"><text x="320" y="199">F</text><text x="390" y="199">G</text><text x="460" y="199">H</text><text x="530" y="199">I</text><text x="600" y="199">J</text></g>
+<rect x="296" y="208" width="328" height="34" rx="17" fill="#ffdfb2"/>
+<text x="280" y="233" font-size="21">8</text>
+<g fill="#32445c"><circle cx="320" cy="225" r="7"/><circle cx="390" cy="225" r="7"/><circle cx="460" cy="225" r="7"/><circle cx="530" cy="225" r="7"/><circle cx="600" cy="225" r="7"/></g>
+<text x="299" y="285" font-size="17">F8, G8, H8, I8 e J8 são interligados.</text>
+<text x="299" y="316" font-size="17">Outros números são grupos separados.</text>
+<path d="M185 225 L235 225 L235 110 L530 110 L530 225" fill="none" stroke="#e18b15" stroke-width="6" stroke-linejoin="round"/>
+<circle cx="530" cy="225" r="13" fill="none" stroke="#e18b15" stroke-width="4"/>
+<text x="360" y="105" font-size="17" fill="#875000">NOVO jumper</text>
+<path d="M600 225 L720 225 L720 201 L750 201" fill="none" stroke="#df4242" stroke-width="6"/>
+<text x="656" y="180" font-size="17" fill="#a62525">Positivo já em J8</text>
+<rect x="750" y="195" width="115" height="110" rx="20" fill="#263548"/>
+<text x="764" y="254" font-size="20" fill="white">BUZZER</text>
+<text x="758" y="216" font-size="22" fill="white">+</text>
+<text x="758" y="294" font-size="22" fill="white">−</text>
+<path d="M750 292 L700 292 L700 380 L235 380 L235 307 L185 307" fill="none" stroke="#263548" stroke-width="5"/>
+<text x="350" y="407" font-size="17">Negativo continua no GND.</text>
+<text x="35" y="449" font-size="18" font-weight="bold">Monte com USB desligado. Não ligue a fileira 8 ao 3V3.</text>
+<text x="35" y="477" font-size="16">Antes de energizar: ligação direta depende de confirmar o consumo do buzzer.</text>
+</g></svg>

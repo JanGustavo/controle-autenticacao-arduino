@@ -50,3 +50,22 @@ Características, restrições e condições de funcionamento do sistema.
 - **RNF06:** orçamento do protótipo **aprovado pelo responsável pelo projeto**.
   A câmera dedicada ainda não foi comprada e o buzzer será substituído por um
   componente adequado. Esta aprovação do orçamento não aprova os testes do buzzer.
+
+## Atualização de validação em 04/10/2026
+
+- **RF08 — sinalização:** aprovado por relato do responsável em bancada. Buzzer
+  adquirido e integrado ao GPIO 2 do ESP32; aprovação facial produz dois bipes,
+  recusa produz três, acompanhados pelos LEDs. O volume observado é baixo.
+  A aprovação foi alongada para dois bipes de 500 ms, com pausa de 250 ms;
+  confirmar a percepção desse ajuste ao gravar a versão atual.
+- **RF07 — servo:** integração e teste físico ainda pendentes, por ausência do
+  servo. A presença dos comandos no firmware não aprova este requisito.
+- **RNF06 — orçamento:** continua aprovado; a substituição do buzzer foi
+  realizada. A câmera dedicada continua sem aquisição confirmada.
+- A sinalização funcional não certifica a compatibilidade elétrica: modelo e
+  consumo do buzzer ainda não foram informados.
+
+Continuam pendentes a rodada de dez acessos com medição de tempo e a confirmação
+manual da releitura rápida após a correção de tentativas concorrentes. A
+autenticação HMAC das requisições do ESP32 também permanece como melhoria
+técnica planejada; não foi implementada nesta atualização.
