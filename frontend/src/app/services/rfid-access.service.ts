@@ -1,6 +1,7 @@
 import { DestroyRef, Injectable, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
+import { CaptureStationService } from './capture-station.service';
 import { WebcamService } from './webcam.service';
 import { AuthService } from './auth.service';
 import { WebSocketEventData, WebSocketLogsService } from './websocket-logs.service';
@@ -9,6 +10,7 @@ import { WebSocketEventData, WebSocketLogsService } from './websocket-logs.servi
 @Injectable({ providedIn: 'root' })
 export class RfidAccessService {
   private router = inject(Router);
+  private captura = inject(CaptureStationService);
   private auth = inject(AuthService);
   private pending: WebSocketEventData | null = null;
 
@@ -23,6 +25,7 @@ export class RfidAccessService {
           this.pending = null;
           return;
         }
+        if (event.data.cliente_id !== this.captura.clienteId) return;
         if (event.type !== 'RFID_APROVADO' || !event.data.tentativa_id || !this.auth.isLoggedIn()) return;
         if (this.router.url.split('?')[0] === '/validar-acesso') return;
 

@@ -850,3 +850,23 @@ Antes de encerrar a sessão, tente sair com pelo menos:
 **Participantes:** ________________________________________
 
 **Versão / commit testado:** ______________________________
+
+
+## Rodada relatada pelo responsável em 04/10/2026
+
+Numeração correspondente à lista de nove testes apresentada na conversa:
+
+| Item | Teste | Resultado relatado |
+|---|---|---|
+| 1 | Cartão e rosto do titular com permissão válida | Aprovado pelo responsável |
+| 2 | Cartão de uma pessoa com rosto de outra | Aprovado pelo responsável |
+| 3 | Regras de negação: inativo, cartão desconhecido, horário/dia e permissão | Aprovado pelo responsável |
+| 4 | Expiração sem apresentar rosto | Aprovado pelo responsável |
+| 5 | Releitura rápida e reutilização de tentativa | Pendente |
+| 6 | Primeiro acesso no celular sem congelar | Aprovado; escolha de câmera e disputa entre aparelhos em correção |
+| 7 | Atualização do histórico, horário e motivo | Aprovado pelo responsável |
+| 8 | Dez acessos válidos consecutivos com medição de tempo | Pendente; retestar após seleção da câmera frontal e aparelho exclusivo |
+| 9 | LEDs e servo | Bloqueado nesta rodada: servo indisponível; não aprovar o conjunto |
+
+`FACE_MULTIPLE` significa mais de um rosto detectado na mesma captura; não é a
+soma de rostos de duas câmeras. A captura continua sendo rejeitada nesse caso.

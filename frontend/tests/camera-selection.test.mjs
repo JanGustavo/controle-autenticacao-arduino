@@ -73,3 +73,20 @@ test('Todas falham: informa erro', async () => {
   await assert.rejects(abrirCameraPreferida(source));
   assert.deepEqual(source.calls, ['droid', 'usb', 'internal']);
 });
+
+test('Celular solicita somente câmera frontal mesmo se a traseira vier primeiro', async () => {
+  const calls = [];
+  const source = {
+    enumerateDevices: async () => { throw new Error('Não deve ordenar câmeras móveis por nome'); },
+    getUserMedia: async c => { calls.push(c); return stream('front'); },
+  };
+  await abrirCameraPreferida(source, true);
+  assert.deepEqual(calls, [{video:{facingMode:{exact:'user'}},audio:false}]);
+});
+test('Celular sem frontal disponível não troca silenciosamente pela traseira', async () => {
+  let calls=0;
+  const source = { enumerateDevices:async()=>devices,
+    getUserMedia:async()=>{calls++;throw Object.assign(new Error('Sem frontal'),{name:'OverconstrainedError'});} };
+  await assert.rejects(abrirCameraPreferida(source,true),{name:'OverconstrainedError'});
+  assert.equal(calls,1);
+});

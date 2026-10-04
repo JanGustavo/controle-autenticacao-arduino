@@ -7,6 +7,10 @@
         </a>
 
         <div class="header-actions">
+          <button mat-stroked-button (click)="selecionarAparelho()" [disabled]="captura.carregando()">
+            <mat-icon>videocam</mat-icon>
+            {{ captura.ativa() ? 'Câmera neste aparelho' : 'Usar câmera deste aparelho' }}
+          </button>
           <button
             mat-stroked-button
             (click)="toggleKioskFullscreen()"
