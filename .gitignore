@@ -21,7 +21,7 @@ htmlcov/
 # ── Node / Angular ────────────────────────────────────────────────────────────
 frontend/node_modules/
 frontend/dist/
-frontend/.angular/
+**/.angular/
 
 # ── Docker ────────────────────────────────────────────────────────────────────
 # (docker-compose.yml e Dockerfiles devem entrar no repo)

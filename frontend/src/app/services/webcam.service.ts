@@ -2,6 +2,7 @@ import { Injectable, inject, signal, ElementRef } from '@angular/core';
 import * as faceapi from '@vladmandic/face-api';
 import { SpeechService } from './speech.service';
 import { abrirCameraPreferida } from './camera-selection';
+import { regiaoCentralRosto, inclinacaoDosOlhos } from './face-capture-quality';
 
 export type EstadoEnquadramento = 'ok' | 'sem_rosto' | 'sorriso' | 'olhos' | 'escuro' | null;
 
@@ -121,6 +122,7 @@ export class WebcamService {
     const aberturaId = ++this.aberturaId;
     this.webcamErro.set('');
     this.carregandoHardware.set(true);
+    this.capturaPronta.set(false);
     this.statusValidacao.set('Iniciando câmera e sensores...');
     this.tipoStatus.set('info');
     this.autoCapturaHabilitada.set(enableAutoCaptura);
@@ -305,21 +307,6 @@ export class WebcamService {
         const fonteProcessamento = this.obterFonteProcessamento(video);
         const larguraProcessamento = this.larguraFrameProcessado() || video.videoWidth;
 
-        // Checagem de Iluminação Reutilizando Buffer Canvas
-        const brilhoMedio = this.calcularLuminanciaOtimizada(fonteProcessamento);
-        this.valorLuma.set(Math.round(brilhoMedio));
-        if (brilhoMedio < 30) {
-          this.capturaPronta.set(false);
-          this.statusValidacao.set(`Ambiente escuro (${Math.round(brilhoMedio)} Luma) — Aumente a iluminação`);
-          this.tipoStatus.set('warn');
-          this.nivelIluminacao.set('baixa');
-          this.resetAutoCaptura();
-          this.suavizarRostoPerdido();
-          return;
-        } else {
-          this.nivelIluminacao.set('boa');
-        }
-
         // Detecção com TinyFaceDetector em Resolução Otimizada (224px)
         const detection = await faceapi
           .detectSingleFace(fonteProcessamento, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 }))
@@ -349,6 +336,21 @@ export class WebcamService {
           height: rawBox.height,
         });
 
+        // Mede o centro do rosto, sem deixar roupa ou fundo dominar a leitura.
+        const brilhoMedio = this.calcularLuminanciaOtimizada(fonteProcessamento, rawBox);
+        this.valorLuma.set(Math.round(brilhoMedio));
+        if (brilhoMedio < 30 || brilhoMedio > 235) {
+          this.capturaPronta.set(false);
+          this.statusValidacao.set(brilhoMedio < 30
+            ? 'Rosto escuro — Ilumine o rosto pela frente'
+            : 'Rosto muito iluminado — Evite luz direta forte');
+          this.tipoStatus.set('warn');
+          this.nivelIluminacao.set('baixa');
+          this.resetAutoCaptura();
+          return;
+        }
+        this.nivelIluminacao.set('boa');
+
         const proporcaoRosto = rawBox.width / larguraProcessamento;
         this.proporcaoAtual.set(Math.round(proporcaoRosto * 100));
 
@@ -371,6 +373,15 @@ export class WebcamService {
         // Validação Olhos Fechados
         const olhoEsq = detection.landmarks.getLeftEye();
         const olhoDir = detection.landmarks.getRightEye();
+        // Orientação pelos olhos: não depende do cabelo nem da roupa.
+        const inclinacao = inclinacaoDosOlhos(olhoEsq, olhoDir);
+        if (inclinacao > 20) {
+          this.capturaPronta.set(false);
+          this.statusValidacao.set('Mantenha a cabeça reta e olhe para a câmera');
+          this.tipoStatus.set('warn');
+          this.resetAutoCaptura();
+          return;
+        }
         const earMedio = (calcularEAR(olhoEsq) + calcularEAR(olhoDir)) / 2;
         this.earAtual.set(Number(earMedio.toFixed(2)));
 
@@ -506,9 +517,10 @@ export class WebcamService {
     return this.frameProcessamentoCanvas;
   }
 
-  private calcularLuminanciaOtimizada(fonte: CanvasImageSource): number {
+  private calcularLuminanciaOtimizada(fonte: CanvasImageSource, rosto: FaceBoxPosition): number {
     if (!this.lumaCtx) return 100;
-    this.lumaCtx.drawImage(fonte, 0, 0, 64, 48);
+    const area = regiaoCentralRosto(rosto);
+    this.lumaCtx.drawImage(fonte, area.x, area.y, area.width, area.height, 0, 0, 64, 48);
     const imgData = this.lumaCtx.getImageData(0, 0, 64, 48);
     const data = imgData.data;
     let somaLuma = 0;
@@ -555,7 +567,7 @@ export class WebcamService {
 
 async capturarFrameComPreview(): Promise<{ blob: Blob; previewUrl: string } | null> {
     const video = this.videoElementRef?.nativeElement;
-    if (!video) return Promise.resolve(null);
+    if (!video || !this.capturaPronta()) return Promise.resolve(null);
 
     this.executarEfeitoFlash();
     this.pararLoopValidacao();
