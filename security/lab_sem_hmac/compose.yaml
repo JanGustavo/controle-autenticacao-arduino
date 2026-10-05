@@ -1,0 +1,52 @@
+name: ardlock-lab-security
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ardlock_lab
+      POSTGRES_USER: lab
+      POSTGRES_PASSWORD: ${LAB_DB_PASSWORD:?Execute lab.sh up primeiro}
+      TZ: America/Sao_Paulo
+    volumes:
+      - lab_pgdata:/var/lib/postgresql/data
+      - ./generated/init:/docker-entrypoint-initdb.d:ro
+    networks: [database]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U lab -d ardlock_lab']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  api:
+    image: ardlock-lab-api:local
+    environment:
+      DATABASE_URL: postgresql://lab:${LAB_DB_PASSWORD}@db:5432/ardlock_lab
+      JWT_SECRET: ${LAB_JWT_SECRET:?Execute lab.sh up primeiro}
+      JWT_ALGORITHM: HS256
+      JWT_EXPIRE_MINUTES: '15'
+      FRONTEND_URL: http://localhost:8002
+      ACCESS_ATTEMPT_TIMEOUT_SECONDS: '60'
+      PYTHONPATH: /app
+      ORT_INTRA_OP_THREADS: '2'
+    ports:
+      - '${LAB_BIND_IP:-127.0.0.1}:8002:8000'
+    networks: [database, laboratory]
+    depends_on:
+      db:
+        condition: service_healthy
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=3)"]
+      interval: 3s
+      timeout: 5s
+      start_period: 60s
+      retries: 30
+volumes:
+  lab_pgdata:
+networks:
+  database:
+    internal: true
+  laboratory:
+    driver: bridge
