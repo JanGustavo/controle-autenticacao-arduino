@@ -140,10 +140,14 @@ code {
 .status-badge {
   padding: 5px 10px;
   border-radius: 14px;
-  background: #dcfce7;
-  color: #15803d;
   font-weight: 700;
 }
+
+.status-badge.active {
+  background: #dcfce7;
+  color: #15803d;
+}
+
 .status-badge.inactive {
   background: #fee2e2;
   color: #b91c1c;
@@ -336,9 +340,8 @@ code {
 .locations-page table .status-badge {
   display: inline-block;
   white-space: nowrap;
-  background: #dcfce7;
-  color: #15803d;
 }
+.locations-page table .status-badge.active { background: #dcfce7; color: #15803d; }
 .locations-page table .status-badge.inactive { background: #fee2e2; color: #b91c1c; }
-:host-context(body.dark-mode) .locations-page table .status-badge { background: rgba(22, 163, 74, .2); color: #4ade80; }
+:host-context(body.dark-mode) .locations-page table .status-badge.active { background: rgba(22, 163, 74, .2); color: #4ade80; }
 :host-context(body.dark-mode) .locations-page table .status-badge.inactive { background: rgba(220, 38, 38, .2); color: #f87171; }

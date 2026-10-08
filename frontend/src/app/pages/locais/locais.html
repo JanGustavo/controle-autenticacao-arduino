@@ -102,7 +102,11 @@
               <td>{{ local.local_id }}</td>
               <td>{{ local.nome }}</td>
               <td>
-                <span class="status-badge" [class.inactive]="!local.ativo">{{
+                <span
+                  class="status-badge"
+                  [class.active]="local.ativo"
+                  [class.inactive]="!local.ativo"
+                >{{
                   local.ativo ? 'Ativo' : 'Inativo'
                 }}</span>
               </td>

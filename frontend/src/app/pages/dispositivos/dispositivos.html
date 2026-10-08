@@ -133,7 +133,11 @@
               </td>
               <td>{{ nomeLocal(dispositivo.local_id) }}</td>
               <td>
-                <span class="status-badge" [class.inactive]="!dispositivo.ativo">
+                <span
+                  class="status-badge"
+                  [class.active]="dispositivo.ativo"
+                  [class.inactive]="!dispositivo.ativo"
+                >
                   {{ dispositivo.ativo ? 'Ativo' : 'Inativo' }}
                 </span>
               </td>
