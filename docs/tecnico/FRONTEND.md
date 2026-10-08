@@ -240,7 +240,8 @@ Verifique a URL calculada pelo `WebSocketLogsService` e se o backend está acess
 ## RFID físico e abertura automática da câmera
 
 Com uma sessão administrativa ativa e a interface aberta, `RfidAccessService`
-escuta o WebSocket globalmente. Um evento `RFID_APROVADO` com `tentativa_id` leva
+escuta o WebSocket globalmente. Apenas o navegador selecionado para captura
+processa o evento dirigido ao seu `cliente_id`. Um evento `RFID_APROVADO` com `tentativa_id` leva
 à tela `/validar-acesso`, mesmo que o navegador esteja em outra página. A tentativa
 é preservada durante a navegação e consumida uma única vez. Na tela de validação,
 o mesmo evento abre a câmera também com o modo de captura manual selecionado;
@@ -271,9 +272,10 @@ stream obtido depois é encerrado.
 Teste com `cd frontend && npm run test:cameras` (Node 24 com suporte a TypeScript).
 Para testar o fluxo físico, abra uma página diferente de Validar Acesso, passe um
 cartão autorizado e confira a navegação e a câmera escolhida. Repita com DroidCam
-indisponível e depois com USB indisponível. Outros navegadores autenticados que
-recebam o mesmo broadcast também podem entrar na validação; o fluxo não elege um
-único navegador operador nem identifica automaticamente a câmera de outra máquina.
+indisponível e depois com USB indisponível. Outros navegadores autenticados recebem as atualizações, mas não assumem a
+validação dirigida ao aparelho selecionado. A seleção é descrita em
+"Aparelho responsável pela validação facial", abaixo. A câmera usada pertence
+ao aparelho selecionado; o navegador não acessa automaticamente a câmera de outra máquina.
 
 
 ### Layout em telas menores e administradores

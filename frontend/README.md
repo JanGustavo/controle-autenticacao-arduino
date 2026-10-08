@@ -2,7 +2,7 @@
 
 Painel Angular standalone do ArdLock para administração, cadastro biométrico, monitoramento e validação de acesso.
 
-> Documentação detalhada: [docs/FRONTEND.md](../docs/FRONTEND.md)
+> Documentação detalhada: [docs/tecnico/FRONTEND.md](../docs/tecnico/FRONTEND.md)
 
 ## Stack
 
@@ -123,4 +123,4 @@ verificar-cartao
  -> histórico
 ```
 
-Mais detalhes em [docs/FRONTEND.md](../docs/FRONTEND.md).
+Mais detalhes em [docs/tecnico/FRONTEND.md](../docs/tecnico/FRONTEND.md).

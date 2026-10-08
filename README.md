@@ -82,10 +82,13 @@ controle-autenticacao-arduino/
 
 | Documento | Conteúdo |
 |---|---|
-| [Backend](docs/BACKEND.md) | arquitetura, regras, persistência, autenticação e fluxo de acesso |
-| [Frontend](docs/FRONTEND.md) | Angular, Totem, WebSocket, webcam, padrões visuais e debug |
-| [API e Debug](docs/API_DEBUG.md) | roteiro de Swagger, códigos HTTP e diagnóstico ponta a ponta |
-| [HTTPS, WSS e Cloudflare Tunnel](docs/HTTPS_WSS.md) | modos local/Docker, domínio Namecheap, DNS, túnel, banco de dados e testes públicos |
+| [Índice da documentação](docs/README.md) | organização dos documentos por finalidade |
+| [Preparação da AV1](docs/academico/av1/CHECKLIST_AV1.md) | requisitos da entrega, escopo, evidências, pendências e roteiro de dez minutos |
+| [Execução e builds](docs/operacao/EXECUCAO.md) | comandos atuais para desenvolvimento local e Docker |
+| [Backend](docs/tecnico/BACKEND.md) | arquitetura, regras, persistência, autenticação e fluxo de acesso |
+| [Frontend](docs/tecnico/FRONTEND.md) | Angular, Totem, WebSocket, webcam, padrões visuais e debug |
+| [API e Debug](docs/testes/API_DEBUG.md) | roteiro de Swagger, códigos HTTP e diagnóstico ponta a ponta |
+| [HTTPS, WSS e Cloudflare Tunnel](docs/operacao/HTTPS_WSS.md) | modos local/Docker, domínio Namecheap, DNS, túnel, banco de dados e testes públicos |
 | [Arquitetura de camadas](backend/ARCHITECTURE.md) | convenção API → Service → Model |
 
 A documentação interativa da API está em `/docs` e a alternativa ReDoc em `/redoc`.
@@ -152,7 +155,7 @@ conectado à Internet; mudanças de Wi-Fi ou IP não exigem mudar a rota do dom�
 
 O `make dev` usa o PostgreSQL local; o Docker usa seu próprio volume. Os dados não
 são sincronizados automaticamente, e ambos disputam a porta `5432` na configuração
-atual. Consulte o [guia completo](docs/HTTPS_WSS.md) para configurar o domínio,
+atual. Consulte o [guia completo](docs/operacao/HTTPS_WSS.md) para configurar o domínio,
 alternar os ambientes, copiar os dados e diagnosticar DNS.
 
 ## 🔐 Autenticação e Segurança

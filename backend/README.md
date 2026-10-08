@@ -2,8 +2,8 @@
 
 API FastAPI responsável por autenticação administrativa, regras de acesso físico, biometria facial 1:1, auditoria e integração com ESP32/RFID.
 
-> Documentação detalhada: [docs/BACKEND.md](../docs/BACKEND.md)  
-> Guia de Swagger/debug: [docs/API_DEBUG.md](../docs/API_DEBUG.md)
+> Documentação detalhada: [docs/tecnico/BACKEND.md](../docs/tecnico/BACKEND.md)
+> Guia de Swagger/debug: [docs/testes/API_DEBUG.md](../docs/testes/API_DEBUG.md)
 
 ## Stack
 
@@ -139,4 +139,4 @@ SELECT * FROM historico_acesso ORDER BY data_hora DESC LIMIT 10;
 SELECT * FROM audit_logs ORDER BY criado_em DESC LIMIT 10;
 ```
 
-Veja o roteiro completo em [docs/API_DEBUG.md](../docs/API_DEBUG.md).
+Veja o roteiro completo em [docs/testes/API_DEBUG.md](../docs/testes/API_DEBUG.md).

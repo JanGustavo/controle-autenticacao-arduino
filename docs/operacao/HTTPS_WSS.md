@@ -317,7 +317,7 @@ Nesta instalação, o backup de origem identificou por ID e data exata 570 regis
 de histórico e 59 tentativas importados do PostgreSQL local, marcados como
 `America/Sao_Paulo`. Os registros restantes do Docker foram marcados como UTC.
 Em outro banco misturado, reconciliar a origem antes de interpretar dados antigos,
-conforme o procedimento de auditoria em `docs/FRONTEND.md`.
+conforme o procedimento de auditoria em `docs/tecnico/FRONTEND.md`.
 
 
 ### Primeira validação facial e versão em execução

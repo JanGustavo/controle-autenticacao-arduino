@@ -142,7 +142,7 @@ que permanece como hardening posterior.
 - `POST /api/v1/arduino/verificar-face`: fecha biometria 1:1
 - `GET /api/v1/arduino/resultado-acesso`: decisão para o ESP32
 
-Documentação adicional: `docs/BACKEND.md` e `docs/API_DEBUG.md`.
+Documentação adicional: `docs/tecnico/BACKEND.md` e `docs/testes/API_DEBUG.md`.
 """
 
 
