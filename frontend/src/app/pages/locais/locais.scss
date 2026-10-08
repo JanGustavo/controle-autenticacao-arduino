@@ -332,3 +332,13 @@ code {
 }
 
 @include pages.ard-page-pattern('.locations-page');
+
+.locations-page table .status-badge {
+  display: inline-block;
+  white-space: nowrap;
+  background: #dcfce7;
+  color: #15803d;
+}
+.locations-page table .status-badge.inactive { background: #fee2e2; color: #b91c1c; }
+:host-context(body.dark-mode) .locations-page table .status-badge { background: rgba(22, 163, 74, .2); color: #4ade80; }
+:host-context(body.dark-mode) .locations-page table .status-badge.inactive { background: rgba(220, 38, 38, .2); color: #f87171; }

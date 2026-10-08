@@ -686,3 +686,8 @@
 }
 
 @include pages.ard-page-pattern('.locais-wrapper');
+
+.locais-table .badge-principal { background: #dbeafe; color: #1d4ed8; border-color: #bfdbfe; }
+.locais-table .badge-comum { background: #f8fafc; color: #475569; border-color: #e2e8f0; }
+:host-context(body.dark-mode) .locais-table .badge-principal { background: rgba(37, 99, 235, .2); color: #93c5fd; border-color: #1e40af; }
+:host-context(body.dark-mode) .locais-table .badge-comum { background: #1e293b; color: #cbd5e1; border-color: #475569; }
