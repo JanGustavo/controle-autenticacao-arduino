@@ -3,7 +3,7 @@
     <a routerLink="/adm-page" class="back-link">
       <mat-icon>arrow_back</mat-icon> Painel administrativo
     </a>
-    
+
     <h1>Locais</h1>
     <p>Gerencie os locais físicos. Os dispositivos ficam vinculados aos locais.</p>
   </header>
@@ -44,18 +44,9 @@
     <div class="filter-bar">
       <div class="search-box">
         <mat-icon>search</mat-icon>
-        <input
-          type="text"
-          [(ngModel)]="filtroTexto"
-          placeholder="Pesquisar por nome..."
-        />
+        <input type="text" [(ngModel)]="filtroTexto" placeholder="Pesquisar por nome..." />
         @if (filtroTexto) {
-          <button
-            type="button"
-            mat-icon-button
-            (click)="filtroTexto = ''"
-            title="Limpar pesquisa"
-          >
+          <button type="button" mat-icon-button (click)="filtroTexto = ''" title="Limpar pesquisa">
             <mat-icon>close</mat-icon>
           </button>
         }
@@ -63,10 +54,7 @@
 
       <div class="filter-group">
         <label for="filtro-ativo-select">Status</label>
-        <select
-          id="filtro-ativo-select"
-          [(ngModel)]="filtroAtivo"
-        >
+        <select id="filtro-ativo-select" [(ngModel)]="filtroAtivo">
           <option value="todos">Todos</option>
           <option value="ativo">Ativos</option>
           <option value="inativo">Inativos</option>
@@ -75,7 +63,7 @@
     </div>
 
     @if (erro) {
-      <p class="error" style="margin: 16px;">{{ erro }}</p>
+      <p class="error" style="margin: 16px">{{ erro }}</p>
     } @else if (carregando) {
       <div class="skeleton-table" aria-label="Carregando locais">
         @for (item of [1, 2, 3, 4, 5]; track item) {
@@ -92,7 +80,11 @@
       <div class="empty-state">
         <mat-icon>location_off</mat-icon>
         <strong>Nenhum local encontrado</strong>
-        <span>{{ locais.length === 0 ? 'Cadastre o primeiro local para começar.' : 'Ajuste os filtros para ver outros resultados.' }}</span>
+        <span>{{
+          locais.length === 0
+            ? 'Cadastre o primeiro local para começar.'
+            : 'Ajuste os filtros para ver outros resultados.'
+        }}</span>
       </div>
     } @else {
       <table>
@@ -115,12 +107,24 @@
                 }}</span>
               </td>
               <td class="row-actions">
-                <button mat-icon-button title="Editar" (click)="editar(local)">
-                  <mat-icon>edit</mat-icon>
-                </button>
-                <button mat-icon-button title="Excluir" (click)="excluir(local)">
-                  <mat-icon>delete</mat-icon>
-                </button>
+                <div class="record-actions">
+                  <button
+                    mat-icon-button
+                    title="Editar"
+                    aria-label="Editar"
+                    (click)="editar(local)"
+                  >
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button
+                    mat-icon-button
+                    title="Excluir"
+                    aria-label="Excluir"
+                    (click)="excluir(local)"
+                  >
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
               </td>
             </tr>
           }

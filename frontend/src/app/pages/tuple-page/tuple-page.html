@@ -312,43 +312,51 @@
                   }
                   @if (cfg.resource === 'permissoes') {
                     <td class="row-actions">
-                      <button
-                        type="button"
-                        mat-icon-button
-                        title="Editar"
-                        (click)="iniciarEdicao(row)"
-                      >
-                        <mat-icon>edit</mat-icon>
-                      </button>
-                      <button
-                        type="button"
-                        mat-icon-button
-                        title="Excluir"
-                        (click)="excluirPermissao(row)"
-                      >
-                        <mat-icon>delete</mat-icon>
-                      </button>
+                      <div class="record-actions">
+                        <button
+                          type="button"
+                          mat-icon-button
+                          title="Editar"
+                          aria-label="Editar"
+                          (click)="iniciarEdicao(row)"
+                        >
+                          <mat-icon>edit</mat-icon>
+                        </button>
+                        <button
+                          type="button"
+                          mat-icon-button
+                          title="Excluir"
+                          aria-label="Excluir"
+                          (click)="excluirPermissao(row)"
+                        >
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                      </div>
                     </td>
                   }
                   @if (cfg.resource === 'usuarios') {
                     <td class="row-actions">
-                      <button
-                        type="button"
-                        mat-icon-button
-                        title="Editar usuário"
-                        (click)="editarUsuario(row)"
-                      >
-                        <mat-icon>edit</mat-icon>
-                      </button>
-                      <button
-                        type="button"
-                        mat-icon-button
-                        class="danger-action"
-                        title="Excluir usuário"
-                        (click)="excluirUsuario(row)"
-                      >
-                        <mat-icon>delete</mat-icon>
-                      </button>
+                      <div class="record-actions">
+                        <button
+                          type="button"
+                          mat-icon-button
+                          title="Editar usuário"
+                          aria-label="Editar usuário"
+                          (click)="editarUsuario(row)"
+                        >
+                          <mat-icon>edit</mat-icon>
+                        </button>
+                        <button
+                          type="button"
+                          mat-icon-button
+                          class="danger-action"
+                          title="Excluir usuário"
+                          aria-label="Excluir usuário"
+                          (click)="excluirUsuario(row)"
+                        >
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                      </div>
                     </td>
                   }
                 </tr>

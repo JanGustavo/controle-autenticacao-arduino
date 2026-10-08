@@ -1,3 +1,4 @@
+import { ConfirmationService } from '../../components/confirmation-dialog/confirmation-dialog';
 import {
   ChangeDetectorRef,
   Component,
@@ -37,6 +38,7 @@ import { WebSocketLogsService, WebSocketLogEvent } from '../../services/websocke
 })
 export class TuplePage implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
+  private confirmation = inject(ConfirmationService);
   private api = inject(ApiService);
   private cdr = inject(ChangeDetectorRef);
   private dialog = inject(MatDialog);
@@ -172,9 +174,15 @@ export class TuplePage implements OnInit, OnDestroy {
     });
   }
 
-  excluirUsuario(row: Record<string, unknown>): void {
+  async excluirUsuario(row: Record<string, unknown>): Promise<void> {
     const id = Number(row['user_id']);
-    if (!confirm('Deseja realmente excluir este usuário?')) return;
+    if (
+      !(await this.confirmation.excluir(
+        'Excluir usuário?',
+        `O usuário "${row['nome']}" será removido.`,
+      ))
+    )
+      return;
 
     this.api.deletarUsuario(id).subscribe({
       next: () => {
@@ -465,9 +473,15 @@ export class TuplePage implements OnInit, OnDestroy {
     });
   }
 
-  excluirPermissao(row: Record<string, unknown>): void {
+  async excluirPermissao(row: Record<string, unknown>): Promise<void> {
     const id = Number(row['permissao_id']);
-    if (!confirm('Excluir esta permissão?')) return;
+    if (
+      !(await this.confirmation.excluir(
+        'Excluir permissão?',
+        `A permissão de "${row['usuario_id']}" para "${row['local_id']}" será removida.`,
+      ))
+    )
+      return;
     this.api.deletarPermissao(id).subscribe({
       next: () => {
         this.permissoes = this.permissoes.filter((item) => item.permissao_id !== id);

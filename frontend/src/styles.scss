@@ -296,3 +296,27 @@ app-root {
     border-radius: 0;
   }
 }
+
+// A célula mantém o layout de tabela; o grupo de ações não quebra linha.
+table .record-actions,
+table .action-buttons {
+  display: inline-flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  white-space: nowrap;
+}
+table .record-actions > button,
+table .action-buttons > button {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+}
+
+.mat-mdc-snack-bar-container {
+  --mdc-snackbar-container-color: var(--ard-ink);
+  --mdc-snackbar-supporting-text-color: var(--ard-surface);
+  --mat-snack-bar-button-color: var(--ard-surface);
+}

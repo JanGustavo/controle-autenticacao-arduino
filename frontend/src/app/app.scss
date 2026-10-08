@@ -16,11 +16,14 @@
   flex-shrink: 0;
   border-top: 1px solid var(--ard-line);
   color: var(--ard-muted);
-  padding: 24px;
+  padding: 0;
+  background: var(--ard-surface);
 }
 
 .footer-content {
-  max-width: 1320px;
+  max-width: 1280px;
+  padding: 20px 32px;
+  box-sizing: border-box;
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -35,9 +38,11 @@
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 760px) {
   .footer-content {
-    flex-direction: column;
-    text-align: center;
+    padding: 16px 12px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    text-align: left;
   }
 }
