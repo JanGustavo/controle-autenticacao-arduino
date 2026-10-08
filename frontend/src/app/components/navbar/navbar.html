@@ -1,4 +1,4 @@
-<header class="app-header">
+<header class="app-header" (keydown.escape)="menuAberto.set(false)">
   <div class="header-container">
     <!-- NOME DO APP / BRAND -->
     <a routerLink="/adm-page" class="brand">
@@ -13,9 +13,22 @@
 
     <!-- ACOES HEADER (DARK MODE & LOGOFF) -->
     <div class="header-actions">
+      @if (isLoggedIn()) {
+        <button
+          mat-icon-button
+          class="menu-toggle"
+          (click)="menuAberto.set(!menuAberto())"
+          aria-label="Menu de navegação"
+          aria-controls="primary-navigation"
+          [attr.aria-expanded]="menuAberto()"
+        >
+          <mat-icon>{{ menuAberto() ? 'close' : 'menu' }}</mat-icon>
+        </button>
+      }
       <button
         mat-icon-button
         class="action-btn theme-btn"
+        [attr.aria-label]="darkMode() ? 'Ativar tema claro' : 'Ativar tema escuro'"
         (click)="toggleDarkMode()"
         [matTooltip]="darkMode() ? 'Modo Claro' : 'Modo Escuro'"
       >
@@ -28,7 +41,11 @@
             class="user-avatar"
             [class.clickable]="userDisplay.foto_url && isImgValid(userDisplay.foto_url)"
             (click)="expandirFoto(userDisplay.foto_url)"
-            [matTooltip]="userDisplay.foto_url && isImgValid(userDisplay.foto_url) ? 'Clique para expandir a foto' : ''"
+            [matTooltip]="
+              userDisplay.foto_url && isImgValid(userDisplay.foto_url)
+                ? 'Clique para expandir a foto'
+                : ''
+            "
           >
             @if (userDisplay.foto_url && isImgValid(userDisplay.foto_url)) {
               <img
@@ -42,7 +59,6 @@
             }
           </div>
           <div class="user-info">
-
             <span class="user-name">{{ userDisplay.name }}</span>
             <span class="user-meta">
               <span class="status-dot"></span>
@@ -51,19 +67,39 @@
           </div>
         </div>
 
-
         <button
           mat-icon-button
           color="warn"
           class="action-btn logoff-btn"
           (click)="logoff()"
-          matTooltip="Sair / Logoff"
+          matTooltip="Sair"
+          aria-label="Sair da conta"
         >
           <mat-icon>logout</mat-icon>
         </button>
       }
     </div>
   </div>
+  @if (isLoggedIn()) {
+    <nav
+      id="primary-navigation"
+      class="primary-navigation"
+      [class.is-open]="menuAberto()"
+      aria-label="Navegação principal"
+    >
+      @for (link of links; track link.path) {
+        <a
+          [routerLink]="link.path"
+          [class.is-active]="linkAtivo(link.path)"
+          [attr.aria-current]="linkAtivo(link.path) ? 'page' : null"
+          (click)="menuAberto.set(false)"
+        >
+          <mat-icon>{{ link.icon }}</mat-icon
+          ><span>{{ link.label }}</span>
+        </a>
+      }
+    </nav>
+  }
 </header>
 
 <!-- MODAL DE EXPANSÃO DA FOTO -->

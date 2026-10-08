@@ -1,3 +1,4 @@
+@use '../../styles/page-pattern' as pages;
 .adm-wrapper {
   --canvas: #f6f8fb;
   --surface: #ffffff;
@@ -80,7 +81,7 @@
       background-color 180ms ease;
 
     &::before {
-      content: "";
+      content: '';
       position: absolute;
       inset: 0 auto 0 0;
       width: 5px;
@@ -88,7 +89,7 @@
     }
 
     &::after {
-      content: "";
+      content: '';
       position: absolute;
       z-index: -1;
       width: 150px;
@@ -99,7 +100,9 @@
       background: color-mix(in srgb, var(--accent) 9%, transparent);
       transform: scale(0.7);
       opacity: 0;
-      transition: transform 220ms ease, opacity 220ms ease;
+      transition:
+        transform 220ms ease,
+        opacity 220ms ease;
     }
 
     &:hover {
@@ -117,7 +120,7 @@
         box-shadow: 0 10px 22px color-mix(in srgb, var(--accent) 18%, transparent);
 
         mat-icon {
-          animation: icon-pop 480ms cubic-bezier(.2, .8, .2, 1);
+          animation: icon-pop 480ms cubic-bezier(0.2, 0.8, 0.2, 1);
         }
       }
 
@@ -169,7 +172,9 @@
       height: 22px;
       color: #64748b;
       opacity: 0.45;
-      transition: transform 180ms ease, opacity 180ms ease;
+      transition:
+        transform 180ms ease,
+        opacity 180ms ease;
     }
 
     .tile-info {
@@ -190,18 +195,34 @@
       }
     }
 
-    &.blue { --accent: #2563eb; }
-    &.green { --accent: #16a34a; }
-    &.orange { --accent: #d97706; }
-    &.purple { --accent: #7c3aed; }
-    &.teal { --accent: #0f766e; }
+    &.blue {
+      --accent: #2563eb;
+    }
+    &.green {
+      --accent: #16a34a;
+    }
+    &.orange {
+      --accent: #d97706;
+    }
+    &.purple {
+      --accent: #7c3aed;
+    }
+    &.teal {
+      --accent: #0f766e;
+    }
   }
 }
 
 @keyframes icon-pop {
-  0% { transform: scale(1); }
-  45% { transform: scale(1.16) rotate(-3deg); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.16) rotate(-3deg);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -228,7 +249,9 @@
 
     background: var(--ard-canvas);
 
-    .eyebrow { color: #94a3b8; }
+    .eyebrow {
+      color: #94a3b8;
+    }
 
     .tile-card {
       background: color-mix(in srgb, var(--surface) 95%, var(--accent) 5%);
@@ -237,13 +260,25 @@
         background: color-mix(in srgb, var(--accent) 16%, #111827);
       }
 
-      .tile-arrow { color: #94a3b8; }
+      .tile-arrow {
+        color: #94a3b8;
+      }
 
-      &.blue { --accent: #60a5fa; }
-      &.green { --accent: #4ade80; }
-      &.orange { --accent: #fbbf24; }
-      &.purple { --accent: #c084fc; }
-      &.teal { --accent: #2dd4bf; }
+      &.blue {
+        --accent: #60a5fa;
+      }
+      &.green {
+        --accent: #4ade80;
+      }
+      &.orange {
+        --accent: #fbbf24;
+      }
+      &.purple {
+        --accent: #c084fc;
+      }
+      &.teal {
+        --accent: #2dd4bf;
+      }
     }
   }
 }
@@ -257,4 +292,61 @@
       padding: 22px;
     }
   }
+}
+
+@include pages.ard-page-pattern('.adm-wrapper');
+
+.adm-wrapper .tile-card {
+  --accent: var(--ard-primary);
+  --icon-bg: color-mix(in srgb, var(--ard-primary) 10%, var(--ard-surface));
+  min-height: 160px;
+  gap: 16px;
+  padding: 24px;
+  background: var(--ard-surface);
+  &::before {
+    display: none;
+  }
+  &:hover {
+    transform: translateY(-2px);
+  }
+}
+
+.panel-start {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 20px 24px;
+  border: 1px solid var(--ard-line);
+  border-radius: var(--ard-radius-md);
+  background: var(--ard-surface);
+  margin-bottom: 32px;
+  strong {
+    font-size: 1.05rem;
+  }
+  p {
+    margin: 4px 0 0;
+    color: var(--ard-muted);
+  }
+}
+.panel-group {
+  margin-top: 28px;
+}
+.group-heading {
+  margin-bottom: 16px;
+  h3 {
+    font-size: 1.1rem;
+    margin: 0;
+  }
+  p {
+    color: var(--ard-muted);
+    margin: 4px 0;
+  }
+}
+.panel-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ard-danger);
 }

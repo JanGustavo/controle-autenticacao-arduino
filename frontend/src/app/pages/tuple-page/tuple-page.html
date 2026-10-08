@@ -1,13 +1,13 @@
 @if (config; as cfg) {
   <div class="tuple-wrapper">
     <!-- HEADER DO COMPONENTE -->
-    <header class="tuple-header" [class]="cfg.accentColor">
+    <header class="tuple-header">
       <div class="header-top">
         <a routerLink="/adm-page" class="back-link">
           <mat-icon>arrow_back</mat-icon>
-          <span>Voltar ao Painel</span>
+          <span>Painel administrativo</span>
         </a>
-        <span class="eyebrow">Módulo / Tuplas</span>
+        <span class="eyebrow">Gestão de acesso</span>
       </div>
 
       <div class="header-main">
@@ -28,6 +28,11 @@
       </div>
     }
 
+    @if (acaoNotice && cfg.resource !== 'permissoes') {
+      <div class="action-notice" role="status">
+        <mat-icon>check_circle</mat-icon>{{ acaoNotice }}
+      </div>
+    }
     <!-- BARRA DE FILTRO / PESQUISA DINÂMICA -->
     <section class="filter-bar">
       <div class="search-box">
@@ -37,6 +42,7 @@
           [ngModel]="filtroTexto()"
           (ngModelChange)="filtroTexto.set($event); carregarDados()"
           placeholder="Pesquisar em {{ cfg.title.toLowerCase() }}..."
+          [attr.aria-label]="'Pesquisar em ' + cfg.title.toLowerCase()"
         />
         @if (filtroTexto()) {
           <button
@@ -53,8 +59,9 @@
       <!-- Filtro de Status para Usuários -->
       @if (cfg.resource === 'usuarios') {
         <div class="filter-group">
-          <label>Status</label>
+          <label for="filtro-status">Status</label>
           <select
+            id="filtro-status"
             [ngModel]="filtroAtivo()"
             (ngModelChange)="filtroAtivo.set($event); carregarDados()"
           >
@@ -64,17 +71,24 @@
           </select>
         </div>
 
-        <a routerLink="/cadastrar" mat-flat-button color="primary" class="create-user-action">
+        <button
+          type="button"
+          (click)="cadastrarUsuario()"
+          mat-flat-button
+          color="primary"
+          class="create-user-action"
+        >
           <mat-icon>person_add</mat-icon>
-          Novo usuário
-        </a>
+          Cadastrar usuário
+        </button>
       }
 
       <!-- Filtros de Usuário e Local para Permissões -->
       @if (cfg.resource === 'permissoes') {
         <div class="filter-group">
-          <label>Usuário</label>
+          <label for="filtro-usuario">Usuário</label>
           <select
+            id="filtro-usuario"
             [ngModel]="filtroUsuarioId()"
             (ngModelChange)="filtroUsuarioId.set($event); carregarDados()"
           >
@@ -84,8 +98,9 @@
             }
           </select>
 
-          <label>Local</label>
+          <label for="filtro-local">Local</label>
           <select
+            id="filtro-local"
             [ngModel]="filtroLocalId()"
             (ngModelChange)="filtroLocalId.set($event); carregarDados()"
           >
@@ -100,8 +115,9 @@
       <!-- Filtros para Histórico (Logs) -->
       @if (cfg.resource === 'historico') {
         <div class="filter-group">
-          <label>Usuário</label>
+          <label for="filtro-usuario">Usuário</label>
           <select
+            id="filtro-usuario"
             [ngModel]="filtroUsuarioId()"
             (ngModelChange)="filtroUsuarioId.set($event); carregarDados()"
           >
@@ -111,8 +127,9 @@
             }
           </select>
 
-          <label>Local</label>
+          <label for="filtro-local">Local</label>
           <select
+            id="filtro-local"
             [ngModel]="filtroLocalId()"
             (ngModelChange)="filtroLocalId.set($event); carregarDados()"
           >
@@ -122,8 +139,9 @@
             }
           </select>
 
-          <label>Autorização</label>
+          <label for="filtro-resultado">Resultado</label>
           <select
+            id="filtro-resultado"
             [ngModel]="filtroAutorizado()"
             (ngModelChange)="filtroAutorizado.set($event); carregarDados()"
           >
@@ -151,7 +169,10 @@
         <div class="permission-form">
           <label>
             <span class="floating-label">Usuário</span>
-            <select [(ngModel)]="permissaoForm.usuario_id" [disabled]="editandoPermissaoId !== null">
+            <select
+              [(ngModel)]="permissaoForm.usuario_id"
+              [disabled]="editandoPermissaoId !== null"
+            >
               <option [ngValue]="0" disabled>Selecione...</option>
               @for (usuario of usuarios; track usuario.user_id) {
                 <option [ngValue]="usuario.user_id">
@@ -169,8 +190,14 @@
               }
             </select>
           </label>
-          <label><span class="floating-label">Início</span><input type="time" [(ngModel)]="permissaoForm.horario_inicio" /></label>
-          <label><span class="floating-label">Fim</span><input type="time" [(ngModel)]="permissaoForm.horario_fim" /></label>
+          <label
+            ><span class="floating-label">Início</span
+            ><input type="time" [(ngModel)]="permissaoForm.horario_inicio"
+          /></label>
+          <label
+            ><span class="floating-label">Fim</span
+            ><input type="time" [(ngModel)]="permissaoForm.horario_fim"
+          /></label>
           <div class="permission-days">
             <span>Dias</span>
             @for (dia of [1, 2, 3, 4, 5, 6, 7]; track dia) {
@@ -179,9 +206,10 @@
                 [attr.title]="nomeDia(dia)"
                 [attr.aria-label]="nomeDia(dia)"
                 [class.selected]="permissaoForm.dias_semana.includes(dia)"
+                [attr.aria-pressed]="permissaoForm.dias_semana.includes(dia)"
                 (click)="togglePermissaoDia(dia)"
               >
-                {{ dia }}
+                {{ nomeDia(dia).slice(0, 3) }}
               </button>
             }
           </div>
@@ -200,22 +228,28 @@
               <mat-icon>save</mat-icon> Salvar
             </button>
             @if (editandoPermissaoId !== null) {
-              <button
-                type="button"
-                mat-button
-                (click)="cancelarEdicao()"
-              >
-                Cancelar
-              </button>
+              <button type="button" mat-button (click)="cancelarEdicao()">Cancelar</button>
             }
           </div>
         </div>
       </section>
     }
 
+    @if (cfg.resource === 'permissoes') {
+      <div class="next-step">
+        <mat-icon>arrow_forward</mat-icon>
+        <span>Após salvar as permissões, confira o acesso com o cartão do usuário.</span>
+        <a routerLink="/validar-acesso" mat-stroked-button>Validar acesso</a>
+      </div>
+    }
     <!-- CONTEÚDO PRINCIPAL (TABELA DE TUPLAS) -->
     <main class="tuple-content">
-      <div class="table-card" tabindex="0" role="region" aria-label="Tabela de registros; deslize para ver todas as colunas">
+      <div
+        class="table-card"
+        tabindex="0"
+        role="region"
+        aria-label="Tabela de registros; deslize para ver todas as colunas"
+      >
         @if (rowsFromApi() === null) {
           <div class="skeleton-table" aria-label="Carregando dados">
             @for (item of [1, 2, 3, 4, 5]; track item) {
@@ -233,7 +267,11 @@
             <mat-icon>inbox</mat-icon>
             <strong>Nenhum registro encontrado</strong>
             <span>
-              {{ filtroTexto() ? 'Ajuste a pesquisa ou limpe os filtros.' : 'Ainda não há dados para exibir.' }}
+              {{
+                filtroTexto()
+                  ? 'Ajuste a pesquisa ou limpe os filtros.'
+                  : 'Ainda não há dados para exibir.'
+              }}
             </span>
           </div>
         } @else {
@@ -255,7 +293,17 @@
                     <td>
                       @if (isBadgeStatus(row[col.key])) {
                         <span class="badge" [ngClass]="getStatusClass(row[col.key])">
-                          {{ row[col.key] }}
+                          {{
+                            col.key === 'autorizado'
+                              ? row[col.key] === 'Sim'
+                                ? 'Autorizado'
+                                : 'Negado'
+                              : col.key === 'ativo'
+                                ? row[col.key] === 'Sim'
+                                  ? 'Ativo'
+                                  : 'Inativo'
+                                : row[col.key]
+                          }}
                         </span>
                       } @else {
                         <span class="cell-value">{{ row[col.key] }}</span>
@@ -264,10 +312,20 @@
                   }
                   @if (cfg.resource === 'permissoes') {
                     <td class="row-actions">
-                      <button type="button" mat-icon-button title="Editar" (click)="iniciarEdicao(row)">
+                      <button
+                        type="button"
+                        mat-icon-button
+                        title="Editar"
+                        (click)="iniciarEdicao(row)"
+                      >
                         <mat-icon>edit</mat-icon>
                       </button>
-                      <button type="button" mat-icon-button title="Excluir" (click)="excluirPermissao(row)">
+                      <button
+                        type="button"
+                        mat-icon-button
+                        title="Excluir"
+                        (click)="excluirPermissao(row)"
+                      >
                         <mat-icon>delete</mat-icon>
                       </button>
                     </td>
@@ -306,13 +364,14 @@
       <div class="footer-info">
         <mat-icon>info</mat-icon>
         <span>
-          Exibindo <strong>{{ displayedRows.length }}</strong> de <strong>{{ allRows.length }}</strong> registros (API)
+          Exibindo <strong>{{ displayedRows.length }}</strong> de
+          <strong>{{ allRows.length }}</strong> registros
         </span>
       </div>
       <div class="footer-actions">
         <a routerLink="/adm-page" mat-stroked-button>
           <mat-icon>arrow_back</mat-icon>
-          Painel ADM
+          Painel administrativo
         </a>
       </div>
     </footer>

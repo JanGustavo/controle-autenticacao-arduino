@@ -1,13 +1,27 @@
-import { Component, ElementRef, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  inject,
+  OnDestroy,
+  OnInit,
+  signal,
+  ViewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { RouterLink } from '@angular/router';
+import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
-import { ApiService, DispositivoSimplesResponse, PermissaoCreateRequest, TipoUsuario } from '../../services/api.service';
+import {
+  ApiService,
+  DispositivoSimplesResponse,
+  PermissaoCreateRequest,
+  TipoUsuario,
+} from '../../services/api.service';
 import { SpeechService } from '../../services/speech.service';
 import { WebcamService } from '../../services/webcam.service';
 import { WebSocketLogsService } from '../../services/websocket-logs.service';
@@ -32,7 +46,7 @@ export interface LocalPermissaoItem {
     MatProgressSpinnerModule,
     MatSnackBarModule,
     ReactiveFormsModule,
-    RouterLink,
+    MatDialogModule,
   ],
   templateUrl: './cadastrar.html',
   styleUrl: './cadastrar.scss',
@@ -41,6 +55,9 @@ export class CadastrarPage implements OnInit, OnDestroy {
   @ViewChild('videoElement') videoElement?: ElementRef<HTMLVideoElement>;
   @ViewChild('webcamContainer') webcamContainer?: ElementRef<HTMLDivElement>;
 
+  private dialogRef = inject(MatDialogRef<CadastrarPage>);
+  private usuarioCriado = false;
+  private cdr = inject(ChangeDetectorRef);
   private formBuilder = inject(FormBuilder);
   private api = inject(ApiService);
   private snackBar = inject(MatSnackBar);
@@ -69,12 +86,18 @@ export class CadastrarPage implements OnInit, OnDestroy {
   private wsSubscription: Subscription | null = null;
 
   get dispositivoRfidSelecionado(): DispositivoSimplesResponse | null {
-    if (this.dispositivoRfidSelecionadoId === null || this.dispositivoRfidSelecionadoId === undefined) return null;
+    if (
+      this.dispositivoRfidSelecionadoId === null ||
+      this.dispositivoRfidSelecionadoId === undefined
+    )
+      return null;
 
-    return this.dispositivosRfid.find(
-      (dispositivo) =>
-        Number(dispositivo.dispositivo_id) === Number(this.dispositivoRfidSelecionadoId)
-    ) ?? null;
+    return (
+      this.dispositivosRfid.find(
+        (dispositivo) =>
+          Number(dispositivo.dispositivo_id) === Number(this.dispositivoRfidSelecionadoId),
+      ) ?? null
+    );
   }
 
   get identificadorRfidSelecionado(): string {
@@ -83,10 +106,7 @@ export class CadastrarPage implements OnInit, OnDestroy {
 
   form = this.formBuilder.nonNullable.group({
     nome: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(255)]],
-    cpf: ['', [
-      Validators.maxLength(14),
-      Validators.pattern(/^$|^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$/),
-    ]],
+    cpf: ['', [Validators.maxLength(14), Validators.pattern(/^$|^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$/)]],
     tipo_usuario: ['INTERNO' as TipoUsuario, [Validators.required]],
     uid_card: ['', [Validators.maxLength(100)]],
     ativo: [true],
@@ -104,9 +124,11 @@ export class CadastrarPage implements OnInit, OnDestroy {
           dias_semana: [2, 3, 4, 5, 6], // Padrão Seg-Sex
         }));
         this.locaisCarregando = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.locaisCarregando = false;
+        this.cdr.markForCheck();
         this.locaisErro = 'Não foi possível carregar os locais disponíveis.';
       },
     });
@@ -115,14 +137,12 @@ export class CadastrarPage implements OnInit, OnDestroy {
       next: (dispositivos) => {
         this.dispositivosRfid = dispositivos;
         this.dispositivosCarregando = false;
+        this.cdr.markForCheck();
         this.dispositivosErro = '';
 
         if (
           this.dispositivoRfidSelecionadoId !== null &&
-          !dispositivos.some(
-            (item) =>
-              item.dispositivo_id === this.dispositivoRfidSelecionadoId
-          )
+          !dispositivos.some((item) => item.dispositivo_id === this.dispositivoRfidSelecionadoId)
         ) {
           this.dispositivoRfidSelecionadoId = null;
         }
@@ -130,18 +150,14 @@ export class CadastrarPage implements OnInit, OnDestroy {
       error: () => {
         this.dispositivosRfid = [];
         this.dispositivosCarregando = false;
-        this.dispositivosErro =
-          'Não foi possível carregar os dispositivos RFID ativos.';
+        this.cdr.markForCheck();
+        this.dispositivosErro = 'Não foi possível carregar os dispositivos RFID ativos.';
       },
     });
 
     this.wsSubscription = this.wsLogs.obterLogsEmTempoReal().subscribe({
       next: (evento) => {
-        if (
-          evento.type !== 'RFID_LIDO' ||
-          !this.aguardandoRfid ||
-          !evento.data.uid_card
-        ) {
+        if (evento.type !== 'RFID_LIDO' || !this.aguardandoRfid || !evento.data.uid_card) {
           return;
         }
 
@@ -159,8 +175,13 @@ export class CadastrarPage implements OnInit, OnDestroy {
     await this.webcam.carregarModelos();
   }
 
+  fechar(): void {
+    if (!this.saving) this.dialogRef.close({ criado: this.usuarioCriado });
+  }
+
   ngOnDestroy(): void {
     this.pararWebcam();
+    this.speech.parar();
     this.wsSubscription?.unsubscribe();
   }
 
@@ -170,7 +191,7 @@ export class CadastrarPage implements OnInit, OnDestroy {
       this.modoTotem()
         ? 'Modo totem ativado. Auto-captura habilitada.'
         : 'Modo assistido ativado. Captura manual.',
-      true
+      true,
     );
     if (this.webcam.webcamAtiva()) {
       void this.iniciarWebcam();
@@ -216,7 +237,7 @@ export class CadastrarPage implements OnInit, OnDestroy {
     await this.webcam.iniciarWebcam(
       () => this.videoElement,
       this.modoTotem(),
-      () => void this.capturarFrameWebcam()
+      () => void this.capturarFrameWebcam(),
     );
   }
 
@@ -265,11 +286,7 @@ export class CadastrarPage implements OnInit, OnDestroy {
     this.form.get('uid_card')?.markAsTouched();
     this.aguardandoRfid = false;
 
-    this.snackBar.open(
-      `Cartão RFID lido: ${uidNormalizado}`,
-      'OK',
-      { duration: 3500 }
-    );
+    this.snackBar.open(`Cartão RFID lido: ${uidNormalizado}`, 'OK', { duration: 3500 });
     this.speech.falar('Cartão identificado.');
   }
 
@@ -284,7 +301,7 @@ export class CadastrarPage implements OnInit, OnDestroy {
         Math.floor(Math.random() * 256)
           .toString(16)
           .padStart(2, '0')
-          .toUpperCase()
+          .toUpperCase(),
       );
 
       this.aplicarLeituraRfid(bytes.join(''));
@@ -339,60 +356,63 @@ export class CadastrarPage implements OnInit, OnDestroy {
 
     // O usuário é criado sem o UID. O vínculo do cartão passa pelo endpoint
     // específico de RFID, usando o dispositivo que realizou a leitura.
-    this.api.criarUsuario({
-      nome,
-      cpf: cpfNormalizado,
-      tipo_usuario,
-      uid_card: null,
-      vetor_facial: null,
-      ativo,
-      permissoes: permissoesPayload,
-    }).subscribe({
-      next: (usuario) => {
-        this.api.cadastrarCartao(
-          this.identificadorRfidSelecionado,
-          uidNormalizado,
-          usuario.user_id,
-        ).subscribe({
-          next: () => {
-            this.api.cadastrarBiometria(
-              usuario.user_id,
-              this.fotoCapturada!
-            ).subscribe({
-              next: ({ vector_length }) => {
-                this.saving = false;
-                this.successMessage =
-                  `Usuário ${usuario.nome} criado com sucesso (${locaisSelecionados.length} permissões e vetor facial de ${vector_length} dims).`;
-                this.snackBar.open(this.successMessage, 'Fechar', { duration: 6000 });
-                this.speech.falar('Usuário cadastrado com sucesso.');
+    this.api
+      .criarUsuario({
+        nome,
+        cpf: cpfNormalizado,
+        tipo_usuario,
+        uid_card: null,
+        vetor_facial: null,
+        ativo,
+        permissoes: permissoesPayload,
+      })
+      .subscribe({
+        next: (usuario) => {
+          this.usuarioCriado = true;
+          this.api
+            .cadastrarCartao(this.identificadorRfidSelecionado, uidNormalizado, usuario.user_id)
+            .subscribe({
+              next: () => {
+                this.api.cadastrarBiometria(usuario.user_id, this.fotoCapturada!).subscribe({
+                  next: () => {
+                    this.saving = false;
+                    this.cdr.markForCheck();
+                    this.successMessage = `Usuário ${usuario.nome} cadastrado com cartão, biometria e ${locaisSelecionados.length} permissões.`;
+                    this.snackBar.open(this.successMessage, 'Fechar', { duration: 6000 });
+                    this.speech.falar('Usuário cadastrado com sucesso.');
+                    this.dialogRef.close({ criado: true, mensagem: this.successMessage });
+                  },
+                  error: (error) => {
+                    this.saving = false;
+                    this.cdr.markForCheck();
+                    this.errorMessage =
+                      error.error?.detail ||
+                      'Usuário e cartão foram cadastrados, mas não foi possível cadastrar a biometria.';
+                    this.snackBar.open(this.errorMessage, 'Fechar', { duration: 7000 });
+                  },
+                });
               },
               error: (error) => {
                 this.saving = false;
+                this.cdr.markForCheck();
                 this.errorMessage =
-                  error.error?.detail ||
-                  'Usuário e cartão foram cadastrados, mas não foi possível cadastrar a biometria.';
+                  error.status === 400
+                    ? error.error?.detail || 'Este cartão já está cadastrado.'
+                    : 'Usuário criado, mas não foi possível associar o cartão RFID.';
                 this.snackBar.open(this.errorMessage, 'Fechar', { duration: 7000 });
               },
             });
-          },
-          error: (error) => {
-            this.saving = false;
-            this.errorMessage =
-              error.status === 400
-                ? (error.error?.detail || 'Este cartão já está cadastrado.')
-                : 'Usuário criado, mas não foi possível associar o cartão RFID.';
-            this.snackBar.open(this.errorMessage, 'Fechar', { duration: 7000 });
-          },
-        });
-      },
-      error: (error) => {
-        this.saving = false;
-        this.errorMessage = error.status === 409
-          ? (error.error?.detail || 'CPF ou cartão já está cadastrado.')
-          : 'Não foi possível criar o usuário. Verifique se o backend está disponível.';
-        this.snackBar.open(this.errorMessage, 'Fechar', { duration: 6000 });
-      },
-    });
+        },
+        error: (error) => {
+          this.saving = false;
+          this.cdr.markForCheck();
+          this.errorMessage =
+            error.status === 409
+              ? error.error?.detail || 'CPF ou cartão já está cadastrado.'
+              : 'Não foi possível criar o usuário. Verifique se o backend está disponível.';
+          this.snackBar.open(this.errorMessage, 'Fechar', { duration: 6000 });
+        },
+      });
   }
 
   reset(): void {
@@ -402,6 +422,7 @@ export class CadastrarPage implements OnInit, OnDestroy {
     this.scanning = false;
     this.submitted = false;
     this.saving = false;
+    this.cdr.markForCheck();
     this.aguardandoRfid = false;
     this.dispositivoRfidSelecionadoId = null;
     this.successMessage = '';

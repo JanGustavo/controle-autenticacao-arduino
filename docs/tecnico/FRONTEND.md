@@ -141,6 +141,7 @@ Padrões compartilhados:
 src/app/styles/
 ├── _form-pattern.scss
 ├── _table-pattern.scss
+├── _page-pattern.scss
 └── _webcam.scss
 ```
 
@@ -327,3 +328,32 @@ O envio facial é bloqueado durante uma captura já em andamento; a API verifica
 qual aparelho recebeu a tentativa. A seleção usa o processo único do backend,
 como o gerenciador WebSocket atual, e precisa ser refeita após reiniciar o backend.
 Não executar múltiplos workers sem antes compartilhar esse estado entre processos.
+
+
+## Padronização para a AV1 em 08/10/2026
+
+O cabeçalho oferece navegação entre os módulos, indicação da página atual e menu
+recolhível no celular. Cadastro permanece dentro do percurso de Usuários; a
+navegação para outra página retorna ao início do conteúdo. O painel agrupa os
+atalhos em operação e configuração, com Novo usuário como ação inicial.
+
+`_page-pattern.scss` compartilha dimensões, títulos, cores, filtros e espaçamento
+entre painel, cadastro, listagens, locais, dispositivos, administradores,
+auditoria e validação. Dispositivos reutiliza o stylesheet de Locais.
+
+A listagem mostra estado da biometria e nomes de status compreensíveis; detalhes
+de armazenamento não aparecem como instrução de cadastro. Dias de permissão
+usam nomes abreviados e estado de seleção acessível. Cadastro concluído e
+permissões oferecem caminhos para continuar até a validação. A simulação RFID
+na validação fica em uma seção recolhível; cartão, rosto e resultado aparecem
+como sequência de orientação.
+
+A revisão visual usou dados fictícios em uma API temporária isolada, sem escrever
+no banco real. A captura física de cartão/rosto e a sinalização do ESP32 ainda
+precisam da verificação em bancada antes dos prints finais da apresentação.
+
+### Cadastro integrado em Usuários
+
+A página Usuários oferece o botão **Cadastrar usuário**, que abre o formulário existente em um diálogo amplo, em tela cheia no celular. Ao concluir dados, cartão e biometria, o diálogo fecha e a listagem recarrega. A rota antiga `/cadastrar` redireciona para `/usuarios`. Fechar o diálogo libera a webcam e a assinatura dos eventos RFID. A edição continua disponível pelo modal de edição da listagem.
+
+Os cabeçalhos compartilhados permitem quebra de linha e reservam espaçamento entre o link de retorno e os textos de contexto. A abertura e o fechamento do cadastro foram conferidos em prévia com dados fictícios no computador e no celular; o cadastro físico permanece pendente de validação com o hardware.

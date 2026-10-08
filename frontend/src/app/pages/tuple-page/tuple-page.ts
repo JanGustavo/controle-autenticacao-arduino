@@ -1,4 +1,12 @@
-import { ChangeDetectorRef, Component, inject, input, OnInit, OnDestroy, signal } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  inject,
+  input,
+  OnInit,
+  OnDestroy,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -7,21 +15,23 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { TuplePageConfig } from '../../models/tuple-page.model';
-import { ApiService, HistoricoAcessoResponse, LocalResponse, PermissaoRequest, PermissaoResponse, UsuarioResponse, UsuarioSimplesResponse } from '../../services/api.service';
+import {
+  ApiService,
+  HistoricoAcessoResponse,
+  LocalResponse,
+  PermissaoRequest,
+  PermissaoResponse,
+  UsuarioResponse,
+  UsuarioSimplesResponse,
+} from '../../services/api.service';
+import { CadastrarPage } from '../cadastrar/cadastrar';
 import { UserEditDialog } from './user-edit-dialog';
 import { WebSocketLogsService, WebSocketLogEvent } from '../../services/websocket-logs.service';
 
 @Component({
   selector: 'app-tuple-page',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatButtonModule,
-    MatIconModule,
-    MatDialogModule,
-    RouterLink,
-  ],
+  imports: [CommonModule, FormsModule, MatButtonModule, MatIconModule, MatDialogModule, RouterLink],
   templateUrl: './tuple-page.html',
   styleUrl: './tuple-page.scss',
 })
@@ -66,9 +76,9 @@ export class TuplePage implements OnInit, OnDestroy {
     const termo = this.filtroTexto().trim().toLowerCase();
     if (termo) {
       rows = rows.filter((row) =>
-        Object.values(row).some((val) =>
-          val !== null && val !== undefined && String(val).toLowerCase().includes(termo)
-        )
+        Object.values(row).some(
+          (val) => val !== null && val !== undefined && String(val).toLowerCase().includes(termo),
+        ),
       );
     }
 
@@ -110,6 +120,26 @@ export class TuplePage implements OnInit, OnDestroy {
     return rows;
   }
 
+  cadastrarUsuario(): void {
+    const ref = this.dialog.open(CadastrarPage, {
+      width: '1000px',
+      maxWidth: '96vw',
+      maxHeight: '92dvh',
+      autoFocus: false,
+      restoreFocus: true,
+      disableClose: true,
+      ariaLabelledBy: 'user-create-title',
+      panelClass: 'ard-user-create-dialog',
+    });
+    ref.afterClosed().subscribe((resultado) => {
+      if (!resultado?.criado) return;
+      this.acaoNotice =
+        resultado.mensagem || 'Lista atualizada. Confira os dados do usuário criado.';
+      this.carregarDados();
+      this.cdr.markForCheck();
+    });
+  }
+
   editarUsuario(row: Record<string, unknown>): void {
     const usuarioId = Number(row['user_id']);
     if (!usuarioId) return;
@@ -143,21 +173,21 @@ export class TuplePage implements OnInit, OnDestroy {
   }
 
   excluirUsuario(row: Record<string, unknown>): void {
-  const id = Number(row['user_id']);
-  if (!confirm('Deseja realmente excluir este usuário?')) return;
+    const id = Number(row['user_id']);
+    if (!confirm('Deseja realmente excluir este usuário?')) return;
 
-  this.api.deletarUsuario(id).subscribe({
-    next: () => {
-      this.carregarDados();
-      this.acaoNotice = 'Usuário excluído com sucesso.';
-    },
-    error: (err) => {
-      console.error('Erro ao excluir usuário:', err);
-      this.dataNotice.set('Não foi possível excluir o usuário.');
-      this.cdr.markForCheck();
-    },
-  });
-}
+    this.api.deletarUsuario(id).subscribe({
+      next: () => {
+        this.carregarDados();
+        this.acaoNotice = 'Usuário excluído com sucesso.';
+      },
+      error: (err) => {
+        console.error('Erro ao excluir usuário:', err);
+        this.dataNotice.set('Não foi possível excluir o usuário.');
+        this.cdr.markForCheck();
+      },
+    });
+  }
 
   limparFiltros(): void {
     this.filtroTexto.set('');
@@ -225,7 +255,8 @@ export class TuplePage implements OnInit, OnDestroy {
     const termo = this.filtroTexto().trim() || undefined;
 
     if (this.config?.resource === 'historico') {
-      const autBool = this.filtroAutorizado() === 'todos' ? undefined : this.filtroAutorizado() === 'autorizado';
+      const autBool =
+        this.filtroAutorizado() === 'todos' ? undefined : this.filtroAutorizado() === 'autorizado';
       this.api
         .getHistoricoAcesso({
           q: termo,
@@ -295,7 +326,7 @@ export class TuplePage implements OnInit, OnDestroy {
       cpf: this.formatarCpf(usuario.cpf),
       tipo_usuario: usuario.tipo_usuario === 'VISITANTE' ? 'Visitante' : 'Interno',
       uid_card: usuario.uid_card ?? '-',
-      vetor_facial: usuario.vetor_facial && qtdVetor > 0 ? `${qtdVetor} dimensões` : 'Não Cadastrado',
+      vetor_facial: usuario.vetor_facial && qtdVetor > 0 ? 'Cadastrada' : 'Não Cadastrado',
       ativo: usuario.ativo ? 'Sim' : 'Não',
       criado_em: this.formatarDataHora(usuario.criado_em, false),
     };
@@ -321,10 +352,15 @@ export class TuplePage implements OnInit, OnDestroy {
 
   private formatarDias(dias: number[]): string {
     const nomes = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-    return dias.length ? dias.map((dia) => nomes[dia - 1] ?? `Dia ${dia}`).join(', ') : 'Nenhum dia definido';
+    return dias.length
+      ? dias.map((dia) => nomes[dia - 1] ?? `Dia ${dia}`).join(', ')
+      : 'Nenhum dia definido';
   }
 
-  private formatarDataHora(dataStr: string | null | undefined, incluirSegundos: boolean = true): string {
+  private formatarDataHora(
+    dataStr: string | null | undefined,
+    incluirSegundos: boolean = true,
+  ): string {
     if (!dataStr) return '-';
     try {
       const d = new Date(dataStr);
@@ -347,26 +383,26 @@ export class TuplePage implements OnInit, OnDestroy {
   }
 
   private atualizarLinhasPermissoes(): void {
-    this.rowsFromApi.set(
-      this.permissoes.map((permissao) => this.toPermissionRow(permissao))
-    );
+    this.rowsFromApi.set(this.permissoes.map((permissao) => this.toPermissionRow(permissao)));
   }
 
   private atualizarLinhasHistorico(): void {
-    this.rowsFromApi.set(
-      this.historico.map((registro) => this.toHistoryRow(registro))
-    );
+    this.rowsFromApi.set(this.historico.map((registro) => this.toHistoryRow(registro)));
   }
 
   private toHistoryRow(registro: HistoricoAcessoResponse): Record<string, unknown> {
     const sim = registro.percentual_similaridade;
     // Backend envia similaridade como decimal (0.0 a 1.0). Converter para % se necessário.
-    const simDisplay = sim !== null && sim !== undefined
-      ? (sim > 1 ? `${sim.toFixed(2)}%` : `${(sim * 100).toFixed(2)}%`)
-      : '-';
+    const simDisplay =
+      sim !== null && sim !== undefined
+        ? sim > 1
+          ? `${sim.toFixed(2)}%`
+          : `${(sim * 100).toFixed(2)}%`
+        : '-';
 
     return {
-      usuario_id: registro.usuario_id === null ? 'Não identificado' : this.nomeUsuario(registro.usuario_id),
+      usuario_id:
+        registro.usuario_id === null ? 'Não identificado' : this.nomeUsuario(registro.usuario_id),
       local_id: registro.local_id === null ? 'Não identificado' : this.nomeLocal(registro.local_id),
       uid_card_lido: registro.uid_card_lido ?? '-',
       data_hora: this.formatarDataHora(registro.data_hora, true),
@@ -401,23 +437,29 @@ export class TuplePage implements OnInit, OnDestroy {
   salvarPermissao(): void {
     this.acaoNotice = '';
     const request = { ...this.permissaoForm, dias_semana: this.permissaoForm.dias_semana };
-    const chamada = this.editandoPermissaoId === null
-      ? this.api.criarPermissao(request)
-      : this.api.atualizarPermissao(this.editandoPermissaoId, request);
+    const chamada =
+      this.editandoPermissaoId === null
+        ? this.api.criarPermissao(request)
+        : this.api.atualizarPermissao(this.editandoPermissaoId, request);
 
     chamada.subscribe({
       next: (permissao) => {
-        const permissoes = this.permissoes.filter((item) => item.permissao_id !== permissao.permissao_id);
-        this.permissoes = [...permissoes, permissao].sort((a, b) => a.permissao_id - b.permissao_id);
+        const permissoes = this.permissoes.filter(
+          (item) => item.permissao_id !== permissao.permissao_id,
+        );
+        this.permissoes = [...permissoes, permissao].sort(
+          (a, b) => a.permissao_id - b.permissao_id,
+        );
         this.rowsFromApi.set(this.permissoes.map((item) => this.toPermissionRow(item)));
         this.acaoNotice = 'Permissão salva com sucesso.';
         this.cancelarEdicao();
         this.cdr.markForCheck();
       },
       error: (error) => {
-        this.acaoNotice = error.status === 409
-          ? 'Já existe uma permissão para este usuário e local.'
-          : 'Não foi possível salvar a permissão.';
+        this.acaoNotice =
+          error.status === 409
+            ? 'Já existe uma permissão para este usuário e local.'
+            : 'Não foi possível salvar a permissão.';
         this.cdr.markForCheck();
       },
     });
@@ -457,13 +499,25 @@ export class TuplePage implements OnInit, OnDestroy {
   }
 
   nomeDia(dia: number): string {
-    return ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'][dia - 1] ?? `Dia ${dia}`;
+    return (
+      [
+        'Domingo',
+        'Segunda-feira',
+        'Terça-feira',
+        'Quarta-feira',
+        'Quinta-feira',
+        'Sexta-feira',
+        'Sábado',
+      ][dia - 1] ?? `Dia ${dia}`
+    );
   }
 
   isBadgeStatus(val: any): boolean {
     if (typeof val !== 'string') return false;
     const lower = val.toLowerCase();
-    return ['sucesso', 'negado', 'alerta', 'ativo', 'inativo', 'pendente', 'sim', 'não'].includes(lower);
+    return ['sucesso', 'negado', 'alerta', 'ativo', 'inativo', 'pendente', 'sim', 'não'].includes(
+      lower,
+    );
   }
 
   getStatusClass(val: string): string {

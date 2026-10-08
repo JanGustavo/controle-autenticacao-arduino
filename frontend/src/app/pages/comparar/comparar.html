@@ -3,19 +3,19 @@
     <div class="header">
       <div class="header-top">
         <a routerLink="/adm-page" class="back-link">
-          <mat-icon>arrow_back</mat-icon> Painel Administrativo
+          <mat-icon>arrow_back</mat-icon> Painel administrativo
         </a>
 
         <div class="header-actions">
-          <button mat-stroked-button (click)="selecionarAparelho()" [disabled]="captura.carregando()">
+          <button
+            mat-stroked-button
+            (click)="selecionarAparelho()"
+            [disabled]="captura.carregando()"
+          >
             <mat-icon>videocam</mat-icon>
             {{ captura.ativa() ? 'Câmera neste aparelho' : 'Usar câmera deste aparelho' }}
           </button>
-          <button
-            mat-stroked-button
-            (click)="toggleKioskFullscreen()"
-            title="Atalho: F11"
-          >
+          <button mat-stroked-button (click)="toggleKioskFullscreen()" title="Atalho: F11">
             <mat-icon>
               {{ modoKioskFullscreen() ? 'fullscreen_exit' : 'fullscreen' }}
             </mat-icon>
@@ -36,25 +36,26 @@
       </div>
 
       <span class="eyebrow">Fluxo de autenticação</span>
-      <h2>Validação de Acesso Facial</h2>
+      <h2>Validar acesso</h2>
       <p>
         {{
           tentativaId()
             ? 'Tentativa criada. A face será comparada somente com o titular do cartão RFID.'
-            : 'Use o RFID físico ou simule uma leitura abaixo para iniciar o fluxo 1:1.'
+            : 'Aproxime o cartão do leitor e siga as orientações para confirmar o rosto.'
         }}
       </p>
     </div>
 
-    <section class="simulator-card">
+    <details class="simulator-card">
+      <summary>
+        <mat-icon>science</mat-icon> Testar sem leitor RFID
+        <span>Expandir opções de simulação</span>
+      </summary>
       <div class="simulator-heading">
         <div>
           <span class="eyebrow">Sem hardware</span>
           <h3>Simulador de leitura RFID</h3>
-          <p>
-            Dispara os mesmos endpoints usados pelo ESP32 e cria uma tentativa
-            real no backend. Nenhum endpoint paralelo de teste é usado.
-          </p>
+          <p>Selecione uma pessoa e um dispositivo para testar o mesmo fluxo de acesso.</p>
         </div>
 
         @if (tentativaId()) {
@@ -75,10 +76,7 @@
           >
             <option [ngValue]="null">Selecione um usuário</option>
             @for (usuario of usuarios; track usuario.user_id) {
-              <option
-                [ngValue]="usuario.user_id"
-                [disabled]="!usuario.uid_card"
-              >
+              <option [ngValue]="usuario.user_id" [disabled]="!usuario.uid_card">
                 {{ usuario.nome }}
                 {{ usuario.uid_card ? ' · ' + usuario.uid_card : ' · sem RFID' }}
               </option>
@@ -111,8 +109,7 @@
             [disabled]="iniciandoTentativa() || !!tentativaId()"
           />
           <small>
-            Você pode selecionar um usuário ou informar um UID cadastrado
-            manualmente.
+            Você pode selecionar um usuário ou informar um UID cadastrado manualmente.
           </small>
         </label>
       </div>
@@ -147,9 +144,16 @@
           RFID → tentativa → face 1:1 → decisão → histórico
         </div>
       </div>
-    </section>
+    </details>
   }
 
+  @if (!modoKioskFullscreen()) {
+    <ol class="access-steps" aria-label="Etapas do acesso">
+      <li><span>1</span> Aproxime o cartão</li>
+      <li><span>2</span> Posicione o rosto</li>
+      <li><span>3</span> Confira o resultado</li>
+    </ol>
+  }
   <div class="totem-grid">
     <div class="card-cam">
       @if (webcam.carregandoHardware()) {
@@ -173,11 +177,7 @@
 
           <div class="status-badge" [ngClass]="webcam.tipoStatus()">
             <mat-icon>
-              {{
-                webcam.tipoStatus() === 'success'
-                  ? 'check_circle'
-                  : 'warning'
-              }}
+              {{ webcam.tipoStatus() === 'success' ? 'check_circle' : 'warning' }}
             </mat-icon>
             <span>{{ webcam.statusValidacao() }}</span>
           </div>
@@ -195,9 +195,7 @@
                     r="48%"
                     cx="50%"
                     cy="50%"
-                    [style.strokeDashoffset]="
-                      600 - (600 * webcam.progressoAutoCaptura()) / 100
-                    "
+                    [style.strokeDashoffset]="600 - (600 * webcam.progressoAutoCaptura()) / 100"
                   />
                 </svg>
               }
@@ -217,9 +215,15 @@
           @if (webcam.modoDebug()) {
             <div class="debug-hud">
               <div class="hud-metrics">
-                <span>LUMA: <b>{{ webcam.valorLuma() }}</b></span>
-                <span>EAR: <b>{{ webcam.earAtual() }}</b></span>
-                <span>ROSTO: <b>{{ webcam.proporcaoAtual() }}%</b></span>
+                <span
+                  >LUMA: <b>{{ webcam.valorLuma() }}</b></span
+                >
+                <span
+                  >EAR: <b>{{ webcam.earAtual() }}</b></span
+                >
+                <span
+                  >ROSTO: <b>{{ webcam.proporcaoAtual() }}%</b></span
+                >
               </div>
               <span class="hud-badge">CUBETERNET DEBUG</span>
             </div>
@@ -231,28 +235,20 @@
         </div>
       }
 
-      @if (
-        !webcam.webcamAtiva() &&
-        !fotoPreviewUrl &&
-        !webcam.carregandoHardware()
-      ) {
+      @if (!webcam.webcamAtiva() && !fotoPreviewUrl && !webcam.carregandoHardware()) {
         <div class="placeholder-cam">
           <mat-icon>{{ tentativaId() ? 'face' : 'badge' }}</mat-icon>
           <p>
             {{
               tentativaId()
                 ? 'Tentativa pronta para validação facial 1:1'
-                : 'Leia ou simule um cartão RFID para começar'
+                : 'Aproxime o cartão do leitor para começar'
             }}
           </p>
         </div>
       }
 
-      @if (
-        fotoPreviewUrl &&
-        !webcam.webcamAtiva() &&
-        !exibirOverlayTotem()
-      ) {
+      @if (fotoPreviewUrl && !webcam.webcamAtiva() && !exibirOverlayTotem()) {
         <div class="preview-cam">
           <img [src]="fotoPreviewUrl" alt="Foto capturada" />
         </div>
@@ -268,11 +264,7 @@
               [disabled]="!tentativaId()"
             >
               <mat-icon>videocam</mat-icon>
-              {{
-                tentativaId()
-                  ? 'Iniciar validação facial'
-                  : 'Aguardando tentativa RFID'
-              }}
+              {{ tentativaId() ? 'Iniciar validação facial' : 'Aguardando tentativa RFID' }}
             </button>
           }
 
@@ -304,13 +296,7 @@
           [class.pending]="!!tentativaId() && !aprovado()"
         >
           <mat-icon>
-            {{
-              aprovado()
-                ? 'check_circle'
-                : tentativaId()
-                  ? 'hourglass_top'
-                  : 'info'
-            }}
+            {{ aprovado() ? 'check_circle' : tentativaId() ? 'hourglass_top' : 'info' }}
           </mat-icon>
           <span>{{ mensagemStatus() }}</span>
         </div>
@@ -320,7 +306,7 @@
     <div class="card-logs">
       <h3>
         <mat-icon>history</mat-icon>
-        Últimos Acessos
+        Últimos acessos
       </h3>
 
       <div class="logs-list">
@@ -337,9 +323,7 @@
 
               <div class="log-meta">
                 <span class="user-name">{{ obterNomeUsuario(log) }}</span>
-                <span class="local-name">
-                  &bull; {{ obterNomeLocal(log) }}
-                </span>
+                <span class="local-name"> &bull; {{ obterNomeLocal(log) }} </span>
               </div>
 
               <small>
@@ -349,7 +333,12 @@
               @if (log.percentual_similaridade !== null) {
                 <p>
                   Similaridade:
-                  {{ (log.percentual_similaridade > 1 ? log.percentual_similaridade : log.percentual_similaridade * 100) | number: '1.2-2' }}%
+                  {{
+                    (log.percentual_similaridade > 1
+                      ? log.percentual_similaridade
+                      : log.percentual_similaridade * 100
+                    ) | number: '1.2-2'
+                  }}%
                 </p>
               }
 
@@ -366,22 +355,14 @@
   </div>
 
   @if (exibirOverlayTotem()) {
-    <div
-      class="totem-overlay"
-      [class.liberado]="aprovado()"
-      [class.negado]="!aprovado()"
-    >
+    <div class="totem-overlay" [class.liberado]="aprovado()" [class.negado]="!aprovado()">
       <div class="totem-card">
         <mat-icon class="totem-icon">
           {{ aprovado() ? 'check_circle' : 'cancel' }}
         </mat-icon>
 
         @if (fotoPreviewUrl) {
-          <img
-            [src]="fotoPreviewUrl"
-            class="totem-avatar"
-            alt="Rosto capturado"
-          />
+          <img [src]="fotoPreviewUrl" class="totem-avatar" alt="Rosto capturado" />
         }
 
         <h1>
@@ -395,8 +376,8 @@
         <div class="totem-details">
           @if (similaridade() > 0) {
             <span class="totem-similaridade">
-              Similaridade: {{ similaridade() * 100 | number: '1.2-2' }}%
-              (mínimo {{ minSimilaridade() * 100 | number: '1.0-0' }}%)
+              Similaridade: {{ similaridade() * 100 | number: '1.2-2' }}% (mínimo
+              {{ minSimilaridade() * 100 | number: '1.0-0' }}%)
             </span>
           }
 

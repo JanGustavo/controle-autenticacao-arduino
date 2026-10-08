@@ -1,11 +1,18 @@
 <main class="register-page">
   <header class="page-header">
-    <a routerLink="/adm-page" class="back-link">
-      <mat-icon>arrow_back</mat-icon>
-      Painel administrativo
-    </a>
-    <span class="eyebrow"></span>
-    <h1>Cadastrar usuário</h1>
+    <div class="dialog-heading">
+      <span class="eyebrow">Gestão de acesso</span>
+      <button
+        type="button"
+        mat-icon-button
+        aria-label="Fechar cadastro"
+        [disabled]="saving"
+        (click)="fechar()"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <h1 id="user-create-title">Cadastrar usuário</h1>
     <p>Preencha os dados que serão usados no controle de acesso.</p>
   </header>
 
@@ -66,7 +73,9 @@
             [disabled]="saving || aguardandoRfid || dispositivosCarregando"
           >
             <option [ngValue]="null">
-              {{ dispositivosCarregando ? 'Carregando dispositivos...' : 'Selecione o ESP32/leitor' }}
+              {{
+                dispositivosCarregando ? 'Carregando dispositivos...' : 'Selecione o ESP32/leitor'
+              }}
             </option>
             @for (dispositivo of dispositivosRfid; track dispositivo.dispositivo_id) {
               <option [ngValue]="dispositivo.dispositivo_id">
@@ -82,7 +91,7 @@
           }
 
           <label for="uid_card_input">
-            <span>UID do cartão <b>*</b></span>
+            <span>Cartão RFID <b>*</b></span>
           </label>
 
           <div class="input-with-action">
@@ -140,8 +149,8 @@
 
           <small class="rfid-hint">
             <mat-icon class="hint-icon">sensors</mat-icon>
-            Selecione o dispositivo e aguarde a leitura. O UID recebido pelo ESP32
-            será preenchido automaticamente via WebSocket.
+            Selecione o dispositivo e aguarde a leitura. O UID recebido pelo ESP32 será preenchido
+            automaticamente via WebSocket.
           </small>
         </div>
       </div>
@@ -152,8 +161,8 @@
         <span class="section-number">02</span>
         <div class="heading-with-action">
           <div>
-            <h2>Vetor facial <em>JSONB</em></h2>
-            <p>Capture o rosto para preencher o vetor facial.</p>
+            <h2>Biometria facial</h2>
+            <p>Cadastre o rosto para confirmar o titular do cartão.</p>
           </div>
           <button
             type="button"
@@ -182,7 +191,9 @@
 
           <!-- Badge Visual Dinâmico de IA -->
           <div class="status-badge" [ngClass]="webcam.tipoStatus()">
-            <mat-icon>{{ webcam.tipoStatus() === 'success' ? 'check_circle' : 'warning' }}</mat-icon>
+            <mat-icon>{{
+              webcam.tipoStatus() === 'success' ? 'check_circle' : 'warning'
+            }}</mat-icon>
             <span>{{ webcam.statusValidacao() }}</span>
           </div>
 
@@ -200,9 +211,7 @@
                     r="48%"
                     cx="50%"
                     cy="50%"
-                    [style.strokeDashoffset]="
-                      600 - (600 * webcam.progressoAutoCaptura()) / 100
-                    "
+                    [style.strokeDashoffset]="600 - (600 * webcam.progressoAutoCaptura()) / 100"
                   />
                 </svg>
               }
@@ -219,9 +228,15 @@
           @if (webcam.modoDebug()) {
             <div class="debug-hud">
               <div class="hud-metrics">
-                <span>LUMA: <b>{{ webcam.valorLuma() }}</b></span>
-                <span>EAR: <b>{{ webcam.earAtual() }}</b></span>
-                <span>ROSTO: <b>{{ webcam.proporcaoAtual() }}%</b></span>
+                <span
+                  >LUMA: <b>{{ webcam.valorLuma() }}</b></span
+                >
+                <span
+                  >EAR: <b>{{ webcam.earAtual() }}</b></span
+                >
+                <span
+                  >ROSTO: <b>{{ webcam.proporcaoAtual() }}%</b></span
+                >
               </div>
               <span class="hud-badge">CUBETERNET DEBUG</span>
             </div>
@@ -268,13 +283,13 @@
                 ? 'Captura pronta para validação'
                 : fotoPreviewUrl
                   ? 'Captura selecionada'
-                  : 'Nenhum vetor facial capturado'
+                  : 'Biometria ainda não capturada'
             }}</strong>
             <small>{{
               webcam.capturaPronta()
-                ? 'A imagem será enviada e convertida em um vetor de 128 números ao salvar.'
+                ? 'Ao salvar, o sistema processará a imagem para cadastrar a referência biométrica.'
                 : fotoPreviewUrl
-                  ? 'A imagem será validada e vetorizada antes do cadastro.'
+                  ? 'A imagem será verificada antes de cadastrar a biometria.'
                   : 'Ative a webcam ou selecione um arquivo de imagem com um rosto visível.'
             }}</small>
           </div>
@@ -393,6 +408,7 @@
                         <button
                           type="button"
                           [class.selected]="item.dias_semana.includes(dia.id)"
+                          [attr.aria-pressed]="item.dias_semana.includes(dia.id)"
                           (click)="toggleDiaLocal(item, dia.id)"
                         >
                           {{ dia.label }}
@@ -423,7 +439,8 @@
     }
 
     <footer class="form-actions">
-      <button type="button" mat-button (click)="reset()">Limpar</button>
+      <button type="button" mat-button [disabled]="saving" (click)="fechar()">Cancelar</button>
+      <button type="button" mat-button [disabled]="saving" (click)="reset()">Limpar</button>
       <button type="submit" mat-flat-button color="primary" [disabled]="saving">
         <mat-icon>person_add</mat-icon>
         {{ saving ? 'Salvando...' : 'Criar usuário' }}

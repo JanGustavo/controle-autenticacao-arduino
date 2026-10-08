@@ -18,18 +18,18 @@ export interface TuplePageConfig {
 }
 
 export const DASHBOARD_MOCK: TuplePageConfig = {
-  title: 'Dashboard / Histórico de Acesso',
-  subtitle: 'Métricas e log de entradas (historico_acesso)',
+  title: 'Histórico de acesso',
+  subtitle: 'Consulte tentativas, resultados e motivos de recusa.',
   icon: 'dashboard',
   accentColor: 'blue',
   resource: 'historico',
   columns: [
-    { key: 'usuario_id', label: 'ID Usuário' },
+    { key: 'usuario_id', label: 'Usuário' },
     { key: 'local_id', label: 'Local' },
-    { key: 'uid_card_lido', label: 'UID Card Lido' },
+    { key: 'uid_card_lido', label: 'Cartão RFID' },
     { key: 'data_hora', label: 'Data / Hora' },
-    { key: 'autorizado', label: 'Autorizado' },
-    { key: 'percentual_similaridade', label: '% Similaridade' },
+    { key: 'autorizado', label: 'Resultado' },
+    { key: 'percentual_similaridade', label: 'Similaridade' },
     { key: 'motivo_recusa', label: 'Motivo Recusa' },
   ],
   rows: [],
@@ -48,15 +48,25 @@ export const CADASTRAR_MOCK: TuplePageConfig = {
   ],
   rows: [
     { coluna: 'nome', tipo: 'VARCHAR(255)', valor_mock: 'João Silva', obrigatorio: 'Sim' },
-    { coluna: 'uid_card', tipo: 'VARCHAR(100)', valor_mock: 'A1:B2:C3:D4', obrigatorio: 'Não (Único)' },
-    { coluna: 'vetor_facial', tipo: 'JSONB', valor_mock: '[0.123, 0.456, 0.789]', obrigatorio: 'Não' },
+    {
+      coluna: 'uid_card',
+      tipo: 'VARCHAR(100)',
+      valor_mock: 'A1:B2:C3:D4',
+      obrigatorio: 'Não (Único)',
+    },
+    {
+      coluna: 'vetor_facial',
+      tipo: 'JSONB',
+      valor_mock: '[0.123, 0.456, 0.789]',
+      obrigatorio: 'Não',
+    },
     { coluna: 'ativo', tipo: 'BOOLEAN', valor_mock: 'true', obrigatorio: 'Sim (Default: true)' },
   ],
 };
 
 export const USUARIOS_MOCK: TuplePageConfig = {
   title: 'Usuários',
-  subtitle: 'Gerenciar registros da tabela usuario',
+  subtitle: 'Gerencie dados, cartões e biometria das pessoas cadastradas.',
   icon: 'group',
   accentColor: 'orange',
   resource: 'usuarios',
@@ -65,17 +75,17 @@ export const USUARIOS_MOCK: TuplePageConfig = {
     { key: 'nome', label: 'Nome' },
     { key: 'cpf', label: 'CPF' },
     { key: 'tipo_usuario', label: 'Tipo' },
-    { key: 'uid_card', label: 'UID Card' },
-    { key: 'vetor_facial', label: 'Vetor Facial' },
-    { key: 'ativo', label: 'Ativo' },
-    { key: 'criado_em', label: 'Criado Em' },
+    { key: 'uid_card', label: 'Cartão RFID' },
+    { key: 'vetor_facial', label: 'Biometria' },
+    { key: 'ativo', label: 'Status' },
+    { key: 'criado_em', label: 'Cadastrado em' },
   ],
   rows: [],
 };
 
 export const PERMISSOES_MOCK: TuplePageConfig = {
   title: 'Permissões',
-  subtitle: 'Regras da tabela permissao',
+  subtitle: 'Defina onde e quando cada pessoa pode acessar.',
   icon: 'schedule',
   accentColor: 'purple',
   resource: 'permissoes',

@@ -1,9 +1,8 @@
+@use '../../styles/page-pattern' as pages;
 @use '../../styles/form-pattern' as forms;
-@use '../../styles/table-pattern' as tables;
 @use '../../styles/webcam';
 
 @include forms.ard-form-pattern;
-@include tables.ard-table-pattern;
 
 :host {
   display: block;
@@ -167,7 +166,9 @@ textarea,
   font: inherit;
   font-weight: 400;
   outline: 0;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 input:not([type='checkbox']):focus,
@@ -462,11 +463,11 @@ textarea:focus,
   transition: transform 0.15s ease;
 }
 
-.switch-field input:checked+.switch {
+.switch-field input:checked + .switch {
   background: var(--accent);
 }
 
-.switch-field input:checked+.switch::after {
+.switch-field input:checked + .switch::after {
   transform: translateX(16px);
 }
 
@@ -802,25 +803,68 @@ textarea:focus,
   -webkit-transform: scaleX(-1) !important;
 }
 @media (max-width: 760px) {
- .register-page { padding: 24px 16px 32px; }
- .register-form { margin-top: 24px; }
- .form-section { padding: 20px 16px; }
- .field-grid { grid-template-columns: minmax(0, 1fr); }
- .field-grid > *, .camera-capture { min-width: 0; }
- .section-heading { gap: 10px; }
- .form-actions { padding: 16px; }
+  .register-page {
+    padding: 24px 16px 32px;
+  }
+  .register-form {
+    margin-top: 24px;
+  }
+  .form-section {
+    padding: 20px 16px;
+  }
+  .field-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .field-grid > *,
+  .camera-capture {
+    min-width: 0;
+  }
+  .section-heading {
+    gap: 10px;
+  }
+  .form-actions {
+    padding: 16px;
+  }
 }
 
 @media (max-width: 760px) {
- .uid-field .input-with-action { flex-direction: column; align-items: stretch; }
- .uid-field .input-with-action input { width: 100%; }
- .uid-field .input-with-action .btn-rfid-mock { width: 100%; justify-content: center; }
- .local-card-config .local-body .schedule-grid { grid-template-columns: minmax(0, 1fr); }
+  .uid-field .input-with-action {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .uid-field .input-with-action input {
+    width: 100%;
+  }
+  .uid-field .input-with-action .btn-rfid-mock {
+    width: 100%;
+    justify-content: center;
+  }
+  .local-card-config .local-body .schedule-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .uid-field > label {
- position: static !important;
- padding: 0 !important;
- background: transparent !important;
- font-size: .85rem !important;
+  position: static !important;
+  padding: 0 !important;
+  background: transparent !important;
+  font-size: 0.85rem !important;
+}
+
+@include pages.ard-page-pattern('.register-page');
+
+.register-page {
+  padding: 24px;
+  background: var(--ard-surface);
+}
+.dialog-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+@media (max-width: 760px) {
+  .register-page {
+    padding: 16px;
+  }
 }

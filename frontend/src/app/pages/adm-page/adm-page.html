@@ -1,142 +1,41 @@
 <div class="adm-wrapper">
-  <div class="adm-header">
-    <span class="eyebrow">Módulos do sistema</span>
+  <header class="adm-header">
+    <span class="eyebrow">Gestão de acesso</span>
     <h2>Painel administrativo</h2>
+    <p>Cadastre pessoas, configure permissões e acompanhe os acessos.</p>
+  </header>
+  <div class="panel-start">
+    <div>
+      <strong>Prepare o próximo acesso</strong>
+      <p>Cadastre o usuário com cartão, biometria e permissões.</p>
+    </div>
+    <a routerLink="/usuarios" mat-flat-button><mat-icon>person_add</mat-icon>Gerenciar usuários</a>
   </div>
-
-  <div class="grid-menu">
-    <a routerLink="/dashboard" class="tile-card blue">
-      <div class="tile-top">
-        <div class="tile-icon">
-          <mat-icon>dashboard</mat-icon>
-        </div>
-        <mat-icon class="tile-arrow">arrow_forward</mat-icon>
+  @if (erro()) {
+    <p class="panel-error" role="alert"><mat-icon>cloud_off</mat-icon>{{ erro() }}</p>
+  }
+  @for (grupo of grupos; track grupo.title) {
+    <section class="panel-group">
+      <div class="group-heading">
+        <h3>{{ grupo.title }}</h3>
+        <p>{{ grupo.description }}</p>
       </div>
-      <div class="tile-info">
-        <h3>Dashboard / Logs</h3>
-        <p>Métricas e histórico</p>
+      <div class="grid-menu">
+        @for (link of grupo.links; track link.path) {
+          <a [routerLink]="link.path" class="tile-card">
+            <div class="tile-top">
+              <div class="tile-icon">
+                <mat-icon>{{ link.icon }}</mat-icon>
+              </div>
+              <mat-icon class="tile-arrow">arrow_forward</mat-icon>
+            </div>
+            <div class="tile-info">
+              <h3>{{ link.title }}</h3>
+              <p>{{ link.description }}</p>
+            </div>
+          </a>
+        }
       </div>
-    </a>
-
-    <a routerLink="/cadastrar" class="tile-card green">
-      <div class="tile-top">
-        <div class="tile-icon">
-          <mat-icon>person_add</mat-icon>
-        </div>
-        <mat-icon class="tile-arrow">arrow_forward</mat-icon>
-      </div>
-      <div class="tile-info">
-        <h3>Cadastrar Usuário</h3>
-        <p>Cadastrar novos usuários</p>
-      </div>
-    </a>
-
-    <a routerLink="/usuarios" class="tile-card orange">
-      <div class="tile-top">
-        <div class="tile-icon">
-          <mat-icon>group</mat-icon>
-        </div>
-        <mat-icon class="tile-arrow">arrow_forward</mat-icon>
-      </div>
-      <div class="tile-info">
-        <h3>Usuários</h3>
-        <p>Gerenciar cadastros</p>
-      </div>
-    </a>
-
-    <a routerLink="/permissoes" class="tile-card purple">
-      <div class="tile-top">
-        <div class="tile-icon">
-          <mat-icon>schedule</mat-icon>
-        </div>
-        <mat-icon class="tile-arrow">arrow_forward</mat-icon>
-      </div>
-      <div class="tile-info">
-        <h3>Permissões</h3>
-        <p>Janelas de acesso</p>
-      </div>
-    </a>
-
-    <a routerLink="/locais" class="tile-card blue">
-      <div class="tile-top">
-        <div class="tile-icon">
-          <mat-icon>location_on</mat-icon>
-        </div>
-        <mat-icon class="tile-arrow">arrow_forward</mat-icon>
-      </div>
-      <div class="tile-info">
-        <h3>Locais</h3>
-        <p>Gerenciar pontos de acesso</p>
-      </div>
-    </a>
-
-    <a routerLink="/dispositivos" class="tile-card teal">
-      <div class="tile-top">
-        <div class="tile-icon">
-          <mat-icon>memory</mat-icon>
-        </div>
-        <mat-icon class="tile-arrow">arrow_forward</mat-icon>
-      </div>
-      <div class="tile-info">
-        <h3>Dispositivos</h3>
-        <p>Gerenciar ESP32/RC522 por local</p>
-      </div>
-    </a>
-
-    <a routerLink="/entidades" class="tile-card teal">
-      <div class="tile-top">
-        <div class="tile-icon">
-          <mat-icon>account_tree</mat-icon>
-        </div>
-        <mat-icon class="tile-arrow">arrow_forward</mat-icon>
-      </div>
-      <div class="tile-info">
-        <h3>Entidades</h3>
-        <p>Modelo de dados</p>
-      </div>
-    </a>
-
-    <!-- CARD: Administradores -->
-    <a routerLink="/administradores" class="tile-card purple">
-      <div class="tile-top">
-        <div class="tile-icon">
-          <mat-icon>admin_panel_settings</mat-icon>
-        </div>
-        <mat-icon class="tile-arrow">arrow_forward</mat-icon>
-      </div>
-      <div class="tile-info">
-        <h3>Administradores</h3>
-        <p>Gerenciar contas administrativas</p>
-      </div>
-    </a>
-
-    <!-- CARD: Auditoria -->
-    <a routerLink="/audit-logs" class="tile-card blue">
-      <div class="tile-top">
-        <div class="tile-icon">
-          <mat-icon>history</mat-icon>
-        </div>
-        <mat-icon class="tile-arrow">arrow_forward</mat-icon>
-      </div>
-      <div class="tile-info">
-        <h3>Auditoria</h3>
-        <p>Histórico de ações no sistema</p>
-      </div>
-    </a>
-
-    <!-- CARD: Validação de acesso facial -->
-    <a routerLink="/validar-acesso" class="tile-card teal">
-      <div class="tile-top">
-        <div class="tile-icon">
-          <mat-icon>face</mat-icon>
-        </div>
-        <mat-icon class="tile-arrow">arrow_forward</mat-icon>
-      </div>
-      <div class="tile-info">
-        <h3>Validar Acesso</h3>
-        <p>Simular RFID e validar o titular em 1:1</p>
-      </div>
-    </a>
-  </div>
+    </section>
+  }
 </div>
-
