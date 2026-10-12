@@ -1,3 +1,4 @@
+import { CpfMaskDirective } from '../../directives/cpf-mask.directive';
 import {
   ChangeDetectorRef,
   Component,
@@ -39,6 +40,7 @@ export interface LocalPermissaoItem {
   selector: 'app-cadastrar-page',
   standalone: true,
   imports: [
+    CpfMaskDirective,
     CommonModule,
     FormsModule,
     MatButtonModule,
