@@ -15,6 +15,9 @@
   --ard-success: #15803d;
   --ard-danger: #b91c1c;
   --ard-warning: #b45309;
+  --ard-scrollbar-track: #e9eef5;
+  --ard-scrollbar-thumb: #8da8cc;
+  --ard-scrollbar-thumb-hover: #2563eb;
   --ard-table-row-odd: #ffffff;
   --ard-table-row-even: #f3f6fa;
   --ard-radius-sm: 10px;
@@ -30,6 +33,8 @@
 
 html {
   height: 100%;
+  scrollbar-color: var(--ard-scrollbar-thumb) var(--ard-scrollbar-track);
+  scrollbar-width: thin;
   @include mat.theme(
     (
       color: (
@@ -40,6 +45,12 @@ html {
       density: 0,
     )
   );
+}
+
+html:has(> body.dark-mode) {
+  --ard-scrollbar-track: #172033;
+  --ard-scrollbar-thumb: #647fa6;
+  --ard-scrollbar-thumb-hover: #60a5fa;
 }
 
 body {
@@ -61,6 +72,9 @@ body.dark-mode {
   --ard-muted: #94a3b8;
   --ard-line: rgba(255, 255, 255, 0.1);
   --ard-primary: #60a5fa;
+  --ard-scrollbar-track: #172033;
+  --ard-scrollbar-thumb: #647fa6;
+  --ard-scrollbar-thumb-hover: #60a5fa;
   --ard-table-row-odd: #111827;
   --ard-table-row-even: #172033;
 
@@ -125,6 +139,35 @@ body.dark-mode {
       }
     }
   }
+}
+
+/* A mesma barra se aplica à página, tabelas e painéis com rolagem própria. */
+* {
+  scrollbar-color: var(--ard-scrollbar-thumb) var(--ard-scrollbar-track);
+  scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--ard-scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 2px solid var(--ard-scrollbar-track);
+  border-radius: 999px;
+  background: var(--ard-scrollbar-thumb);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--ard-scrollbar-thumb-hover);
+}
+
+:where(a[href], button:not(:disabled), summary, [role='button']:not([aria-disabled='true'])) {
+  cursor: pointer;
 }
 
 /* Zebra global para tabelas HTML que não importam o mixin compartilhado. */
