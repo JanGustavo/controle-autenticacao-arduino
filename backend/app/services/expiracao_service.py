@@ -6,9 +6,9 @@ A regra de expiração fica neste Service; SQL e persistência ficam nos Models.
 
 import asyncio
 import logging
-from datetime import datetime
 
 from app.database.connection import get_connection
+from app.utils.access_time import agora_acesso
 from app.models.historico_acesso_model import historico_acesso_model
 from app.models.tentativa_acesso_model import tentativa_acesso_model
 
@@ -26,7 +26,7 @@ def expirar_tentativas_pendentes() -> int:
     """
     Expira tentativas vencidas e grava o histórico na mesma transação.
     """
-    agora = datetime.now()
+    agora = agora_acesso()
 
     with get_connection() as connection:
         with connection.cursor() as cursor:

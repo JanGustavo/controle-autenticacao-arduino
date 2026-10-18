@@ -47,6 +47,16 @@ class CadastrarCartaoResponse(BaseModel):
     mensagem: str
 
 
+class ConsultarCartaoResponse(BaseModel):
+    """Situação de um UID para cadastro/edição administrativa."""
+    uid_card: str
+    cadastrado: bool
+    usuario_id: Optional[int] = None
+    nome: Optional[str] = None
+    disponivel_para_usuario: bool
+    mensagem: str
+
+
 class VerificarCartaoRequest(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={

@@ -4,14 +4,14 @@
       <div class="header-icon">
         <mat-icon>admin_panel_settings</mat-icon>
       </div>
-      <mat-card-title>Acesso Administrativo</mat-card-title>
+      <mat-card-title>Acesso administrativo</mat-card-title>
       <mat-card-subtitle>Digite suas credenciais para acessar o painel</mat-card-subtitle>
     </mat-card-header>
 
     <mat-card-content>
       <form (ngSubmit)="onSubmit()" class="login-form">
         @if (erro()) {
-          <div class="error-banner">
+          <div class="error-banner" role="alert">
             <mat-icon>error_outline</mat-icon>
             <span>{{ erro() }}</span>
           </div>
@@ -47,14 +47,22 @@
             mat-icon-button
             matSuffix
             (click)="togglePassword($event)"
-            [attr.aria-label]="'Ocultar senha'"
+            [attr.aria-label]="hidePassword() ? 'Mostrar senha' : 'Ocultar senha'"
             [attr.aria-pressed]="hidePassword()"
           >
             <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
           </button>
         </mat-form-field>
 
-        <div style="display: flex; justify-content: flex-end; width: 100%; margin-top: -8px; margin-bottom: 8px;">
+        <div
+          style="
+            display: flex;
+            justify-content: flex-end;
+            width: 100%;
+            margin-top: -8px;
+            margin-bottom: 8px;
+          "
+        >
           <a routerLink="/forgot-password" mat-button color="primary">Esqueceu a senha?</a>
         </div>
 
@@ -69,7 +77,7 @@
             <mat-spinner diameter="24" class="btn-spinner"></mat-spinner>
           } @else {
             <ng-container>
-              <span>Entrar no Sistema</span>
+              <span>Entrar</span>
               <mat-icon>login</mat-icon>
             </ng-container>
           }

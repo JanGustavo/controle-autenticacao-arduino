@@ -95,3 +95,18 @@
     display: inline-block;
   }
 }
+
+.login-card {
+  border: 1px solid var(--ard-line);
+  background: var(--ard-surface);
+}
+.login-header mat-card-title {
+  color: var(--ard-ink);
+}
+.login-header mat-card-subtitle {
+  color: var(--ard-muted);
+  line-height: 1.5;
+}
+.login-btn {
+  border-radius: var(--ard-radius-sm) !important;
+}

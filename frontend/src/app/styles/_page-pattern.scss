@@ -1,0 +1,181 @@
+// Padrão de estrutura compartilhado pelas páginas administrativas.
+@mixin ard-page-pattern($wrapper) {
+  #{$wrapper} {
+    --canvas: var(--ard-canvas);
+    --surface: var(--ard-surface);
+    --ink: var(--ard-ink);
+    --muted: var(--ard-muted);
+    --line: var(--ard-line);
+    --accent: var(--ard-primary);
+    max-width: 1280px;
+    width: 100%;
+    min-height: auto;
+    margin: 0 auto;
+    padding: 32px 32px 48px;
+    box-sizing: border-box;
+    background: var(--canvas);
+    color: var(--ink);
+
+    > .page-header,
+    > .header,
+    > .tuple-header,
+    > .adm-header {
+      width: 100%;
+      box-sizing: border-box;
+      margin: 0 0 24px;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      &::before {
+        display: none;
+      }
+      h1,
+      h2 {
+        font-size: clamp(1.65rem, 3vw, 2rem);
+        line-height: 1.2;
+        letter-spacing: -0.035em;
+        color: var(--ink);
+        margin: 8px 0;
+      }
+      p {
+        color: var(--muted);
+        font-size: 1rem;
+        line-height: 1.5;
+        margin: 4px 0 0;
+      }
+    }
+    .header-top {
+      display: flex;
+      position: static;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .back-link {
+      display: inline-flex;
+      position: static;
+      align-items: center;
+      line-height: 1.5;
+      margin-bottom: 12px;
+      flex-shrink: 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+      gap: 6px;
+    }
+    .header-top .back-link {
+      margin-bottom: 0;
+    }
+    .page-header > .eyebrow,
+    .header > .eyebrow {
+      display: block;
+      margin-top: 12px;
+    }
+    .eyebrow {
+      color: var(--muted);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+    }
+    .register-form {
+      width: 100%;
+      margin-top: 0;
+      border-radius: var(--ard-radius-md);
+    }
+    .table-card,
+    .editor,
+    .permission-editor,
+    .form-shell {
+      border-radius: var(--ard-radius-md);
+      box-shadow: 0 4px 16px rgb(15 23 42 / 3%);
+    }
+    .form-grid input:not([type='checkbox']),
+    .field input:not([type='checkbox']),
+    .field select,
+    .permission-form input,
+    .permission-form select {
+      border-radius: var(--ard-radius-sm);
+    }
+    @if $wrapper == '.tuple-wrapper' {
+      .tuple-header .header-main {
+        gap: 14px;
+      }
+      .tuple-header .header-top {
+        margin-bottom: 12px;
+      }
+      .tuple-header .module-icon {
+        width: 44px;
+        height: 44px;
+        flex-shrink: 0;
+        background: color-mix(in srgb, var(--ard-primary) 10%, var(--surface));
+      }
+      .tuple-header .module-icon mat-icon {
+        font-size: 26px;
+        width: 26px;
+        height: 26px;
+        color: var(--ard-primary);
+      }
+      .tuple-header .title-group h2 {
+        font-size: 2rem;
+      }
+      .tuple-header .title-group p {
+        font-size: 1rem;
+      }
+      .filter-bar {
+        padding: 16px;
+      }
+      .filter-bar .filter-group select {
+        width: auto;
+        max-width: 220px;
+      }
+      .search-box {
+        background: var(--surface);
+      }
+      .tuple-content .tuple-table {
+        font-size: 0.9rem;
+      }
+      .tuple-content .tuple-table th {
+        padding: 14px 16px;
+        font-size: 0.72rem;
+      }
+      .tuple-content .tuple-table td {
+        padding: 16px;
+      }
+      .tuple-footer {
+        padding: 16px;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .tuple-footer .footer-info {
+        font-size: 0.85rem;
+      }
+      .badge {
+        font-size: 0.78rem;
+        padding: 5px 10px;
+        white-space: nowrap;
+      }
+    }
+
+    @media (max-width: 760px) {
+      padding: 24px 16px 32px;
+      > .page-header,
+      > .header,
+      > .tuple-header,
+      > .adm-header {
+        margin-bottom: 20px;
+      }
+      .tuple-header .title-group h2 {
+        font-size: 1.65rem;
+      }
+      .header-top,
+      .header-actions {
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .filter-bar .filter-group select {
+        max-width: none;
+      }
+    }
+  }
+}

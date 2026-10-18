@@ -36,6 +36,8 @@ def test_endpoint_usuarios_simples_nao_expoe_vetor_facial():
         {
             "user_id": 7,
             "nome": "Usuário Leve",
+            "cpf": None,
+            "tipo_usuario": "INTERNO",
             "uid_card": "A1B2C3D4",
             "ativo": True,
         }
@@ -84,7 +86,7 @@ def test_endpoint_dispositivos_simples_retorna_apenas_campos_de_dropdown():
 
 def test_usuario_model_simples_nao_busca_embedding():
     manager, cursor = _fake_connection(
-        [(1, "Maria Silva", "A1B2C3D4", True)]
+        [(1, "Maria Silva", None, "INTERNO", "A1B2C3D4", True)]
     )
 
     with patch("app.models.usuario_model.get_connection", manager):
@@ -96,6 +98,8 @@ def test_usuario_model_simples_nao_busca_embedding():
         {
             "user_id": 1,
             "nome": "Maria Silva",
+            "cpf": None,
+            "tipo_usuario": "INTERNO",
             "uid_card": "A1B2C3D4",
             "ativo": True,
         }

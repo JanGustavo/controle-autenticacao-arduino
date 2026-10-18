@@ -18,16 +18,22 @@ CREATE TABLE dispositivo (
         FOREIGN KEY (local_id) REFERENCES local(local_id) ON DELETE CASCADE
 );
 CREATE INDEX idx_dispositivo_local_id ON dispositivo(local_id);
--- Criar a tabela USUARIO
+-- Criar o enum e a tabela USUARIO
+CREATE TYPE tipo_usuario_enum AS ENUM ('INTERNO', 'VISITANTE');
+
 CREATE TABLE usuario (
     user_id SERIAL PRIMARY KEY,
     nome VARCHAR(255) NOT NULL,
+    cpf VARCHAR(11),
+    tipo_usuario tipo_usuario_enum NOT NULL DEFAULT 'INTERNO',
     uid_card VARCHAR(100) UNIQUE,
     -- JSONB atende ao MVP, que compara um vetor facial por vez (1:1).
     vetor_facial JSONB,
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+CREATE UNIQUE INDEX uq_usuario_cpf ON usuario (cpf) WHERE cpf IS NOT NULL;
+
 -- Usuário tem acesso a N Locais, via Permissão (tabela de junção com atributos: horário, dias)
 -- Usuário tem histórico de acesso 1:N Histórico de Acesso
 -- Criar a tabela PERMISSAO
@@ -109,21 +115,27 @@ INSERT INTO dispositivo (local_id, nome, identificador)
 SELECT local_id, 'Leitor principal', 'ESP32-ADM-01'
 FROM local WHERE nome = 'Sala administrativa'
 ON CONFLICT (identificador) DO NOTHING;
-INSERT INTO usuario (nome, uid_card, vetor_facial, ativo)
+INSERT INTO usuario (nome, cpf, tipo_usuario, uid_card, vetor_facial, ativo)
 VALUES (
         'João Silva',
+        '12345678901',
+        'INTERNO',
         'A1B2C3D4',
         '[0.12, -0.34, 0.56, -0.78]',
         TRUE
     ),
     (
         'Maria Souza',
+        NULL,
+        'VISITANTE',
         'E5F6G7H8',
         '[0.21, 0.43, -0.65, 0.87]',
         TRUE
     ),
     (
         'Carlos Lima',
+        NULL,
+        'INTERNO',
         '12345678',
         '[0.11, 0.22, 0.33, 0.44]',
         TRUE

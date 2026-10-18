@@ -19,6 +19,24 @@
     display: block;
     transform: scaleX(-1); // Espelha a imagem para navegação natural
   }
+
+  // DroidCam no Linux frequentemente entrega 640x480 mesmo com o celular
+  // fisicamente em retrato. Nesse caso a UI gira o preview para 480x640.
+  &.droidcam-portrait {
+    aspect-ratio: 3 / 4;
+
+    video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 133.3333%;
+      max-width: none;
+      height: auto;
+      transform-origin: center;
+      translate: -50% -50%;
+      transform: scaleX(-1) rotate(-90deg);
+    }
+  }
 }
 
 /* Skeleton Loading de Inicialização de Câmera/IA */
@@ -132,6 +150,21 @@
   &.valid {
     border-color: #22c55e;
     box-shadow: 0 0 25px rgba(34, 197, 94, 0.6);
+  }
+
+  // Quando a IA fornece uma bounding box, as coordenadas são relativas
+  // ao canto superior esquerdo do vídeo. O guia precisa sair do fluxo
+  // flex centralizado para usar essas coordenadas corretamente.
+  &.dynamic {
+    position: absolute !important;
+    margin: 0;
+    transition:
+      left 0.12s ease-out,
+      top 0.12s ease-out,
+      width 0.12s ease-out,
+      height 0.12s ease-out,
+      border-color 0.3s ease,
+      box-shadow 0.3s ease;
   }
 }
 

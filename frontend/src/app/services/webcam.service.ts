@@ -1,6 +1,8 @@
 import { Injectable, inject, signal, ElementRef } from '@angular/core';
 import * as faceapi from '@vladmandic/face-api';
 import { SpeechService } from './speech.service';
+import { abrirCameraPreferida } from './camera-selection';
+import { regiaoCentralRosto, inclinacaoDosOlhos } from './face-capture-quality';
 
 export type EstadoEnquadramento = 'ok' | 'sem_rosto' | 'sorriso' | 'olhos' | 'escuro' | null;
 
@@ -22,6 +24,10 @@ export class WebcamService {
   statusValidacao = signal<string>('Centralize o rosto');
   tipoStatus = signal<'info' | 'warn' | 'success'>('info');
   capturaPronta = signal(false);
+  cameraAtivaLabel = signal<string>('');
+  droidCamRetrato = signal(false);
+  larguraFrameProcessado = signal(0);
+  alturaFrameProcessado = signal(0);
 
   // Círculo Dinâmico (Bounding Box Suavizado)
   faceBox = signal<FaceBoxPosition | null>(null);
@@ -48,9 +54,14 @@ export class WebcamService {
   // ── Estado privado e Otimização de Performance ────────────────────
   private intervalValidacao: ReturnType<typeof setInterval> | null = null;
   private modelosCarregados = false;
+  private modelosPromise: Promise<void> | null = null;
+  private aberturaId = 0;
   private ultimoEstadoEnquadramento: EstadoEnquadramento = null;
   private processandoDeteccao = false;
   private videoElementRef: ElementRef<HTMLVideoElement> | null = null;
+  private frameProcessamentoCanvas: HTMLCanvasElement = document.createElement('canvas');
+  private frameProcessamentoCtx: CanvasRenderingContext2D | null =
+    this.frameProcessamentoCanvas.getContext('2d', { willReadFrequently: true });
 
   // Buffer Canvas Reutilizável (Evita Garbage Collection contínuo)
   private lumaCanvas: HTMLCanvasElement = document.createElement('canvas');
@@ -74,23 +85,33 @@ export class WebcamService {
     this.lumaCtx = this.lumaCanvas.getContext('2d', { willReadFrequently: true });
   }
 
-async carregarModelos(): Promise<void> {
-    if (this.modelosCarregados) return;
-    this.carregandoHardware.set(true);
-    try {
-      // Define explicitamente o backend de aceleração de hardware via faceapi.tf
-      if (faceapi.tf && 'setBackend' in faceapi.tf) {
-        await (faceapi.tf as any).setBackend('webgl').catch(() => (faceapi.tf as any).setBackend('cpu'));
-      }
-      await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
-      await faceapi.nets.faceExpressionNet.loadFromUri('/models');
-      await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
-      this.modelosCarregados = true;
-    } catch (e) {
-      console.warn('Não foi possível carregar os modelos locais do face-api:', e);
-    } finally {
-      this.carregandoHardware.set(false);
+  carregarModelos(): Promise<void> {
+    if (this.modelosCarregados) return Promise.resolve();
+    if (this.modelosPromise) return this.modelosPromise;
+    this.modelosPromise = this.prepararModelos().catch((erro) => {
+      this.modelosPromise = null;
+      throw erro;
+    });
+    return this.modelosPromise;
+  }
+
+  private async prepararModelos(): Promise<void> {
+    if (faceapi.tf && 'setBackend' in faceapi.tf) {
+      await (faceapi.tf as any).setBackend('webgl')
+        .catch(() => (faceapi.tf as any).setBackend('cpu'));
     }
+    await Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+      faceapi.nets.faceExpressionNet.loadFromUri('/models'),
+      faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+    ]);
+    // Compila os shaders antes da primeira leitura, inclusive no celular.
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 224;
+    await faceapi.detectSingleFace(canvas,
+      new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 }))
+      .withFaceLandmarks().withFaceExpressions();
+    this.modelosCarregados = true;
   }
 
   async iniciarWebcam(
@@ -98,8 +119,10 @@ async carregarModelos(): Promise<void> {
     enableAutoCaptura: boolean = false,
     onAutoCaptura?: () => void
   ): Promise<void> {
+    const aberturaId = ++this.aberturaId;
     this.webcamErro.set('');
     this.carregandoHardware.set(true);
+    this.capturaPronta.set(false);
     this.statusValidacao.set('Iniciando câmera e sensores...');
     this.tipoStatus.set('info');
     this.autoCapturaHabilitada.set(enableAutoCaptura);
@@ -108,41 +131,27 @@ async carregarModelos(): Promise<void> {
 
     try {
       await this.carregarModelos();
+      if (aberturaId !== this.aberturaId) return;
 
-      let streamInicial = await navigator.mediaDevices.getUserMedia({
-        video: { width: 1280, height: 720 },
-      });
-
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const cameras = devices.filter((d) => d.kind === 'videoinput');
-
-      const palavrasExterna = ['cubeternet', 'usb', 'webcam', 'logitech', 'external'];
-      const palavrasInterna = ['positivo', 'theia', 'integrated', 'built-in', 'interno'];
-
-      let cameraExterna = cameras.find((c) => {
-        const label = c.label.toLowerCase();
-        return palavrasExterna.some((kw) => label.includes(kw))
-          && !palavrasInterna.some((kw) => label.includes(kw));
-      });
-
-      if (!cameraExterna && cameras.length > 1) {
-        cameraExterna = cameras.find((c) => {
-          const label = c.label.toLowerCase();
-          return !palavrasInterna.some((kw) => label.includes(kw));
-        });
-      }
-
-      const trackAtual = streamInicial.getVideoTracks()[0];
-      const deviceIdAtual = trackAtual?.getSettings()?.deviceId;
-
-      if (cameraExterna && cameraExterna.deviceId !== deviceIdAtual) {
-        streamInicial.getTracks().forEach((t) => t.stop());
-        streamInicial = await navigator.mediaDevices.getUserMedia({
-          video: { deviceId: { exact: cameraExterna.deviceId }, width: 1280, height: 720 },
-        });
+      const streamInicial = await abrirCameraPreferida(navigator.mediaDevices);
+      if (aberturaId !== this.aberturaId) {
+        streamInicial.getTracks().forEach((track) => track.stop());
+        return;
       }
 
       this.stream = streamInicial;
+      const trackAtivo = streamInicial.getVideoTracks()[0];
+      const settingsAtivos = trackAtivo?.getSettings();
+
+      this.cameraAtivaLabel.set(trackAtivo?.label || 'Câmera padrão');
+
+      console.log(
+        '[Webcam] Stream ativo:',
+        this.cameraAtivaLabel(),
+        '| Settings:',
+        settingsAtivos,
+      );
+
       this.webcamAtiva.set(true);
       this.carregandoHardware.set(false);
 
@@ -150,18 +159,100 @@ async carregarModelos(): Promise<void> {
         this.speech.falar('Centralize o rosto e mantenha uma expressão séria.');
       }
 
-      setTimeout(() => {
-        const el = getVideoElement();
-        if (el?.nativeElement) {
-          this.videoElementRef = el;
-          el.nativeElement.srcObject = this.stream;
-          this.iniciarLoopValidacao();
+      // O elemento pode aparecer depois que webcamAtiva muda o template.
+      const esperarElemento = (): Promise<HTMLVideoElement> =>
+        new Promise((resolve, reject) => {
+          let tentativas = 0;
+
+          const verificar = () => {
+            tentativas++;
+            const el = getVideoElement();
+
+            if (el?.nativeElement) {
+              resolve(el.nativeElement);
+              return;
+            }
+
+            if (tentativas > 30) {
+              reject(new Error('Elemento de vídeo não encontrado após 3 segundos.'));
+              return;
+            }
+
+            setTimeout(verificar, 100);
+          };
+
+          verificar();
+        });
+
+      const videoEl = await esperarElemento();
+      if (aberturaId !== this.aberturaId) return;
+      this.videoElementRef = getVideoElement()!;
+      videoEl.srcObject = this.stream;
+
+      // Câmeras virtuais podem não iniciar somente com autoplay.
+      try {
+        await videoEl.play();
+      } catch (playErr) {
+        console.warn('[Webcam] video.play() retornou erro não crítico:', playErr);
+      }
+
+      // Não inicia a IA enquanto a câmera virtual ainda reporta 0x0.
+      await new Promise<void>((resolve) => {
+        if (videoEl.videoWidth > 0 && videoEl.videoHeight > 0) {
+          resolve();
+          return;
         }
-      }, 100);
-    } catch {
+
+        let concluido = false;
+        const concluir = () => {
+          if (concluido) return;
+          concluido = true;
+          videoEl.removeEventListener('loadedmetadata', concluir);
+          videoEl.removeEventListener('canplay', concluir);
+          resolve();
+        };
+
+        videoEl.addEventListener('loadedmetadata', concluir);
+        videoEl.addEventListener('canplay', concluir);
+
+        setTimeout(concluir, 5000);
+      });
+
+      const ehDroidCam = this.cameraAtivaLabel().toLowerCase().includes('droidcam');
+      const precisaRotacionarDroidCam =
+        ehDroidCam && videoEl.videoWidth > videoEl.videoHeight;
+
+      this.droidCamRetrato.set(precisaRotacionarDroidCam);
+      this.atualizarDimensoesProcessamento(videoEl);
+
+      console.log(
+        '[Webcam] Resolução do stream:',
+        videoEl.videoWidth,
+        'x',
+        videoEl.videoHeight,
+      );
+      console.log(
+        '[Webcam] Orientação aplicada:',
+        precisaRotacionarDroidCam
+          ? 'DroidCam retrato (90° anti-horário)'
+          : 'normal',
+        '| Frame IA:',
+        this.larguraFrameProcessado(),
+        'x',
+        this.alturaFrameProcessado(),
+      );
+
+      this.iniciarLoopValidacao();
+    } catch (err) {
+      if (aberturaId !== this.aberturaId) return;
+      this.pararWebcam();
+      console.error('[Webcam] Erro ao iniciar:', err);
       this.webcamAtiva.set(false);
       this.carregandoHardware.set(false);
-      this.webcamErro.set('Erro ao acessar a webcam. Verifique as permissões.');
+      this.cameraAtivaLabel.set('');
+      this.webcamErro.set(
+        'Erro ao acessar a webcam. Verifique as permissões e se o DroidCam está ativo.',
+      );
       this.speech.falar('Erro ao acessar a câmera.');
     }
   }
@@ -213,24 +304,12 @@ async carregarModelos(): Promise<void> {
           return;
         }
 
-        // Checagem de Iluminação Reutilizando Buffer Canvas
-        const brilhoMedio = this.calcularLuminanciaOtimizada(video);
-        this.valorLuma.set(Math.round(brilhoMedio));
-        if (brilhoMedio < 30) {
-          this.capturaPronta.set(false);
-          this.statusValidacao.set(`Ambiente escuro (${Math.round(brilhoMedio)} Luma) — Aumente a iluminação`);
-          this.tipoStatus.set('warn');
-          this.nivelIluminacao.set('baixa');
-          this.resetAutoCaptura();
-          this.suavizarRostoPerdido();
-          return;
-        } else {
-          this.nivelIluminacao.set('boa');
-        }
+        const fonteProcessamento = this.obterFonteProcessamento(video);
+        const larguraProcessamento = this.larguraFrameProcessado() || video.videoWidth;
 
         // Detecção com TinyFaceDetector em Resolução Otimizada (224px)
         const detection = await faceapi
-          .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 }))
+          .detectSingleFace(fonteProcessamento, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 }))
           .withFaceLandmarks()
           .withFaceExpressions();
 
@@ -257,7 +336,22 @@ async carregarModelos(): Promise<void> {
           height: rawBox.height,
         });
 
-        const proporcaoRosto = rawBox.width / video.videoWidth;
+        // Mede o centro do rosto, sem deixar roupa ou fundo dominar a leitura.
+        const brilhoMedio = this.calcularLuminanciaOtimizada(fonteProcessamento, rawBox);
+        this.valorLuma.set(Math.round(brilhoMedio));
+        if (brilhoMedio < 30 || brilhoMedio > 235) {
+          this.capturaPronta.set(false);
+          this.statusValidacao.set(brilhoMedio < 30
+            ? 'Rosto escuro — Ilumine o rosto pela frente'
+            : 'Rosto muito iluminado — Evite luz direta forte');
+          this.tipoStatus.set('warn');
+          this.nivelIluminacao.set('baixa');
+          this.resetAutoCaptura();
+          return;
+        }
+        this.nivelIluminacao.set('boa');
+
+        const proporcaoRosto = rawBox.width / larguraProcessamento;
         this.proporcaoAtual.set(Math.round(proporcaoRosto * 100));
 
         if (proporcaoRosto < 0.18) {
@@ -279,6 +373,15 @@ async carregarModelos(): Promise<void> {
         // Validação Olhos Fechados
         const olhoEsq = detection.landmarks.getLeftEye();
         const olhoDir = detection.landmarks.getRightEye();
+        // Orientação pelos olhos: não depende do cabelo nem da roupa.
+        const inclinacao = inclinacaoDosOlhos(olhoEsq, olhoDir);
+        if (inclinacao > 20) {
+          this.capturaPronta.set(false);
+          this.statusValidacao.set('Mantenha a cabeça reta e olhe para a câmera');
+          this.tipoStatus.set('warn');
+          this.resetAutoCaptura();
+          return;
+        }
         const earMedio = (calcularEAR(olhoEsq) + calcularEAR(olhoDir)) / 2;
         this.earAtual.set(Number(earMedio.toFixed(2)));
 
@@ -367,9 +470,57 @@ async carregarModelos(): Promise<void> {
     this.progressoAutoCaptura.set(0);
   }
 
-  private calcularLuminanciaOtimizada(video: HTMLVideoElement): number {
+  private atualizarDimensoesProcessamento(video: HTMLVideoElement): void {
+    if (this.droidCamRetrato()) {
+      this.larguraFrameProcessado.set(video.videoHeight);
+      this.alturaFrameProcessado.set(video.videoWidth);
+      return;
+    }
+
+    this.larguraFrameProcessado.set(video.videoWidth);
+    this.alturaFrameProcessado.set(video.videoHeight);
+  }
+
+  private obterFonteProcessamento(
+    video: HTMLVideoElement,
+  ): HTMLVideoElement | HTMLCanvasElement {
+    if (!this.droidCamRetrato()) {
+      this.atualizarDimensoesProcessamento(video);
+      return video;
+    }
+
+    const largura = video.videoHeight;
+    const altura = video.videoWidth;
+
+    if (
+      this.frameProcessamentoCanvas.width !== largura
+      || this.frameProcessamentoCanvas.height !== altura
+    ) {
+      this.frameProcessamentoCanvas.width = largura;
+      this.frameProcessamentoCanvas.height = altura;
+    }
+
+    this.larguraFrameProcessado.set(largura);
+    this.alturaFrameProcessado.set(altura);
+
+    const ctx = this.frameProcessamentoCtx;
+    if (!ctx) return video;
+
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, largura, altura);
+    ctx.translate(0, altura);
+    ctx.rotate(-Math.PI / 2);
+    ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+    ctx.restore();
+
+    return this.frameProcessamentoCanvas;
+  }
+
+  private calcularLuminanciaOtimizada(fonte: CanvasImageSource, rosto: FaceBoxPosition): number {
     if (!this.lumaCtx) return 100;
-    this.lumaCtx.drawImage(video, 0, 0, 64, 48);
+    const area = regiaoCentralRosto(rosto);
+    this.lumaCtx.drawImage(fonte, area.x, area.y, area.width, area.height, 0, 0, 64, 48);
     const imgData = this.lumaCtx.getImageData(0, 0, 64, 48);
     const data = imgData.data;
     let somaLuma = 0;
@@ -390,6 +541,8 @@ async carregarModelos(): Promise<void> {
   }
 
   pararWebcam(): void {
+    this.aberturaId++;
+    this.carregandoHardware.set(false);
     this.pararLoopValidacao();
     if (this.cooldownTimer) clearTimeout(this.cooldownTimer);
     this.speech.parar();
@@ -399,6 +552,10 @@ async carregarModelos(): Promise<void> {
     }
     this.webcamAtiva.set(false);
     this.capturaPronta.set(false);
+    this.cameraAtivaLabel.set('');
+    this.droidCamRetrato.set(false);
+    this.larguraFrameProcessado.set(0);
+    this.alturaFrameProcessado.set(0);
     this.videoElementRef = null;
     this.emCooldown.set(false);
   }
@@ -410,23 +567,25 @@ async carregarModelos(): Promise<void> {
 
 async capturarFrameComPreview(): Promise<{ blob: Blob; previewUrl: string } | null> {
     const video = this.videoElementRef?.nativeElement;
-    if (!video) return Promise.resolve(null);
+    if (!video || !this.capturaPronta()) return Promise.resolve(null);
 
     this.executarEfeitoFlash();
     this.pararLoopValidacao();
 
+    const fonteProcessamento = this.obterFonteProcessamento(video);
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
+    canvas.width = this.larguraFrameProcessado() || video.videoWidth || 640;
+    canvas.height = this.alturaFrameProcessado() || video.videoHeight || 480;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return Promise.resolve(null);
 
-    // Inverte a imagem horizontalmente no Canvas
+    // Mantém a experiência de espelho, mas a foto já sai orientada em retrato
+    // quando a fonte ativa é DroidCam horizontal.
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
 
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(fonteProcessamento, 0, 0, canvas.width, canvas.height);
     const previewUrl = canvas.toDataURL('image/jpeg', 0.85);
 
     return new Promise((resolve) => {

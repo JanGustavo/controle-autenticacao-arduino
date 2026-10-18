@@ -1,9 +1,10 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, NavigationEnd } from '@angular/router';
 
 function isTokenValido(token: string | null): boolean {
   if (!token || typeof token !== 'string') return false;
@@ -38,6 +39,36 @@ export class NavbarComponent implements OnInit {
   private router = inject(Router);
   private authService = inject(AuthService);
 
+  readonly paginaAtual = signal(this.router.url.split('?')[0]);
+
+  constructor() {
+    this.router.events.pipe(takeUntilDestroyed()).subscribe((event) => {
+      if (event instanceof NavigationEnd) {
+        this.paginaAtual.set(event.urlAfterRedirects.split('?')[0]);
+        this.menuAberto.set(false);
+      }
+    });
+  }
+
+  linkAtivo(path: string): boolean {
+    return (
+      this.paginaAtual() === path || (path === '/usuarios' && this.paginaAtual() === '/cadastrar')
+    );
+  }
+
+  menuAberto = signal(false);
+  readonly links = [
+    { path: '/adm-page', label: 'Painel', icon: 'space_dashboard' },
+    { path: '/usuarios', label: 'Usuários', icon: 'group' },
+    { path: '/permissoes', label: 'Permissões', icon: 'schedule' },
+    { path: '/validar-acesso', label: 'Validar acesso', icon: 'face' },
+    { path: '/dashboard', label: 'Histórico', icon: 'history' },
+    { path: '/locais', label: 'Locais', icon: 'location_on' },
+    { path: '/dispositivos', label: 'Dispositivos', icon: 'memory' },
+    { path: '/administradores', label: 'Administradores', icon: 'admin_panel_settings' },
+    { path: '/audit-logs', label: 'Auditoria', icon: 'fact_check' },
+  ];
+
   darkMode = signal<boolean>(false);
   failedUrls = new Set<string>();
   fotoModalUrl = signal<string | null>(null);
@@ -51,12 +82,18 @@ export class NavbarComponent implements OnInit {
   }
 
   isLoggedIn(): boolean {
-    return this.authService.isLoggedIn();
+    const session = this.authService.userSession();
+    return session !== null && this.authService.isLoggedIn();
   }
 
   get userDisplay() {
     const session = this.authService.userSession();
-    const result = session || { admin_id: undefined, name: 'Administrador', email: 'admin@ardlock.local', foto_url: null };
+    const result = session || {
+      admin_id: undefined,
+      name: 'Administrador',
+      email: 'admin@ardlock.local',
+      foto_url: null,
+    };
     return result;
   }
 
@@ -104,5 +141,3 @@ export class NavbarComponent implements OnInit {
     this.router.navigate(['/login']);
   }
 }
-
-

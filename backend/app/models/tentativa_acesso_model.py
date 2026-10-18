@@ -25,7 +25,9 @@ class TentativaAcessoModel:
                 cursor.execute(
                     """
                     SELECT tentativa_id, usuario_id, local_id, dispositivo_id,
-                           uid_card_lido, status, criado_em, expira_em
+                           uid_card_lido, status,
+                           criado_em AT TIME ZONE data_timezone AT TIME ZONE 'America/Sao_Paulo' AS criado_em,
+                           expira_em AT TIME ZONE data_timezone AT TIME ZONE 'America/Sao_Paulo' AS expira_em
                     FROM tentativa_acesso
                     WHERE tentativa_id = %s
                     """,
@@ -51,7 +53,7 @@ class TentativaAcessoModel:
                     WHERE t.uid_card_lido = %s
                       AND d.identificador = %s
                       AND t.status = %s
-                    ORDER BY t.criado_em DESC
+                    ORDER BY t.criado_em AT TIME ZONE t.data_timezone DESC
                     LIMIT 1
                     """,
                     (uid_card, identificador_dispositivo, status_pendente),
@@ -103,8 +105,8 @@ class TentativaAcessoModel:
                    t.dispositivo_id,
                    t.uid_card_lido,
                    t.status,
-                   t.expira_em,
-                   t.criado_em,
+                   t.expira_em AT TIME ZONE t.data_timezone AT TIME ZONE 'America/Sao_Paulo' AS expira_em,
+                   t.criado_em AT TIME ZONE t.data_timezone AT TIME ZONE 'America/Sao_Paulo' AS criado_em,
                    u.nome,
                    u.ativo,
                    l.ativo,
@@ -160,8 +162,8 @@ class TentativaAcessoModel:
                            t.status,
                            t.percentual_similaridade,
                            t.motivo_recusa,
-                           t.criado_em,
-                           t.concluido_em
+                           t.criado_em AT TIME ZONE t.data_timezone AT TIME ZONE 'America/Sao_Paulo' AS criado_em,
+                           t.concluido_em AT TIME ZONE t.data_timezone AT TIME ZONE 'America/Sao_Paulo' AS concluido_em
                     FROM tentativa_acesso t
                     JOIN dispositivo d
                       ON d.dispositivo_id = t.dispositivo_id
@@ -215,10 +217,10 @@ class TentativaAcessoModel:
             """
             UPDATE tentativa_acesso
             SET status = 'EXPIRADO',
-                concluido_em = %s,
+                concluido_em = %s AT TIME ZONE 'America/Sao_Paulo' AT TIME ZONE data_timezone,
                 motivo_recusa = %s
             WHERE status = 'PENDENTE'
-              AND expira_em < %s
+              AND expira_em AT TIME ZONE data_timezone AT TIME ZONE 'America/Sao_Paulo' < %s
             RETURNING tentativa_id, usuario_id, local_id, dispositivo_id, uid_card_lido
             """,
             (agora, motivo_recusa, agora),
@@ -249,7 +251,7 @@ class TentativaAcessoModel:
             """
             UPDATE tentativa_acesso
             SET status = %s,
-                concluido_em = %s,
+                concluido_em = %s AT TIME ZONE 'America/Sao_Paulo' AT TIME ZONE data_timezone,
                 percentual_similaridade = %s,
                 motivo_recusa = %s
             WHERE tentativa_id = %s

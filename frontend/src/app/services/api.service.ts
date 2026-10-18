@@ -2,15 +2,24 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-const API_BASE = 'http://localhost:8001/api/v1';
+const isLocalDev =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+const API_BASE = isLocalDev
+  ? 'http://localhost:8001/api/v1'
+  : `${window.location.origin}/api/v1`;
 
 export interface HealthResponse {
   message: string;
 }
 
+export type TipoUsuario = 'INTERNO' | 'VISITANTE';
+
 export interface UsuarioResponse {
   user_id: number;
   nome: string;
+  cpf: string | null;
+  tipo_usuario: TipoUsuario;
   uid_card: string | null;
   vetor_facial: number[] | null;
   ativo: boolean;
@@ -20,6 +29,8 @@ export interface UsuarioResponse {
 export interface UsuarioSimplesResponse {
   user_id: number;
   nome: string;
+  cpf: string | null;
+  tipo_usuario: TipoUsuario;
   uid_card: string | null;
   ativo: boolean;
 }
@@ -32,6 +43,8 @@ export interface DispositivoSimplesResponse {
 
 export interface UsuarioCreateRequest {
   nome: string;
+  cpf: string | null;
+  tipo_usuario: TipoUsuario;
   uid_card: string | null;
   vetor_facial: number[] | null;
   ativo: boolean;
@@ -40,6 +53,8 @@ export interface UsuarioCreateRequest {
 
 export interface UsuarioUpdateRequest {
   nome?: string;
+  cpf?: string | null;
+  tipo_usuario?: TipoUsuario;
   ativo?: boolean;
 }
 
@@ -148,6 +163,15 @@ export interface CadastrarCartaoResponse {
   sucesso: boolean;
   usuario_id: number | null;
   uid_card: string | null;
+  mensagem: string;
+}
+
+export interface ConsultarCartaoResponse {
+  uid_card: string;
+  cadastrado: boolean;
+  usuario_id: number | null;
+  nome: string | null;
+  disponivel_para_usuario: boolean;
   mensagem: string;
 }
 
@@ -287,16 +311,31 @@ export class ApiService {
     );
   }
 
-  verificarFace(tentativaId: string, foto: File | Blob): Observable<VerificarBiometriaResponse> {
+  verificarFace(tentativaId: string, foto: File | Blob, clienteId: string): Observable<VerificarBiometriaResponse> {
     const dados = new FormData();
     const nomeArquivo = foto instanceof File ? foto.name : 'comparacao.jpg';
     dados.append('file', foto, nomeArquivo);
 
-    const params = new HttpParams().set('tentativa_id', tentativaId);
+    const params = new HttpParams().set('tentativa_id', tentativaId).set('cliente_id', clienteId);
 
     return this.http.post<VerificarBiometriaResponse>(
       `${API_BASE}/arduino/verificar-face`,
       dados,
+      { params },
+    );
+  }
+
+  consultarCartao(
+    uidCard: string,
+    usuarioId?: number,
+  ): Observable<ConsultarCartaoResponse> {
+    let params = new HttpParams().set('uid_card', uidCard);
+    if (usuarioId !== undefined && usuarioId !== null) {
+      params = params.set('usuario_id', usuarioId);
+    }
+
+    return this.http.get<ConsultarCartaoResponse>(
+      `${API_BASE}/arduino/cartao-status`,
       { params },
     );
   }

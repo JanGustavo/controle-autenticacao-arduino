@@ -1,3 +1,4 @@
+import { ConfirmationService } from '../../components/confirmation-dialog/confirmation-dialog';
 import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -11,11 +12,19 @@ import { ApiService, LocalRequest, LocalResponse } from '../../services/api.serv
 @Component({
   selector: 'app-locais-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatButtonModule, MatIconModule, MatSnackBarModule, RouterLink],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatButtonModule,
+    MatIconModule,
+    MatSnackBarModule,
+    RouterLink,
+  ],
   templateUrl: './locais.html',
   styleUrl: './locais.scss',
 })
 export class LocaisPage implements OnInit {
+  private confirmation = inject(ConfirmationService);
   private api = inject(ApiService);
   private snackBar = inject(MatSnackBar);
   private cdr = inject(ChangeDetectorRef);
@@ -79,17 +88,23 @@ export class LocaisPage implements OnInit {
     }
 
     this.salvando = true;
-    const request = this.editandoId === null
-      ? this.api.criarLocal(payload)
-      : this.api.atualizarLocal(this.editandoId, payload);
+    const request =
+      this.editandoId === null
+        ? this.api.criarLocal(payload)
+        : this.api.atualizarLocal(this.editandoId, payload);
 
     request.subscribe({
       next: (local) => {
         this.salvando = false;
-        this.locais = this.editandoId === null
-          ? [...this.locais, local].sort((a, b) => a.local_id - b.local_id)
-          : this.locais.map((item) => item.local_id === local.local_id ? local : item);
-        this.snackBar.open(this.editandoId === null ? 'Local criado com sucesso.' : 'Local atualizado com sucesso.', 'Fechar', { duration: 4000 });
+        this.locais =
+          this.editandoId === null
+            ? [...this.locais, local].sort((a, b) => a.local_id - b.local_id)
+            : this.locais.map((item) => (item.local_id === local.local_id ? local : item));
+        this.snackBar.open(
+          this.editandoId === null ? 'Local criado com sucesso.' : 'Local atualizado com sucesso.',
+          'Fechar',
+          { duration: 4000 },
+        );
         this.cancelar();
         this.cdr.markForCheck();
       },
@@ -110,8 +125,14 @@ export class LocaisPage implements OnInit {
     this.erro = '';
   }
 
-  excluir(local: LocalResponse): void {
-    if (!confirm(`Excluir o local "${local.nome}"? As permissões vinculadas também serão removidas.`)) return;
+  async excluir(local: LocalResponse): Promise<void> {
+    if (
+      !(await this.confirmation.excluir(
+        'Excluir local?',
+        `O local "${local.nome}" e suas permissões vinculadas serão removidos.`,
+      ))
+    )
+      return;
     this.api.deletarLocal(local.local_id).subscribe({
       next: () => {
         this.locais = this.locais.filter((item) => item.local_id !== local.local_id);

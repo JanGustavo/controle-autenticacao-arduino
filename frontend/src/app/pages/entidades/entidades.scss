@@ -345,3 +345,9 @@ h2 {
     background: rgba(255, 255, 255, 0.02);
   }
 }
+@media (max-width: 760px) {
+ .header-top { flex-wrap: wrap; gap: 12px; }
+ .diagram { grid-template-columns: minmax(0, 1fr); }
+ .entity-header .header-main { min-width: 0; }
+ .entity-header h2 { overflow-wrap: anywhere; }
+}

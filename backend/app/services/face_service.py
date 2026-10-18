@@ -15,6 +15,7 @@ Regra de segurança (0/1/2+ rostos):
 """
 
 import os
+from threading import Lock
 from typing import Optional
 
 import cv2
@@ -36,6 +37,7 @@ class FaceService:
     """
 
     _app: Optional[FaceAnalysis] = None
+    _model_lock = Lock()
 
     # Proporção mínima (bbox_area / image_area) para considerar o rosto
     # grande o suficiente pra confiar no embedding. Ajustável por .env.
@@ -49,35 +51,38 @@ class FaceService:
         o objeto SessionOptions e nunca o passava adiante).
         """
 
-        if cls._app is None:
-            intra = int(os.getenv("ORT_INTRA_OP_THREADS", "4"))
-            inter = int(os.getenv("ORT_INTER_OP_THREADS", "1"))
+        with cls._model_lock:
+            if cls._app is None:
+                intra = int(os.getenv("ORT_INTRA_OP_THREADS", "4"))
+                inter = int(os.getenv("ORT_INTER_OP_THREADS", "1"))
 
-            print(
-                f"[FaceService] Inicializando InsightFace "
-                f"(intra_op={intra}, inter_op={inter})..."
-            )
+                print(
+                    f"[FaceService] Inicializando InsightFace "
+                    f"(intra_op={intra}, inter_op={inter})..."
+                )
 
-            so = ort.SessionOptions()
-            so.intra_op_num_threads = intra
-            so.inter_op_num_threads = inter
-            so.execution_mode = ort.ExecutionMode.ORT_PARALLEL
-            so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+                so = ort.SessionOptions()
+                so.intra_op_num_threads = intra
+                so.inter_op_num_threads = inter
+                so.execution_mode = ort.ExecutionMode.ORT_PARALLEL
+                so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
 
-            det_size = int(os.getenv("FACE_DET_SIZE", "480"))
+                det_size = int(os.getenv("FACE_DET_SIZE", "480"))
 
-            cls._app = FaceAnalysis(
-                name=os.getenv("FACE_MODEL", "buffalo_l"),
-                providers=["CPUExecutionProvider"],
-                # Nome correto do kwarg repassado ao onnxruntime.InferenceSession.
-                # Confirme com `htop` durante uma chamada real que os núcleos
-                # sobem juntos -- isso é o que garante que pegou de verdade.
-                sess_options=so,
-            )
+                model = FaceAnalysis(
+                    name=os.getenv("FACE_MODEL", "buffalo_l"),
+                    providers=["CPUExecutionProvider"],
+                    # Nome correto do kwarg repassado ao onnxruntime.InferenceSession.
+                    # Confirme com `htop` durante uma chamada real que os núcleos
+                    # sobem juntos -- isso é o que garante que pegou de verdade.
+                    sess_options=so,
+                )
 
-            cls._app.prepare(ctx_id=0, det_size=(det_size, det_size))
+                model.prepare(ctx_id=0, det_size=(det_size, det_size))
 
-            print("[FaceService] InsightFace inicializado com sucesso.")
+                model.get(np.zeros((480, 480, 3), dtype=np.uint8))
+                cls._app = model
+                print("[FaceService] InsightFace inicializado com sucesso.")
 
         return cls._app
 

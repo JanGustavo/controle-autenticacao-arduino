@@ -34,8 +34,8 @@
         </div>
       </div>
 
-      <div class="basic-grid">
-        <label>
+      <div class="basic-grid profile-grid">
+        <label class="profile-name">
           <span>Nome</span>
           <input
             type="text"
@@ -45,7 +45,27 @@
           />
         </label>
 
-        <label class="switch-field">
+        <label>
+          <span>CPF <small class="optional-label">opcional</small></span>
+          <input
+            type="text"
+            [(ngModel)]="cpf"
+            appCpfMask
+            inputmode="numeric"
+            placeholder="000.000.000-00"
+            [disabled]="salvandoDados"
+          />
+        </label>
+
+        <label>
+          <span>Tipo de usuário</span>
+          <select [(ngModel)]="tipoUsuario" [disabled]="salvandoDados">
+            <option value="INTERNO">Interno</option>
+            <option value="VISITANTE">Visitante</option>
+          </select>
+        </label>
+
+        <label class="switch-field profile-status">
           <input type="checkbox" [(ngModel)]="ativo" [disabled]="salvandoDados" />
           <span class="switch"></span>
           <span>
@@ -108,9 +128,11 @@
           <input
             type="text"
             [(ngModel)]="uidNovo"
+            (ngModelChange)="onUidManualChange()"
+            (blur)="validarUidAtual()"
             maxlength="20"
             placeholder="A1B2C3D4"
-            [disabled]="aguardandoRfid || salvandoCartao"
+            [disabled]="aguardandoRfid || salvandoCartao || verificandoCartao"
           />
         </label>
       </div>
@@ -138,7 +160,13 @@
           mat-flat-button
           color="primary"
           (click)="salvarNovoCartao()"
-          [disabled]="!uidNovo || !identificadorDispositivo || salvandoCartao"
+          [disabled]="
+            !uidNovo
+            || !identificadorDispositivo
+            || salvandoCartao
+            || verificandoCartao
+            || cartaoDisponivel === false
+          "
         >
           @if (salvandoCartao) {
             <mat-progress-spinner diameter="18"></mat-progress-spinner>
@@ -151,44 +179,98 @@
     </section>
 
     <section class="edit-section">
-      <div class="section-title">
-        <mat-icon>face</mat-icon>
-        <div>
-          <h3>Biometria facial</h3>
-          <p>
-            Status:
-            <strong>{{ temBiometria ? 'Cadastrada' : 'Não cadastrada' }}</strong>
-          </p>
+      <div class="section-title heading-with-action">
+        <div class="title-left">
+          <mat-icon>face</mat-icon>
+          <div>
+            <h3>Biometria facial</h3>
+            <p>
+              Status:
+              <strong>{{ temBiometria ? 'Cadastrada' : 'Não cadastrada' }}</strong>
+            </p>
+          </div>
         </div>
+        <button
+          type="button"
+          mat-stroked-button
+          class="btn-totem-toggle"
+          [color]="modoTotem() ? 'accent' : 'primary'"
+          (click)="toggleModoTotem()"
+        >
+          <mat-icon>{{ modoTotem() ? 'touch_app' : 'center_focus_strong' }}</mat-icon>
+          {{ modoTotem() ? 'Modo Totem (Auto)' : 'Modo Assistido' }}
+        </button>
       </div>
 
       @if (webcam.webcamAtiva()) {
-        <div class="camera-box">
+        <div
+          class="webcam-viewport"
+          [class.droidcam-portrait]="webcam.droidCamRetrato()"
+          #webcamContainer
+        >
           <video
             #editVideo
             autoplay
             playsinline
             muted
-            style="transform: scaleX(-1)"
+           
           ></video>
 
-          <div class="camera-status" [class.ready]="webcam.capturaPronta()">
-            {{ webcam.statusValidacao() }}
+          @if (webcam.dispararFlash()) {
+            <div class="camera-flash-overlay"></div>
+          }
+
+          <!-- Badge Visual Dinâmico de IA -->
+          <div class="status-badge" [ngClass]="webcam.tipoStatus()">
+            <mat-icon>{{ webcam.tipoStatus() === 'success' ? 'check_circle' : 'warning' }}</mat-icon>
+            <span>{{ webcam.statusValidacao() }}</span>
+          </div>
+
+          <!-- Guia Oval de Centralização Facial -->
+          <div class="face-overlay">
+            <div
+              class="face-oval"
+              [class.valid]="webcam.tipoStatus() === 'success'"
+              [class.dynamic]="!!webcam.faceBox()"
+              [style]="obterEstiloOvalDinamico()"
+            >
+              @if (webcam.progressoAutoCaptura() > 0) {
+                <svg class="progress-ring">
+                  <circle
+                    r="48%"
+                    cx="50%"
+                    cy="50%"
+                    [style.strokeDashoffset]="
+                      600 - (600 * webcam.progressoAutoCaptura()) / 100
+                    "
+                  />
+                </svg>
+              }
+            </div>
+            <span class="guide-text">
+              {{
+                modoTotem()
+                  ? 'Mantenha a posição para auto-captura'
+                  : 'Centralize o rosto no círculo e clique em Capturar'
+              }}
+            </span>
           </div>
         </div>
 
         <div class="section-actions">
-          <button
-            type="button"
-            mat-flat-button
-            color="primary"
-            (click)="capturarFoto()"
-            [disabled]="!webcam.capturaPronta()"
-          >
-            <mat-icon>photo_camera</mat-icon>
-            Capturar
-          </button>
-          <button type="button" mat-button (click)="pararWebcam()">
+          @if (!modoTotem()) {
+            <button
+              type="button"
+              mat-flat-button
+              color="primary"
+              (click)="capturarFoto()"
+              [disabled]="!webcam.capturaPronta()"
+            >
+              <mat-icon>photo_camera</mat-icon>
+              Capturar Foto
+            </button>
+          }
+          <button type="button" mat-button color="warn" (click)="pararWebcam()">
             Cancelar câmera
           </button>
         </div>

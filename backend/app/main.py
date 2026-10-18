@@ -1,4 +1,5 @@
 import asyncio
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -23,7 +24,9 @@ from app.api import (
 from app.api.biometria import router as biometria
 from app.api.health import database_health, health
 from app.auth import router as auth
+from app.database.connection import close_pool, open_pool
 from app.services.expiracao_service import loop_expiracao_periodica
+from app.services.face_service import FaceService
 # from app.api import rfid
 
 
@@ -140,7 +143,7 @@ que permanece como hardening posterior.
 - `POST /api/v1/arduino/verificar-face`: fecha biometria 1:1
 - `GET /api/v1/arduino/resultado-acesso`: decisão para o ESP32
 
-Documentação adicional: `docs/BACKEND.md` e `docs/API_DEBUG.md`.
+Documentação adicional: `docs/tecnico/BACKEND.md` e `docs/testes/API_DEBUG.md`.
 """
 
 
@@ -149,20 +152,26 @@ async def lifespan(app: FastAPI):
     """
     Inicializa e encerra tarefas de infraestrutura da aplicação.
     """
-    task_expiracao = asyncio.create_task(
-        loop_expiracao_periodica(),
-        name="expiracao-tentativas-acesso",
-    )
+    # Uvicorn só aceita acessos após carregar e aquecer a inferência facial.
+    await asyncio.to_thread(FaceService._get_model)
+    await asyncio.to_thread(open_pool)
 
     try:
-        yield
-    finally:
-        task_expiracao.cancel()
-
+        task_expiracao = asyncio.create_task(
+            loop_expiracao_periodica(),
+            name="expiracao-tentativas-acesso",
+        )
         try:
-            await task_expiracao
-        except asyncio.CancelledError:
-            pass
+            yield
+        finally:
+            task_expiracao.cancel()
+
+            try:
+                await task_expiracao
+            except asyncio.CancelledError:
+                pass
+    finally:
+        await asyncio.to_thread(close_pool)
 
 
 app = FastAPI(
@@ -190,6 +199,9 @@ app = FastAPI(
 # Configuração de CORS
 # ─────────────────────────────────────────────
 
+ardlock_domain = os.getenv("ARDLOCK_DOMAIN", "ardlock.jangustavo.me").strip()
+origens_https = [f"https://{ardlock_domain}"] if ardlock_domain else []
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -201,6 +213,7 @@ app.add_middleware(
         "http://127.0.0.1:4200",
         "http://127.0.0.1:8000",
         "http://127.0.0.1:8001",
+        *origens_https,
     ],
     allow_origin_regex=r"http\://(localhost|127\.0\.0\.1)(:\d+)?",
     allow_credentials=True,

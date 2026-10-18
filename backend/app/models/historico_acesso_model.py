@@ -57,13 +57,13 @@ class HistoricoAcessoModel:
                 cursor.execute(
                     f"""
                     SELECT h.id, h.usuario_id, h.local_id, h.dispositivo_id,
-                           h.uid_card_lido, h.data_hora, h.autorizado,
+                           h.uid_card_lido, h.data_hora AT TIME ZONE h.data_hora_timezone AS data_hora, h.autorizado,
                            h.percentual_similaridade, h.motivo_recusa
                     FROM historico_acesso h
                     LEFT JOIN usuario u ON h.usuario_id = u.user_id
                     LEFT JOIN local l ON h.local_id = l.local_id
                     {where_clause}
-                    ORDER BY h.data_hora DESC, h.id DESC
+                    ORDER BY h.data_hora AT TIME ZONE h.data_hora_timezone DESC, h.id DESC
                     """,
                     params if params else None,
                 )
@@ -75,7 +75,7 @@ class HistoricoAcessoModel:
                 cursor.execute(
                     """
                     SELECT id, usuario_id, local_id, dispositivo_id,
-                           uid_card_lido, data_hora, autorizado,
+                           uid_card_lido, data_hora AT TIME ZONE data_hora_timezone AS data_hora, autorizado,
                            percentual_similaridade, motivo_recusa
                     FROM historico_acesso
                     WHERE id = %s
@@ -108,7 +108,7 @@ class HistoricoAcessoModel:
             )
             VALUES (%s, %s, %s, %s, COALESCE(%s, CURRENT_TIMESTAMP), %s, %s, %s)
             RETURNING id, usuario_id, local_id, dispositivo_id,
-                      uid_card_lido, data_hora, autorizado,
+                      uid_card_lido, data_hora AT TIME ZONE data_hora_timezone AS data_hora, autorizado,
                       percentual_similaridade, motivo_recusa
             """,
             (

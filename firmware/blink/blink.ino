@@ -9,6 +9,9 @@
 #define LED_VERDE 4
 #define LED_VERMELHO 16
 #define BUZZER_PIN 2
+// O buzzer atual emite som com alimentacao continua (ativo).
+// Para buzzer passivo, use false e as frequencias de tone() abaixo.
+constexpr bool BUZZER_ATIVO = true;
 #define SERVO_PIN 13
 
 #define SS_PIN 14
@@ -17,7 +20,6 @@
 #define SPI_SCK 33
 #define SPI_MISO 34
 #define SPI_MOSI 32
-
 
 // Objetos e configurações
 const char *ssid = WIFI_SSID;
@@ -57,6 +59,8 @@ void setup()
 
     Serial.println();
     Serial.println("Inicializando sistema...");
+    Serial.printf("Firmware buzzer: padroes-2-3 | compilado %s %s\n", __DATE__, __TIME__);
+    Serial.printf("Buzzer GPIO %d | modo %s\n", BUZZER_PIN, BUZZER_ATIVO ? "ATIVO" : "PASSIVO");
 
     // Inicialização dos LEDs, Buzzer e Servo
     pinMode(LED_VERDE, OUTPUT);
@@ -189,25 +193,41 @@ void acionarServoPorta(bool abrir)
     }
     else
     {
-        servo.write(0);  // Tranca novamente
+        servo.write(0); // Tranca novamente
     }
 }
 
 // Emissão de som pelo Buzzer
 void emitirBuzzer(int frequencia, int duracaoMs)
 {
-    tone(BUZZER_PIN, frequencia, duracaoMs);
+    Serial.printf("[BUZZER] GPIO %d ligado por %d ms\n", BUZZER_PIN, duracaoMs);
+    if (BUZZER_ATIVO)
+    {
+        digitalWrite(BUZZER_PIN, HIGH);
+    }
+    else
+    {
+        tone(BUZZER_PIN, frequencia, duracaoMs);
+    }
     delay(duracaoMs);
-    noTone(BUZZER_PIN);
+    if (!BUZZER_ATIVO)
+    {
+        noTone(BUZZER_PIN);
+    }
+    digitalWrite(BUZZER_PIN, LOW);
+    Serial.println("[BUZZER] bip concluido; aguardando proximo acionamento");
 }
 
 // Animação Acesso Aprovado: LED Verde, Buzzer duplo e abertura de Servo
 void animacaoAprovado()
 {
+    Serial.println("[SINALIZACAO] APROVADO: 2 bipes");
     acionarServoPorta(true);
-    emitirBuzzer(2500, 150);
-    delay(50);
-    emitirBuzzer(3000, 200);
+    digitalWrite(LED_VERMELHO, LOW);
+    digitalWrite(LED_VERDE, HIGH);
+    emitirBuzzer(2500, 500);
+    delay(250);
+    emitirBuzzer(3000, 500);
 
     for (int i = 0; i < 3; i++)
     {
@@ -217,20 +237,20 @@ void animacaoAprovado()
         delay(300);
     }
 
-    delay(2000); // Tempo para o usuário atravessar
+    delay(2000);              // Tempo para o usuário atravessar
     acionarServoPorta(false); // Fecha novamente
 }
 
-// Animação Acesso Negado: LED Vermelho e Buzzer grave de erro
+// Animação Acesso Negado: LED Vermelho e tres bipes (graves no modo passivo)
 void animacaoNegado()
 {
+    Serial.println("[SINALIZACAO] RECUSADO: 3 bipes");
     acionarServoPorta(false);
-    emitirBuzzer(400, 400);
-
     for (int i = 0; i < 3; i++)
     {
         digitalWrite(LED_VERMELHO, HIGH);
-        delay(300);
+        emitirBuzzer(400, 150);
+        delay(150);
         digitalWrite(LED_VERMELHO, LOW);
         delay(300);
     }
@@ -270,8 +290,7 @@ String extrairCampoJson(const String &json, const String &campo)
         fim < json.length() &&
         json[fim] != ',' &&
         json[fim] != '}' &&
-        json[fim] != '\n'
-    )
+        json[fim] != '\n')
     {
         fim++;
     }
@@ -300,8 +319,7 @@ bool iniciarTentativaAcesso(const char *uuid, String &tentativaId)
         sizeof(payload),
         "{\"uid_card\":\"%s\",\"identificador_dispositivo\":\"%s\"}",
         uuid,
-        identificadorDispositivo
-    );
+        identificadorDispositivo);
 
     int httpCode = http.POST((uint8_t *)payload, strlen(payload));
 
@@ -310,20 +328,38 @@ bool iniciarTentativaAcesso(const char *uuid, String &tentativaId)
 
     if (httpCode != 200)
     {
-        Serial.print("RFID/eligibilidade recusado. HTTP: ");
+        Serial.print("Falha HTTP ao processar RFID: ");
         Serial.println(httpCode);
         http.end();
         return false;
     }
 
     String response = http.getString();
+    String proximaEtapa = extrairCampoJson(response, "proxima_etapa");
+    String mensagem = extrairCampoJson(response, "mensagem");
+
+    if (proximaEtapa == "NEGADO")
+    {
+        Serial.print("RFID processado, acesso negado: ");
+        Serial.println(mensagem);
+        http.end();
+        return false;
+    }
+
     tentativaId = extrairCampoJson(response, "tentativa_id");
+
+    if (tentativaId.length() == 0)
+    {
+        Serial.println("Resposta valida, mas sem tentativa_id.");
+        http.end();
+        return false;
+    }
 
     Serial.print("Tentativa criada: ");
     Serial.println(tentativaId);
 
     http.end();
-    return tentativaId.length() > 0;
+    return true;
 }
 
 bool aguardarDecisaoAcesso(const String &tentativaId)

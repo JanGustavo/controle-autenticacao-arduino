@@ -1,8 +1,11 @@
+import { CpfMaskDirective } from '../../directives/cpf-mask.directive';
 import {
+  ChangeDetectorRef,
   Component,
   ElementRef,
   OnDestroy,
   OnInit,
+  signal,
   ViewChild,
   inject,
 } from '@angular/core';
@@ -18,8 +21,10 @@ import { Subscription } from 'rxjs';
 import {
   ApiService,
   DispositivoSimplesResponse,
+  TipoUsuario,
   UsuarioResponse,
 } from '../../services/api.service';
+import { SpeechService } from '../../services/speech.service';
 import { WebcamService } from '../../services/webcam.service';
 import { WebSocketLogsService } from '../../services/websocket-logs.service';
 
@@ -35,6 +40,7 @@ export interface UserEditDialogResult {
   selector: 'app-user-edit-dialog',
   standalone: true,
   imports: [
+    CpfMaskDirective,
     CommonModule,
     FormsModule,
     MatButtonModule,
@@ -47,9 +53,12 @@ export interface UserEditDialogResult {
 })
 export class UserEditDialog implements OnInit, OnDestroy {
   @ViewChild('editVideo') videoElement?: ElementRef<HTMLVideoElement>;
+  @ViewChild('webcamContainer') webcamContainer?: ElementRef<HTMLDivElement>;
 
   private api = inject(ApiService);
+  private cdr = inject(ChangeDetectorRef);
   private snackBar = inject(MatSnackBar);
+  private speech = inject(SpeechService);
   private dialogRef = inject(
     MatDialogRef<UserEditDialog, UserEditDialogResult>,
   );
@@ -57,12 +66,16 @@ export class UserEditDialog implements OnInit, OnDestroy {
   private wsLogs = inject(WebSocketLogsService);
   public webcam = inject(WebcamService);
 
+  modoTotem = signal(true);
   usuario: UsuarioResponse = { ...this.data.usuario };
   nome = this.usuario.nome;
+  cpf = this.formatarCpf(this.usuario.cpf);
+  tipoUsuario: TipoUsuario = this.usuario.tipo_usuario;
   ativo = this.usuario.ativo;
 
   salvandoDados = false;
   salvandoCartao = false;
+  verificandoCartao = false;
   salvandoBiometria = false;
 
   dispositivos: DispositivoSimplesResponse[] = [];
@@ -70,6 +83,7 @@ export class UserEditDialog implements OnInit, OnDestroy {
   carregandoDispositivos = true;
   aguardandoRfid = false;
   uidNovo = this.usuario.uid_card ?? '';
+  cartaoDisponivel: boolean | null = this.usuario.uid_card ? true : null;
 
   fotoCapturada: Blob | File | null = null;
   fotoPreviewUrl: string | null = null;
@@ -81,10 +95,10 @@ export class UserEditDialog implements OnInit, OnDestroy {
   private wsSubscription: Subscription | null = null;
 
   get dispositivoSelecionado(): DispositivoSimplesResponse | null {
-    if (this.dispositivoSelecionadoId === null) return null;
+    if (this.dispositivoSelecionadoId === null || this.dispositivoSelecionadoId === undefined) return null;
     return (
       this.dispositivos.find(
-        (item) => item.dispositivo_id === this.dispositivoSelecionadoId,
+        (item) => Number(item.dispositivo_id) === Number(this.dispositivoSelecionadoId),
       ) ?? null
     );
   }
@@ -106,10 +120,12 @@ export class UserEditDialog implements OnInit, OnDestroy {
         if (dispositivos.length) {
           this.dispositivoSelecionadoId = dispositivos[0].dispositivo_id;
         }
+        this.cdr.markForCheck();
       },
       error: () => {
         this.carregandoDispositivos = false;
         this.erro = 'Não foi possível carregar os dispositivos RFID.';
+        this.cdr.markForCheck();
       },
     });
 
@@ -119,15 +135,21 @@ export class UserEditDialog implements OnInit, OnDestroy {
           evento.type !== 'RFID_LIDO'
           || !this.aguardandoRfid
           || !evento.data.uid_card
-          || evento.data.identificador_dispositivo !== this.identificadorDispositivo
         ) {
+          return;
+        }
+
+        const eventoDisp = (evento.data.identificador_dispositivo || '').trim().toUpperCase();
+        const leitorAtual = (this.identificadorDispositivo || '').trim().toUpperCase();
+
+        if (eventoDisp && leitorAtual && eventoDisp !== leitorAtual) {
           return;
         }
 
         this.uidNovo = this.normalizarUid(evento.data.uid_card);
         this.aguardandoRfid = false;
-        this.aviso = `Cartão lido: ${this.uidNovo}`;
-        this.erro = '';
+        this.cdr.detectChanges();
+        this.validarUidAtual();
       },
     });
   }
@@ -144,19 +166,30 @@ export class UserEditDialog implements OnInit, OnDestroy {
       return;
     }
 
-    this.salvandoDados = true;
     this.erro = '';
     this.aviso = '';
+
+    const cpf = this.normalizarCpf(this.cpf);
+    if (cpf !== null && cpf.length !== 11) {
+      this.erro = 'CPF deve conter 11 dígitos.';
+      return;
+    }
+
+    this.salvandoDados = true;
 
     this.api
       .atualizarUsuario(this.usuario.user_id, {
         nome,
+        cpf,
+        tipo_usuario: this.tipoUsuario,
         ativo: this.ativo,
       })
       .subscribe({
         next: (usuario) => {
           this.usuario = usuario;
           this.nome = usuario.nome;
+          this.cpf = this.formatarCpf(usuario.cpf);
+          this.tipoUsuario = usuario.tipo_usuario;
           this.ativo = usuario.ativo;
           this.salvandoDados = false;
           this.alterado = true;
@@ -179,12 +212,62 @@ export class UserEditDialog implements OnInit, OnDestroy {
 
     this.erro = '';
     this.aviso = 'Aguardando aproximação do cartão no leitor selecionado...';
+    this.cartaoDisponivel = null;
     this.aguardandoRfid = true;
   }
 
   cancelarLeituraRfid(): void {
     this.aguardandoRfid = false;
     this.aviso = '';
+  }
+
+  validarUidAtual(): void {
+    const uid = this.normalizarUid(this.uidNovo);
+
+    if (![8, 14, 20].includes(uid.length) || !/^[0-9A-F]+$/.test(uid)) {
+      this.cartaoDisponivel = null;
+      this.erro = uid
+        ? 'UID inválido. Use hexadecimal com 8, 14 ou 20 caracteres.'
+        : '';
+      return;
+    }
+
+    this.verificandoCartao = true;
+    this.erro = '';
+    this.aviso = 'Verificando se o cartão já possui vínculo...';
+
+    this.api.consultarCartao(uid, this.usuario.user_id).subscribe({
+      next: (resultado) => {
+        this.verificandoCartao = false;
+        this.uidNovo = resultado.uid_card;
+        this.cartaoDisponivel = resultado.disponivel_para_usuario;
+
+        if (resultado.disponivel_para_usuario) {
+          this.erro = '';
+          this.aviso = resultado.mensagem;
+          this.cdr.detectChanges();
+          return;
+        }
+
+        this.aviso = '';
+        this.erro = resultado.mensagem;
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        this.verificandoCartao = false;
+        this.cartaoDisponivel = null;
+        this.aviso = '';
+        this.erro =
+          error.error?.detail || 'Não foi possível verificar o cartão.';
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  onUidManualChange(): void {
+    this.cartaoDisponivel = null;
+    this.aviso = '';
+    this.erro = '';
   }
 
   salvarNovoCartao(): void {
@@ -196,6 +279,11 @@ export class UserEditDialog implements OnInit, OnDestroy {
 
     if (![8, 14, 20].includes(uid.length) || !/^[0-9A-F]+$/.test(uid)) {
       this.erro = 'UID inválido. Use hexadecimal com 8, 14 ou 20 caracteres.';
+      return;
+    }
+
+    if (this.cartaoDisponivel === false) {
+      this.erro = 'Este cartão já pertence a outro usuário.';
       return;
     }
 
@@ -215,6 +303,7 @@ export class UserEditDialog implements OnInit, OnDestroy {
           this.alterado = true;
           this.uidNovo = resultado.uid_card ?? uid;
           this.usuario = { ...this.usuario, uid_card: this.uidNovo };
+          this.cartaoDisponivel = true;
           this.aviso = resultado.mensagem || 'Cartão atualizado com sucesso.';
           this.snackBar.open('Cartão RFID atualizado.', 'OK', {
             duration: 3500,
@@ -228,11 +317,63 @@ export class UserEditDialog implements OnInit, OnDestroy {
       });
   }
 
+  toggleModoTotem(): void {
+    this.modoTotem.set(!this.modoTotem());
+    this.speech.falar(
+      this.modoTotem()
+        ? 'Modo totem ativado. Auto-captura habilitada.'
+        : 'Modo assistido ativado. Captura manual.',
+      true
+    );
+    if (this.webcam.webcamAtiva()) {
+      void this.iniciarWebcam();
+    }
+  }
+
+  obterEstiloOvalDinamico(): { [key: string]: string } {
+    const box = this.webcam.faceBox();
+    const video = this.videoElement?.nativeElement;
+    const container = this.webcamContainer?.nativeElement;
+
+    const larguraFrame = this.webcam.larguraFrameProcessado() || video?.videoWidth || 0;
+    const alturaFrame = this.webcam.alturaFrameProcessado() || video?.videoHeight || 0;
+
+    if (!box || !video || !container || !larguraFrame || !alturaFrame) {
+      return {};
+    }
+
+    const scaleX = container.clientWidth / larguraFrame;
+    const scaleY = container.clientHeight / alturaFrame;
+    const scaleFactor = 0.85;
+    const size = Math.max(box.width * scaleX, box.height * scaleY) * scaleFactor;
+
+    // A prévia é espelhada para navegação natural. A bounding box vem
+    // do frame não espelhado, então refletimos o eixo X para coincidir.
+    const boxXEspelhado = larguraFrame - box.x - box.width;
+    const left = (boxXEspelhado + box.width / 2) * scaleX - size / 2;
+    const top = (box.y + box.height / 2) * scaleY - size / 2 - 10;
+
+    return {
+      left: `${left}px`,
+      top: `${top}px`,
+      width: `${size}px`,
+      height: `${size}px`,
+      transform: 'none',
+    };
+  }
+
   async iniciarWebcam(): Promise<void> {
     this.fotoCapturada = null;
     this.fotoPreviewUrl = null;
     this.erro = '';
-    await this.webcam.iniciarWebcam(() => this.videoElement);
+    if (this.modoTotem()) {
+      this.speech.falar('Centralize o rosto na moldura para atualizar a biometria.');
+    }
+    await this.webcam.iniciarWebcam(
+      () => this.videoElement,
+      this.modoTotem(),
+      () => void this.capturarFoto()
+    );
   }
 
   pararWebcam(): void {
@@ -240,7 +381,7 @@ export class UserEditDialog implements OnInit, OnDestroy {
   }
 
   async capturarFoto(): Promise<void> {
-    if (!this.webcam.capturaPronta()) return;
+    if (!this.webcam.capturaPronta() && !this.modoTotem()) return;
     const captura = await this.webcam.capturarFrameComPreview();
     if (!captura) {
       this.erro = 'Não foi possível capturar a imagem da webcam.';
@@ -251,6 +392,8 @@ export class UserEditDialog implements OnInit, OnDestroy {
     this.fotoPreviewUrl = captura.previewUrl;
     this.pararWebcam();
     this.aviso = 'Captura pronta para cadastrar a biometria.';
+    this.speech.falar('Foto capturada com sucesso.');
+    this.cdr.detectChanges();
   }
 
   selecionarImagem(event: Event): void {
@@ -315,6 +458,18 @@ export class UserEditDialog implements OnInit, OnDestroy {
 
   fechar(): void {
     this.dialogRef.close({ atualizado: this.alterado });
+  }
+
+  private normalizarCpf(cpf: string): string | null {
+    const digitos = cpf.replace(/\D/g, '');
+    return digitos || null;
+  }
+
+  private formatarCpf(cpf: string | null): string {
+    if (!cpf) return '';
+    const digitos = cpf.replace(/\D/g, '');
+    if (digitos.length !== 11) return cpf;
+    return digitos.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
   }
 
   private normalizarUid(uid: string): string {

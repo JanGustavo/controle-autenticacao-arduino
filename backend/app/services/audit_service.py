@@ -63,10 +63,11 @@ class AuditService:
                         al.id, al.admin_id, a.nome as admin_nome, al.action, 
                         al.resource_type, al.resource_id, al.description, 
                         al.ip_address, al.user_agent, al.request_id, al.status, 
-                        al.metadata, al.created_at
+                        al.metadata,
+                        al.created_at AT TIME ZONE al.created_at_timezone AS created_at
                     FROM audit_logs al
                     LEFT JOIN administrador a ON al.admin_id = a.admin_id
-                    ORDER BY al.created_at DESC
+                    ORDER BY al.created_at AT TIME ZONE al.created_at_timezone DESC, al.id DESC
                     LIMIT %s
                     """,
                     (limite,)

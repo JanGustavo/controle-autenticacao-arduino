@@ -6,7 +6,11 @@ BACKEND_PORT  := 8001
 FRONTEND_PORT := 4200
 DOCKER_BACKEND_PORT := 8001
 
-.PHONY: setup up down build logs ps restart \
+# These values identify the source and the build actually served by Docker.
+export APP_BUILD_REVISION := $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
+export APP_BUILD_TIME := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
+
+.PHONY: setup up down build logs ps restart version \
 	dev db-local migrate-local migrate-docker dev-backend dev-frontend kill-port \
 	db-reset help
 
@@ -28,25 +32,53 @@ setup: ## Instala todas as dependências do projeto e inicializa o banco de dado
 
 # ── Docker Compose (Todos os serviços integrados) ──────────────────────────────
 
-up: ## Sobe toda a aplicação com Docker (Frontend + Backend + PostgreSQL)
+up: ## Reconstrói sem cache e recria a aplicação; preserva o banco Docker
+	@echo "📂 Código: $$(pwd)"
+	@echo "🌿 Branch: $$(git branch --show-current) | commit: $(APP_BUILD_REVISION)"
 	@echo "🗄️  Subindo PostgreSQL para aplicar migrations..."
 	docker compose up -d db
 	@until docker compose exec -T db pg_isready -U postgres -d controle_acesso >/dev/null 2>&1; do sleep 1; done
 	@$(MAKE) migrate-docker
-	docker compose up -d --build
+	@$(MAKE) build
+	@set -e; set -a; [ -f .env ] && source .env; set +a; \
+	DOMAIN="$${ARDLOCK_DOMAIN:-ardlock.jangustavo.me}"; \
+	if [[ "$${TUNNEL_ENABLED:-false}" == "true" ]]; then \
+		if [[ -z "$${CLOUDFLARE_TUNNEL_TOKEN:-}" ]]; then \
+			echo "❌ TUNNEL_ENABLED=true, mas CLOUDFLARE_TUNNEL_TOKEN está vazio."; \
+			exit 1; \
+		fi; \
+		export FRONTEND_URL="https://$$DOMAIN"; \
+		echo "🔐 Modo tunnel habilitado para https://$$DOMAIN"; \
+		docker compose --profile tunnel pull cloudflared; \
+		docker compose --profile tunnel up -d --wait --wait-timeout 180 --no-build --force-recreate --no-deps backend frontend cloudflared; \
+	else \
+		export FRONTEND_URL="$${FRONTEND_URL:-http://localhost:4200}"; \
+		echo "🧪 Modo local habilitado (HTTP/WS)."; \
+		docker compose up -d --wait --wait-timeout 180 --no-build --force-recreate --no-deps backend frontend; \
+	fi
 	@echo ""
-	@echo "✅ Aplicação iniciada via Docker:"
-	@echo "   🅰️  Frontend  → http://localhost"
-	@echo "   🐍 Backend   → http://localhost:$(DOCKER_BACKEND_PORT)"
-	@echo "   📖 Swagger   → http://localhost:$(DOCKER_BACKEND_PORT)/docs"
-	@echo "   ⚡ WebSocket → ws://localhost:$(DOCKER_BACKEND_PORT)/ws/logs"
+	@set -a; [ -f .env ] && source .env; set +a; \
+	DOMAIN="$${ARDLOCK_DOMAIN:-ardlock.jangustavo.me}"; \
+	echo "✅ Aplicação iniciada via Docker:"; \
+	echo "   🅰️  Frontend local → http://localhost"; \
+	echo "   🐍 Backend debug   → http://localhost:$(DOCKER_BACKEND_PORT)"; \
+	echo "   📖 Swagger debug   → http://localhost:$(DOCKER_BACKEND_PORT)/docs"; \
+	if [[ "$${TUNNEL_ENABLED:-false}" == "true" ]]; then \
+		echo "   🔒 HTTPS público   → https://$$DOMAIN"; \
+		echo "   ⚡ WSS público     → wss://$$DOMAIN/ws/logs"; \
+	else \
+		echo "   ⚡ WebSocket local → ws://localhost:$(DOCKER_BACKEND_PORT)/ws/logs"; \
+	fi
 	@echo ""
 
 down: ## Para e remove os containers (mantém os dados salvos)
-	docker compose down
+	docker compose --profile tunnel down
 
 build: ## Força a reconstrução de todas as imagens Docker sem cache
-	docker compose build --no-cache
+	docker compose build --no-cache --pull backend frontend
+
+version: ## Exibe o commit e a data do build servido pelo frontend
+	@curl --fail --silent --show-error http://localhost/version.json
 
 logs: ## Exibe os logs unificados de todos os containers em tempo real
 	docker compose logs -f
@@ -81,7 +113,7 @@ db-local: ## Prepara o banco de dados PostgreSQL local com schema e migrations
 
 migrate-local: ## Executa migrations SQL no PostgreSQL local
 	@echo "🔄 Executando migrations locais..."
-	@for mig in backend/migrations/*.sql; do \
+	@set -e; for mig in backend/migrations/*.sql; do \
 		if [ -f "$$mig" ]; then \
 			echo "   → $$mig"; \
 			PGPASSWORD=JGustavo2106 psql -h localhost -U postgres -v ON_ERROR_STOP=1 -d controle_acesso -f "$$mig" >/dev/null; \
@@ -90,8 +122,14 @@ migrate-local: ## Executa migrations SQL no PostgreSQL local
 	@echo "✅ Migrations locais aplicadas."
 
 migrate-docker: ## Executa migrations SQL no PostgreSQL do Docker
+	@set -e; \
+	tables=$$(docker compose exec -T db psql -U "$${POSTGRES_USER:-postgres}" -d "$${POSTGRES_DB:-controle_acesso}" -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema NOT IN ('pg_catalog', 'information_schema') AND table_type = 'BASE TABLE';"); \
+	if [ "$$tables" = "0" ]; then \
+		echo "📄 Banco vazio: inicializando schema base antes das migrations..."; \
+		docker compose exec -T db psql -U "$${POSTGRES_USER:-postgres}" -d "$${POSTGRES_DB:-controle_acesso}" -v ON_ERROR_STOP=1 --single-transaction < backend/init.sql >/dev/null; \
+	fi
 	@echo "🔄 Executando migrations no PostgreSQL Docker..."
-	@for mig in backend/migrations/*.sql; do \
+	@set -e; for mig in backend/migrations/*.sql; do \
 		if [ -f "$$mig" ]; then \
 			echo "   → $$mig"; \
 			docker compose exec -T db psql -U "$${POSTGRES_USER:-postgres}" -d "$${POSTGRES_DB:-controle_acesso}" -v ON_ERROR_STOP=1 < "$$mig" >/dev/null; \

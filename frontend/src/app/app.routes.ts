@@ -3,18 +3,13 @@ import { Login } from './pages/login/login';
 import { AdmPage } from './pages/adm-page/adm-page';
 import { TuplePage } from './pages/tuple-page/tuple-page';
 import { EntidadesPage } from './pages/entidades/entidades';
-import { CadastrarPage } from './pages/cadastrar/cadastrar';
 import { CompararPage } from './pages/comparar/comparar';
 import { LocaisPage } from './pages/locais/locais';
 import { DispositivosPage } from './pages/dispositivos/dispositivos';
 import { AdministradoresPage } from './pages/administradores/administradores';
 import { AuditLogsComponent } from './pages/audit-logs/audit-logs.component';
 import { authGuard } from './guards/auth.guard';
-import {
-  DASHBOARD_MOCK,
-  USUARIOS_MOCK,
-  PERMISSOES_MOCK,
-} from './models/tuple-page.model';
+import { DASHBOARD_MOCK, USUARIOS_MOCK, PERMISSOES_MOCK } from './models/tuple-page.model';
 
 import { ForgotPassword } from './pages/forgot-password/forgot-password';
 import { ResetPassword } from './pages/reset-password/reset-password';
@@ -38,8 +33,8 @@ export const routes: Routes = [
   },
   {
     path: 'cadastrar',
-    component: CadastrarPage,
-    canActivate: [authGuard],
+    redirectTo: 'usuarios',
+    pathMatch: 'full',
   },
   {
     path: 'validar-acesso',

@@ -48,8 +48,26 @@
 │       └── test_usuarios.py
 ├── docker-compose.yml
 ├── docs
-│   ├── Arduino-acess-control.md
-│   └── BUILDS.md
+│   ├── README.md
+│   ├── academico
+│   │   └── av1
+│   │       ├── CHECKLIST_AV1.md
+│   │       └── orienta_es_projeto_integrador_av1.md
+│   ├── requisitos
+│   │   ├── Arduino-acess-control.md
+│   │   └── Documento de Requisitos 1.docx
+│   ├── tecnico
+│   │   ├── BACKEND.md
+│   │   ├── FRONTEND.md
+│   │   └── RECONHECIMENTO_FACIAL.md
+│   ├── operacao
+│   │   ├── EXECUCAO.md
+│   │   └── HTTPS_WSS.md
+│   ├── testes
+│   │   ├── API_DEBUG.md
+│   │   └── ROTEIRO_HOMOLOGACAO.md
+│   └── seguranca
+│       └── Relatorio laboratorio seguranca ArdLock.docx
 ├── estrutura.txt
 ├── firmware
 │   └── blink

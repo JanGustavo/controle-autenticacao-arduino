@@ -3,8 +3,10 @@ import os
 from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid4
+from psycopg.errors import UniqueViolation
 
 from app.database.connection import get_connection
+from app.utils.access_time import agora_acesso, iso_acesso
 from app.models.dispositivo_model import dispositivo_model
 from app.models.historico_acesso_model import historico_acesso_model
 from app.models.local_model import local_model
@@ -25,11 +27,28 @@ class AcessoServiceError(Exception):
 
 
 class AcessoNegadoError(AcessoServiceError):
-    """RFID não pode iniciar uma tentativa de acesso."""
+    """RFID foi processado, mas não pode iniciar uma tentativa de acesso."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        existe: bool = False,
+        usuario_id: int | None = None,
+        nome: str | None = None,
+    ):
+        super().__init__(message)
+        self.existe = existe
+        self.usuario_id = usuario_id
+        self.nome = nome
 
 
 class TentativaAcessoNaoEncontradaError(AcessoServiceError):
     """Tentativa inexistente ou não disponível para finalização."""
+
+
+class TentativaEmAndamentoError(AcessoServiceError):
+    """Outra leitura do mesmo cartão ainda aguarda a decisão facial."""
 
 
 class AcessoService:
@@ -47,7 +66,7 @@ class AcessoService:
 
     @staticmethod
     def _agora() -> datetime:
-        return datetime.now()
+        return agora_acesso()
 
     @staticmethod
     def _permissao_valida(
@@ -167,30 +186,60 @@ class AcessoService:
                         "autorizado": False,
                         "percentual_similaridade": None,
                         "motivo_recusa": negacao,
-                        "data_hora": agora.isoformat(),
+                        "data_hora": iso_acesso(agora),
                         "tentativa_id": None,
                         "tempo_resposta_ms": None,
                     },
                 }
             )
 
-            raise AcessoNegadoError(negacao)
+            raise AcessoNegadoError(
+                negacao,
+                existe=usuario is not None,
+                usuario_id=usuario_id,
+                nome=usuario["nome"] if usuario else None,
+            )
 
         expira_em = agora + timedelta(seconds=timeout_segundos)
 
-        with get_connection() as connection:
-            with connection.cursor() as cursor:
-                tentativa_acesso_model.criar_com_cursor(
-                    cursor,
-                    tentativa_id=tentativa_id,
-                    usuario_id=usuario_id,
-                    local_id=local_id,
-                    dispositivo_id=dispositivo_id,
-                    uid_card_lido=uid_card,
-                    status=cls._STATUS_PENDENTE,
-                    criado_em=agora,
-                    expira_em=expira_em,
-                )
+        try:
+            with get_connection() as connection:
+                with connection.cursor() as cursor:
+                    # Não esperar a varredura periódica para liberar tentativas vencidas.
+                    motivo_expiracao = "Tempo máximo para validação facial excedido."
+                    expiradas = tentativa_acesso_model.expirar_pendentes_com_cursor(
+                        cursor, agora=agora, motivo_recusa=motivo_expiracao,
+                    )
+                    for expirada in expiradas:
+                        historico_acesso_model.criar_com_cursor(
+                            cursor,
+                            usuario_id=expirada["usuario_id"],
+                            local_id=expirada["local_id"],
+                            dispositivo_id=expirada["dispositivo_id"],
+                            uid_card_lido=expirada["uid_card_lido"],
+                            data_hora=agora,
+                            autorizado=False,
+                            percentual_similaridade=None,
+                            motivo_recusa=motivo_expiracao,
+                        )
+                    tentativa_acesso_model.criar_com_cursor(
+                        cursor,
+                        tentativa_id=tentativa_id,
+                        usuario_id=usuario_id,
+                        local_id=local_id,
+                        dispositivo_id=dispositivo_id,
+                        uid_card_lido=uid_card,
+                        status=cls._STATUS_PENDENTE,
+                        criado_em=agora,
+                        expira_em=expira_em,
+                    )
+        except UniqueViolation as error:
+            if error.diag.constraint_name != "uq_tentativa_pendente_dispositivo_cartao":
+                raise
+            raise TentativaEmAndamentoError(
+                "Já existe uma tentativa em andamento para este cartão. "
+                "Conclua a validação facial ou aguarde o prazo expirar."
+            ) from error
 
         return VerificarCartaoResponse(
             existe=True,
@@ -238,8 +287,10 @@ class AcessoService:
             )
 
         if tentativa["status"] != cls._STATUS_PENDENTE:
-            raise TentativaAcessoNaoEncontradaError(
-                "Tentativa de acesso já foi finalizada."
+            # Repetições retornam a decisão persistida sem inferir nem gravar de novo.
+            return cls._finalizar_tentativa(
+                tentativa_id=tentativa_id, aprovado=False,
+                similaridade=0.0, motivo_recusa=None,
             )
 
         face_result = FaceService.extract_face_vector_detailed(image_bytes)
