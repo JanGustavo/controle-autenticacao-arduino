@@ -23,6 +23,7 @@
 .tile-card {
   --tile-accent: #1d4ed8;
   --tile-tint: color-mix(in srgb, var(--tile-accent) 12%, var(--ard-surface));
+  --tile-stroke: 2px;
   --tile-trace: 0deg;
   &[data-tone='users'] { --tile-accent: #1d4ed8; }
   &[data-tone='permissions'] { --tile-accent: #a16207; }
@@ -40,7 +41,7 @@
   gap: 16px;
   min-height: 170px;
   padding: 24px;
-  border: 1px solid var(--ard-line);
+  border: var(--tile-stroke) solid var(--ard-line);
   border-radius: var(--ard-radius-md);
   background: var(--ard-surface);
   text-decoration: none;
@@ -52,9 +53,9 @@
     content: '';
     position: absolute;
     left: 24px;
-    top: -1px;
+    top: calc(-1 * var(--tile-stroke));
     width: 48px;
-    height: 3px;
+    height: var(--tile-stroke);
     border-radius: 0 0 3px 3px;
     background: var(--tile-accent);
   }
@@ -62,9 +63,9 @@
   &::after {
     content: '';
     position: absolute;
-    inset: -1px;
+    inset: calc(-1 * var(--tile-stroke));
     border-radius: inherit;
-    padding: 2px;
+    padding: var(--tile-stroke);
     background: conic-gradient(at 48px 50%, var(--tile-accent) 0deg var(--tile-trace), transparent var(--tile-trace) 360deg);
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
