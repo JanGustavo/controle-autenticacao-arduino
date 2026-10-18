@@ -2,6 +2,12 @@
 
 @include pages.ard-page-pattern('.adm-wrapper');
 
+@property --tile-trace {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: true;
+}
+
 .adm-header .eyebrow {
   font-weight: 800;
   text-transform: uppercase;
@@ -17,6 +23,7 @@
 .tile-card {
   --tile-accent: #1d4ed8;
   --tile-tint: color-mix(in srgb, var(--tile-accent) 12%, var(--ard-surface));
+  --tile-trace: 0deg;
   &[data-tone='users'] { --tile-accent: #1d4ed8; }
   &[data-tone='permissions'] { --tile-accent: #a16207; }
   &[data-tone='validation'] { --tile-accent: #15803d; }
@@ -39,7 +46,7 @@
   text-decoration: none;
   color: var(--ard-ink);
   box-shadow: 0 4px 16px rgb(15 23 42 / 3%);
-  transition: transform 160ms ease, border-color 160ms ease;
+  transition: transform 160ms ease, background-color 320ms ease, --tile-trace 750ms ease-in-out;
 
   &::before {
     content: '';
@@ -52,9 +59,27 @@
     background: var(--tile-accent);
   }
 
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 2px;
+    background: conic-gradient(at 48px 50%, var(--tile-accent) 0deg var(--tile-trace), transparent var(--tile-trace) 360deg);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  &:hover,
+  &:focus-visible {
+    --tile-trace: 360deg;
+    background: color-mix(in srgb, var(--ard-surface) 94%, var(--tile-accent) 6%);
+  }
   &:hover {
     transform: translateY(-2px);
-    border-color: var(--tile-accent);
     .tile-arrow { color: var(--tile-accent); transform: translateX(3px); }
   }
   &:focus-visible {
