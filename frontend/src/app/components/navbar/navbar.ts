@@ -60,12 +60,12 @@ export class NavbarComponent implements OnInit {
   readonly links = [
     { path: '/adm-page', label: 'Painel', icon: 'space_dashboard' },
     { path: '/usuarios', label: 'Usuários', icon: 'group' },
-    { path: '/permissoes', label: 'Permissões', icon: 'schedule' },
+    { path: '/permissoes', label: 'Permissões', icon: 'vpn_key' },
     { path: '/validar-acesso', label: 'Validar acesso', icon: 'face' },
     { path: '/dashboard', label: 'Histórico', icon: 'history' },
     { path: '/locais', label: 'Locais', icon: 'location_on' },
     { path: '/dispositivos', label: 'Dispositivos', icon: 'memory' },
-    { path: '/administradores', label: 'Administradores', icon: 'admin_panel_settings' },
+    { path: '/administradores', label: 'Administradores', icon: 'verified_user' },
     { path: '/audit-logs', label: 'Auditoria', icon: 'fact_check' },
   ];
 

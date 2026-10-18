@@ -3,7 +3,7 @@
   <div class="header">
     <a routerLink="/adm-page" class="back-link">
       <mat-icon>arrow_back</mat-icon>
-      Voltar ao menu
+      Painel administrativo
     </a>
     <h2>Administradores</h2>
     <p class="subtitle">Cadastre e controle as contas administrativas do sistema</p>
@@ -188,12 +188,12 @@
           <table class="locais-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Administrador</th>
-                <th>E-mail</th>
-                <th>Tipo</th>
-                <th>Status</th>
-                <th>Ações</th>
+                <th scope="col">ID</th>
+                <th scope="col">Administrador</th>
+                <th scope="col">E-mail</th>
+                <th scope="col">Tipo</th>
+                <th scope="col">Status</th>
+                <th scope="col">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -217,7 +217,7 @@
                       <strong>{{ admin.nome }}</strong>
                     </div>
                   </td>
-                  <td>{{ admin.email }}</td>
+                  <td class="admin-email">{{ admin.email }}</td>
                   <td>
                     @if (admin.principal) {
                       <span class="badge badge-principal">
@@ -241,6 +241,7 @@
                     <div class="action-buttons">
                       <button
                         type="button"
+                        mat-icon-button
                         class="btn-icon edit"
                         (click)="editar(admin)"
                         aria-label="Editar administrador"
@@ -252,6 +253,7 @@
                       @if (!admin.principal) {
                         <button
                           type="button"
+                          mat-icon-button
                           class="btn-icon delete"
                           (click)="excluir(admin)"
                           aria-label="Excluir administrador"
@@ -260,7 +262,7 @@
                           <mat-icon>delete</mat-icon>
                         </button>
                       } @else {
-                        <span class="locked-icon" title="Conta principal protegida contra exclusão">
+                        <span class="locked-icon" role="img" aria-label="Conta principal protegida contra exclusão" title="Conta principal protegida contra exclusão">
                           <mat-icon>lock</mat-icon>
                         </span>
                       }

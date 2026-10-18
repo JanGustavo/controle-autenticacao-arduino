@@ -82,69 +82,6 @@ body.dark-mode {
     }
   }
 
-  .adm-wrapper {
-    --canvas: #0f172a;
-    --surface: #1e293b;
-    --ink: #f8fafc;
-    --muted: #94a3b8;
-    --line: rgba(255, 255, 255, 0.1);
-    background: var(--ard-canvas) !important;
-
-    .adm-header {
-      h2 {
-        color: #f8fafc !important;
-      }
-      .eyebrow {
-        color: #cbd5e1 !important;
-      }
-    }
-
-    .tile-card {
-      background: #1e293b !important;
-      border-color: rgba(255, 255, 255, 0.1) !important;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
-
-      .tile-icon {
-        background: rgba(255, 255, 255, 0.08) !important;
-      }
-
-      .tile-info h3 {
-        color: #f8fafc !important;
-      }
-      .tile-info p {
-        color: #94a3b8 !important;
-      }
-      .tile-arrow {
-        color: #94a3b8 !important;
-      }
-
-      &.blue {
-        --accent: #60a5fa;
-        .tile-icon mat-icon {
-          color: #60a5fa !important;
-        }
-      }
-      &.green {
-        --accent: #4ade80;
-        .tile-icon mat-icon {
-          color: #4ade80 !important;
-        }
-      }
-      &.orange {
-        --accent: #fbbf24;
-        .tile-icon mat-icon {
-          color: #fbbf24 !important;
-        }
-      }
-      &.purple {
-        --accent: #c084fc;
-        .tile-icon mat-icon {
-          color: #c084fc !important;
-        }
-      }
-    }
-  }
-
   .login-card {
     background: #1e293b !important;
     color: #f8fafc !important;

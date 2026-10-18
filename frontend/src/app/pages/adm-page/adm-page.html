@@ -22,7 +22,7 @@
       </div>
       <div class="grid-menu">
         @for (link of grupo.links; track link.path) {
-          <a [routerLink]="link.path" class="tile-card">
+          <a [routerLink]="link.path" class="tile-card" [attr.data-tone]="link.tone">
             <div class="tile-top">
               <div class="tile-icon">
                 <mat-icon>{{ link.icon }}</mat-icon>
