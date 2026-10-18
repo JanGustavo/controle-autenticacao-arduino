@@ -119,6 +119,15 @@ Scripts que utilizam os models sem iniciar o FastAPI continuam abrindo conexões
 diretas. As transações dos `with get_connection()` continuam a confirmar no
 sucesso e desfazer em caso de erro.
 
+Quando as 5 conexões estão ocupadas, novas operações aguardam uma conexão
+livre na fila interna da pool. O tempo máximo de espera usa o padrão de 30
+segundos do `psycopg_pool`. Se esse prazo terminar, a API registra o timeout
+e responde HTTP 503 com uma mensagem genérica. Falhas operacionais de conexão
+com o PostgreSQL em rotas comuns também são registradas e retornam 503. A
+autenticação e o health check do banco já tratam erros de conexão com 503.
+Isso não identifica a causa de falhas anteriores de carregamento; consulte os
+logs do backend para distingui-las.
+
 ## Testes
 
 ```bash
