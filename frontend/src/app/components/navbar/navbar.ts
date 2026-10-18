@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, DestroyRef, ElementRef, inject, signal, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
@@ -38,16 +38,56 @@ import { AuthService } from '../../services/auth.service';
 export class NavbarComponent implements OnInit {
   private router = inject(Router);
   private authService = inject(AuthService);
+  private nav?: ElementRef<HTMLElement>;
+  private resizeObserver?: ResizeObserver;
+  readonly indicatorReady = signal(false);
+
+  @ViewChild('primaryNav')
+  set primaryNav(nav: ElementRef<HTMLElement> | undefined) {
+    this.resizeObserver?.disconnect();
+    this.nav = nav;
+    this.indicatorReady.set(false);
+    if (nav) {
+      this.resizeObserver = new ResizeObserver(() => this.restoreIndicator());
+      this.resizeObserver.observe(nav.nativeElement);
+      requestAnimationFrame(() => this.restoreIndicator());
+    }
+  }
 
   readonly paginaAtual = signal(this.router.url.split('?')[0]);
 
   constructor() {
+    inject(DestroyRef).onDestroy(() => this.resizeObserver?.disconnect());
     this.router.events.pipe(takeUntilDestroyed()).subscribe((event) => {
       if (event instanceof NavigationEnd) {
         this.paginaAtual.set(event.urlAfterRedirects.split('?')[0]);
         this.menuAberto.set(false);
+        requestAnimationFrame(() => this.restoreIndicator());
       }
     });
+  }
+
+  moveIndicator(event: Event): void {
+    this.positionIndicator(event.currentTarget as HTMLElement);
+  }
+
+  onNavigationFocusOut(event: FocusEvent): void {
+    if (!this.nav?.nativeElement.contains(event.relatedTarget as Node | null)) {
+      this.restoreIndicator();
+    }
+  }
+
+  restoreIndicator(): void {
+    const active = this.nav?.nativeElement.querySelector<HTMLElement>('a[aria-current="page"]');
+    if (active) this.positionIndicator(active);
+  }
+
+  private positionIndicator(link: HTMLElement): void {
+    const indicator = this.nav?.nativeElement.querySelector<HTMLElement>('.navigation-indicator');
+    if (!indicator || !link.offsetWidth) return;
+    indicator.style.width = `${Math.max(0, link.offsetWidth - 24)}px`;
+    indicator.style.transform = `translate3d(${link.offsetLeft + 12}px, ${link.offsetTop + link.offsetHeight - 6}px, 0)`;
+    this.indicatorReady.set(true);
   }
 
   linkAtivo(path: string): boolean {
