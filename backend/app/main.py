@@ -24,6 +24,7 @@ from app.api import (
 from app.api.biometria import router as biometria
 from app.api.health import database_health, health
 from app.auth import router as auth
+from app.database.connection import close_pool, open_pool
 from app.services.expiracao_service import loop_expiracao_periodica
 from app.services.face_service import FaceService
 # from app.api import rfid
@@ -153,21 +154,24 @@ async def lifespan(app: FastAPI):
     """
     # Uvicorn só aceita acessos após carregar e aquecer a inferência facial.
     await asyncio.to_thread(FaceService._get_model)
-
-    task_expiracao = asyncio.create_task(
-        loop_expiracao_periodica(),
-        name="expiracao-tentativas-acesso",
-    )
+    await asyncio.to_thread(open_pool)
 
     try:
-        yield
-    finally:
-        task_expiracao.cancel()
-
+        task_expiracao = asyncio.create_task(
+            loop_expiracao_periodica(),
+            name="expiracao-tentativas-acesso",
+        )
         try:
-            await task_expiracao
-        except asyncio.CancelledError:
-            pass
+            yield
+        finally:
+            task_expiracao.cancel()
+
+            try:
+                await task_expiracao
+            except asyncio.CancelledError:
+                pass
+    finally:
+        await asyncio.to_thread(close_pool)
 
 
 app = FastAPI(

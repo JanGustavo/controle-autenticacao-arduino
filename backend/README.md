@@ -110,6 +110,15 @@ historico_acesso
 
 Um `local` pode possuir vários `dispositivo`.
 
+No startup, o backend abre uma pool PostgreSQL por processo, com 2 conexões
+iniciais e até 5 sob demanda. Conexões excedentes ociosas são liberadas até
+voltar ao mínimo. Ajuste `DB_POOL_MIN_SIZE` e `DB_POOL_MAX_SIZE` conforme a
+carga e o número de processos; cada processo possui sua própria pool. O
+backend fecha a pool no shutdown, depois de encerrar a tarefa de expiração.
+Scripts que utilizam os models sem iniciar o FastAPI continuam abrindo conexões
+diretas. As transações dos `with get_connection()` continuam a confirmar no
+sucesso e desfazer em caso de erro.
+
 ## Testes
 
 ```bash
@@ -118,10 +127,45 @@ PYTHONPATH=. pytest -v
 
 A quantidade de testes pode crescer com o projeto. Para homologação, use a saída da execução atual e não um número fixo escrito na documentação.
 
+### Benchmark da pool de conexões
+
+O benchmark compara uma conexão PostgreSQL nova por operação com uma pool
+persistente, sem alterar os dados do banco. Ele mede a consulta real do histórico
+e consultas sintéticas de 1 a 10.000 linhas:
+
+```bash
+cd backend
+DATABASE_URL=postgresql://postgres:senha@localhost:5432/controle_acesso \
+  python -m benchmarks.connection_pool
+```
+
+Os parâmetros principais são `--rows`, `--operations`, `--concurrency`,
+`--pool-min` e `--pool-max`. Exemplo mais intenso:
+
+```bash
+python -m benchmarks.connection_pool \
+  --rows 1 100 1000 10000 --operations 50 --concurrency 10 \
+  --pool-min 2 --pool-max 5
+```
+
+Para comparar a latência HTTP do serviço antes e depois de uma atualização,
+execute o mesmo comando em ambas as versões:
+
+```bash
+python -m benchmarks.http_latency \
+  --url http://127.0.0.1:8001/api/v1/health/db \
+  --requests 40 --concurrency 1 4
+```
+
+A rota é somente leitura e mede uma requisição curta que consulta o banco.
+Ela não substitui a medição de uma lista grande feita por `connection_pool.py`.
+
 ## Variáveis importantes
 
 ```env
 DATABASE_URL=postgresql://...
+DB_POOL_MIN_SIZE=2
+DB_POOL_MAX_SIZE=5
 JWT_SECRET=...
 JWT_ALGORITHM=HS256
 JWT_EXPIRE_MINUTES=60
