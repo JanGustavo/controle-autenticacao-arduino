@@ -16,11 +16,14 @@ import { DASHBOARD_MOCK, USUARIOS_MOCK, PERMISSOES_MOCK } from './models/tuple-p
 import { ForgotPassword } from './pages/forgot-password/forgot-password';
 import { ResetPassword } from './pages/reset-password/reset-password';
 
+const redirectByAuth = () =>
+  inject(AuthService).isLoggedIn() ? '/adm-page' : '/login';
+
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   {
     path: 'redocs',
-    redirectTo: () => inject(AuthService).isLoggedIn() ? '/adm-page' : '/login',
+    redirectTo: redirectByAuth,
   },
   { path: 'login', component: Login },
   { path: 'forgot-password', component: ForgotPassword },
@@ -69,5 +72,5 @@ export const routes: Routes = [
     component: AuditLogsComponent,
     canActivate: [authGuard],
   },
-  { path: '**', redirectTo: 'login' },
+  { path: '**', redirectTo: redirectByAuth },
 ];
