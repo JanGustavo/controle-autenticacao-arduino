@@ -1,4 +1,6 @@
+import { inject } from '@angular/core';
 import { Routes } from '@angular/router';
+import { AuthService } from './services/auth.service';
 import { Login } from './pages/login/login';
 import { AdmPage } from './pages/adm-page/adm-page';
 import { TuplePage } from './pages/tuple-page/tuple-page';
@@ -16,6 +18,10 @@ import { ResetPassword } from './pages/reset-password/reset-password';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
+  {
+    path: 'redocs',
+    redirectTo: () => inject(AuthService).isLoggedIn() ? '/adm-page' : '/login',
+  },
   { path: 'login', component: Login },
   { path: 'forgot-password', component: ForgotPassword },
   { path: 'reset-password', component: ResetPassword },
