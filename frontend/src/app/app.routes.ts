@@ -1,4 +1,6 @@
+import { inject } from '@angular/core';
 import { Routes } from '@angular/router';
+import { AuthService } from './services/auth.service';
 import { Login } from './pages/login/login';
 import { AdmPage } from './pages/adm-page/adm-page';
 import { TuplePage } from './pages/tuple-page/tuple-page';
@@ -14,8 +16,15 @@ import { DASHBOARD_MOCK, USUARIOS_MOCK, PERMISSOES_MOCK } from './models/tuple-p
 import { ForgotPassword } from './pages/forgot-password/forgot-password';
 import { ResetPassword } from './pages/reset-password/reset-password';
 
+const redirectByAuth = () =>
+  inject(AuthService).isLoggedIn() ? '/adm-page' : '/login';
+
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
+  {
+    path: 'redocs',
+    redirectTo: redirectByAuth,
+  },
   { path: 'login', component: Login },
   { path: 'forgot-password', component: ForgotPassword },
   { path: 'reset-password', component: ResetPassword },
@@ -63,5 +72,5 @@ export const routes: Routes = [
     component: AuditLogsComponent,
     canActivate: [authGuard],
   },
-  { path: '**', redirectTo: 'login' },
+  { path: '**', redirectTo: redirectByAuth },
 ];
