@@ -1,7 +1,9 @@
 import { Component, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { Router } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
+import { filter } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { IAService } from '../../services/ia.service';
 
@@ -17,7 +19,15 @@ export class InsightsLauncher {
   readonly router = inject(Router);
   private readonly ia = inject(IAService);
   aberto = signal(false);
+  rotaAtual = signal(this.router.url.split('?')[0]);
   pergunta = '';
+
+  constructor() {
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      takeUntilDestroyed(),
+    ).subscribe((event) => this.rotaAtual.set(event.urlAfterRedirects.split('?')[0]));
+  }
 
   enviar(): void {
     const pergunta = this.pergunta.trim();

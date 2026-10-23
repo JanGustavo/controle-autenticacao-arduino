@@ -1,4 +1,4 @@
-@if (auth.isLoggedIn() && router.url.split('?')[0] !== '/ia') {
+@if (auth.isLoggedIn() && rotaAtual() !== '/ia') {
   <aside class="insights-launcher" aria-label="Assistente de análises">
     @if (aberto()) {
       <div class="launcher-panel">
