@@ -4,7 +4,7 @@
     <div>
       <span class="eyebrow">ARDLOCK · INTELIGÊNCIA</span>
       <h1>IA</h1>
-      <p>Explore os acessos e usuários com uma pergunta em linguagem natural.</p>
+      <p>Explore acessos, logins, auditoria e cadastros com uma pergunta em linguagem natural.</p>
     </div>
   </div>
 
@@ -13,7 +13,7 @@
     <textarea id="ia-pergunta" [(ngModel)]="pergunta" maxlength="500" rows="3"
       placeholder="Ex.: Quais usuários tiveram mais acessos negados?"></textarea>
     <div class="composer-footer">
-      <small>A IA recebe dados de usuários e contagens de acesso. Sua sessão não é enviada à Groq.</small>
+      <small>A pergunta e os dados consultados são enviados à Groq. Seu token não é enviado.</small>
       <button type="button" (click)="consultar()" [disabled]="consultando() || pergunta.trim().length < 3">
         <mat-icon>{{ consultando() ? 'hourglass_top' : 'arrow_upward' }}</mat-icon>
         {{ consultando() ? 'Consultando...' : 'Perguntar' }}
