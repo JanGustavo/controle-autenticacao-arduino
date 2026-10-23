@@ -1,60 +1,122 @@
 <main class="ia-page">
-  <div class="ia-heading">
+  <header class="ia-heading">
     <div class="ia-mark"><mat-icon>auto_awesome</mat-icon></div>
     <div>
       <span class="eyebrow">ARDLOCK · INTELIGÊNCIA</span>
-      <h1>IA</h1>
-      <p>Explore acessos, logins, auditoria e cadastros com uma pergunta em linguagem natural.</p>
+      <h1>Explore seus dados</h1>
+      <p>Pergunte sobre acessos, logins, usuários e o que acontece no seu sistema.</p>
     </div>
-  </div>
+  </header>
 
   <section class="ia-composer" aria-label="Perguntar à IA">
-    <label for="ia-pergunta">O que você quer saber?</label>
+    <div class="composer-title"><mat-icon>chat_bubble_outline</mat-icon><label for="ia-pergunta">O que você quer descobrir?</label></div>
     <textarea id="ia-pergunta" [(ngModel)]="pergunta" maxlength="500" rows="3"
-      placeholder="Ex.: Quais usuários tiveram mais acessos negados?"></textarea>
+      placeholder="Escreva uma pergunta sobre os dados do ArdLock..."></textarea>
     <div class="composer-footer">
-      <small>A pergunta e os dados consultados são enviados à Groq. Seu token não é enviado.</small>
-      <button type="button" (click)="consultar()" [disabled]="consultando() || pergunta.trim().length < 3">
+      <span class="helper-text">Uma pergunta clara ajuda a encontrar o insight certo.</span>
+      <button class="primary-button" type="button" (click)="consultar()" [disabled]="consultando() || pergunta.trim().length < 3">
         <mat-icon>{{ consultando() ? 'hourglass_top' : 'arrow_upward' }}</mat-icon>
-        {{ consultando() ? 'Consultando...' : 'Perguntar' }}
+        {{ consultando() ? 'Analisando...' : 'Perguntar' }}
       </button>
+    </div>
+    <div class="suggestions" aria-label="Sugestões de perguntas">
+      <span>Experimente perguntar</span>
+      @for (sugestao of sugestoes; track sugestao) {
+        <button class="suggestion" type="button" (click)="preencher(sugestao)">{{ sugestao }}</button>
+      }
     </div>
   </section>
 
   @if (erro()) { <p class="ia-error" role="alert">{{ erro() }}</p> }
-  @if (resposta()) {
-    <section class="ia-response" aria-label="Resposta da IA">
-      <div class="section-title"><mat-icon>auto_awesome</mat-icon><h2>Resposta</h2></div>
-      <div class="markdown-body" [innerHTML]="respostaHtml()"></div>
+
+  @if (historico().length) {
+    <section class="answers" aria-label="Respostas salvas">
+      <div class="answers-heading">
+        <div><span class="eyebrow">SUA CONVERSA</span><h2>Respostas salvas</h2></div>
+        <span class="saved-count">{{ historico().length }} {{ historico().length === 1 ? 'resposta' : 'respostas' }}</span>
+      </div>
+      @for (item of historico(); track item.id) {
+        <article class="ia-response">
+          <div class="response-header">
+            <div class="response-title"><span class="response-icon"><mat-icon>auto_awesome</mat-icon></span>
+              <div><span class="eyebrow">RESPOSTA</span><h3>{{ item.pergunta }}</h3></div>
+            </div>
+            <button class="delete-button" type="button" (click)="apagar(item.id)" [disabled]="apagando() !== null"
+              [attr.aria-label]="'Apagar resposta: ' + item.pergunta" title="Apagar resposta">
+              <mat-icon>delete_outline</mat-icon><span>Apagar</span>
+            </button>
+          </div>
+          <div class="markdown-body" [innerHTML]="renderizar(item.resposta)"></div>
+        </article>
+      }
     </section>
   }
 
   @if (carregando()) {
-    <p class="ia-loading">Carregando indicadores...</p>
+    <p class="ia-loading">Preparando insights...</p>
   } @else if (resumo(); as dados) {
-    <section class="ia-stats" aria-label="Indicadores de acesso">
-      <h2>Visão geral · todo o histórico</h2>
-      <article><span>Usuários</span><strong>{{ dados.total_usuarios }}</strong></article>
-      <article><span>Tentativas</span><strong>{{ dados.total_acessos }}</strong></article>
-      <article><span>Aceitos</span><strong>{{ dados.percentual_aceitos }}%</strong><small>{{ dados.aceitos }} acessos</small></article>
-      <article><span>Negados</span><strong>{{ dados.percentual_negados }}%</strong><small>{{ dados.negados }} acessos</small></article>
-    </section>
-    <section class="ia-table-card">
-      <div class="section-title"><mat-icon>group</mat-icon><h2>Por usuário</h2></div>
-      <p>Todo o histórico. Percentuais calculados sobre as tentativas registradas de cada usuário.</p>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Usuário</th><th>Tentativas</th><th>Aceitos</th><th>Negados</th></tr></thead>
-          <tbody>
-            @for (usuario of dados.usuarios; track usuario.id) {
-              <tr>
-                <td>{{ usuario.nome }}</td><td>{{ usuario.total }}</td>
-                <td>{{ usuario.percentual_aceitos }}% <small>({{ usuario.aceitos }})</small></td>
-                <td>{{ usuario.percentual_negados }}% <small>({{ usuario.negados }})</small></td>
-              </tr>
-            } @empty { <tr><td colspan="4">Nenhum usuário cadastrado.</td></tr> }
-          </tbody>
-        </table>
+    <section class="insights" aria-label="Insights de acesso">
+      <div class="insights-heading">
+        <div><span class="eyebrow">PANORAMA</span><h2>Insights de acesso</h2></div>
+        <span>Atualizados com os registros do sistema</span>
+      </div>
+      <div class="insight-grid">
+        <article class="insight-card blue">
+          <div class="card-top"><span>Acessos hoje</span><mat-icon>today</mat-icon></div>
+          <strong>{{ dados.insights.acessos_hoje }}</strong>
+          <p>
+            @if (dados.insights.variacao_hoje !== null) {
+              <span class="trend" [class.up]="dados.insights.variacao_hoje! > 0" [class.down]="dados.insights.variacao_hoje! < 0">
+                {{ dados.insights.variacao_hoje! > 0 ? '+' : '' }}{{ dados.insights.variacao_hoje }}%
+              </span> em relação a ontem
+            } @else { Sem base de comparação ontem }
+          </p>
+        </article>
+        <article class="insight-card violet">
+          <div class="card-top"><span>Média diária</span><mat-icon>monitoring</mat-icon></div>
+          <strong>{{ dados.insights.media_diaria_7_dias }}</strong>
+          <p>tentativas por dia nos últimos 7 dias</p>
+        </article>
+        <article class="insight-card green">
+          <div class="card-top"><span>Aceitos · 7 dias</span><mat-icon>check_circle_outline</mat-icon></div>
+          <strong>{{ dados.insights.percentual_aceitos_7_dias }}%</strong>
+          <div class="meter" role="img" [attr.aria-label]="dados.insights.aceitos_7_dias + ' acessos aceitos nos últimos 7 dias'">
+            <span [style.width.%]="dados.insights.percentual_aceitos_7_dias"></span>
+          </div>
+          <p>{{ dados.insights.aceitos_7_dias }} de {{ dados.insights.acessos_7_dias }} tentativas</p>
+        </article>
+        <article class="insight-card red">
+          <div class="card-top"><span>Negados · 7 dias</span><mat-icon>block</mat-icon></div>
+          <strong>{{ dados.insights.negados_7_dias }}</strong>
+          <p>tentativas que merecem atenção</p>
+        </article>
+      </div>
+      <div class="insight-details">
+        <article class="chart-card">
+          <div class="detail-heading"><div><h3>Ritmo da semana</h3><p>Volume diário de tentativas de acesso</p></div><span>7 dias</span></div>
+          <div class="daily-chart" role="img" aria-label="Tentativas de acesso por dia nos últimos sete dias">
+            @for (dia of dados.insights.serie_7_dias; track dia.dia) {
+              <div class="day-column" [title]="dia.dia + ': ' + dia.total + ' tentativas, ' + dia.aceitos + ' aceitas, ' + dia.negados + ' negadas'">
+                <span class="bar-value">{{ dia.total }}</span>
+                <div class="bar-track"><span class="bar-fill" [style.height.%]="alturaBarra(dia.total)"></span></div>
+                <span class="day-label">{{ diaLabel(dia.dia) }}</span>
+              </div>
+            }
+          </div>
+        </article>
+        <article class="people-card">
+          <div class="detail-heading"><div><h3>Mais movimentados</h3><p>Usuários com mais tentativas no histórico</p></div><mat-icon>groups</mat-icon></div>
+          @for (usuario of usuariosDestaque(); track usuario.id) {
+            <div class="person-row">
+              <div class="person-line"><strong>{{ usuario.nome }}</strong><span>{{ usuario.total }} tentativas</span></div>
+              <div class="split-meter" [attr.aria-label]="usuario.aceitos + ' aceitos e ' + usuario.negados + ' negados'">
+                <span class="accepted" [style.width.%]="usuario.percentual_aceitos"></span>
+                <span class="denied" [style.width.%]="usuario.percentual_negados"></span>
+              </div>
+              <small><span class="dot accepted-dot"></span>{{ usuario.percentual_aceitos }}% aceitos <span class="dot denied-dot"></span>{{ usuario.percentual_negados }}% negados</small>
+            </div>
+          } @empty { <p class="empty-insight">Ainda não há tentativas registradas.</p> }
+        </article>
       </div>
     </section>
   }

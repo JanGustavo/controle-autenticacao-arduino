@@ -45,9 +45,11 @@ services:
       GROQ_API_KEY_2: ${GROQ_API_KEY_2:-}
       GROQ_API_KEY_3: ${GROQ_API_KEY_3:-}
       GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
+      IA_SQLITE_PATH: /app/data/ia.sqlite3
       PYTHONPATH: /app
     volumes:
       - ./backend/tests:/app/tests:ro
+      - ia_data:/app/data
 
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=3)"]
@@ -105,6 +107,7 @@ services:
 
 volumes:
   pgdata:
+  ia_data:
 
 networks:
   acesso-net:

@@ -20,6 +20,25 @@ export interface ResumoIA {
   negados: number;
   percentual_aceitos: number;
   percentual_negados: number;
+  insights: {
+    data_referencia: string;
+    acessos_hoje: number;
+    acessos_ontem: number;
+    variacao_hoje: number | null;
+    media_diaria_7_dias: number;
+    acessos_7_dias: number;
+    aceitos_7_dias: number;
+    negados_7_dias: number;
+    percentual_aceitos_7_dias: number;
+    serie_7_dias: { dia: string; total: number; aceitos: number; negados: number }[];
+  };
+}
+
+export interface RespostaIA {
+  id: number;
+  pergunta: string;
+  resposta: string;
+  criado_em: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -35,6 +54,14 @@ export class IAService {
   }
 
   perguntar(pergunta: string) {
-    return this.http.post<{ resposta: string; resumo: ResumoIA }>(`${this.base}/perguntar`, { pergunta });
+    return this.http.post<{ resposta: string; resumo: ResumoIA; item: RespostaIA }>(`${this.base}/perguntar`, { pergunta });
+  }
+
+  historico() {
+    return this.http.get<RespostaIA[]>(`${this.base}/historico`);
+  }
+
+  apagar(itemId: number) {
+    return this.http.delete<void>(`${this.base}/historico/${itemId}`);
   }
 }

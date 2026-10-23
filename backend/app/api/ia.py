@@ -5,6 +5,7 @@ from starlette.concurrency import run_in_threadpool
 
 from app.auth.dependencies import obter_administrador_atual
 from app.services.ia_service import responder_com_groq, resumo_acessos
+from app.services.ia_history import apagar_resposta, listar_historico, salvar_resposta
 
 
 router = APIRouter(dependencies=[Depends(obter_administrador_atual)])
@@ -19,8 +20,19 @@ def obter_resumo():
     return resumo_acessos()
 
 
+@router.get("/historico")
+def obter_historico(admin: dict = Depends(obter_administrador_atual)):
+    return listar_historico(admin["admin_id"])
+
+
+@router.delete("/historico/{item_id}", status_code=204)
+def excluir_resposta(item_id: int, admin: dict = Depends(obter_administrador_atual)):
+    if not apagar_resposta(admin["admin_id"], item_id):
+        raise HTTPException(status_code=404, detail="Resposta não encontrada.")
+
+
 @router.post("/perguntar")
-async def perguntar(body: PerguntaIA):
+async def perguntar(body: PerguntaIA, admin: dict = Depends(obter_administrador_atual)):
     resumo = await run_in_threadpool(resumo_acessos)
     try:
         resposta = await responder_com_groq(body.pergunta)
@@ -32,4 +44,5 @@ async def perguntar(body: PerguntaIA):
         raise HTTPException(status_code=502, detail="A Groq não conseguiu responder agora.") from error
     except (httpx.HTTPError, KeyError, IndexError, TypeError, AttributeError, ValueError) as error:
         raise HTTPException(status_code=502, detail="Falha ao consultar a Groq.") from error
-    return {"resposta": resposta, "resumo": resumo}
+    item = await run_in_threadpool(salvar_resposta, admin["admin_id"], body.pergunta, resposta)
+    return {"resposta": resposta, "resumo": resumo, "item": item}
