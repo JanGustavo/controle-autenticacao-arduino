@@ -246,7 +246,7 @@ code {
 
 :host-context(body.dark-mode) {
   .locations-page {
-    --canvas: #0f172a;
+    --canvas: var(--ard-canvas);
     --surface: #1e293b;
     --ink: #f8fafc;
     --muted: #94a3b8;
@@ -336,6 +336,11 @@ code {
 }
 
 @include pages.ard-page-pattern('.locations-page');
+
+.locations-page[data-module='locations'] { --module-accent: #c2410c; }
+.locations-page[data-module='devices'] { --module-accent: #0f766e; }
+:host-context(body.dark-mode) .locations-page[data-module='locations'] { --module-accent: #fb923c; }
+:host-context(body.dark-mode) .locations-page[data-module='devices'] { --module-accent: #2dd4bf; }
 
 .locations-page table .status-badge {
   display: inline-block;

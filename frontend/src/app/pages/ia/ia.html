@@ -2,7 +2,6 @@
   <header class="ia-heading">
     <div class="ia-mark"><mat-icon>auto_awesome</mat-icon></div>
     <div>
-      <span class="eyebrow">ARDLOCK · INTELIGÊNCIA</span>
       <h1>iArdLock <span class="heading-accent">Insights</span></h1>
       <p>Pergunte sobre acessos, logins, usuários e o que acontece no seu sistema.</p>
     </div>
@@ -11,9 +10,9 @@
   <section class="ia-composer" aria-label="Perguntar à IA">
     <div class="composer-title"><mat-icon>chat_bubble_outline</mat-icon><label for="ia-pergunta">O que você quer descobrir?</label></div>
     <textarea id="ia-pergunta" [(ngModel)]="pergunta" maxlength="500" rows="3"
-      placeholder="Escreva uma pergunta sobre os dados do ArdLock..."></textarea>
+      placeholder="Escreva uma pergunta sobre os dados do ArdLock..." (keydown)="tratarAtalhoEnvio($event)"></textarea>
     <div class="composer-footer">
-      <span class="helper-text">Uma pergunta clara ajuda a encontrar o insight certo.</span>
+      <span class="helper-text">Uma pergunta clara ajuda a encontrar o insight certo. Shift+Enter ou Ctrl+Enter para enviar.</span>
       <button class="primary-button" type="button" (click)="consultar()" [disabled]="consultando() || pergunta.trim().length < 3">
         <mat-icon>{{ consultando() ? 'hourglass_top' : 'arrow_upward' }}</mat-icon>
         {{ consultando() ? 'Analisando...' : 'Perguntar' }}

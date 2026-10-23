@@ -499,7 +499,7 @@
 
 :host-context(body.dark-mode) {
   .locais-wrapper {
-    --canvas: #0f172a;
+    --canvas: var(--ard-canvas);
     --surface: #1e293b;
     --ink: #f8fafc;
     --muted: #94a3b8;
@@ -677,6 +677,9 @@
 }
 
 @include pages.ard-page-pattern('.locais-wrapper');
+
+.locais-wrapper { --module-accent: #b91c1c; }
+:host-context(body.dark-mode) .locais-wrapper { --module-accent: #fb7185; }
 
 :host-context(body.dark-mode) .locais-table .badge-principal {
   background: rgba(168, 85, 247, 0.24);

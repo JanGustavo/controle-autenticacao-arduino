@@ -38,6 +38,12 @@ export class InsightsLauncher {
     void this.router.navigateByUrl('/ia');
   }
 
+  tratarAtalhoEnvio(event: KeyboardEvent): void {
+    if (event.key !== 'Enter' || (!event.shiftKey && !event.ctrlKey)) return;
+    event.preventDefault();
+    this.enviar();
+  }
+
   abrirPagina(): void {
     void this.router.navigateByUrl('/ia');
   }

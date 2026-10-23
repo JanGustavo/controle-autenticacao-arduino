@@ -1,13 +1,12 @@
 @if (config; as cfg) {
   <div class="tuple-wrapper">
     <!-- HEADER DO COMPONENTE -->
-    <header class="tuple-header">
+    <header class="tuple-header" [ngClass]="cfg.accentColor">
       <div class="header-top">
         <a routerLink="/adm-page" class="back-link">
           <mat-icon>arrow_back</mat-icon>
           <span>Painel administrativo</span>
         </a>
-        <span class="eyebrow">Gestão de acesso</span>
       </div>
 
       <div class="header-main">

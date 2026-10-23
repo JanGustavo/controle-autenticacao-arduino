@@ -60,10 +60,10 @@ export class AdmPage implements OnInit {
         },
         {
           path: '/ia',
-          title: 'IA',
+          title: 'iArdLock',
           description: 'Perguntar sobre usuários e resultados de acesso',
           icon: 'auto_awesome',
-          tone: 'history',
+          tone: 'ai',
         },
       ],
     },
@@ -89,7 +89,7 @@ export class AdmPage implements OnInit {
           path: '/administradores',
           title: 'Administradores',
           description: 'Gerenciar contas administrativas',
-          icon: 'verified_user',
+          icon: 'admin_panel_settings',
           tone: 'admins',
         },
         {

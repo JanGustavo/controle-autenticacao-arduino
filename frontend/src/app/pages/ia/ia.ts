@@ -82,6 +82,12 @@ export class IAPage implements OnInit {
     this.pergunta = sugestao;
   }
 
+  tratarAtalhoEnvio(event: KeyboardEvent): void {
+    if (event.key !== 'Enter' || (!event.shiftKey && !event.ctrlKey)) return;
+    event.preventDefault();
+    this.consultar();
+  }
+
   alturaBarra(total: number): number {
     if (total === 0) return 0;
     const maximo = Math.max(1, ...(this.resumo()?.insights.serie_7_dias.map((dia) => dia.total) ?? []));

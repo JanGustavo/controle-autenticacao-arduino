@@ -29,10 +29,11 @@
   &[data-tone='permissions'] { --tile-accent: #a16207; }
   &[data-tone='validation'] { --tile-accent: #15803d; }
   &[data-tone='history'] { --tile-accent: #0e7490; }
+  &[data-tone='ai'] { --tile-accent: #be418c; --tile-icon-accent: #a16207; --tile-tint: color-mix(in srgb, #dc6fab 15%, var(--ard-surface)); }
   &[data-tone='locations'] { --tile-accent: #c2410c; }
   &[data-tone='devices'] { --tile-accent: #0f766e; }
-  &[data-tone='admins'] { --tile-accent: #7e22ce; }
-  &[data-tone='audit'] { --tile-accent: #be185d; }
+  &[data-tone='admins'] { --tile-accent: #b91c1c; }
+  &[data-tone='audit'] { --tile-accent: #7e22ce; }
   &[data-tone='data'] { --tile-accent: #4f46e5; }
 
   position: relative;
@@ -41,12 +42,12 @@
   gap: 16px;
   min-height: 170px;
   padding: 24px;
-  border: var(--tile-stroke) solid var(--ard-line);
+  border: var(--tile-stroke) solid color-mix(in srgb, var(--tile-accent) 40%, var(--ard-line));
   border-radius: var(--ard-radius-md);
   background: var(--ard-surface);
   text-decoration: none;
   color: var(--ard-ink);
-  box-shadow: 0 4px 16px rgb(15 23 42 / 3%);
+  box-shadow: 0 4px 16px rgb(15 23 42 / 3%), 0 0 0 1px color-mix(in srgb, var(--tile-accent) 8%, transparent);
   transition: transform 160ms ease, background-color 320ms ease, --tile-trace 750ms ease-in-out;
 
   &::before {
@@ -102,7 +103,7 @@
   flex-shrink: 0;
   border-radius: 16px;
   background: var(--tile-tint);
-  color: var(--tile-accent);
+    color: var(--tile-icon-accent, var(--tile-accent));
   mat-icon { width: 30px; height: 30px; font-size: 30px; }
 }
 .tile-arrow {
@@ -122,10 +123,11 @@
   &[data-tone='permissions'] { --tile-accent: #fbbf24; }
   &[data-tone='validation'] { --tile-accent: #4ade80; }
   &[data-tone='history'] { --tile-accent: #38bdf8; }
+  &[data-tone='ai'] { --tile-accent: #f472b6; --tile-icon-accent: #fbbf24; --tile-tint: color-mix(in srgb, #b83280 28%, var(--ard-surface)); }
   &[data-tone='locations'] { --tile-accent: #fb923c; }
   &[data-tone='devices'] { --tile-accent: #2dd4bf; }
-  &[data-tone='admins'] { --tile-accent: #c084fc; }
-  &[data-tone='audit'] { --tile-accent: #f472b6; }
+  &[data-tone='admins'] { --tile-accent: #fb7185; }
+  &[data-tone='audit'] { --tile-accent: #c084fc; }
   &[data-tone='data'] { --tile-accent: #a5b4fc; }
 }
 

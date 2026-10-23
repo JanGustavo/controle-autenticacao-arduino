@@ -14,6 +14,7 @@
 .launcher-panel p { margin: 11px 0 13px; color: var(--ard-muted); font-size: 12px; line-height: 1.45; }
 .launcher-panel textarea { width: 100%; min-height: 75px; resize: vertical; border: 1px solid var(--ard-line); border-radius: 11px; background: var(--ard-canvas); color: var(--ard-ink); padding: 10px 12px; font: inherit; font-size: 13px; }
 .launcher-actions { display: flex; align-items: center; justify-content: space-between; gap: 9px; margin-top: 11px; }
+.keyboard-hint { display: block; margin-top: 7px; color: var(--ard-muted); font-size: 10px; }
 .open-page { border: 0; background: transparent; color: var(--ard-primary); font-size: 12px !important; font-weight: 750 !important; }
 .send-question { display: inline-flex; align-items: center; gap: 4px; border: 0; border-radius: 9px; padding: 8px 11px; background: #9a4c83; color: white; font-size: 12px !important; font-weight: 800 !important; }
 .send-question:disabled { opacity: .5; cursor: default; }

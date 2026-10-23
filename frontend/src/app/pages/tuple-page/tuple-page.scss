@@ -53,6 +53,9 @@
     &.purple {
       --accent: #7c3aed;
     }
+    &.cyan {
+      --accent: #0e7490;
+    }
 
     .header-top {
       display: flex;
@@ -443,11 +446,12 @@
 // Suporte completo para Dark Mode na página de tuplas
 :host-context(body.dark-mode) {
   .tuple-wrapper {
-    background-color: #0f172a !important;
+    background-color: var(--ard-canvas) !important;
 
     .tuple-header {
-      background-color: #1e293b !important;
-      border-color: rgba(255, 255, 255, 0.1) !important;
+      background-color: var(--ard-canvas) !important;
+      border-color: transparent !important;
+      box-shadow: none !important;
 
       .header-top {
         .back-link {
@@ -463,7 +467,7 @@
 
       .header-main {
         .module-icon {
-          background-color: rgba(255, 255, 255, 0.08) !important;
+          background-color: color-mix(in srgb, var(--accent) 16%, var(--ard-surface)) !important;
         }
 
         .title-group {
@@ -499,6 +503,10 @@
         .module-icon mat-icon {
           color: #c084fc !important;
         }
+      }
+      &.cyan {
+        --accent: #38bdf8;
+        .module-icon mat-icon { color: #38bdf8 !important; }
       }
     }
 
