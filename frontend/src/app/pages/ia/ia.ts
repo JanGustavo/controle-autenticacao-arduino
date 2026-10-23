@@ -40,9 +40,15 @@ export class IAPage implements OnInit {
   erro = signal('');
   carregando = signal(false);
   consultando = signal(false);
+  atualizando = signal<number | null>(null);
   apagando = signal<number | null>(null);
 
   ngOnInit(): void {
+    const perguntaPendente = this.ia.consumirPergunta();
+    if (perguntaPendente) {
+      this.pergunta = perguntaPendente;
+      this.consultar();
+    }
     this.carregando.set(true);
     this.ia.resumo().subscribe({
       next: (resumo) => {
@@ -56,8 +62,11 @@ export class IAPage implements OnInit {
     });
     this.ia.historico().subscribe({
       next: (itens) => {
-        this.historico.set(itens);
-        this.pergunta = itens[0]?.pergunta ?? '';
+        this.historico.update((atuais) => [
+          ...atuais.filter((atual) => !itens.some((item) => item.id === atual.id)),
+          ...itens,
+        ].slice(0, 30));
+        if (!perguntaPendente) this.pergunta = itens[0]?.pergunta ?? '';
       },
       error: () => this.erro.set('Não foi possível carregar as perguntas anteriores.'),
     });
@@ -95,6 +104,24 @@ export class IAPage implements OnInit {
       error: () => {
         this.erro.set('Não foi possível apagar a resposta.');
         this.apagando.set(null);
+      },
+    });
+  }
+
+  atualizar(itemId: number): void {
+    if (this.atualizando() !== null) return;
+    this.atualizando.set(itemId);
+    this.erro.set('');
+    this.ia.atualizar(itemId).subscribe({
+      next: ({ resumo, item }) => {
+        this.historico.update((itens) => itens.map((atual) => atual.id === itemId ? item : atual));
+        this.resumo.set(resumo);
+        this.atualizando.set(null);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.erro.set(typeof error.error?.detail === 'string'
+          ? error.error.detail : 'Não foi possível atualizar a análise.');
+        this.atualizando.set(null);
       },
     });
   }

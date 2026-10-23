@@ -13,7 +13,13 @@
       </button>
     </div>
     <h1 id="user-create-title">Cadastrar usuário</h1>
-    <p>Preencha os dados que serão usados no controle de acesso.</p>
+    <p>Siga as etapas para identificar a pessoa, associar um cartão e definir onde ela poderá entrar.</p>
+    <div class="setup-overview" aria-label="Etapas do cadastro">
+      <span><mat-icon>person</mat-icon> Pessoa</span>
+      <span><mat-icon>contactless</mat-icon> Cartão</span>
+      <span><mat-icon>face</mat-icon> Rosto</span>
+      <span><mat-icon>place</mat-icon> Locais</span>
+    </div>
   </header>
 
   <form class="register-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
@@ -22,7 +28,7 @@
         <span class="section-number">01</span>
         <div>
           <h2>Identificação</h2>
-          <p>Dados básicos do usuário e do cartão.</p>
+          <p>Comece pelos dados da pessoa.</p>
         </div>
       </div>
 
@@ -61,10 +67,27 @@
           </select>
           <small>Define se o acesso pertence a uma pessoa interna ou visitante.</small>
         </label>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <div class="section-heading">
+        <span class="section-number">02</span>
+        <div>
+          <h2>Vincular cartão de acesso</h2>
+          <p>Use o leitor conectado ao ESP32 para identificar o cartão físico.</p>
+        </div>
+      </div>
+      <div class="rfid-walkthrough" aria-label="Como vincular o cartão">
+        <span><b>1</b> Escolha o leitor</span>
+        <span><b>2</b> Inicie a leitura</span>
+        <span><b>3</b> Aproxime o cartão</span>
+      </div>
+      <div class="field-grid">
 
         <div class="field full-width uid-field">
           <label for="rfid-device-select">
-            <span>Dispositivo RFID <b>*</b></span>
+            <span>Leitor que receberá o cartão <b>*</b></span>
           </label>
           <select
             id="rfid-device-select"
@@ -74,7 +97,7 @@
           >
             <option [ngValue]="null">
               {{
-                dispositivosCarregando ? 'Carregando dispositivos...' : 'Selecione o ESP32/leitor'
+                dispositivosCarregando ? 'Carregando leitores...' : 'Selecione o leitor de cartões'
               }}
             </option>
             @for (dispositivo of dispositivosRfid; track dispositivo.dispositivo_id) {
@@ -91,7 +114,7 @@
           }
 
           <label for="uid_card_input">
-            <span>Cartão RFID <b>*</b></span>
+            <span>Cartão identificado <b>*</b></span>
           </label>
 
           <div class="input-with-action">
@@ -101,7 +124,7 @@
               type="text"
               maxlength="20"
               readonly
-              placeholder="Aguardando leitura RFID..."
+              placeholder="O número do cartão aparece aqui após a leitura"
             />
 
             @if (aguardandoRfid) {
@@ -113,7 +136,7 @@
               >
                 <span class="btn-mock-content">
                   <mat-progress-spinner diameter="18" mode="indeterminate"></mat-progress-spinner>
-                  <span>Aguardando cartão...</span>
+                  <span>Cancelar espera</span>
                 </span>
               </button>
             } @else {
@@ -127,38 +150,38 @@
               >
                 <span class="btn-mock-content">
                   <mat-icon>contactless</mat-icon>
-                  <span>Aguardar RFID</span>
+                  <span>Iniciar leitura</span>
                 </span>
               </button>
 
-              <button
-                type="button"
-                mat-stroked-button
-                class="btn-rfid-mock"
-                (click)="capturarRfidMock()"
-                [disabled]="!identificadorRfidSelecionado || saving || lendoRfidMock"
-                title="Simula uma leitura enquanto o hardware real está em desenvolvimento"
-              >
-                <span class="btn-mock-content">
-                  <mat-icon>developer_mode</mat-icon>
-                  <span>Simular</span>
-                </span>
-              </button>
             }
           </div>
 
-          <small class="rfid-hint">
-            <mat-icon class="hint-icon">sensors</mat-icon>
-            Selecione o dispositivo e aguarde a leitura. O UID recebido pelo ESP32 será preenchido
-            automaticamente via WebSocket.
-          </small>
+          <div class="capture-state" role="status">
+            <mat-icon>{{ aguardandoRfid ? 'sensors' : form.get('uid_card')?.value ? 'check_circle' : 'info' }}</mat-icon>
+            <span>{{ aguardandoRfid ? 'Pronto para ler: aproxime o cartão do leitor selecionado.' : form.get('uid_card')?.value ? 'Cartão identificado. Continue o cadastro.' : 'Selecione um leitor e clique em Iniciar leitura. O cartão será preenchido automaticamente.' }}</span>
+          </div>
+          <details class="demo-tools">
+            <summary>Sem o cartão físico? Modo de demonstração</summary>
+            <p>Gera um número fictício para apresentar o fluxo. Ele não representa um cartão real.</p>
+            <button type="button" mat-stroked-button class="btn-rfid-mock" (click)="capturarRfidMock()"
+              [disabled]="!identificadorRfidSelecionado || saving || lendoRfidMock || aguardandoRfid">
+              <mat-icon>developer_mode</mat-icon> Simular leitura
+            </button>
+          </details>
         </div>
       </div>
+      <aside class="mobile-credential-tip">
+        <mat-icon>smartphone</mat-icon>
+        <div><strong>Quer usar o celular como credencial?</strong>
+          <p>Esse recurso ainda não está disponível no ArdLock. Por enquanto, use um cartão físico; copiar seu número para um aplicativo não garante que o celular funcione neste leitor.</p>
+        </div>
+      </aside>
     </section>
 
     <section class="form-section">
       <div class="section-heading">
-        <span class="section-number">02</span>
+        <span class="section-number">03</span>
         <div class="heading-with-action">
           <div>
             <h2>Biometria facial</h2>
@@ -322,7 +345,7 @@
 
     <section class="form-section status-section">
       <div class="section-heading">
-        <span class="section-number">03</span>
+        <span class="section-number">04</span>
         <div>
           <h2>Status</h2>
           <p>Novos usuários começam ativos.</p>
@@ -338,7 +361,7 @@
 
     <section class="form-section access-section">
       <div class="section-heading">
-        <span class="section-number">04</span>
+        <span class="section-number">05</span>
         <div>
           <h2>Locais e permissão</h2>
           <p>Selecione os locais e configure os horários de acesso específicos de cada um.</p>

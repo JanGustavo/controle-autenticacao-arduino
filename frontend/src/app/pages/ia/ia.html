@@ -2,8 +2,8 @@
   <header class="ia-heading">
     <div class="ia-mark"><mat-icon>auto_awesome</mat-icon></div>
     <div>
-      <span class="eyebrow">ARDLOCK · INTELIGÊNCIA</span>
-      <h1>Explore seus dados</h1>
+      <span class="eyebrow">ARDLOCK · INSIGHTS</span>
+      <h1>Análises inteligentes</h1>
       <p>Pergunte sobre acessos, logins, usuários e o que acontece no seu sistema.</p>
     </div>
   </header>
@@ -39,12 +39,18 @@
         <article class="ia-response">
           <div class="response-header">
             <div class="response-title"><span class="response-icon"><mat-icon>auto_awesome</mat-icon></span>
-              <div><span class="eyebrow">RESPOSTA</span><h3>{{ item.pergunta }}</h3></div>
+              <div><span class="eyebrow">RESPOSTA · {{ item.criado_em | date:'dd/MM/yyyy, HH:mm' }}</span><h3>{{ item.pergunta }}</h3></div>
             </div>
-            <button class="delete-button" type="button" (click)="apagar(item.id)" [disabled]="apagando() !== null"
+            <div class="response-actions">
+            <button class="refresh-button" type="button" (click)="atualizar(item.id)" [disabled]="atualizando() !== null || apagando() !== null"
+              [attr.aria-label]="'Atualizar análise: ' + item.pergunta" title="Refazer a pergunta com os dados atuais">
+              <mat-icon>{{ atualizando() === item.id ? 'hourglass_top' : 'refresh' }}</mat-icon><span>{{ atualizando() === item.id ? 'Atualizando...' : 'Atualizar' }}</span>
+            </button>
+            <button class="delete-button" type="button" (click)="apagar(item.id)" [disabled]="apagando() !== null || atualizando() !== null"
               [attr.aria-label]="'Apagar resposta: ' + item.pergunta" title="Apagar resposta">
               <mat-icon>delete_outline</mat-icon><span>Apagar</span>
             </button>
+            </div>
           </div>
           <div class="markdown-body" [innerHTML]="renderizar(item.resposta)"></div>
         </article>

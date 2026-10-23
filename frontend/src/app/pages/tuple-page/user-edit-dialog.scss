@@ -358,3 +358,21 @@
  .section-title, .section-actions { flex-wrap: wrap; gap: 10px; }
  .basic-grid > *, .rfid-grid > * { min-width: 0; }
 }
+
+.edit-overview,.rfid-walkthrough { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.edit-overview span,.rfid-walkthrough span { display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border-radius: 999px; border: 1px solid #d9e0ea; background: #f8fafc; color: #334155; font-size: .76rem; font-weight: 700; }
+.edit-overview mat-icon { width: 17px; height: 17px; font-size: 17px; color: #b66a19; }
+.rfid-walkthrough { margin: 0 0 18px; }
+.rfid-walkthrough b { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; color: white; background: #b66a19; font-size: .7rem; }
+.rfid-grid small { display: block; color: #64748b; font-size: .75rem; font-weight: 400; }
+.capture-state,.mobile-credential-tip { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: 11px; line-height: 1.45; }
+.capture-state { margin-top: 16px; background: #fff4df; color: #4a3419; font-size: .83rem; font-weight: 650; }
+.capture-state mat-icon,.mobile-credential-tip mat-icon { flex: none; width: 20px; height: 20px; font-size: 20px; color: #b66a19; }
+.mobile-credential-tip { margin-top: 18px; border: 1px solid #d9e0ea; background: #fff; color: #172033; font-size: .83rem; }
+.mobile-credential-tip strong { display: block; margin-bottom: 4px; }
+.mobile-credential-tip p { margin: 0; color: #64748b; }
+:host-context(body.dark-mode) {
+  .edit-overview span,.rfid-walkthrough span,.mobile-credential-tip { background: #172033; border-color: #475569; color: #f8fafc; }
+  .capture-state { background: #3a2c1b; color: #fff2dc; }
+  .rfid-grid small,.mobile-credential-tip p { color: #aab6c8; }
+}

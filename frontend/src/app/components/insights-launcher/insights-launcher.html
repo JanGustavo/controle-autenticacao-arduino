@@ -1,0 +1,25 @@
+@if (auth.isLoggedIn() && router.url.split('?')[0] !== '/ia') {
+  <aside class="insights-launcher" aria-label="Assistente de análises">
+    @if (aberto()) {
+      <div class="launcher-panel">
+        <div class="launcher-header">
+          <div><span>ARDLOCK INSIGHTS</span><strong>O que você quer analisar?</strong></div>
+          <button type="button" class="close-launcher" (click)="aberto.set(false)" aria-label="Fechar assistente"><mat-icon>close</mat-icon></button>
+        </div>
+        <p>Faça uma pergunta sobre os dados do sistema. A resposta abrirá na página de análises.</p>
+        <label for="launcher-question" class="sr-only">Sua pergunta</label>
+        <textarea id="launcher-question" [(ngModel)]="pergunta" maxlength="500" rows="3" placeholder="Ex.: Quantos acessos tivemos hoje?"></textarea>
+        <div class="launcher-actions">
+          <button type="button" class="open-page" (click)="abrirPagina()">Abrir análises</button>
+          <button type="button" class="send-question" [disabled]="pergunta.trim().length < 3" (click)="enviar()">
+            <mat-icon>arrow_upward</mat-icon> Perguntar
+          </button>
+        </div>
+      </div>
+    }
+    <button type="button" class="launcher-fab" (click)="aberto.set(!aberto())" [attr.aria-expanded]="aberto()" aria-label="Abrir assistente de análises">
+      <mat-icon>{{ aberto() ? 'close' : 'auto_awesome' }}</mat-icon>
+      <span>{{ aberto() ? 'Fechar' : 'Pergunte aos dados' }}</span>
+    </button>
+  </aside>
+}

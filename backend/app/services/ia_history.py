@@ -73,3 +73,29 @@ def apagar_resposta(admin_id: int, item_id: int) -> bool:
             (item_id, admin_id),
         )
         return cursor.rowcount > 0
+
+
+def buscar_resposta(admin_id: int, item_id: int) -> dict | None:
+    with _connection() as connection:
+        row = connection.execute(
+            "SELECT id, pergunta, resposta, criado_em FROM ia_historico WHERE id = ? AND admin_id = ?",
+            (item_id, admin_id),
+        ).fetchone()
+    return {"id": row[0], "pergunta": row[1], "resposta": row[2], "criado_em": row[3]} if row else None
+
+
+def atualizar_resposta(admin_id: int, item_id: int, resposta: str) -> dict | None:
+    with _connection() as connection:
+        cursor = connection.execute(
+            "UPDATE ia_historico SET resposta = ?, "
+            "criado_em = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') "
+            "WHERE id = ? AND admin_id = ?",
+            (resposta, item_id, admin_id),
+        )
+        if cursor.rowcount == 0:
+            return None
+        row = connection.execute(
+            "SELECT id, pergunta, resposta, criado_em FROM ia_historico WHERE id = ?",
+            (item_id,),
+        ).fetchone()
+    return {"id": row[0], "pergunta": row[1], "resposta": row[2], "criado_em": row[3]}

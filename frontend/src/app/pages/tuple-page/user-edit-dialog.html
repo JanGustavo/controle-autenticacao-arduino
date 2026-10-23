@@ -3,7 +3,12 @@
     <div>
       <span class="eyebrow">Usuário #{{ usuario.user_id }}</span>
       <h2>Editar usuário</h2>
-      <p>Atualize identificação, cartão RFID e biometria sem recriar o cadastro.</p>
+      <p>Altere os dados da pessoa, substitua o cartão ou atualize a biometria em etapas independentes.</p>
+      <div class="edit-overview" aria-label="Áreas de edição">
+        <span><mat-icon>person</mat-icon> Dados</span>
+        <span><mat-icon>contactless</mat-icon> Cartão</span>
+        <span><mat-icon>face</mat-icon> Biometria</span>
+      </div>
     </div>
     <button type="button" mat-icon-button (click)="fechar()" title="Fechar">
       <mat-icon>close</mat-icon>
@@ -97,17 +102,24 @@
       <div class="section-title">
         <mat-icon>contactless</mat-icon>
         <div>
-          <h3>Cartão RFID</h3>
+          <h3>Substituir cartão de acesso</h3>
           <p>
-            Atual:
+            Cartão atual:
             <strong>{{ usuario.uid_card || 'Não cadastrado' }}</strong>
           </p>
         </div>
       </div>
 
+      <div class="rfid-walkthrough" aria-label="Como trocar o cartão">
+        <span><b>1</b> Escolha o leitor</span>
+        <span><b>2</b> Inicie a leitura</span>
+        <span><b>3</b> Aproxime o novo cartão</span>
+        <span><b>4</b> Salve</span>
+      </div>
+
       <div class="rfid-grid">
         <label>
-          <span>Dispositivo que realizará a leitura</span>
+          <span>Leitor do novo cartão</span>
           <select
             [(ngModel)]="dispositivoSelecionadoId"
             [disabled]="carregandoDispositivos || aguardandoRfid || salvandoCartao"
@@ -124,7 +136,7 @@
         </label>
 
         <label>
-          <span>Novo UID</span>
+          <span>Número do novo cartão</span>
           <input
             type="text"
             [(ngModel)]="uidNovo"
@@ -134,14 +146,20 @@
             placeholder="A1B2C3D4"
             [disabled]="aguardandoRfid || salvandoCartao || verificandoCartao"
           />
+          <small>Preenchido pela leitura. Digite manualmente apenas se necessário.</small>
         </label>
+      </div>
+
+      <div class="capture-state" role="status">
+        <mat-icon>{{ aguardandoRfid ? 'sensors' : uidNovo && uidNovo !== usuario.uid_card ? 'check_circle' : 'info' }}</mat-icon>
+        <span>{{ aguardandoRfid ? 'Pronto para ler: aproxime o novo cartão do leitor.' : uidNovo && uidNovo !== usuario.uid_card ? 'Novo cartão identificado. Confira e salve a troca.' : 'Escolha o leitor, inicie a leitura e aproxime o novo cartão.' }}</span>
       </div>
 
       <div class="section-actions">
         @if (aguardandoRfid) {
           <button type="button" mat-stroked-button (click)="cancelarLeituraRfid()">
             <mat-progress-spinner diameter="18"></mat-progress-spinner>
-            Aguardando cartão...
+            Cancelar espera
           </button>
         } @else {
           <button
@@ -151,7 +169,7 @@
             [disabled]="!identificadorDispositivo || salvandoCartao"
           >
             <mat-icon>sensors</mat-icon>
-            Ler cartão no ESP32
+            Iniciar leitura
           </button>
         }
 
@@ -162,6 +180,7 @@
           (click)="salvarNovoCartao()"
           [disabled]="
             !uidNovo
+            || uidNovo === usuario.uid_card
             || !identificadorDispositivo
             || salvandoCartao
             || verificandoCartao
@@ -173,9 +192,15 @@
           } @else {
             <mat-icon>credit_card</mat-icon>
           }
-          Cadastrar novo cartão
+          Salvar novo cartão
         </button>
       </div>
+      <aside class="mobile-credential-tip">
+        <mat-icon>smartphone</mat-icon>
+        <div><strong>Credencial no celular</strong>
+          <p>Ainda não disponível no ArdLock. Um aplicativo que copia o número do cartão não garante compatibilidade com este leitor; mantenha um cartão físico cadastrado.</p>
+        </div>
+      </aside>
     </section>
 
     <section class="edit-section">

@@ -44,6 +44,7 @@ export interface RespostaIA {
 @Injectable({ providedIn: 'root' })
 export class IAService {
   private http = inject(HttpClient);
+  private perguntaPendente: string | null = null;
   private base =
     (['localhost', '127.0.0.1'].includes(window.location.hostname)
       ? 'http://localhost:8001'
@@ -63,5 +64,21 @@ export class IAService {
 
   apagar(itemId: number) {
     return this.http.delete<void>(`${this.base}/historico/${itemId}`);
+  }
+
+  atualizar(itemId: number) {
+    return this.http.post<{ resposta: string; resumo: ResumoIA; item: RespostaIA }>(
+      `${this.base}/historico/${itemId}/atualizar`, {},
+    );
+  }
+
+  prepararPergunta(pergunta: string): void {
+    this.perguntaPendente = pergunta;
+  }
+
+  consumirPergunta(): string | null {
+    const pergunta = this.perguntaPendente;
+    this.perguntaPendente = null;
+    return pergunta;
   }
 }

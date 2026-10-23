@@ -5,7 +5,9 @@ from starlette.concurrency import run_in_threadpool
 
 from app.auth.dependencies import obter_administrador_atual
 from app.services.ia_service import responder_com_groq, resumo_acessos
-from app.services.ia_history import apagar_resposta, listar_historico, salvar_resposta
+from app.services.ia_history import (
+    apagar_resposta, atualizar_resposta, buscar_resposta, listar_historico, salvar_resposta,
+)
 
 
 router = APIRouter(dependencies=[Depends(obter_administrador_atual)])
@@ -34,8 +36,27 @@ def excluir_resposta(item_id: int, admin: dict = Depends(obter_administrador_atu
 @router.post("/perguntar")
 async def perguntar(body: PerguntaIA, admin: dict = Depends(obter_administrador_atual)):
     resumo = await run_in_threadpool(resumo_acessos)
+    resposta = await _gerar_resposta(body.pergunta)
+    item = await run_in_threadpool(salvar_resposta, admin["admin_id"], body.pergunta, resposta)
+    return {"resposta": resposta, "resumo": resumo, "item": item}
+
+
+@router.post("/historico/{item_id}/atualizar")
+async def atualizar_consulta(item_id: int, admin: dict = Depends(obter_administrador_atual)):
+    item = await run_in_threadpool(buscar_resposta, admin["admin_id"], item_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Resposta não encontrada.")
+    resposta = await _gerar_resposta(item["pergunta"])
+    atualizado = await run_in_threadpool(atualizar_resposta, admin["admin_id"], item_id, resposta)
+    if atualizado is None:
+        raise HTTPException(status_code=404, detail="Resposta não encontrada.")
+    resumo = await run_in_threadpool(resumo_acessos)
+    return {"resposta": resposta, "resumo": resumo, "item": atualizado}
+
+
+async def _gerar_resposta(pergunta: str) -> str:
     try:
-        resposta = await responder_com_groq(body.pergunta)
+        return await responder_com_groq(pergunta)
     except RuntimeError as error:
         raise HTTPException(status_code=503, detail=str(error)) from error
     except httpx.HTTPStatusError as error:
@@ -44,5 +65,3 @@ async def perguntar(body: PerguntaIA, admin: dict = Depends(obter_administrador_
         raise HTTPException(status_code=502, detail="A Groq não conseguiu responder agora.") from error
     except (httpx.HTTPError, KeyError, IndexError, TypeError, AttributeError, ValueError) as error:
         raise HTTPException(status_code=502, detail="Falha ao consultar a Groq.") from error
-    item = await run_in_threadpool(salvar_resposta, admin["admin_id"], body.pergunta, resposta)
-    return {"resposta": resposta, "resumo": resumo, "item": item}
