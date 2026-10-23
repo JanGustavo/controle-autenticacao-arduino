@@ -305,3 +305,22 @@ table .action-buttons > button {
   --mdc-snackbar-supporting-text-color: var(--ard-surface);
   --mat-snack-bar-button-color: var(--ard-surface);
 }
+
+.ia-response .markdown-body {
+  line-height: 1.65;
+
+  > :first-child { margin-top: 0; }
+  > :last-child { margin-bottom: 0; }
+  h1, h2, h3 { margin: 18px 0 8px; font-size: 1.08rem; }
+  p, ul, ol { margin: 8px 0; }
+  ul, ol { padding-left: 24px; }
+  li + li { margin-top: 4px; }
+  strong { color: var(--ard-ink); }
+  code { padding: 2px 5px; border-radius: 5px; background: var(--ard-canvas); }
+  pre { overflow-x: auto; padding: 12px; border-radius: 9px; background: var(--ard-canvas); }
+  pre code { padding: 0; }
+  table { display: block; overflow-x: auto; width: 100%; border-collapse: collapse; }
+  th, td { border: 1px solid var(--ard-line); padding: 8px 11px; text-align: left; }
+  th { background: var(--ard-canvas); }
+  blockquote { margin: 12px 0; padding-left: 13px; border-left: 3px solid #a85482; }
+}

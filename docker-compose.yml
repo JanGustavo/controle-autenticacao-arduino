@@ -44,7 +44,7 @@ services:
       GROQ_API_KEY_1: ${GROQ_API_KEY_1:-}
       GROQ_API_KEY_2: ${GROQ_API_KEY_2:-}
       GROQ_API_KEY_3: ${GROQ_API_KEY_3:-}
-      GROQ_MODEL: ${GROQ_MODEL:-llama-3.3-70b-versatile}
+      GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
       PYTHONPATH: /app
     volumes:
       - ./backend/tests:/app/tests:ro

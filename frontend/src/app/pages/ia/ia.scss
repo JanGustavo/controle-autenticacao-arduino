@@ -17,9 +17,9 @@ small { opacity: .65; }
 button { display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 11px; padding: 11px 16px; background: #904671; color: white; font: inherit; font-weight: 700; cursor: pointer; white-space: nowrap; }
 button:disabled { opacity: .55; cursor: default; }
 .ia-error { padding: 12px 16px; border-radius: 10px; color: #a52742; background: #fce9ee; }
-.ia-response p { white-space: pre-wrap; line-height: 1.7; }
 .section-title { display: flex; align-items: center; gap: 9px; color: #9a4a76; }
 .ia-stats { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 13px; }
+.ia-stats h2 { grid-column: 1 / -1; font-size: 15px; color: var(--ard-muted); }
 .ia-stats article { display: grid; gap: 5px; border: 1px solid #a665883a; border-radius: 16px; padding: 19px; background: var(--ard-surface,#fff); }
 .ia-stats span { opacity: .7; }
 .ia-stats strong { font-size: 29px; }

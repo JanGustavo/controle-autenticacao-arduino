@@ -1,9 +1,18 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, SecurityContext, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { MatIconModule } from '@angular/material/icon';
+import { DomSanitizer } from '@angular/platform-browser';
+import { Marked } from 'marked';
 import { IAService, ResumoIA } from '../../services/ia.service';
+
+const markdown = new Marked({
+  async: false,
+  gfm: true,
+  breaks: true,
+  renderer: { html: () => '' },
+});
 
 @Component({
   selector: 'app-ia',
@@ -14,9 +23,13 @@ import { IAService, ResumoIA } from '../../services/ia.service';
 })
 export class IAPage implements OnInit {
   private ia = inject(IAService);
+  private sanitizer = inject(DomSanitizer);
   pergunta = 'Liste todos os usuários e o percentual de acessos aceitos e negados.';
   resumo = signal<ResumoIA | null>(null);
   resposta = signal('');
+  respostaHtml = computed(() =>
+    this.sanitizer.sanitize(SecurityContext.HTML, markdown.parse(this.resposta()) as string) ?? ''
+  );
   erro = signal('');
   carregando = signal(false);
   consultando = signal(false);
