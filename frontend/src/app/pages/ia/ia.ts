@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { DomSanitizer } from '@angular/platform-browser';
 import { Marked } from 'marked';
 import { IAService, RespostaIA, ResumoIA } from '../../services/ia.service';
+import { ConfirmationService } from '../../components/confirmation-dialog/confirmation-dialog';
 
 const markdown = new Marked({
   async: false,
@@ -25,6 +26,7 @@ const markdown = new Marked({
 export class IAPage implements OnInit {
   private ia = inject(IAService);
   private sanitizer = inject(DomSanitizer);
+  private confirmation = inject(ConfirmationService);
   pergunta = '';
   readonly sugestoes = [
     'Quais foram os acessos aceitos e negados nesta semana?',
@@ -91,8 +93,15 @@ export class IAPage implements OnInit {
       .format(new Date(`${dia}T12:00:00Z`));
   }
 
-  apagar(itemId: number): void {
+  async apagar(itemId: number): Promise<void> {
     if (this.apagando() !== null) return;
+    const item = this.historico().find((resposta) => resposta.id === itemId);
+    if (!item) return;
+    const confirmado = await this.confirmation.excluir(
+      'Apagar análise salva?',
+      `A pergunta “${item.pergunta}” e sua resposta serão excluídas do histórico SQLite da sua conta. Os registros de acesso e os demais dados do sistema não serão apagados.`,
+    );
+    if (!confirmado || this.apagando() !== null || !this.historico().some((resposta) => resposta.id === itemId)) return;
     this.apagando.set(itemId);
     this.ia.apagar(itemId).subscribe({
       next: () => {

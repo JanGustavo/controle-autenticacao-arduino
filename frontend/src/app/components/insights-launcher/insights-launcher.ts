@@ -29,7 +29,6 @@ export class InsightsLauncher {
   }
 
   abrirPagina(): void {
-    this.aberto.set(false);
     void this.router.navigateByUrl('/ia');
   }
 }

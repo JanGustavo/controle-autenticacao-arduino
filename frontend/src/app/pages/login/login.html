@@ -2,7 +2,7 @@
   <mat-card class="login-card">
     <mat-card-header class="login-header">
       <div class="header-icon">
-        <mat-icon>admin_panel_settings</mat-icon>
+        <img src="ard-lock-icon.svg" alt="" aria-hidden="true" />
       </div>
       <mat-card-title>Acesso administrativo</mat-card-title>
       <mat-card-subtitle>Digite suas credenciais para acessar o painel</mat-card-subtitle>
@@ -73,14 +73,14 @@
           class="login-btn"
           [disabled]="carregando()"
         >
-          @if (carregando()) {
-            <mat-spinner diameter="24" class="btn-spinner"></mat-spinner>
-          } @else {
-            <ng-container>
+          <span class="login-btn-content">
+            @if (carregando()) {
+              <mat-spinner diameter="24" class="btn-spinner"></mat-spinner>
+            } @else {
               <span>Entrar</span>
               <mat-icon>login</mat-icon>
-            </ng-container>
-          }
+            }
+          </span>
         </button>
       </form>
     </mat-card-content>

@@ -38,6 +38,7 @@
       width: 36px;
       height: 36px;
     }
+    img { display: block; width: 48px; height: 48px; object-fit: contain; }
   }
 
   mat-card-title {
@@ -85,11 +86,15 @@
   border-radius: 24px !important;
   font-size: 1rem;
   font-weight: 600;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  width: 100%;
   margin-top: 8px;
+  padding: 0 20px;
+
+  .login-btn-content { display: inline-flex; align-items: center; justify-content: center; gap: 8px; line-height: 1; }
+  .login-btn-content mat-icon { margin: 0; width: 20px; height: 20px; font-size: 20px; line-height: 20px; }
 
   .btn-spinner {
     display: inline-block;
