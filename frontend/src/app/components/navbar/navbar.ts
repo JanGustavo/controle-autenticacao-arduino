@@ -99,6 +99,7 @@ export class NavbarComponent implements OnInit {
   menuAberto = signal(false);
   readonly links = [
     { path: '/adm-page', label: 'Painel', icon: 'space_dashboard' },
+    { path: '/ia', label: 'IA', icon: 'auto_awesome' },
     { path: '/usuarios', label: 'Usuários', icon: 'group' },
     { path: '/permissoes', label: 'Permissões', icon: 'vpn_key' },
     { path: '/validar-acesso', label: 'Validar acesso', icon: 'face' },

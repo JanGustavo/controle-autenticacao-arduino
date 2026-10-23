@@ -41,6 +41,10 @@ services:
       JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-60}
       ARDLOCK_DOMAIN: ${ARDLOCK_DOMAIN:-ardlock.jangustavo.me}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4200}
+      GROQ_API_KEY_1: ${GROQ_API_KEY_1:-}
+      GROQ_API_KEY_2: ${GROQ_API_KEY_2:-}
+      GROQ_API_KEY_3: ${GROQ_API_KEY_3:-}
+      GROQ_MODEL: ${GROQ_MODEL:-llama-3.3-70b-versatile}
       PYTHONPATH: /app
     volumes:
       - ./backend/tests:/app/tests:ro

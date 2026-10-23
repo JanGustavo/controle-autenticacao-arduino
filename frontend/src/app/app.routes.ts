@@ -10,6 +10,7 @@ import { LocaisPage } from './pages/locais/locais';
 import { DispositivosPage } from './pages/dispositivos/dispositivos';
 import { AdministradoresPage } from './pages/administradores/administradores';
 import { AuditLogsComponent } from './pages/audit-logs/audit-logs.component';
+import { IAPage } from './pages/ia/ia';
 import { authGuard } from './guards/auth.guard';
 import { DASHBOARD_MOCK, USUARIOS_MOCK, PERMISSOES_MOCK } from './models/tuple-page.model';
 
@@ -29,6 +30,7 @@ export const routes: Routes = [
   { path: 'forgot-password', component: ForgotPassword },
   { path: 'reset-password', component: ResetPassword },
   { path: 'adm-page', component: AdmPage, canActivate: [authGuard] },
+  { path: 'ia', component: IAPage, canActivate: [authGuard] },
   { path: 'administradores', component: AdministradoresPage, canActivate: [authGuard] },
   { path: 'entidades', component: EntidadesPage, canActivate: [authGuard] },
 

@@ -1,0 +1,60 @@
+<main class="ia-page">
+  <div class="ia-heading">
+    <div class="ia-mark"><mat-icon>auto_awesome</mat-icon></div>
+    <div>
+      <span class="eyebrow">ARDLOCK · INTELIGÊNCIA</span>
+      <h1>IA</h1>
+      <p>Explore os acessos e usuários com uma pergunta em linguagem natural.</p>
+    </div>
+  </div>
+
+  <section class="ia-composer" aria-label="Perguntar à IA">
+    <label for="ia-pergunta">O que você quer saber?</label>
+    <textarea id="ia-pergunta" [(ngModel)]="pergunta" maxlength="500" rows="3"
+      placeholder="Ex.: Quais usuários tiveram mais acessos negados?"></textarea>
+    <div class="composer-footer">
+      <small>A IA recebe dados de usuários e contagens de acesso. Sua sessão não é enviada à Groq.</small>
+      <button type="button" (click)="consultar()" [disabled]="consultando() || pergunta.trim().length < 3">
+        <mat-icon>{{ consultando() ? 'hourglass_top' : 'arrow_upward' }}</mat-icon>
+        {{ consultando() ? 'Consultando...' : 'Perguntar' }}
+      </button>
+    </div>
+  </section>
+
+  @if (erro()) { <p class="ia-error" role="alert">{{ erro() }}</p> }
+  @if (resposta()) {
+    <section class="ia-response" aria-label="Resposta da IA">
+      <div class="section-title"><mat-icon>auto_awesome</mat-icon><h2>Resposta</h2></div>
+      <p>{{ resposta() }}</p>
+    </section>
+  }
+
+  @if (carregando()) {
+    <p class="ia-loading">Carregando indicadores...</p>
+  } @else if (resumo(); as dados) {
+    <section class="ia-stats" aria-label="Indicadores de acesso">
+      <article><span>Usuários</span><strong>{{ dados.total_usuarios }}</strong></article>
+      <article><span>Tentativas</span><strong>{{ dados.total_acessos }}</strong></article>
+      <article><span>Aceitos</span><strong>{{ dados.percentual_aceitos }}%</strong><small>{{ dados.aceitos }} acessos</small></article>
+      <article><span>Negados</span><strong>{{ dados.percentual_negados }}%</strong><small>{{ dados.negados }} acessos</small></article>
+    </section>
+    <section class="ia-table-card">
+      <div class="section-title"><mat-icon>group</mat-icon><h2>Por usuário</h2></div>
+      <p>Percentuais calculados sobre as tentativas registradas de cada usuário.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Usuário</th><th>Tentativas</th><th>Aceitos</th><th>Negados</th></tr></thead>
+          <tbody>
+            @for (usuario of dados.usuarios; track usuario.id) {
+              <tr>
+                <td>{{ usuario.nome }}</td><td>{{ usuario.total }}</td>
+                <td>{{ usuario.percentual_aceitos }}% <small>({{ usuario.aceitos }})</small></td>
+                <td>{{ usuario.percentual_negados }}% <small>({{ usuario.negados }})</small></td>
+              </tr>
+            } @empty { <tr><td colspan="4">Nenhum usuário cadastrado.</td></tr> }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+</main>

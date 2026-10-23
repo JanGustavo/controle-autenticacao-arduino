@@ -58,6 +58,13 @@ export class AdmPage implements OnInit {
           icon: 'history',
           tone: 'history',
         },
+        {
+          path: '/ia',
+          title: 'IA',
+          description: 'Perguntar sobre usuários e resultados de acesso',
+          icon: 'auto_awesome',
+          tone: 'history',
+        },
       ],
     },
     {

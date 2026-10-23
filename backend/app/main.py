@@ -18,6 +18,7 @@ from app.api import (
     audit_logs,
     dispositivos,
     historico_acesso,
+    ia,
     locais,
     permissoes,
     rfid,
@@ -364,3 +365,5 @@ app.include_router(
     prefix=f"{BASE_PREFIX}/arduino",
     tags=["RFID"],
 )
+
+app.include_router(ia.router, prefix=f"{BASE_PREFIX}/ia", tags=["IA"])
