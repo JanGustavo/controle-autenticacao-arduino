@@ -658,7 +658,7 @@ def validar_pergunta(pergunta: str) -> None:
 def _titulo_reserva(resposta: str, pergunta: str) -> str:
     heading = re.search(r"^\s{0,3}#{1,6}\s+(.+)$", resposta, re.MULTILINE)
     if heading:
-        titulo = heading.group(1).strip().strip('`*# "“”')[:80]
+        titulo = _limitar_titulo(heading.group(1))
         if titulo:
             return titulo
     normalizada = pergunta.casefold()
@@ -675,11 +675,19 @@ def _titulo_reserva(resposta: str, pergunta: str) -> str:
     return "Análise de acessos"
 
 
+def _limitar_titulo(valor: str) -> str:
+    titulo = valor.strip().strip('`*# "“”')
+    if len(titulo) <= 72:
+        return titulo
+    palavras = titulo[:71].rsplit(' ', 1)[0]
+    return (palavras or titulo[:71]).rstrip(' ,:;.-') + '…'
+
+
 def _separar_titulo_resposta(conteudo: str, pergunta: str) -> tuple[str, str]:
     """Separate the short AI title from the Markdown answer without losing the answer."""
     match = re.match(r"^[ \t]*(?:#{1,3}[ \t]*)?t[ií]tulo[ \t]*:[ \t]*([^\n]+)\n+", conteudo, re.IGNORECASE)
     if match:
-        titulo = match.group(1).strip().strip('`*# "“”')[:80]
+        titulo = _limitar_titulo(match.group(1))
         resposta = conteudo[match.end():].lstrip()
         if titulo and resposta:
             if titulo.casefold().rstrip(' ?') == pergunta.strip().casefold().rstrip(' ?'):
