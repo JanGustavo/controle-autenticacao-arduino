@@ -17,7 +17,14 @@
   font-family: 'Material Icons' !important;
   font-weight: normal;
   font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
   font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
 }
 
 :root {
