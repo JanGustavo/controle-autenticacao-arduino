@@ -67,7 +67,7 @@
       </div>
       <div class="insight-grid">
         <article class="insight-card blue">
-          <div class="card-top"><span>Acessos hoje</span><mat-icon>today</mat-icon></div>
+          <div class="card-top"><span>Acessos hoje</span><span class="metric-icon"><mat-icon>today</mat-icon></span></div>
           <strong>{{ dados.insights.acessos_hoje }}</strong>
           <p>
             @if (dados.insights.variacao_hoje !== null) {
@@ -78,12 +78,12 @@
           </p>
         </article>
         <article class="insight-card violet">
-          <div class="card-top"><span>Média diária</span><mat-icon>monitoring</mat-icon></div>
+          <div class="card-top"><span>Média diária</span><span class="metric-icon"><mat-icon>monitoring</mat-icon></span></div>
           <strong>{{ dados.insights.media_diaria_7_dias }}</strong>
           <p>tentativas por dia nos últimos 7 dias</p>
         </article>
         <article class="insight-card green">
-          <div class="card-top"><span>Aceitos · 7 dias</span><mat-icon>check_circle_outline</mat-icon></div>
+          <div class="card-top"><span>Aceitos · 7 dias</span><span class="metric-icon"><mat-icon>check_circle_outline</mat-icon></span></div>
           <strong>{{ dados.insights.percentual_aceitos_7_dias }}%</strong>
           <div class="meter" role="img" [attr.aria-label]="dados.insights.aceitos_7_dias + ' acessos aceitos nos últimos 7 dias'">
             <span [style.width.%]="dados.insights.percentual_aceitos_7_dias"></span>
@@ -91,7 +91,7 @@
           <p>{{ dados.insights.aceitos_7_dias }} de {{ dados.insights.acessos_7_dias }} tentativas</p>
         </article>
         <article class="insight-card red">
-          <div class="card-top"><span>Negados · 7 dias</span><mat-icon>block</mat-icon></div>
+          <div class="card-top"><span>Negados · 7 dias</span><span class="metric-icon"><mat-icon>block</mat-icon></span></div>
           <strong>{{ dados.insights.negados_7_dias }}</strong>
           <p>tentativas que merecem atenção</p>
         </article>

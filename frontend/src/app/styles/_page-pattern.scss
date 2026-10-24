@@ -83,16 +83,22 @@
       align-items: center;
       gap: 14px;
       min-width: 0;
+      > div { min-width: 0; }
       .module-icon {
         display: grid;
         place-items: center;
         flex: 0 0 48px;
         width: 48px;
         height: 48px;
+        box-sizing: border-box;
         border-radius: 13px;
-        background: color-mix(in srgb, var(--module-accent, var(--ard-primary)) 13%, var(--surface));
+        background: linear-gradient(135deg,
+          color-mix(in srgb, var(--module-accent, var(--ard-primary)) 26%, var(--surface)),
+          color-mix(in srgb, var(--module-accent, var(--ard-primary)) 11%, var(--surface)));
+        border: 1px solid color-mix(in srgb, var(--module-accent, var(--ard-primary)) 24%, transparent);
+        box-shadow: 0 8px 18px color-mix(in srgb, var(--module-accent, var(--ard-primary)) 10%, transparent);
         color: var(--module-accent, var(--ard-primary));
-        mat-icon { width: 27px; height: 27px; font-size: 27px; }
+        mat-icon { display: block; width: 27px; height: 27px; font-size: 27px; line-height: 1; }
       }
       h1, h2 { margin: 0; }
       p { margin-top: 4px; }
@@ -127,7 +133,11 @@
         width: 44px;
         height: 44px;
         flex-shrink: 0;
-        background: color-mix(in srgb, var(--accent, var(--ard-primary)) 13%, var(--surface));
+        background: linear-gradient(135deg,
+          color-mix(in srgb, var(--accent, var(--ard-primary)) 26%, var(--surface)),
+          color-mix(in srgb, var(--accent, var(--ard-primary)) 11%, var(--surface)));
+        border-color: color-mix(in srgb, var(--accent, var(--ard-primary)) 24%, transparent);
+        box-shadow: 0 8px 18px color-mix(in srgb, var(--accent, var(--ard-primary)) 10%, transparent);
       }
       .tuple-header .module-icon mat-icon {
         font-size: 26px;

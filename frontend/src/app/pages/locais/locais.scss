@@ -337,6 +337,11 @@ code {
 
 @include pages.ard-page-pattern('.locations-page');
 
+.locations-page > .page-header {
+  width: min(1100px, 100%);
+  margin: 0 auto 24px;
+}
+
 .locations-page[data-module='locations'] { --module-accent: #c2410c; }
 .locations-page[data-module='devices'] { --module-accent: #0f766e; }
 :host-context(body.dark-mode) .locations-page[data-module='locations'] { --module-accent: #fb923c; }

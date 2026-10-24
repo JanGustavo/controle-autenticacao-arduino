@@ -85,18 +85,33 @@
 .ia-page .markdown-body tbody tr:nth-child(even) { background: color-mix(in srgb,var(--ard-muted) 7%,var(--ard-surface)); }
 .ia-page .markdown-body code { padding: 2px 5px; border-radius: 5px; background: var(--ia-soft); }
 .ia-page .insight-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px; }
-.ia-page .insight-card { min-width: 0; padding: 20px; border: 1px solid var(--ia-border); border-radius: 19px; background: var(--ard-surface); transition: transform .25s, box-shadow .25s; }
-.ia-page .insight-card.blue { border-top: 2px solid var(--ia-cyan); }
-.ia-page .insight-card.violet { border-top: 2px solid var(--ia-violet); }
-.ia-page .insight-card.green { border-top: 2px solid #45bd91; }
-.ia-page .insight-card.red { border-top: 2px solid var(--ia-pink); }
+.ia-page .insight-card {
+  --metric-accent: var(--ia-cyan);
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid transparent;
+  border-radius: 19px;
+  background:
+    linear-gradient(var(--ard-surface), var(--ard-surface)) padding-box,
+    linear-gradient(135deg, color-mix(in srgb, var(--metric-accent) 70%, var(--ia-border)), color-mix(in srgb, var(--metric-accent) 18%, var(--ia-border)) 60%, var(--ia-border)) border-box;
+  transition: transform .25s, box-shadow .25s;
+}
+.ia-page .insight-card.violet { --metric-accent: var(--ia-violet); }
+.ia-page .insight-card.green { --metric-accent: #45bd91; }
+.ia-page .insight-card.red { --metric-accent: var(--ia-pink); }
 .ia-page .insight-card:hover { transform: translateY(-4px); box-shadow: 0 14px 27px #1d294120; }
 .ia-page .card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--ard-muted); font-size: 13px; font-weight: 700; }
-.ia-page .card-top mat-icon { padding: 8px; width: 37px; height: 37px; border-radius: 11px; }
-.ia-page .blue .card-top mat-icon { color: #2563eb; background: #2563eb1b; }
-.ia-page .violet .card-top mat-icon { color: #8657ca; background: #8657ca1b; }
-.ia-page .green .card-top mat-icon { color: #178458; background: #1784581b; }
-.ia-page .red .card-top mat-icon { color: #d55b60; background: #d55b601b; }
+.ia-page .card-top .metric-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border-radius: 12px;
+  color: var(--metric-accent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--metric-accent) 22%, var(--ard-surface)), color-mix(in srgb, var(--metric-accent) 9%, var(--ard-surface)));
+}
+.ia-page .card-top .metric-icon mat-icon { display: block; width: 26px; height: 26px; font-size: 26px; line-height: 1; }
 .ia-page .insight-card strong { display: block; margin-top: 10px; font-size: clamp(29px,3vw,42px); line-height: 1; letter-spacing: -.04em; }
 .ia-page .insight-card p { color: var(--ard-muted); font-size: 12px; margin-top: 11px; min-height: 2.4em; }
 .ia-page .trend { font-weight: 800; }
