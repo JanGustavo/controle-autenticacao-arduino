@@ -17,6 +17,9 @@
       radial-gradient(ellipse 48% 300px at 14% 0,
         color-mix(in srgb, var(--module-accent, var(--accent, var(--ard-primary))) 9%, transparent),
         transparent),
+      radial-gradient(ellipse 48% 300px at 86% 0,
+        color-mix(in srgb, var(--module-accent, var(--accent, var(--ard-primary))) 9%, transparent),
+        transparent),
       var(--canvas);
     color: var(--ink);
 
