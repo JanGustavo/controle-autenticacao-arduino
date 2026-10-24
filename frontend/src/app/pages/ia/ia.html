@@ -38,7 +38,7 @@
         <article class="ia-response">
           <div class="response-header">
             <div class="response-title"><span class="response-icon"><mat-icon>auto_awesome</mat-icon></span>
-              <div><span class="eyebrow">RESPOSTA · {{ item.criado_em | date:'dd/MM/yyyy, HH:mm' }}</span><h3>{{ item.pergunta }}</h3></div>
+              <div><span class="eyebrow">RESPOSTA · {{ item.criado_em | date:'dd/MM/yyyy, HH:mm' }}</span><h3>{{ item.titulo || 'Análise de acessos' }}</h3></div>
             </div>
             <div class="response-actions">
             <button class="refresh-button" type="button" (click)="atualizar(item.id)" [disabled]="atualizando() !== null || apagando() !== null"
@@ -51,6 +51,10 @@
             </button>
             </div>
           </div>
+          <details class="response-question">
+            <summary>Ver pergunta original</summary>
+            <p>{{ item.pergunta }}</p>
+          </details>
           <div class="markdown-body" [innerHTML]="renderizar(item.resposta)"></div>
         </article>
       }

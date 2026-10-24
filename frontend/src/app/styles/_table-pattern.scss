@@ -5,6 +5,8 @@
     border: 1px solid var(--line, #e2e8f0);
     border-radius: 16px;
     box-shadow: 0 8px 26px rgba(15, 23, 42, 0.045);
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .table-container,
@@ -12,6 +14,8 @@
     overflow: auto;
     max-height: min(70vh, 760px);
     scrollbar-gutter: stable;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   table,

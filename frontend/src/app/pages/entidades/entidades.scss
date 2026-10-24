@@ -1,16 +1,21 @@
+@use '../../styles/page-pattern' as pages;
+
 :host {
   display: block;
 }
 
 .entities-page {
+  --module-accent: #4f46e5;
   --canvas: #f5f6f8;
   --surface: #ffffff;
   --ink: #1c2128;
   --muted: #6b7280;
   --line: rgba(20, 24, 31, 0.1);
 
-  min-height: 100vh;
-  padding: 36px 40px 48px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
   box-sizing: border-box;
   background: var(--canvas);
   color: var(--ink);
@@ -19,9 +24,11 @@
 .page-header,
 .diagram,
 .diagram-legend {
-  width: min(1320px, 100%);
-  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
+
+@include pages.ard-page-pattern('.entities-page');
 
 /* Cabeçalho da página e Botão Toggle */
 .header-top {
@@ -351,3 +358,8 @@ h2 {
  .entity-header .header-main { min-width: 0; }
  .entity-header h2 { overflow-wrap: anywhere; }
 }
+
+@include pages.ard-page-pattern('.entities-page');
+
+.entities-page { --module-accent: #4f46e5; }
+:host-context(body.dark-mode) .entities-page { --module-accent: #a5b4fc; }

@@ -40,6 +40,7 @@ _PERIODOS = {
 _AGRUPAMENTOS = {
     "usuario": ("h.usuario_id", "COALESCE(u.nome, 'Usuário removido/sem cadastro')"),
     "local": ("h.local_id", "COALESCE(l.nome, 'Local removido/sem cadastro')"),
+    "dispositivo": ("h.dispositivo_id", "COALESCE(d.nome || ' (' || d.identificador || ')', 'Dispositivo removido')"),
     "dia": ("(h.data_hora AT TIME ZONE h.data_hora_timezone)::date", ""),
     "motivo": (
         "COALESCE(NULLIF(h.motivo_recusa, ''), "
@@ -53,8 +54,9 @@ _TOOLS = [{
         "name": "consultar_acessos",
         "description": (
             "Consulta estatísticas reais de tentativas de acesso no banco ArdLock. "
-            "Use para perguntas sobre período, percentuais, usuários, locais, "
-            "motivos, dias e registros individuais. A semana começa na segunda-feira."
+            "Use para perguntas sobre período, percentuais, usuários, locais, dispositivos, "
+            "motivos, dias, qualidade do reconhecimento facial e registros individuais. "
+            "A semana começa na segunda-feira."
         ),
         "parameters": {
             "type": "object",
@@ -64,15 +66,51 @@ _TOOLS = [{
                 "data_fim": {"type": "string", "description": "AAAA-MM-DD inclusive; só para periodo=intervalo"},
                 "agrupar_por": {
                     "type": "string", "enum": ["nenhum", *_AGRUPAMENTOS],
-                    "description": "Use usuario para percentuais por pessoa, dia para tendência diária.",
+                    "description": (
+                        "Use 'usuario' para percentuais por pessoa, 'dia' para tendência diária, "
+                        "'dispositivo' para volume por leitor físico, 'local' para por ambiente."
+                    ),
                 },
                 "incluir_registros": {
                     "type": "boolean",
                     "description": "True se a pergunta pedir tentativas individuais; máximo 60 por página.",
                 },
+                "incluir_similaridade": {
+                    "type": "boolean",
+                    "description": (
+                        "True para incluir média, mínimo e máximo de percentual_similaridade "
+                        "facial no agrupamento escolhido (requer agrupar_por != 'nenhum')."
+                    ),
+                },
                 "pagina": {"type": "integer", "minimum": 1, "maximum": 20},
             },
             "required": ["periodo", "agrupar_por", "incluir_registros"],
+            "additionalProperties": False,
+        },
+    },
+}, {
+    "type": "function",
+    "function": {
+        "name": "consultar_fluxo_biometrico",
+        "description": (
+            "Consulta a tabela tentativa_acesso com usuário, local e dispositivo. "
+            "Use para estados PENDENTE, AUTORIZADO, NEGADO e EXPIRADO, falhas por leitor "
+            "e tempo médio entre leitura RFID e conclusão biométrica. Os totais do "
+            "histórico de acesso exigem consultar_acessos separadamente; não há vínculo "
+            "individual garantido entre as duas tabelas."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "periodo": {"type": "string", "enum": sorted(_PERIODOS)},
+                "data_inicio": {"type": "string", "description": "AAAA-MM-DD; só para periodo=intervalo"},
+                "data_fim": {"type": "string", "description": "AAAA-MM-DD inclusive; só para periodo=intervalo"},
+                "agrupar_por": {
+                    "type": "string",
+                    "enum": ["nenhum", "dispositivo", "local", "usuario", "status"],
+                },
+            },
+            "required": ["periodo", "agrupar_por"],
             "additionalProperties": False,
         },
     },
@@ -245,6 +283,9 @@ def consultar_acessos(argumentos: dict) -> dict:
     incluir_registros = argumentos.get("incluir_registros", False)
     if not isinstance(incluir_registros, bool):
         raise ValueError("incluir_registros deve ser booleano.")
+    incluir_similaridade = argumentos.get("incluir_similaridade", False)
+    if not isinstance(incluir_similaridade, bool):
+        raise ValueError("incluir_similaridade deve ser booleano.")
     pagina = argumentos.get("pagina", 1)
     if not isinstance(pagina, int) or not 1 <= pagina <= 20:
         raise ValueError("Página inválida.")
@@ -261,7 +302,8 @@ def consultar_acessos(argumentos: dict) -> dict:
     where = f"WHERE {' AND '.join(filtros)}" if filtros else ""
     joins = (
         "LEFT JOIN usuario u ON u.user_id = h.usuario_id "
-        "LEFT JOIN local l ON l.local_id = h.local_id"
+        "LEFT JOIN local l ON l.local_id = h.local_id "
+        "LEFT JOIN dispositivo d ON d.dispositivo_id = h.dispositivo_id"
     )
 
     with get_connection() as connection, connection.cursor() as cursor:
@@ -285,6 +327,12 @@ def consultar_acessos(argumentos: dict) -> dict:
         }
 
         if agrupamento != "nenhum":
+            sim_select = (
+                ", ROUND(AVG(h.percentual_similaridade)::numeric, 1) AS sim_media"
+                ", ROUND(MIN(h.percentual_similaridade)::numeric, 1) AS sim_min"
+                ", ROUND(MAX(h.percentual_similaridade)::numeric, 1) AS sim_max"
+                if incluir_similaridade else ", NULL, NULL, NULL"
+            )
             if agrupamento == "usuario":
                 filtro_join = f"AND {' AND '.join(filtros)}" if filtros else ""
                 cursor.execute(
@@ -294,9 +342,11 @@ def consultar_acessos(argumentos: dict) -> dict:
                            COUNT(h.id) FILTER (WHERE h.autorizado IS TRUE) AS aceitos,
                            COUNT(h.id) FILTER (WHERE h.autorizado IS FALSE) AS negados,
                            COUNT(*) OVER() AS grupos_total
+                           {sim_select}
                     FROM usuario u
                     LEFT JOIN historico_acesso h
                       ON h.usuario_id = u.user_id {filtro_join}
+                    LEFT JOIN dispositivo d ON d.dispositivo_id = h.dispositivo_id
                     GROUP BY u.user_id, u.nome
                     ORDER BY total DESC, u.nome
                     LIMIT 100
@@ -313,6 +363,7 @@ def consultar_acessos(argumentos: dict) -> dict:
                            COUNT(*) FILTER (WHERE h.autorizado IS TRUE) AS aceitos,
                            COUNT(*) FILTER (WHERE h.autorizado IS FALSE) AS negados,
                            COUNT(*) OVER() AS grupos_total
+                           {sim_select}
                     FROM historico_acesso h {joins} {where}
                     GROUP BY 1, 2
                     ORDER BY total DESC, rotulo
@@ -323,15 +374,21 @@ def consultar_acessos(argumentos: dict) -> dict:
             linhas = cursor.fetchall()
             resultado["agrupamento"] = agrupamento
             resultado["grupos_total"] = linhas[0][5] if linhas else 0
-            resultado["grupos"] = [
-                {
+            grupos_out = []
+            for row in linhas:
+                chave_valor, nome_grupo, qtd, sim, nao, _, sim_media, sim_min, sim_max = row
+                item: dict = {
                     "id": str(chave_valor) if chave_valor is not None else None,
                     "nome": nome_grupo, "total": qtd, "aceitos": sim, "negados": nao,
                     "percentual_aceitos": _percentual(sim, qtd),
                     "percentual_negados": _percentual(nao, qtd),
                 }
-                for chave_valor, nome_grupo, qtd, sim, nao, _ in linhas
-            ]
+                if incluir_similaridade:
+                    item["similaridade_media"] = float(sim_media) if sim_media is not None else None
+                    item["similaridade_min"] = float(sim_min) if sim_min is not None else None
+                    item["similaridade_max"] = float(sim_max) if sim_max is not None else None
+                grupos_out.append(item)
+            resultado["grupos"] = grupos_out
 
         if incluir_registros:
             cursor.execute(
@@ -339,7 +396,8 @@ def consultar_acessos(argumentos: dict) -> dict:
                 SELECT h.id, {instante} AS data_hora,
                        COALESCE(u.nome, 'Usuário removido/sem cadastro'),
                        COALESCE(l.nome, 'Local removido/sem cadastro'),
-                       h.autorizado, h.motivo_recusa
+                       COALESCE(d.nome || ' (' || d.identificador || ')', 'Dispositivo removido'),
+                       h.autorizado, h.motivo_recusa, h.percentual_similaridade
                 FROM historico_acesso h {joins} {where}
                 ORDER BY data_hora DESC, h.id DESC
                 LIMIT 60 OFFSET %s
@@ -352,12 +410,102 @@ def consultar_acessos(argumentos: dict) -> dict:
                 {
                     "id": registro_id,
                     "data_hora": data_hora.astimezone(ACCESS_ZONE).isoformat(),
-                    "usuario": usuario, "local": local,
+                    "usuario": usuario, "local": local, "dispositivo": dispositivo,
                     "resultado": "aceito" if autorizado else "negado",
                     "motivo": motivo,
+                    "similaridade": round(sim, 1) if sim is not None else None,
                 }
-                for registro_id, data_hora, usuario, local, autorizado, motivo in cursor.fetchall()
+                for registro_id, data_hora, usuario, local, dispositivo, autorizado, motivo, sim
+                in cursor.fetchall()
             ]
+    return resultado
+
+
+def consultar_fluxo_biometrico(argumentos: dict) -> dict:
+    """Read bounded RFID-to-face attempt aggregates across fixed related tables."""
+    inicio, fim = _limites_periodo(argumentos)
+    agrupamento = argumentos.get("agrupar_por")
+    grupos = {
+        "dispositivo": (
+            "d.dispositivo_id", "COALESCE(d.nome, 'Dispositivo removido')",
+            "concat_ws(' · ', d.identificador, l.nome)",
+        ),
+        "local": ("l.local_id", "COALESCE(l.nome, 'Local removido')", "NULL::text"),
+        "usuario": ("u.user_id", "COALESCE(u.nome, 'Usuário removido')", "NULL::text"),
+        "status": ("t.status", "t.status", "NULL::text"),
+    }
+    if agrupamento not in {*grupos, "nenhum"}:
+        raise ValueError("Agrupamento do fluxo biométrico inválido.")
+
+    filtros = []
+    parametros: list[object] = []
+    instante = "t.criado_em AT TIME ZONE t.data_timezone"
+    if inicio is not None and fim is not None:
+        filtros = [f"{instante} >= %s", f"{instante} < %s"]
+        parametros = [
+            datetime.combine(inicio, time.min, ACCESS_ZONE),
+            datetime.combine(fim + timedelta(days=1), time.min, ACCESS_ZONE),
+        ]
+    where = f"WHERE {' AND '.join(filtros)}" if filtros else ""
+    joins = (
+        "LEFT JOIN usuario u ON u.user_id = t.usuario_id "
+        "LEFT JOIN local l ON l.local_id = t.local_id "
+        "LEFT JOIN dispositivo d ON d.dispositivo_id = t.dispositivo_id"
+    )
+    contagens = (
+        "COUNT(*) AS total, "
+        "COUNT(*) FILTER (WHERE t.status = 'PENDENTE') AS pendentes, "
+        "COUNT(*) FILTER (WHERE t.status = 'AUTORIZADO') AS autorizadas, "
+        "COUNT(*) FILTER (WHERE t.status = 'NEGADO') AS negadas, "
+        "COUNT(*) FILTER (WHERE t.status = 'EXPIRADO') AS expiradas, "
+        "COUNT(*) FILTER (WHERE t.status IN ('NEGADO', 'EXPIRADO')) AS falhas, "
+        "ROUND((AVG(EXTRACT(EPOCH FROM ((t.concluido_em AT TIME ZONE t.data_timezone) "
+        "- (t.criado_em AT TIME ZONE t.data_timezone)))) "
+        "FILTER (WHERE t.status IN ('AUTORIZADO', 'NEGADO') "
+        "AND t.concluido_em IS NOT NULL))::numeric, 1) AS tempo_medio_conclusao_segundos"
+    )
+    with get_connection() as connection, connection.cursor() as cursor:
+        cursor.execute(f"SELECT {contagens} FROM tentativa_acesso t {where}", parametros)
+        total, pendentes, autorizadas, negadas, expiradas, falhas, tempo_medio = cursor.fetchone()
+        resultado = {
+            "periodo": argumentos["periodo"],
+            "data_inicio": inicio.isoformat() if inicio else None,
+            "data_fim": fim.isoformat() if fim else None,
+            "fuso_horario": "America/Sao_Paulo",
+            "fonte": "tentativa_acesso; não há vínculo individual garantido com historico_acesso",
+            "total": total, "pendentes": pendentes, "autorizadas": autorizadas,
+            "negadas": negadas, "expiradas": expiradas, "falhas": falhas,
+            "tempo_medio_conclusao_segundos": float(tempo_medio) if tempo_medio is not None else None,
+        }
+        if agrupamento != "nenhum":
+            chave, rotulo, contexto = grupos[agrupamento]
+            cursor.execute(
+                f"""
+                SELECT {chave} AS id, {rotulo} AS nome, {contexto} AS contexto,
+                       {contagens}, COUNT(*) OVER() AS grupos_total
+                FROM tentativa_acesso t {joins} {where}
+                GROUP BY 1, 2, 3
+                ORDER BY falhas DESC, total DESC, nome
+                LIMIT 100
+                """,
+                parametros,
+            )
+            linhas = cursor.fetchall()
+            resultado.update({
+                "agrupamento": agrupamento,
+                "grupos_total": linhas[0][10] if linhas else 0,
+                "limite_grupos": 100,
+                "grupos": [
+                    {
+                        "id": str(chave_valor) if chave_valor is not None else None,
+                        "nome": nome, "contexto": contexto_grupo,
+                        "total": qtd, "pendentes": pend, "autorizadas": aut,
+                        "negadas": neg, "expiradas": exp, "falhas": fal,
+                        "tempo_medio_conclusao_segundos": float(media) if media is not None else None,
+                    }
+                    for chave_valor, nome, contexto_grupo, qtd, pend, aut, neg, exp, fal, media, _ in linhas
+                ],
+            })
     return resultado
 
 
@@ -482,13 +630,16 @@ def consultar_cadastros(argumentos: dict) -> dict:
     return {"recurso": recurso, "total": total, "limite": 100, "registros": registros}
 
 
-def _proxima_chave() -> str | None:
-    keys = [os.getenv(f"GROQ_API_KEY_{index}", "").strip() for index in (1, 2, 3)]
-    keys = [key for key in keys if key]
+def _chaves_em_ordem() -> list[str]:
+    keys = list(dict.fromkeys(
+        key for index in (1, 2, 3)
+        if (key := os.getenv(f"GROQ_API_KEY_{index}", "").strip())
+    ))
     if not keys:
-        return None
+        return []
     with _key_lock:
-        return keys[next(_key_index) % len(keys)]
+        inicio = next(_key_index) % len(keys)
+    return keys[inicio:] + keys[:inicio]
 
 
 def validar_pergunta(pergunta: str) -> None:
@@ -504,11 +655,45 @@ def validar_pergunta(pergunta: str) -> None:
         )
 
 
-async def responder_com_groq(pergunta: str) -> str:
+def _titulo_reserva(resposta: str, pergunta: str) -> str:
+    heading = re.search(r"^\s{0,3}#{1,6}\s+(.+)$", resposta, re.MULTILINE)
+    if heading:
+        titulo = heading.group(1).strip().strip('`*# "“”')[:80]
+        if titulo:
+            return titulo
+    normalizada = pergunta.casefold()
+    for termo, titulo in (
+        ("biometr", "Análise do fluxo biométrico"),
+        ("facial", "Análise do reconhecimento facial"),
+        ("login", "Análise de logins"),
+        ("dispositiv", "Análise de dispositivos"),
+        ("permiss", "Análise de permissões"),
+        ("usuári", "Análise de usuários"),
+    ):
+        if termo in normalizada:
+            return titulo
+    return "Análise de acessos"
+
+
+def _separar_titulo_resposta(conteudo: str, pergunta: str) -> tuple[str, str]:
+    """Separate the short AI title from the Markdown answer without losing the answer."""
+    match = re.match(r"^[ \t]*(?:#{1,3}[ \t]*)?t[ií]tulo[ \t]*:[ \t]*([^\n]+)\n+", conteudo, re.IGNORECASE)
+    if match:
+        titulo = match.group(1).strip().strip('`*# "“”')[:80]
+        resposta = conteudo[match.end():].lstrip()
+        if titulo and resposta:
+            if titulo.casefold().rstrip(' ?') == pergunta.strip().casefold().rstrip(' ?'):
+                titulo = _titulo_reserva(resposta, pergunta)
+            return titulo, resposta
+    return _titulo_reserva(conteudo, pergunta), conteudo
+
+
+async def responder_com_groq(pergunta: str) -> tuple[str, str]:
     validar_pergunta(pergunta)
-    key = _proxima_chave()
-    if not key:
+    chaves = _chaves_em_ordem()
+    if not chaves:
         raise RuntimeError("GROQ_API_KEY_1, _2 ou _3 não configurada.")
+    chaves_limitadas: set[str] = set()
 
     hoje = agora_acesso().date().isoformat()
     mensagens: list[dict] = [
@@ -521,6 +706,9 @@ async def responder_com_groq(pergunta: str) -> str:
                 "Login administrativo e acesso físico são eventos diferentes. "
                 "Para pedidos de IPs e logins, use consultar_auditoria com tipo=logins "
                 "e agrupar_por=ip; informe sucessos e falhas separadamente. "
+                "Para o fluxo RFID/biometria, consulte consultar_fluxo_biometrico; "
+                "compare com consultar_acessos apenas por período e agregados, sem "
+                "afirmar que registros individuais das tabelas correspondem. "
                 "Não use totais de outros períodos. "
                 "Semana começa na segunda-feira. Percentuais são de tentativas, "
                 "não de pessoas. Use apenas fatos retornados pela ferramenta. "
@@ -531,7 +719,10 @@ async def responder_com_groq(pergunta: str) -> str:
                 "Se a pergunta não for sobre esses dados, explique o escopo em uma frase. "
                 "Se a lista estiver limitada, informe o limite e o total. "
                 "Nunca suponha que um IP registrado seja o cliente final se houver proxy. "
-                "Responda em Markdown com um resumo direto. Quando houver um total "
+                "Comece a resposta com uma linha 'Título: ' seguida de um título "
+                "curto, específico e descritivo, de no máximo 80 caracteres, sem Markdown. "
+                "Depois de uma linha em branco, responda em Markdown com um resumo direto. "
+                "Quando houver um total "
                 "principal, destaque-o em um blockquote com número em negrito, "
                 "por exemplo > **7 IPs diferentes**. Use tabelas para comparações "
                 "e deixe ressalvas em parágrafo separado, sem repetir os mesmos números. "
@@ -541,29 +732,42 @@ async def responder_com_groq(pergunta: str) -> str:
         {"role": "user", "content": pergunta},
     ]
     model = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+    ultima_resposta_429: httpx.Response | None = None
     async with httpx.AsyncClient(timeout=40) as client:
-        for rodada in range(4):
+        for rodada in range(6):
             payload = {
                 "model": model, "temperature": 0.2,
                 "max_completion_tokens": 3000,
                 "messages": mensagens,
             }
-            if rodada < 3:
+            if rodada < 5:
                 payload["tools"] = _TOOLS
                 payload["tool_choice"] = "required" if rodada == 0 else "auto"
                 payload["parallel_tool_calls"] = False
-            response = await client.post(
-                _GROQ_URL, headers={"Authorization": f"Bearer {key}"}, json=payload,
-            )
-            response.raise_for_status()
+            for key in chaves:
+                if key in chaves_limitadas:
+                    continue
+                response = await client.post(
+                    _GROQ_URL, headers={"Authorization": f"Bearer {key}"}, json=payload,
+                )
+                if response.status_code == 429:
+                    chaves_limitadas.add(key)
+                    ultima_resposta_429 = response
+                    continue
+                response.raise_for_status()
+                break
+            else:
+                if ultima_resposta_429 is not None:
+                    ultima_resposta_429.raise_for_status()
+                raise ValueError("Nenhuma chave Groq disponível para concluir a consulta.")
             mensagem = response.json()["choices"][0]["message"]
             chamadas = mensagem.get("tool_calls") or []
             if not chamadas:
                 conteudo = mensagem.get("content")
                 if not isinstance(conteudo, str) or not conteudo.strip():
                     raise ValueError("A Groq retornou uma resposta vazia.")
-                return conteudo.strip()
-            if rodada == 3:
+                return _separar_titulo_resposta(conteudo.strip(), pergunta)
+            if rodada == 5:
                 raise ValueError("A Groq excedeu o limite de consultas por pergunta.")
             mensagens.append({
                 "role": "assistant", "content": mensagem.get("content"),
@@ -571,6 +775,7 @@ async def responder_com_groq(pergunta: str) -> str:
             })
             ferramentas = {
                 "consultar_acessos": consultar_acessos,
+                "consultar_fluxo_biometrico": consultar_fluxo_biometrico,
                 "consultar_auditoria": consultar_auditoria,
                 "consultar_cadastros": consultar_cadastros,
             }

@@ -16,8 +16,10 @@
   --muted: #6b7280;
   --line: #e3e6ea;
   --accent: #2563eb;
-  min-height: 100vh;
-  padding: 36px 40px 48px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
   box-sizing: border-box;
   background: var(--canvas);
   color: var(--ink);
@@ -26,8 +28,8 @@
 .page-header,
 .editor,
 .table-card {
-  width: min(1100px, 100%);
-  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 .back-link {
   display: inline-flex;
@@ -59,7 +61,7 @@ h1 {
 }
 .editor,
 .table-card {
-  margin-top: 32px;
+  margin-top: 0;
   padding: 24px;
   box-sizing: border-box;
   background: var(--surface);
@@ -338,8 +340,14 @@ code {
 @include pages.ard-page-pattern('.locations-page');
 
 .locations-page > .page-header {
-  width: min(1100px, 100%);
-  margin: 0 auto 24px;
+  width: 100%;
+  margin: 0 0 24px;
+}
+.locations-page > .editor,
+.locations-page > .table-card {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
 }
 
 .locations-page[data-module='locations'] { --module-accent: #c2410c; }

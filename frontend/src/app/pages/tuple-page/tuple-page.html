@@ -1,5 +1,5 @@
 @if (config; as cfg) {
-  <div class="tuple-wrapper">
+  <div class="tuple-wrapper" [ngClass]="cfg.accentColor">
     <!-- HEADER DO COMPONENTE -->
     <header class="tuple-header" [ngClass]="cfg.accentColor">
       <div class="header-top">

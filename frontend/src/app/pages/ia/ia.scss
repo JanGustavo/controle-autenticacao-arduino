@@ -5,14 +5,18 @@
   --ia-violet: #9975ed;
   --ia-pink: #d66aa7;
   max-width: 1340px;
+  width: 100%;
   margin: 0 auto;
   padding: 36px clamp(18px, 4vw, 56px) 80px;
+  box-sizing: border-box;
   display: grid;
   gap: 28px;
   color: var(--ard-ink);
   background:
     radial-gradient(ellipse 52% 270px at 4% 0, color-mix(in srgb, var(--ia-cyan) 9%, transparent), transparent),
-    radial-gradient(ellipse 48% 310px at 98% 4%, color-mix(in srgb, var(--ia-pink) 9%, transparent), transparent);
+    radial-gradient(ellipse 48% 310px at 98% 4%, color-mix(in srgb, var(--ia-pink) 9%, transparent), transparent),
+    radial-gradient(ellipse 42% 170px at 10% calc(100% - 180px), color-mix(in srgb, var(--ia-cyan) 5%, transparent), transparent),
+    radial-gradient(ellipse 42% 170px at 90% calc(100% - 180px), color-mix(in srgb, var(--ia-pink) 5%, transparent), transparent);
 }
 .ia-page * { box-sizing: border-box; }
 .ia-page h1,.ia-page h2,.ia-page h3,.ia-page p { margin: 0; }
@@ -56,9 +60,15 @@
 .ia-page .saved-count,.ia-page .insights-heading > span { font-size: 12px; color: var(--ard-muted); }
 .ia-page .ia-response { padding: clamp(20px,2.7vw,32px); min-width: 0; }
 .ia-page .response-header { display: flex; align-items: start; justify-content: space-between; gap: 18px; padding-bottom: 20px; margin-bottom: 18px; border-bottom: 1px solid var(--ia-border); }
-.ia-page .response-title { display: flex; align-items: start; gap: 13px; min-width: 0; }
-.ia-page .response-icon { width: 39px; height: 39px; flex: none; border-radius: 12px; display: grid; place-items: center; background: color-mix(in srgb,#a95486 14%,var(--ard-surface)); color: #a95486; }
+.ia-page .response-title { display: flex; align-items: center; gap: 13px; min-width: 0; }
+.ia-page .response-icon { width: 44px; height: 44px; flex: 0 0 44px; border-radius: 13px; display: grid; place-items: center; background: linear-gradient(135deg, color-mix(in srgb,#9975ed 25%,var(--ard-surface)), color-mix(in srgb,#d66aa7 16%,var(--ard-surface))); color: #b15392; }
+.ia-page .response-icon mat-icon { display: block; width: 26px; height: 26px; font-size: 26px; line-height: 1; }
+.ia-page .response-title > div { min-width: 0; }
 .ia-page .response-title h3 { font-size: 18px; line-height: 1.35; overflow-wrap: anywhere; margin-top: 3px; }
+.ia-page .response-question { margin: -4px 0 18px; min-width: 0; }
+.ia-page .response-question summary { width: fit-content; color: var(--ard-muted); cursor: pointer; font-size: 12px; font-weight: 700; }
+.ia-page .response-question summary:hover { color: var(--ia-pink); }
+.ia-page .response-question p { margin-top: 10px; padding: 12px 15px; border-left: 3px solid var(--ia-pink); border-radius: 0 10px 10px 0; background: var(--ia-soft); color: var(--ard-ink); font-size: 13px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
 .ia-page .response-actions { display: flex; flex: none; align-items: center; gap: 8px; }
 .ia-page .delete-button,.ia-page .refresh-button { flex: none; display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--ia-border); border-radius: 10px; background: transparent; color: var(--ard-muted); padding: 8px 10px; font-size: 12px; font-weight: 700; }
 .ia-page .refresh-button { color: var(--ard-primary); }

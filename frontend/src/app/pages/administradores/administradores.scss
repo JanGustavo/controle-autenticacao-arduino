@@ -16,16 +16,18 @@
   --muted: #6b7280;
   --line: #e3e6ea;
   --accent: #2563eb;
-  min-height: 100vh;
-  padding: 36px 40px 48px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
   box-sizing: border-box;
   background: var(--canvas);
   color: var(--ink);
 }
 
 .header {
-  width: min(1100px, 100%);
-  margin: 0 auto 28px;
+  width: 100%;
+  margin: 0 0 28px;
 
   .back-link {
     display: inline-flex;
@@ -58,8 +60,8 @@
 }
 
 .content-grid {
-  width: min(1100px, 100%);
-  margin: 0 auto;
+  width: 100%;
+  margin: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 24px;

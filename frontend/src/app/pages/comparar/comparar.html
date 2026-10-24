@@ -35,15 +35,20 @@
         </div>
       </div>
 
-      <span class="eyebrow">Fluxo de autenticação</span>
-      <h2>Validar acesso</h2>
-      <p>
-        {{
-          tentativaId()
-            ? 'Tentativa criada. A face será comparada somente com o titular do cartão RFID.'
-            : 'Aproxime o cartão do leitor e siga as orientações para confirmar o rosto.'
-        }}
-      </p>
+      <div class="module-heading">
+        <span class="module-icon"><mat-icon>face</mat-icon></span>
+        <div>
+          <span class="eyebrow">Fluxo de autenticação</span>
+          <h2>Validar acesso</h2>
+          <p>
+            {{
+              tentativaId()
+                ? 'Tentativa criada. A face será comparada somente com o titular do cartão RFID.'
+                : 'Aproxime o cartão do leitor e siga as orientações para confirmar o rosto.'
+            }}
+          </p>
+        </div>
+      </div>
     </div>
 
     <details class="simulator-card">

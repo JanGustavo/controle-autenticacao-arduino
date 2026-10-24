@@ -854,19 +854,17 @@ textarea:focus,
 @include pages.ard-page-pattern('.register-page');
 
 .register-page {
-  padding: 24px;
-  background: var(--ard-surface);
+  --module-accent: #2563eb;
 }
 .dialog-heading {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 12px;
 }
+:host-context(body.dark-mode) .register-page { --module-accent: #60a5fa; }
 @media (max-width: 760px) {
-  .register-page {
-    padding: 16px;
-  }
+  .register-page { padding: 24px 14px 56px; }
 }
 
 .setup-overview,.rfid-walkthrough { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 18px; }

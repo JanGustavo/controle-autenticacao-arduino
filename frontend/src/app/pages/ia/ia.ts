@@ -32,6 +32,8 @@ export class IAPage implements OnInit {
     'Quais foram os acessos aceitos e negados nesta semana?',
     'Quais usuários tiveram mais tentativas de acesso negadas?',
     'Quantos logins foram registrados por IP nos últimos 7 dias?',
+    'Nesta semana, compare falhas por leitor e local com acessos concluídos e tempo médio da biometria.',
+    'Nos últimos 7 dias, compare acessos por usuário e local com logins por IP e administrador.',
   ];
   resumo = signal<ResumoIA | null>(null);
   historico = signal<RespostaIA[]>([]);
@@ -106,6 +108,15 @@ export class IAPage implements OnInit {
     const confirmado = await this.confirmation.excluir(
       'Apagar análise salva?',
       `A pergunta “${item.pergunta}” e sua resposta serão excluídas do histórico SQLite da sua conta. Os registros de acesso e os demais dados do sistema não serão apagados.`,
+      {
+        items: [
+          {
+            icon: 'psychology',
+            label: 'Análise salva',
+            description: 'Pergunta e resposta armazenadas no seu histórico.',
+          },
+        ],
+      },
     );
     if (!confirmado || this.apagando() !== null || !this.historico().some((resposta) => resposta.id === itemId)) return;
     this.apagando.set(itemId);

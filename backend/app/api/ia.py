@@ -37,8 +37,8 @@ def excluir_resposta(item_id: int, admin: dict = Depends(obter_administrador_atu
 async def perguntar(body: PerguntaIA, admin: dict = Depends(obter_administrador_atual)):
     _validar_pergunta(body.pergunta)
     resumo = await run_in_threadpool(resumo_acessos)
-    resposta = await _gerar_resposta(body.pergunta)
-    item = await run_in_threadpool(salvar_resposta, admin["admin_id"], body.pergunta, resposta)
+    titulo, resposta = await _gerar_resposta(body.pergunta)
+    item = await run_in_threadpool(salvar_resposta, admin["admin_id"], body.pergunta, titulo, resposta)
     return {"resposta": resposta, "resumo": resumo, "item": item}
 
 
@@ -48,8 +48,8 @@ async def atualizar_consulta(item_id: int, admin: dict = Depends(obter_administr
     if item is None:
         raise HTTPException(status_code=404, detail="Resposta não encontrada.")
     _validar_pergunta(item["pergunta"])
-    resposta = await _gerar_resposta(item["pergunta"])
-    atualizado = await run_in_threadpool(atualizar_resposta, admin["admin_id"], item_id, resposta)
+    titulo, resposta = await _gerar_resposta(item["pergunta"])
+    atualizado = await run_in_threadpool(atualizar_resposta, admin["admin_id"], item_id, titulo, resposta)
     if atualizado is None:
         raise HTTPException(status_code=404, detail="Resposta não encontrada.")
     resumo = await run_in_threadpool(resumo_acessos)
@@ -63,7 +63,7 @@ def _validar_pergunta(pergunta: str) -> None:
         raise HTTPException(status_code=400, detail=str(error)) from error
 
 
-async def _gerar_resposta(pergunta: str) -> str:
+async def _gerar_resposta(pergunta: str) -> tuple[str, str]:
     try:
         return await responder_com_groq(pergunta)
     except RuntimeError as error:

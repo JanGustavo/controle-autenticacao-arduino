@@ -7,18 +7,24 @@
     --muted: var(--ard-muted);
     --line: var(--ard-line);
     --accent: var(--ard-primary);
-    max-width: 1280px;
+    max-width: 1340px;
     width: 100%;
     min-height: auto;
     margin: 0 auto;
-    padding: 32px 32px 48px;
+    padding: 36px clamp(18px, 4vw, 56px) 80px;
     box-sizing: border-box;
     background:
-      radial-gradient(ellipse 48% 300px at 14% 0,
+      radial-gradient(ellipse 52% 270px at 4% 0,
         color-mix(in srgb, var(--module-accent, var(--accent, var(--ard-primary))) 9%, transparent),
         transparent),
-      radial-gradient(ellipse 48% 300px at 86% 0,
+      radial-gradient(ellipse 48% 310px at 98% 4%,
         color-mix(in srgb, var(--module-accent, var(--accent, var(--ard-primary))) 9%, transparent),
+        transparent),
+      radial-gradient(ellipse 42% 170px at 10% calc(100% - 180px),
+        color-mix(in srgb, var(--module-accent, var(--accent, var(--ard-primary))) 5%, transparent),
+        transparent),
+      radial-gradient(ellipse 42% 170px at 90% calc(100% - 180px),
+        color-mix(in srgb, var(--module-accent, var(--accent, var(--ard-primary))) 5%, transparent),
         transparent),
       var(--canvas);
     color: var(--ink);
@@ -41,8 +47,8 @@
       }
       h1,
       h2 {
-        font-size: clamp(1.65rem, 3vw, 2rem);
-        line-height: 1.2;
+        font-size: clamp(30px, 3vw, 43px);
+        line-height: 1.08;
         letter-spacing: -0.035em;
         color: var(--ink);
         margin: 8px 0;
@@ -51,7 +57,7 @@
         color: var(--muted);
         font-size: 1rem;
         line-height: 1.5;
-        margin: 4px 0 0;
+        margin: 7px 0 0;
       }
     }
     .header-top {
@@ -89,7 +95,7 @@
     .module-heading {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 19px;
       min-width: 0;
       > div { min-width: 0; }
       .module-icon {
@@ -108,8 +114,8 @@
         color: var(--module-accent, var(--ard-primary));
         mat-icon { display: block; width: 32px; height: 32px; font-size: 32px; line-height: 1; }
       }
-      h1, h2 { margin: 0; }
-      p { margin-top: 4px; }
+      h1, h2 { margin: 0; font-size: clamp(30px, 3vw, 43px); line-height: 1.08; }
+      p { margin-top: 7px; }
     }
     .register-form {
       width: 100%;
@@ -132,7 +138,7 @@
     }
     @if $wrapper == '.tuple-wrapper' {
       .tuple-header .header-main {
-        gap: 14px;
+        gap: 19px;
       }
       .tuple-header .header-top {
         margin-bottom: 12px;
@@ -153,11 +159,13 @@
         height: 32px;
         color: var(--accent, var(--ard-primary));
       }
-      .tuple-header .title-group h2 {
-        font-size: 2rem;
+      .tuple-header .header-main .title-group h2 {
+        font-size: clamp(30px, 3vw, 43px);
+        line-height: 1.08;
       }
       .tuple-header .title-group p {
         font-size: 1rem;
+        margin-top: 7px;
       }
       .filter-bar {
         padding: 16px;
@@ -195,7 +203,7 @@
     }
 
     @media (max-width: 760px) {
-      padding: 24px 16px 32px;
+      padding: 24px clamp(14px, 4vw, 24px) 56px;
       .module-heading .module-icon,
       .tuple-header .header-main .module-icon {
         flex-basis: 52px;
@@ -215,9 +223,6 @@
       > .adm-header {
         margin-bottom: 20px;
       }
-      .tuple-header .title-group h2 {
-        font-size: 1.65rem;
-      }
       .header-top,
       .header-actions {
         flex-wrap: wrap;
@@ -226,6 +231,10 @@
       .filter-bar .filter-group select {
         max-width: none;
       }
+    }
+
+    @media (max-width: 640px) {
+      padding: 24px 14px 56px;
     }
   }
 }

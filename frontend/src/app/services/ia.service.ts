@@ -36,6 +36,7 @@ export interface ResumoIA {
 
 export interface RespostaIA {
   id: number;
+  titulo: string;
   pergunta: string;
   resposta: string;
   criado_em: string;
