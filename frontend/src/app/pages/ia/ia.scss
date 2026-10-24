@@ -154,7 +154,8 @@
 @media (max-width: 640px) {
   .ia-page { padding: 24px 14px 56px; gap: 22px; }
   .ia-page .ia-heading { align-items: start; }
-  .ia-page .ia-mark { width: 50px; height: 50px; }
+  .ia-page .ia-mark { width: 52px; height: 52px; border-radius: 16px; }
+  .ia-page .ia-mark mat-icon { width: 28px; height: 28px; font-size: 28px; }
   .ia-page .composer-footer,.ia-page .answers-heading,.ia-page .insights-heading { align-items: stretch; flex-direction: column; }
   .ia-page .primary-button { width: 100%; }
   .ia-page .insight-grid { gap: 9px; }

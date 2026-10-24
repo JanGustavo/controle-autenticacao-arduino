@@ -449,7 +449,7 @@
     background-color: var(--ard-canvas) !important;
 
     .tuple-header {
-      background-color: var(--ard-canvas) !important;
+      background-color: transparent !important;
       border-color: transparent !important;
       box-shadow: none !important;
 
@@ -466,10 +466,6 @@
       }
 
       .header-main {
-        .module-icon {
-          background-color: color-mix(in srgb, var(--accent) 16%, var(--ard-surface)) !important;
-        }
-
         .title-group {
           h2 {
             color: #f8fafc !important;
