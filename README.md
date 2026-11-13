@@ -328,3 +328,7 @@ ESP32 -> GET /arduino/resultado-acesso
 O ESP32 nunca envia `aprovado`, `similaridade` ou outro campo capaz de
 definir a decisão. A autenticação HMAC por dispositivo permanece como
 hardening planejado para as rotas físicas.
+
+## Evolução para Guard Walk com vários clientes
+
+A preparação usa uma instalação isolada por empresa ou evento, preservando a instalação atual e as migrations existentes. Consulte o [roteiro de provisionamento e preservação](docs/produto/INSTANCIAS.md) e o [relatório visual de três páginas](docs/produto/guard-walk.html). O provisionamento inicial é operado por scripts; contratação e licenciamento automáticos são próximos incrementos.

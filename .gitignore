@@ -36,3 +36,6 @@ frontend/dist/
 .DS_Store
 Thumbs.db
 *.log
+
+# Configurações e segredos por cliente
+instances/
