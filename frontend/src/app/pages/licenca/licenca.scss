@@ -1,0 +1,33 @@
+@use '../../styles/page-pattern' as pages;
+@include pages.ard-page-pattern('.license-page');
+.license-page {
+  --module-accent: #38bdf8;
+  .heading-row { display:flex; justify-content:space-between; gap:20px; align-items:center; }
+  .back-link { display:inline-flex; align-items:center; gap:8px; margin-bottom:24px; color:var(--ard-muted); text-decoration:none; min-height:44px; }
+  .identity { display:flex; flex-wrap:wrap; gap:16px; margin:28px 0; }
+  .identity span,.muted,dt,.empty { color:var(--ard-muted); }
+  .summary { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .panel { border:1px solid var(--ard-line); border-radius:12px; background:var(--ard-surface); padding:26px; margin-bottom:20px; min-width:0; }
+  h2 { font-size:18px; margin:0 0 24px; }
+  .metric { font-size:32px; font-weight:650; margin:0 0 24px; font-variant-numeric:tabular-nums; }
+  .expired { color:#ee9494; }
+  dl { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  dd { margin:0; overflow-wrap:anywhere; }
+  .capacity { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+  .capacity span,.capacity strong { display:block; }
+  .capacity strong { font-size:24px; padding-top:8px; }
+  .muted { font-size:13px; margin:20px 0 0; }
+  .notice { padding:18px; border-left:3px solid var(--module-accent); background:var(--ard-surface); }
+  .error { border-color:#ee9494; }
+  .contract { display:flex; flex-wrap:wrap; gap:16px; padding-block:16px; border-top:1px solid var(--ard-line); }
+  .contract small { width:100%; color:var(--ard-muted); }
+  .table-scroll { overflow:auto; }
+  table { width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; }
+  td,th { padding:16px 12px; text-align:left; border-bottom:1px solid var(--ard-line); }
+  th { color:var(--ard-muted); font-size:13px; font-weight:500; }
+  button { min-height:44px; cursor:pointer; color:var(--ard-ink); background:var(--ard-surface); border:1px solid var(--ard-line); border-radius:6px; padding:10px 16px; transition:background .2s; }
+  button:hover { background:var(--ard-canvas); }
+  button:focus-visible,a:focus-visible { outline:2px solid var(--module-accent); outline-offset:4px; }
+  @media(max-width:650px) { .heading-row { align-items:start; flex-direction:column; } .summary,.capacity { grid-template-columns:1fr; } .panel { padding:20px; } }
+  @media(prefers-reduced-motion:reduce) { * { transition:none!important; } }
+}

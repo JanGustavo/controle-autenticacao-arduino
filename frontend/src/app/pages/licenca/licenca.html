@@ -1,0 +1,62 @@
+<main class="license-page">
+  <header class="page-header">
+    <a routerLink="/adm-page" class="back-link"><mat-icon>arrow_back</mat-icon>Painel do gestor</a>
+    <div class="heading-row">
+      <div class="module-heading">
+        <span class="module-icon"><mat-icon>verified</mat-icon></span>
+        <div><h1>Licença e cobrança</h1><p>Vigência, capacidade e faturas da sua operação.</p></div>
+      </div>
+      <button type="button" (click)="carregar()" [disabled]="carregando()">Atualizar dados</button>
+    </div>
+  </header>
+  @if (erro()) { <div role="alert" class="notice error">{{ erro() }}</div> }
+  @if (carregando()) { <p role="status" class="notice">Consultando licença e cobranças…</p> }
+  @if (dados(); as d) {
+    <div class="identity"><strong>{{ d.instancia.cliente }}</strong><span>{{ d.instancia.operacao }}</span></div>
+    <div class="summary">
+      <section class="panel">
+        <h2>Vigência da licença</h2>
+        @if (d.licenca; as l) {
+          <p class="metric" [class.expired]="l.situacao === 'expirada' || l.situacao === 'revogada'">{{ situacoes[l.situacao] }}</p>
+          <dl><dt>Início</dt><dd>{{ data(l.inicio) }}</dd><dt>Validade</dt><dd>{{ l.fim ? data(l.fim) : 'Sem vencimento definido' }}</dd>
+          @if (l.fim && l.situacao === 'vigente') { <dt>Tempo restante</dt><dd>{{ l.dias_restantes === 0 ? 'Vence hoje' : l.dias_restantes + ' dias' }}</dd> }
+          </dl>
+          @if (l.observacoes) { <p class="notice">{{ l.observacoes }}</p> }
+        } @else { <p class="empty">Nenhuma licença cadastrada para esta operação.</p> }
+      </section>
+      <section class="panel">
+        <h2>Próxima cobrança</h2>
+        @if (d.proxima_fatura; as f) {
+          <p class="metric">{{ valor(f.valor) }}</p>
+          <dl><dt>Vencimento</dt><dd>{{ data(f.vencimento) }}</dd><dt>Situação</dt><dd>{{ status(f, d.data_referencia) }}</dd><dt>Plano</dt><dd>{{ f.plano }}</dd></dl>
+        } @else { <p class="empty">Nenhuma fatura em aberto.</p> }
+      </section>
+    </div>
+    <section class="panel">
+      <h2>Capacidade contratada</h2>
+      <div class="capacity">
+        <div><span>Pessoas credenciadas</span><strong>{{ d.licenca?.limite_usuarios ?? 'Não definido' }}</strong></div>
+        <div><span>Dispositivos</span><strong>{{ d.licenca?.limite_dispositivos ?? 'Não definido' }}</strong></div>
+        <div><span>Gestores</span><strong>{{ d.licenca?.limite_gestores ?? 'Não definido' }}</strong></div>
+      </div>
+      <p class="muted">Os limites exibidos correspondem ao cadastro da licença.</p>
+    </section>
+    <section class="panel">
+      <h2>Contrato e hospedagem</h2>
+      <dl><dt>Hospedagem</dt><dd>{{ d.instancia.hospedagem === 'gerenciada' ? 'Gerenciada' : 'Própria' }}</dd><dt>Domínio</dt><dd>{{ d.instancia.dominio || 'Não cadastrado' }}</dd></dl>
+      @for (c of d.contratos; track c.id) {
+        <div class="contract"><strong>{{ c.plano }}</strong><span>{{ valor(c.valor_mensal) }} / mês</span><small>{{ data(c.inicio) }} até {{ c.fim ? data(c.fim) : 'prazo indeterminado' }}</small></div>
+      } @empty { <p class="empty">Nenhum contrato de cobrança vigente.</p> }
+    </section>
+    <section class="panel ledger">
+      <h2>Histórico de faturas</h2>
+      @if (d.faturas.length) {
+        <div class="table-scroll"><table><thead><tr><th>Fatura / plano</th><th>Emissão</th><th>Vencimento</th><th>Valor</th><th>Situação</th></tr></thead><tbody>
+        @for (f of d.faturas; track f.id) {
+          <tr><td>#{{ f.id }} · {{ f.plano }}</td><td>{{ data(f.emitida_em) }}</td><td>{{ data(f.vencimento) }}</td><td>{{ valor(f.valor) }}</td><td>{{ status(f, d.data_referencia) }}</td></tr>
+        }
+        </tbody></table></div><p class="muted">Até 50 faturas recentes.</p>
+      } @else { <p class="empty">Ainda não há faturas registradas.</p> }
+    </section>
+  } @else if (!carregando() && !erro()) { <p class="notice">Nenhuma informação de licença disponível.</p> }
+</main>

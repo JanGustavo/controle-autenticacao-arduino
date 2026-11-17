@@ -108,6 +108,7 @@ export class NavbarComponent implements OnInit {
     { path: '/dispositivos', label: 'Dispositivos', icon: 'memory' },
     { path: '/administradores', label: 'Administradores', icon: 'verified_user' },
     { path: '/audit-logs', label: 'Auditoria', icon: 'fact_check' },
+    { path: '/licenca', label: 'Licença', icon: 'verified' },
   ];
 
   darkMode = signal<boolean>(false);

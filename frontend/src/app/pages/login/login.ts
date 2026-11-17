@@ -46,7 +46,7 @@ export class Login {
     event.stopPropagation();
   }
 
-  onSubmit() {
+  async onSubmit() {
     if (!this.usuario || !this.senha) {
       this.erro.set('Por favor, preencha o e-mail e a senha.');
       return;
@@ -55,6 +55,21 @@ export class Login {
     this.carregando.set(true);
     this.erro.set(null);
 
+
+    if (this.usuario.trim().toLowerCase() === 'root') {
+      try {
+        const response = await fetch('/plataforma/api/login', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ usuario: this.usuario.trim().toLowerCase(), senha: this.senha }),
+        });
+        if (!response.ok) throw new Error('Usuário ou senha incorretos.');
+        window.location.assign('/plataforma/root');
+      } catch (error) {
+        this.erro.set(error instanceof Error ? error.message : 'Não foi possível autenticar.');
+        this.carregando.set(false);
+      }
+      return;
+    }
     this.api.loginAdm(this.usuario, this.senha).subscribe({
       next: (res) => {
         this.carregando.set(false);
