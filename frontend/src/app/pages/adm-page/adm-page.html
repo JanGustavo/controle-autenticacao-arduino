@@ -50,7 +50,7 @@
     <section class="panel" aria-labelledby="setup-title" [attr.aria-busy]="estadoPreparacao() === 'carregando'">
       <div class="panel-head">
         <div>
-          <h3 id="setup-title">Preparação do ambiente</h3>
+          <h3 id="setup-title">Cadastros do ambiente</h3>
           <p>
             @switch (estadoPreparacao()) {
               @case ('carregando') {
@@ -60,7 +60,7 @@
                 Os cadastros não puderam ser conferidos.
               }
               @default {
-                {{ etapasConcluidas() }} de {{ etapas.length }} etapas concluídas
+                {{ etapasConcluidas() }} de {{ etapas.length }} etapas com registros
               }
             }
           </p>
@@ -104,8 +104,8 @@
             <div class="panel-message is-success" role="status">
               <mat-icon aria-hidden="true">verified</mat-icon>
               <div>
-                <strong>Ambiente pronto para validar acessos</strong>
-                <p>Há locais, leitores, usuários e permissões cadastrados.</p>
+                <strong>Cadastros básicos encontrados</strong>
+                <p>Há registros de locais, leitores, usuários e permissões. Confirme os vínculos, a ativação e o funcionamento dos equipamentos antes de operar.</p>
               </div>
               <a routerLink="/validar-acesso" class="btn-solid">Validar acesso</a>
             </div>
@@ -183,7 +183,7 @@
                       <span class="attempt-reason">{{ tentativa.motivo }}</span>
                     }
                   </span>
-                  <time [attr.datetime]="tentativa.dataHora">{{ tentativa.dataHora | date: 'dd/MM HH:mm' }}</time>
+                  <time [attr.datetime]="tentativa.dataHora">{{ tentativa.dataHora ? (tentativa.dataHora | date: 'dd/MM HH:mm') : 'Horário não informado' }}</time>
                 </li>
               }
             </ul>

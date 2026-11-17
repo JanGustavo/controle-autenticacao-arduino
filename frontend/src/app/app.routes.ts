@@ -25,6 +25,7 @@ export const routes: Routes = [
     // Landing pública: acessível sem autenticação e carregada sob demanda.
     path: '',
     pathMatch: 'full',
+    data: { layout: 'publico' },
     loadComponent: () => import('./pages/landing/landing').then((m) => m.LandingPage),
   },
   {

@@ -24,7 +24,7 @@ interface EtapaPreparacao {
 
 interface Tentativa {
   id: number;
-  dataHora: string;
+  dataHora: string | null;
   autorizado: boolean;
   usuario: string;
   local: string;
@@ -206,16 +206,17 @@ export class AdmPage implements OnInit {
       .subscribe((evento) => {
         if (evento.type !== 'NOVO_ACESSO' || !evento.data) return;
         const dados = evento.data;
+        if (dados.id == null) return;
         const tentativa: Tentativa = {
-          id: dados.id ?? Date.now(),
-          dataHora: new Date().toISOString(),
+          id: dados.id,
+          dataHora: dados.data_hora ?? null,
           autorizado: dados.autorizado ?? false,
           usuario: dados.nome_usuario || 'Usuário não identificado',
           local: this.nomeLocal(dados.local_id ?? null, null),
           motivo: dados.motivo_recusa ?? null,
           nova: true,
         };
-        this.tentativas.update((lista) => [tentativa, ...lista].slice(0, LIMITE_TENTATIVAS));
+        this.tentativas.update((lista) => this.reconciliarTentativas([...lista, tentativa]));
         this.anuncio.set(
           `Nova tentativa: ${tentativa.autorizado ? 'acesso autorizado' : 'acesso negado'}, ${tentativa.usuario}.`,
         );
@@ -257,8 +258,11 @@ export class AdmPage implements OnInit {
     this.estadoTentativas.set('carregando');
     this.api.getHistoricoAcesso().subscribe({
       next: (historico) => {
-        this.tentativas.set(
-          historico.slice(0, LIMITE_TENTATIVAS).map((registro) => this.paraTentativa(registro)),
+        this.tentativas.update((lista) =>
+          this.reconciliarTentativas([
+            ...historico.map((registro) => this.paraTentativa(registro)),
+            ...lista.filter((tentativa) => tentativa.nova),
+          ]),
         );
         this.estadoTentativas.set('pronto');
       },
@@ -270,6 +274,17 @@ export class AdmPage implements OnInit {
     const total = this.contagens()?.[etapa.id] ?? 0;
     if (total === 0) return etapa.pendente;
     return `${total} ${total === 1 ? etapa.singular : etapa.plural}`;
+  }
+
+  private reconciliarTentativas(tentativas: Tentativa[]): Tentativa[] {
+    const porId = new Map<number, Tentativa>();
+    for (const tentativa of tentativas) porId.set(tentativa.id, tentativa);
+    return [...porId.values()]
+      .sort((a, b) =>
+        (Date.parse(b.dataHora ?? '') || 0) - (Date.parse(a.dataHora ?? '') || 0) ||
+        b.id - a.id,
+      )
+      .slice(0, LIMITE_TENTATIVAS);
   }
 
   private paraTentativa(registro: HistoricoAcessoResponse): Tentativa {
