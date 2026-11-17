@@ -332,3 +332,9 @@ hardening planejado para as rotas físicas.
 ## Evolução para Guard Walk com vários clientes
 
 A preparação usa uma instalação isolada por empresa ou evento, preservando a instalação atual e as migrations existentes. Consulte o [roteiro de provisionamento e preservação](docs/produto/INSTANCIAS.md) e o [relatório visual de três páginas](docs/produto/guard-walk.html). O provisionamento inicial é operado por scripts; contratação e licenciamento automáticos são próximos incrementos.
+
+## Portal global da plataforma
+
+O código de /plataforma/root está em [platform/](platform/README.md).
+A interface fica em platform/dashboard.html, a API em platform/portal.py
+e os serviços são definidos em platform/compose.yaml.

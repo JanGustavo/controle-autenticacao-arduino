@@ -1,0 +1,1166 @@
+<!doctype html>
+<html lang="pt-BR" data-type="software">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="page-type" content="software" />
+    <meta name="site-kind" content="software" />
+    <meta
+      name="description"
+      content="Painel financeiro e operacional dos clientes ArdLock"
+    />
+    <meta name="theme-color" content="#101827" />
+    <title>Clientes da plataforma · ArdLock</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #101827;
+        --surface: #162132;
+        --line: #334155;
+        --ink: #eef4fa;
+        --muted: #a8b7ca;
+        --blue: #8ab8ff;
+        --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font:
+          15px/1.5 system-ui,
+          sans-serif;
+      }
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+      button,
+      select {
+        min-height: 44px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        color: var(--ink);
+        border-radius: 6px;
+        padding: 9px 14px;
+      }
+      button {
+        cursor: pointer;
+        transition:
+          background 0.2s,
+          transform 0.2s var(--ease);
+      }
+      button:hover {
+        background: #27394f;
+      }
+      button:active {
+        transform: translateY(1px);
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: wait;
+      }
+      button:focus-visible,
+      input:focus-visible,
+      select:focus-visible,
+      summary:focus-visible {
+        outline: 2px solid var(--blue);
+        outline-offset: 4px;
+      }
+      a {
+        color: var(--blue);
+      }
+      .skip {
+        position: absolute;
+        top: -90px;
+        left: 20px;
+      }
+      .skip:focus {
+        top: 10px;
+        background: var(--bg);
+        padding: 12px;
+        z-index: 9;
+      }
+      .top {
+        border-bottom: 1px solid var(--line);
+        padding: 18px max(24px, calc((100vw - 1280px) / 2));
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .brand {
+        font-weight: 750;
+        font-size: 22px;
+        letter-spacing: -0.8px;
+      }
+      .role {
+        font-size: 12px;
+        color: var(--muted);
+        margin-left: 18px;
+        border-left: 1px solid var(--line);
+        padding-left: 18px;
+      }
+      main {
+        max-width: 1328px;
+        margin: auto;
+        padding: 38px 24px 64px;
+      }
+      .heading {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        align-items: end;
+        margin-bottom: 28px;
+      }
+      h1 {
+        font-size: clamp(26px, 3vw, 36px);
+        line-height: 1.2;
+        letter-spacing: -1px;
+        margin: 4px 0 9px;
+      }
+      h2 {
+        font-size: 18px;
+        letter-spacing: -0.3px;
+        margin: 0;
+      }
+      p {
+        margin: 0;
+      }
+      .muted,
+      small {
+        color: var(--muted);
+      }
+      small {
+        font-size: 12px;
+      }
+      .filters {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 28px;
+      }
+      .filters label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .segments {
+        display: flex;
+        gap: 4px;
+        background: #0c1421;
+        padding: 4px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+      .segments button {
+        background: transparent;
+        border-color: transparent;
+      }
+      .segments button[aria-pressed="true"] {
+        background: #29466c;
+        color: #fff;
+      }
+      .updated {
+        margin-left: auto;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        border-block: 1px solid var(--line);
+        padding: 24px 0;
+        margin-bottom: 30px;
+      }
+      .metric {
+        padding: 0 22px;
+        border-right: 1px solid var(--line);
+      }
+      .metric:first-child {
+        padding-left: 0;
+      }
+      .metric:last-child {
+        border: 0;
+      }
+      .value {
+        display: block;
+        font-size: clamp(26px, 3vw, 38px);
+        font-weight: 650;
+        letter-spacing: -1px;
+        margin: 9px 0 5px;
+        font-variant-numeric: tabular-nums;
+      }
+      .metric .label {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 24px;
+      }
+      .panel-head {
+        padding: 22px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        border-bottom: 1px solid var(--line);
+      }
+      .analysis {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+      }
+      .chart {
+        padding: 24px;
+        border-right: 1px solid var(--line);
+        min-width: 0;
+      }
+      .chart h3,
+      .distribution h3 {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--muted);
+        margin: 0 0 22px;
+      }
+      .chart-row {
+        display: grid;
+        grid-template-columns: minmax(110px, 1fr) 2fr auto;
+        align-items: center;
+        gap: 18px;
+        margin: 22px 0;
+        font-variant-numeric: tabular-nums;
+      }
+      .track {
+        height: 8px;
+        background: #253347;
+        border-radius: 2px;
+        overflow: hidden;
+      }
+      .fill {
+        height: 100%;
+        background: var(--blue);
+        transition: width 0.6s var(--ease);
+      }
+      .distribution {
+        padding: 24px;
+      }
+      .host-row {
+        display: flex;
+        justify-content: space-between;
+        margin: 17px 0;
+      }
+      .notice {
+        padding: 16px;
+        border-left: 2px solid #6488b3;
+        background: #142237;
+        color: var(--muted);
+        font-size: 13px;
+        margin-top: 22px;
+      }
+      .empty {
+        padding: 36px 24px;
+        color: var(--muted);
+        text-align: center;
+      }
+      .table-wrap {
+        overflow: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-variant-numeric: tabular-nums;
+      }
+      th {
+        text-align: left;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+      td,
+      th {
+        padding: 17px 24px;
+        border-bottom: 1px solid var(--line);
+      }
+      tr:last-child td {
+        border: 0;
+      }
+      td strong {
+        display: block;
+        font-weight: 600;
+      }
+      td small {
+        display: block;
+        margin-top: 3px;
+      }
+      .client-row {
+        cursor: pointer;
+        transition: background 0.2s var(--ease);
+      }
+      .client-row:hover,
+      .client-row:focus-within {
+        background: #1c2d43;
+      }
+      .client-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        text-align: left;
+        color: inherit;
+        text-decoration: none;
+      }
+      .client-button::after { content: " ↗"; opacity: .45; font-weight: 400; }
+      .client-button:hover { color: var(--ink); background: transparent; }
+      .client-button:hover::after { opacity: 1; }
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        white-space: nowrap;
+        font-size: 13px;
+      }
+      .status:before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        background: #94a3b8;
+        border-radius: 50%;
+      }
+      .status.up:before {
+        background: #66d3b2;
+      }
+      .status.down:before {
+        background: #f4a6a6;
+      }
+      .search {
+        background: #0c1421;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        min-height: 44px;
+        color: var(--ink);
+        padding: 10px 13px;
+        max-width: 100%;
+        width: 260px;
+      }
+      .error {
+        padding: 20px;
+        border: 1px solid #9f6570;
+        background: #301f2b;
+        border-radius: 8px;
+        margin-bottom: 20px;
+      }
+      .error button {
+        margin-left: 12px;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      #content[aria-busy="true"] {
+        opacity: 0.5;
+        pointer-events: none;
+        transition: opacity 0.2s;
+      }
+      .enter {
+        animation: enter 0.55s var(--ease) both;
+      }
+      .metrics .metric:nth-child(2) {
+        animation-delay: 50ms;
+      }
+      .metrics .metric:nth-child(3) {
+        animation-delay: 100ms;
+      }
+      .metrics .metric:nth-child(4) {
+        animation-delay: 150ms;
+      }
+      @keyframes enter {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      dialog {
+        position: fixed;
+        margin: 0 0 0 auto;
+        inset: 0;
+        max-height: 100dvh;
+        height: 100dvh;
+        width: min(540px, 100%);
+        max-width: 100%;
+        padding: 0;
+        border: 0;
+        border-left: 1px solid var(--line);
+        background: var(--bg);
+        color: var(--ink);
+      }
+      dialog::backdrop {
+        background: #02081799;
+      }
+      dialog .body {
+        padding: 24px;
+      }
+      dialog h3 {
+        margin: 26px 0 12px;
+        font-size: 16px;
+      }
+      dialog dl {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin: 0;
+      }
+      dt {
+        color: var(--muted);
+      }
+      dd {
+        margin: 0;
+        overflow-wrap: anywhere;
+      }
+      dialog ul {
+        padding-left: 20px;
+      }
+      dialog li {
+        margin-bottom: 14px;
+      }
+      .close {
+        font-size: 16px;
+      }
+      .skeleton {
+        padding: 48px;
+        color: var(--muted);
+        text-align: center;
+      }
+      .serial {
+        font:
+          12px ui-monospace,
+          monospace;
+        color: var(--muted);
+      }
+      .footer {
+        font-size: 12px;
+        color: var(--muted);
+        padding-top: 8px;
+      }
+      .trend {
+        display: flex;
+        align-items: end;
+        gap: 6px;
+        height: 100px;
+        margin-top: 20px;
+      }
+      .trend span {
+        flex: 1;
+        background: #638cbf;
+        min-width: 3px;
+        max-width: 24px;
+      }
+      label {
+        font-size: 13px;
+      }
+      #drawer-status {
+        min-height: 50px;
+      }
+      @keyframes slide {
+        from {
+          transform: translateX(100%);
+        }
+        to {
+          transform: none;
+        }
+      }
+      ::view-transition-old(root),
+      ::view-transition-new(root) {
+        animation-duration: 220ms;
+      }
+      @media (max-width: 800px) {
+        .metrics {
+          grid-template-columns: 1fr 1fr;
+          gap: 24px;
+        }
+        .metric:nth-child(2) {
+          border: 0;
+        }
+        .metric:nth-child(3) {
+          padding-left: 0;
+        }
+        .analysis {
+          grid-template-columns: 1fr;
+        }
+        .chart {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+        .heading {
+          align-items: start;
+        }
+        .updated {
+          width: 100%;
+          margin: 0;
+        }
+        .panel-head {
+          flex-wrap: wrap;
+        }
+      }
+      @media (max-width: 480px) {
+        main {
+          padding: 26px 16px;
+        }
+        .top {
+          padding: 16px;
+        }
+        .role {
+          margin-left: 10px;
+          padding-left: 10px;
+        }
+        .heading {
+          flex-direction: column;
+        }
+        .heading button {
+          width: 100%;
+        }
+        .filters {
+          align-items: stretch;
+        }
+        .filters label {
+          width: 100%;
+          justify-content: space-between;
+        }
+        .segments {
+          width: 100%;
+        }
+        .segments button {
+          flex: 1;
+          padding-inline: 8px;
+        }
+        .metric {
+          padding-inline: 12px;
+        }
+        .value {
+          font-size: 25px;
+        }
+        .panel-head,
+        .chart,
+        .distribution {
+          padding: 18px;
+        }
+        .chart-row {
+          grid-template-columns: 1fr auto;
+          gap: 8px;
+        }
+        .chart-row .track {
+          grid-column: 1/-1;
+          grid-row: 2;
+        }
+        .search {
+          width: 100%;
+        }
+        td,
+        th {
+          padding: 14px 18px;
+        }
+        .metrics {
+          gap: 22px 0;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .table-wrap {
+          overflow: visible;
+        }
+        table,
+        tbody {
+          display: block;
+        }
+        thead {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          clip-path: inset(50%);
+        }
+        .client-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          padding: 18px;
+          gap: 14px;
+          border-bottom: 1px solid var(--line);
+        }
+        .client-row:last-child {
+          border: 0;
+        }
+        td {
+          padding: 0;
+          border: 0;
+          min-width: 0;
+          overflow-wrap: anywhere;
+        }
+        td:first-child {
+          grid-column: 1 / -1;
+        }
+        td:not(:first-child)::before {
+          display: block;
+          color: var(--muted);
+          font-size: 12px;
+          margin-bottom: 5px;
+        }
+        td:nth-child(2)::before {
+          content: "Hospedagem";
+        }
+        td:nth-child(3)::before {
+          content: "Plano / mensal";
+        }
+        td:nth-child(4)::before {
+          content: "Faturado";
+        }
+        td:nth-child(5)::before {
+          content: "Operação";
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *:before,
+        *:after {
+          animation: none !important;
+          transition: none !important;
+          scroll-behavior: auto !important;
+        }
+        ::view-transition-old(root),
+        ::view-transition-new(root) {
+          animation: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip skip-link" href="#main">Ir para o painel</a>
+    <header class="top">
+      <div>
+        <span class="brand">ArdLock</span
+        ><span class="role">Plataforma / root</span>
+      </div>
+      <span class="serial">CONTROLE DE ACESSO</span>
+    </header>
+    <main id="main">
+      <div class="heading enter">
+        <div>
+          <p class="muted">Clientes da plataforma</p>
+          <h1>Visão executiva da operação</h1>
+          <p class="muted">Finanças, licenças e operação dos seus clientes.</p>
+        </div>
+        <button id="refresh">Atualizar dados ↻</button>
+      </div>
+      <div class="filters">
+        <label
+          >Período
+          <select id="period">
+            <option value="7">Últimos 7 dias</option>
+            <option value="30" selected>Últimos 30 dias</option>
+            <option value="90">Últimos 90 dias</option>
+          </select></label
+        >
+        <div class="segments" role="group" aria-label="Filtrar hospedagem">
+          <button data-host="todas" aria-pressed="true">Todas</button
+          ><button data-host="gerenciada" aria-pressed="false">
+            Gerenciada</button
+          ><button data-host="propria" aria-pressed="false">Própria</button>
+        </div>
+        <span id="updated" class="updated"></span>
+      </div>
+      <div id="error" class="error" role="alert" hidden>
+        <span>Não foi possível consultar o painel.</span
+        ><button id="retry">Tentar novamente</button>
+      </div>
+      <div id="loading" class="skeleton" role="status">
+        Consultando clientes e registros…
+      </div>
+      <div id="content" hidden aria-busy="false">
+        <div class="metrics">
+          <div class="metric enter">
+            <span class="label">Receita recorrente mensal</span
+            ><strong id="mrr" class="value">—</strong
+            ><small id="billing">Contratos vigentes</small>
+          </div>
+          <div class="metric enter">
+            <span class="label">Clientes ativos</span
+            ><strong id="active" class="value">—</strong
+            ><small id="customers">Com licença vigente</small>
+          </div>
+          <div class="metric enter">
+            <span class="label">Hospedagem</span
+            ><strong id="hosting" class="value">—</strong
+            ><small>Gerenciadas / próprias · instâncias</small>
+          </div>
+          <div class="metric enter">
+            <span class="label">Disponibilidade medida</span
+            ><strong id="availability" class="value">—</strong
+            ><small id="samples">Verificações no período</small>
+          </div>
+        </div>
+        <section class="panel enter" aria-labelledby="analysis-title">
+          <div class="panel-head">
+            <h2 id="analysis-title">Receita e operação</h2>
+            <small>Valores em BRL</small>
+          </div>
+          <div class="analysis">
+            <div class="chart">
+              <h3>Faturamento consolidado por cliente no período</h3>
+              <div id="chart"></div>
+              <div
+                id="trend"
+                aria-label="Faturamento por data de emissão"
+              ></div>
+            </div>
+            <div class="distribution">
+              <h3>Distribuição das operações</h3>
+              <div id="distribution"></div>
+              <p id="financial-note" class="notice"></p>
+            </div>
+          </div>
+        </section>
+        <section class="panel enter" aria-labelledby="ledger-title">
+          <div class="panel-head">
+            <div>
+              <h2 id="ledger-title">Clientes e operações</h2>
+              <small id="count"></small>
+            </div>
+            <label
+              >Buscar cliente
+              <input
+                class="search"
+                id="search"
+                type="search"
+                placeholder="Nome ou operação"
+            /></label>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Cliente / operação</th>
+                  <th>Hospedagem</th>
+                  <th>Plano / mensal</th>
+                  <th>Faturado</th>
+                  <th>Operação</th>
+                </tr>
+              </thead>
+              <tbody id="ledger"></tbody>
+            </table>
+          </div>
+          <p id="empty" class="empty" hidden>
+            Nenhum cliente encontrado para estes filtros.
+          </p>
+        </section>
+        <p class="footer">
+          Atividade definida pela vigência da licença. Operação baseada na
+          última verificação registrada, considerada recente por até 5 minutos.
+        </p>
+      </div>
+    </main>
+    <dialog id="drawer" aria-labelledby="drawer-title">
+      <div class="panel-head">
+        <h2 id="drawer-title">Detalhes do cliente</h2>
+        <button class="close" id="close">Fechar detalhes ×</button>
+      </div>
+      <div class="body" id="drawer-status" aria-live="polite"></div>
+    </dialog>
+    <script>
+      const $ = (id) => document.getElementById(id),
+        money = (n) =>
+          Number(n).toLocaleString("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+          }),
+        number = (n) => Number(n).toLocaleString("pt-BR"),
+        reduced = matchMedia("(prefers-reduced-motion: reduce)");
+      let data = null,
+        host = "todas",
+        requestId = 0,
+        drawerRequest = 0,
+        selectedButton = null;
+      const escape = (s) =>
+        String(s ?? "").replace(
+          /[&<>"']/g,
+          (c) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            })[c],
+        );
+      function status(r) {
+        if (!r.verificada_em) return ["Sem monitoramento", ""];
+        if (Date.now() - Date.parse(r.verificada_em) > 300000)
+          return ["Verificação antiga", ""];
+        return r.disponivel ? ["Disponível", "up"] : ["Indisponível", "down"];
+      }
+      function animate(id, value, formatter) {
+        const el = $(id);
+        const previous = Number(el.dataset.value || 0);
+        el.dataset.value = value;
+        if (reduced.matches) {
+          el.textContent = formatter(value);
+          return;
+        }
+        let start;
+        const target = String(value);
+        function frame(t) {
+          if (el.dataset.value !== target) return;
+          start ??= t;
+          const p = Math.min(1, (t - start) / 450);
+          el.textContent = formatter(
+            previous + (value - previous) * (1 - Math.pow(1 - p, 3)),
+          );
+          if (p < 1) requestAnimationFrame(frame);
+        }
+        requestAnimationFrame(frame);
+      }
+      function render() {
+        const rows = data.clientes,
+          sum = (k) => rows.reduce((n, r) => n + Number(r[k] || 0), 0),
+          active = new Set(rows.filter((r) => r.ativa).map((r) => r.id)).size,
+          managed = rows.filter((r) => r.hospedagem === "gerenciada").length,
+          own = rows.length - managed;
+        animate("mrr", sum("mensal"), money);
+        animate("active", active, (n) => number(Math.round(n)));
+        $("customers").textContent =
+          new Set(rows.map((r) => r.id)).size +
+          " clientes cadastrados · licença vigente define atividade";
+        $("hosting").textContent = managed + " / " + own;
+        if (sum("amostras"))
+          animate(
+            "availability",
+            (100 * sum("sucessos")) / sum("amostras"),
+            (n) =>
+              n.toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + "%",
+          );
+        else {
+          $("availability").textContent = "—";
+          delete $("availability").dataset.value;
+        }
+        $("samples").textContent = sum("amostras")
+          ? number(sum("amostras")) + " verificações no período"
+          : "Sem verificações registradas";
+        $("billing").textContent =
+          "Faturado no período " + money(sum("faturado"));
+        const groups = new Map();
+        for (const r of rows) {
+          const g = groups.get(r.id) || {
+            nome: r.nome,
+            total: 0,
+            operacoes: 0,
+          };
+          g.total += Number(r.faturado);
+          g.operacoes++;
+          groups.set(r.id, g);
+        }
+        const max = Math.max(1, ...[...groups.values()].map((r) => r.total));
+        $("chart").innerHTML =
+          [...groups.values()]
+            .map(
+              (r) =>
+                '<div class="chart-row"><span>' +
+                escape(r.nome) +
+                "<br><small>" +
+                r.operacoes +
+                ' operação(ões)</small></span><div class="track"><div class="fill" style="width:' +
+                (100 * r.total) / max +
+                '%"></div></div><strong>' +
+                money(r.total) +
+                "</strong></div>",
+            )
+            .join("") || '<p class="empty">Nenhum cliente neste filtro.</p>';
+        $("trend").innerHTML = data.serie.length
+          ? '<div class="trend">' +
+            data.serie
+              .map(
+                (r) =>
+                  '<span title="' +
+                  escape(r.dia) +
+                  " · " +
+                  money(r.valor) +
+                  '" style="height:' +
+                  Math.max(
+                    2,
+                    (100 * Number(r.valor)) /
+                      Math.max(1, ...data.serie.map((v) => Number(v.valor))),
+                  ) +
+                  '%"></span>',
+              )
+              .join("") +
+            "</div>"
+          : '<p class="notice">Sem faturas emitidas neste período.</p>';
+        $("distribution").innerHTML = [
+          ["Gerenciada", managed],
+          ["Própria", own],
+          ["Faturamento consolidado", money(sum("faturado"))],
+          ["Recebido", money(sum("recebido"))],
+          ["Em aberto", money(sum("pendente"))],
+        ]
+          .map(
+            ([a, b]) =>
+              '<div class="host-row"><span class="muted">' +
+              a +
+              "</span><strong>" +
+              b +
+              "</strong></div>",
+          )
+          .join("");
+        $("financial-note").textContent =
+          "Receita mensal considera contratos vigentes. Faturamento considera faturas emitidas no período, exceto canceladas.";
+        $("updated").textContent =
+          "Consultado às " +
+          new Date(data.atualizado_em).toLocaleTimeString("pt-BR");
+        renderLedger();
+      }
+      function renderLedger() {
+        const query = $("search").value.toLocaleLowerCase("pt-BR"),
+          rows = data.clientes.filter((r) =>
+            (r.nome + " " + r.operacao)
+              .toLocaleLowerCase("pt-BR")
+              .includes(query),
+          );
+        $("ledger").innerHTML = rows
+          .map((r) => {
+            const [label, cls] = status(r);
+            return (
+              '<tr class="client-row"><td><button class="client-button" data-id="' +
+              r.id +
+              '"><strong>' +
+              escape(r.nome) +
+              "</strong></button><small>#" +
+              r.id +
+              " · " +
+              escape(r.operacao) +
+              "</small></td><td>" +
+              (r.hospedagem === "gerenciada" ? "Gerenciada" : "Própria") +
+              "</td><td><strong>" +
+              money(r.mensal) +
+              "</strong><small>" +
+              escape(r.planos || "Sem contrato vigente") +
+              "</small></td><td>" +
+              money(r.faturado) +
+              '</td><td><span class="status ' +
+              cls +
+              '">' +
+              label +
+              "</span><small>" +
+              (r.ativa ? "Licença vigente" : "Sem licença vigente") +
+              "</small></td></tr>"
+            );
+          })
+          .join("");
+        $("empty").hidden = rows.length > 0;
+        $("count").textContent =
+          rows.length +
+          " operações · " +
+          new Set(rows.map((r) => r.id)).size +
+          " clientes";
+      }
+      async function load() {
+        const id = ++requestId;
+        $("refresh").disabled = true;
+        $("error").hidden = true;
+        if (!data) $("loading").hidden = false;
+        $("content").setAttribute("aria-busy", "true");
+        try {
+          const res = await fetch(
+            "/plataforma/api/dashboard?dias=" +
+              $("period").value +
+              "&hospedagem=" +
+              host,
+            { cache: "no-store" },
+          );
+          if (!res.ok) throw Error(res.status);
+          const result = await res.json();
+          if (id !== requestId) return;
+          data = result;
+          $("content").hidden = false;
+          if (document.startViewTransition && !reduced.matches)
+            await document.startViewTransition(render).updateCallbackDone;
+          else render();
+        } catch (e) {
+          if (id === requestId) {
+            $("error").hidden = false;
+            $("error").querySelector("span").textContent =
+              "Falha ao consultar dados. " +
+              (data
+                ? "A última consulta continua visível."
+                : "Tente novamente.");
+          }
+        } finally {
+          if (id === requestId) {
+            $("loading").hidden = true;
+            $("content").setAttribute("aria-busy", "false");
+            $("refresh").disabled = false;
+          }
+        }
+      }
+      async function detail(id, button) {
+        selectedButton = button;
+        const request = ++drawerRequest;
+        $("drawer-status").textContent = "Consultando registros do cliente…";
+        $("drawer-title").textContent = "Detalhes do cliente";
+        $("drawer").showModal();
+        if (!reduced.matches) {
+          // Critically damped spring: smooth settling without overshooting the edge.
+          const frames = Array.from({ length: 31 }, (_, index) => {
+            const time = index / 30;
+            const remaining = index === 30 ? 0 : (1 + 10 * time) * Math.exp(-10 * time);
+            return { transform: `translateX(${remaining * 100}%)` };
+          });
+          $("drawer").animate(frames, { duration: 500, easing: "linear" });
+        }
+        try {
+          const res = await fetch("/plataforma/api/clientes/" + id, {
+            cache: "no-store",
+          });
+          if (!res.ok) throw Error();
+          const d = await res.json();
+          if (request !== drawerRequest) return;
+          $("drawer-title").textContent = d.cliente.nome;
+          const list = (title, rows, format) =>
+            "<h3>" +
+            title +
+            "</h3>" +
+            (rows.length
+              ? "<ul>" +
+                rows.map((r) => "<li>" + format(r) + "</li>").join("") +
+                "</ul>"
+              : '<p class="muted">Nenhum registro.</p>');
+          $("drawer-status").innerHTML =
+            "<dl><dt>ID do cliente</dt><dd>" +
+            d.cliente.id +
+            "</dd><dt>Código</dt><dd>" +
+            escape(d.cliente.codigo) +
+            "</dd></dl>" +
+            list(
+              "Operações",
+              d.instancias,
+              (r) =>
+                escape(r.operacao) +
+                "<br><small>" +
+                escape(r.hospedagem) +
+                " · " +
+                escape(r.dominio || "Domínio não cadastrado") +
+                "</small>" +
+                (r.acesso_url ? '<p><a class="operation-link" href="' + escape(r.acesso_url) + '">Acessar operação ↗</a></p>' : ""),
+            ) +
+            list(
+              "Licenças",
+              d.licencas,
+              (r) =>
+                escape(r.inicio) +
+                " até " +
+                escape(r.fim || "prazo indeterminado") +
+                "<br><small>" +
+                (r.revogada_em ? "Revogada" : "Sem revogação") +
+                "</small><p>Pessoas: " + escape(r.limite_usuarios ?? "Não definido") +
+                " · Dispositivos: " + escape(r.limite_dispositivos ?? "Não definido") +
+                " · Gestores: " + escape(r.limite_gestores ?? "Não definido") + "</p>" +
+                (r.observacoes ? "<p>" + escape(r.observacoes) + "</p>" : ""),
+            ) +
+            list(
+              "Contratos",
+              d.contratos,
+              (r) =>
+                escape(r.plano) +
+                " · " +
+                money(r.valor_mensal) +
+                "/mês<br><small>" +
+                escape(r.inicio) +
+                " até " +
+                escape(r.fim || "prazo indeterminado") +
+                "</small>",
+            ) +
+            list(
+              "Faturas · até 100 recentes",
+              d.faturas,
+              (r) =>
+                "#" +
+                r.id +
+                " · " +
+                money(r.valor) +
+                "<br><small>Emissão " +
+                escape(r.emitida_em) +
+                " · " +
+                (r.cancelada_em
+                  ? "Cancelada"
+                  : r.paga_em
+                    ? "Paga em " + escape(r.paga_em)
+                    : "Em aberto") +
+                "</small>",
+            ) +
+            list(
+              "Verificações · até 100 recentes",
+              d.verificacoes,
+              (r) =>
+                (r.disponivel ? "Disponível" : "Indisponível") +
+                "<br><small>" +
+                escape(new Date(r.verificada_em).toLocaleString("pt-BR")) +
+                " · " +
+                escape(r.origem) +
+                "</small>",
+            );
+        } catch (e) {
+          if (request === drawerRequest)
+            $("drawer-status").innerHTML =
+              '<p role="alert">Não foi possível carregar este cliente.</p><button id="retry-detail">Tentar novamente</button>';
+          $("retry-detail")?.addEventListener("click", () => {
+            $("drawer").close();
+            detail(id, button);
+          });
+        }
+      }
+      $("ledger").addEventListener("click", (e) => {
+        const row = e.target.closest("tr"),
+          button = row?.querySelector("[data-id]");
+        if (button) detail(button.dataset.id, button);
+      });
+      $("close").onclick = () => $("drawer").close();
+      $("drawer").addEventListener("close", () => {
+        drawerRequest++;
+        selectedButton?.focus();
+      });
+      $("drawer").addEventListener("click", (e) => {
+        if (
+          e.target === $("drawer") &&
+          e.clientX < $("drawer").getBoundingClientRect().left
+        )
+          $("drawer").close();
+      });
+      $("period").onchange = load;
+      $("refresh").onclick = load;
+      $("retry").onclick = load;
+      $("search").oninput = () => data && renderLedger();
+      document.querySelectorAll("[data-host]").forEach(
+        (b) =>
+          (b.onclick = () => {
+            host = b.dataset.host;
+            document
+              .querySelectorAll("[data-host]")
+              .forEach((v) => v.setAttribute("aria-pressed", v === b));
+            load();
+          }),
+      );
+      load();
+      setInterval(() => {
+        if (!document.hidden && !$("drawer").open) load();
+      }, 60000);
+    </script>
+  </body>
+</html>
