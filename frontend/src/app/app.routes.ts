@@ -21,7 +21,13 @@ const redirectByAuth = () =>
   inject(AuthService).isLoggedIn() ? '/adm-page' : '/login';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'login', pathMatch: 'full' },
+  {
+    // Landing pública: acessível sem autenticação e carregada sob demanda.
+    path: '',
+    pathMatch: 'full',
+    data: { layout: 'publico' },
+    loadComponent: () => import('./pages/landing/landing').then((m) => m.LandingPage),
+  },
   {
     path: 'redocs',
     redirectTo: redirectByAuth,

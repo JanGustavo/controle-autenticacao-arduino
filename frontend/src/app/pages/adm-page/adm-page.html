@@ -1,42 +1,229 @@
 <div class="adm-wrapper">
   <header class="adm-header">
     <div class="module-heading">
-      <span class="module-icon"><mat-icon>dashboard</mat-icon></span>
-      <div><h2>Painel administrativo</h2><p>Cadastre pessoas, configure permissões e acompanhe os acessos.</p></div>
+      <span class="module-icon"><mat-icon aria-hidden="true">dashboard</mat-icon></span>
+      <div>
+        <h2>Painel administrativo</h2>
+        <p>Prepare o ambiente, valide acessos e acompanhe cada tentativa.</p>
+      </div>
+    </div>
+
+    <div class="server-status" [attr.data-estado]="estadoServidor()" role="status">
+      <span class="status-dot" aria-hidden="true"></span>
+      @switch (estadoServidor()) {
+        @case ('carregando') {
+          <span>Verificando o servidor</span>
+        }
+        @case ('pronto') {
+          <span>Servidor conectado</span>
+        }
+        @case ('erro') {
+          <span>Sem conexão com o servidor</span>
+          <button type="button" class="link-button" (click)="verificarServidor()">Tentar novamente</button>
+        }
+      }
     </div>
   </header>
-  <div class="panel-start">
-    <div>
-      <strong>Prepare o próximo acesso</strong>
-      <p>Cadastre o usuário com cartão, biometria e permissões.</p>
-    </div>
-    <a routerLink="/usuarios" mat-flat-button><mat-icon>person_add</mat-icon>Gerenciar usuários</a>
+
+  <!-- Ações do dia a dia -->
+  <nav class="quick-actions" aria-label="Ações principais">
+    <a routerLink="/validar-acesso" class="quick-action is-primary">
+      <mat-icon aria-hidden="true">face</mat-icon>
+      <span><strong>Validar acesso</strong><small>Conferir cartão e rosto do titular</small></span>
+    </a>
+    <a routerLink="/usuarios" class="quick-action">
+      <mat-icon aria-hidden="true">person_add</mat-icon>
+      <span><strong>Gerenciar usuários</strong><small>Dados, cartão e biometria</small></span>
+    </a>
+    <a routerLink="/permissoes" class="quick-action">
+      <mat-icon aria-hidden="true">vpn_key</mat-icon>
+      <span><strong>Definir permissões</strong><small>Locais, dias e horários</small></span>
+    </a>
+    <a routerLink="/dashboard" class="quick-action">
+      <mat-icon aria-hidden="true">history</mat-icon>
+      <span><strong>Consultar o histórico</strong><small>Tentativas e motivos de recusa</small></span>
+    </a>
+  </nav>
+
+  <div class="overview">
+    <!-- Preparação do ambiente -->
+    <section class="panel" aria-labelledby="setup-title" [attr.aria-busy]="estadoPreparacao() === 'carregando'">
+      <div class="panel-head">
+        <div>
+          <h3 id="setup-title">Cadastros do ambiente</h3>
+          <p>
+            @switch (estadoPreparacao()) {
+              @case ('carregando') {
+                Conferindo os cadastros.
+              }
+              @case ('erro') {
+                Os cadastros não puderam ser conferidos.
+              }
+              @default {
+                {{ etapasConcluidas() }} de {{ etapas.length }} etapas com registros
+              }
+            }
+          </p>
+        </div>
+        @if (estadoPreparacao() === 'pronto') {
+          <button type="button" class="icon-action" (click)="carregarPreparacao()" aria-label="Atualizar a preparação do ambiente">
+            <mat-icon aria-hidden="true">refresh</mat-icon>
+          </button>
+        }
+      </div>
+
+      @switch (estadoPreparacao()) {
+        @case ('carregando') {
+          <ul class="skeleton-list" aria-hidden="true">
+            @for (etapa of etapas; track etapa.id) {
+              <li><span class="sk sk-dot"></span><span class="sk sk-line"></span></li>
+            }
+          </ul>
+        }
+        @case ('erro') {
+          <div class="panel-message is-error" role="alert">
+            <mat-icon aria-hidden="true">cloud_off</mat-icon>
+            <div>
+              <strong>Não foi possível carregar locais, leitores, usuários e permissões.</strong>
+              <p>Verifique a conexão com o servidor e tente de novo. Os módulos continuam acessíveis abaixo.</p>
+              <button type="button" class="btn-outline" (click)="carregarPreparacao()">Tentar novamente</button>
+            </div>
+          </div>
+        }
+        @default {
+          @if (proximaEtapa(); as proxima) {
+            <div class="panel-message is-next">
+              <mat-icon aria-hidden="true">flag</mat-icon>
+              <div>
+                <strong>Próximo passo: {{ proxima.titulo.toLowerCase() }}</strong>
+                <p>{{ proxima.pendente }}</p>
+              </div>
+              <a [routerLink]="proxima.path" class="btn-solid">{{ proxima.acao }}</a>
+            </div>
+          } @else {
+            <div class="panel-message is-success" role="status">
+              <mat-icon aria-hidden="true">verified</mat-icon>
+              <div>
+                <strong>Cadastros básicos encontrados</strong>
+                <p>Há registros de locais, leitores, usuários e permissões. Confirme os vínculos, a ativação e o funcionamento dos equipamentos antes de operar.</p>
+              </div>
+              <a routerLink="/validar-acesso" class="btn-solid">Validar acesso</a>
+            </div>
+          }
+
+          <ol class="setup-steps">
+            @for (etapa of etapas; track etapa.id) {
+              @let total = contagens()?.[etapa.id] ?? 0;
+              <li [class.is-done]="total > 0" [class.is-next]="proximaEtapa()?.id === etapa.id">
+                <a [routerLink]="etapa.path">
+                  <span class="step-node" aria-hidden="true">
+                    <mat-icon>{{ total > 0 ? 'check' : etapa.icon }}</mat-icon>
+                  </span>
+                  <span class="step-text">
+                    <strong>{{ etapa.titulo }}</strong>
+                    <span>{{ resumoEtapa(etapa) }}</span>
+                  </span>
+                  <span class="step-state">{{ total > 0 ? 'Concluída' : 'Pendente' }}</span>
+                  <mat-icon class="step-arrow" aria-hidden="true">chevron_right</mat-icon>
+                </a>
+              </li>
+            }
+          </ol>
+        }
+      }
+    </section>
+
+    <!-- Últimas tentativas de acesso -->
+    <section class="panel" aria-labelledby="attempts-title" [attr.aria-busy]="estadoTentativas() === 'carregando'">
+      <div class="panel-head">
+        <div>
+          <h3 id="attempts-title">Últimas tentativas de acesso</h3>
+          <p>Novas tentativas aparecem aqui assim que são registradas.</p>
+        </div>
+        @if (estadoTentativas() === 'pronto') {
+          <button type="button" class="icon-action" (click)="carregarTentativas()" aria-label="Atualizar as últimas tentativas">
+            <mat-icon aria-hidden="true">refresh</mat-icon>
+          </button>
+        }
+      </div>
+
+      <p class="sr-only" aria-live="polite">{{ anuncio() }}</p>
+
+      @switch (estadoTentativas()) {
+        @case ('carregando') {
+          <ul class="skeleton-list" aria-hidden="true">
+            @for (linha of [1, 2, 3, 4]; track linha) {
+              <li><span class="sk sk-chip"></span><span class="sk sk-line"></span></li>
+            }
+          </ul>
+        }
+        @case ('erro') {
+          <div class="panel-message is-error" role="alert">
+            <mat-icon aria-hidden="true">cloud_off</mat-icon>
+            <div>
+              <strong>Não foi possível carregar o histórico de acesso.</strong>
+              <p>Verifique a conexão com o servidor e tente de novo.</p>
+              <button type="button" class="btn-outline" (click)="carregarTentativas()">Tentar novamente</button>
+            </div>
+          </div>
+        }
+        @default {
+          @if (tentativas().length) {
+            <ul class="attempts">
+              @for (tentativa of tentativas(); track tentativa.id) {
+                <li [class.is-new]="tentativa.nova" [class.is-denied]="!tentativa.autorizado">
+                  <span class="attempt-result">
+                    <mat-icon aria-hidden="true">{{ tentativa.autorizado ? 'lock_open' : 'lock' }}</mat-icon>
+                    {{ tentativa.autorizado ? 'Autorizado' : 'Negado' }}
+                  </span>
+                  <span class="attempt-main">
+                    <strong>{{ tentativa.usuario }}</strong>
+                    <span>{{ tentativa.local }}</span>
+                    @if (tentativa.motivo) {
+                      <span class="attempt-reason">{{ tentativa.motivo }}</span>
+                    }
+                  </span>
+                  <time [attr.datetime]="tentativa.dataHora">{{ tentativa.dataHora ? (tentativa.dataHora | date: 'dd/MM HH:mm') : 'Horário não informado' }}</time>
+                </li>
+              }
+            </ul>
+            <a routerLink="/dashboard" class="panel-link">Abrir o histórico completo</a>
+          } @else {
+            <div class="panel-message is-empty">
+              <mat-icon aria-hidden="true">sensors</mat-icon>
+              <div>
+                <strong>Nenhuma tentativa registrada ainda</strong>
+                <p>Quando um cartão for aproximado de um leitor, o resultado aparece aqui.</p>
+                <a routerLink="/validar-acesso" class="btn-outline">Validar um acesso</a>
+              </div>
+            </div>
+          }
+        }
+      }
+    </section>
   </div>
-  @if (erro()) {
-    <p class="panel-error" role="alert"><mat-icon>cloud_off</mat-icon>{{ erro() }}</p>
-  }
+
+  <!-- Todos os módulos -->
   @for (grupo of grupos; track grupo.title) {
-    <section class="panel-group">
+    <section class="panel-group" [attr.aria-label]="grupo.title">
       <div class="group-heading">
         <h3>{{ grupo.title }}</h3>
         <p>{{ grupo.description }}</p>
       </div>
-      <div class="grid-menu">
+      <ul class="module-list">
         @for (link of grupo.links; track link.path) {
-          <a [routerLink]="link.path" class="tile-card" [attr.data-tone]="link.tone">
-            <div class="tile-top">
-              <div class="tile-icon">
-                <mat-icon>{{ link.icon }}</mat-icon>
-              </div>
-              <mat-icon class="tile-arrow">arrow_forward</mat-icon>
-            </div>
-            <div class="tile-info">
-              <h3>{{ link.title }}</h3>
-              <p>{{ link.description }}</p>
-            </div>
-          </a>
+          <li>
+            <a [routerLink]="link.path" class="module-link" [attr.data-tone]="link.tone">
+              <span class="module-link-icon"><mat-icon aria-hidden="true">{{ link.icon }}</mat-icon></span>
+              <span class="module-link-text">
+                <strong>{{ link.title }}</strong>
+                <span>{{ link.description }}</span>
+              </span>
+              <mat-icon class="module-link-arrow" aria-hidden="true">chevron_right</mat-icon>
+            </a>
+          </li>
         }
-      </div>
+      </ul>
     </section>
   }
 </div>
