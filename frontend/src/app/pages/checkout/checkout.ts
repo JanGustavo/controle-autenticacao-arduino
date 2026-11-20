@@ -140,6 +140,18 @@ export class CheckoutPage implements OnInit {
   readonly planoSelecionado = signal<PlanoItem>(PLANOS_FALLBACK[2]); // Plano 3 por padrão (melhor conversão)
   readonly transacaoConcluida = signal<CheckoutValidacaoResponse | null>(null);
   readonly erroValidacao = signal<string | null>(null);
+  readonly temaEscuro = signal(document.body.classList.contains('dark-mode'));
+
+  alternarTema(): void {
+    const botao = document.querySelector<HTMLButtonElement>('app-navbar .theme-btn');
+    if (botao) {
+      botao.click();
+    } else {
+      const escuro = document.body.classList.toggle('dark-mode');
+      localStorage.setItem('theme', escuro ? 'dark' : 'light');
+    }
+    this.temaEscuro.set(document.body.classList.contains('dark-mode'));
+  }
 
   // Formulário estático de checkout
   nomeOrganizacao = '';

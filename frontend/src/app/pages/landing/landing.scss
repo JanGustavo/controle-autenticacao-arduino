@@ -995,44 +995,50 @@ mat-icon {
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: 32px 24px;
-  border-radius: var(--ard-radius-md, 12px);
+  padding: 30px 24px;
+  border-radius: 16px;
   border: 1px solid var(--l-line);
   background: var(--l-surface);
-  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease, opacity 0.22s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.02);
 
   &:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.25);
-    border-color: var(--l-primary);
+    box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.09), 0 0 0 1px color-mix(in srgb, var(--l-primary) 25%, transparent);
+    border-color: color-mix(in srgb, var(--l-primary) 40%, transparent);
   }
 
   // Plano Decoy (gatilho de meio termo)
   &.lp-plan-decoy {
-    opacity: 0.85;
-    background: color-mix(in srgb, var(--l-surface) 70%, transparent);
-    border-style: dashed;
+    opacity: 0.92;
+    border-color: color-mix(in srgb, var(--l-line) 80%, transparent);
+    background: color-mix(in srgb, var(--l-surface) 96%, var(--l-bg));
 
     &:hover {
       opacity: 1;
-      border-style: solid;
+      border-color: var(--l-muted);
     }
   }
 
   // Plano Destaque (Avançado Empresarial)
   &.lp-plan-featured {
-    border: 2px solid var(--l-primary);
+    border: 1.5px solid var(--l-primary);
     background: linear-gradient(
       180deg,
-      color-mix(in srgb, var(--l-primary) 10%, var(--l-surface)) 0%,
+      color-mix(in srgb, var(--l-primary) 6%, var(--l-surface)) 0%,
       var(--l-surface) 100%
     );
-    box-shadow: 0 0 24px -4px color-mix(in srgb, var(--l-primary) 30%, transparent);
-    transform: scale(1.02);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--l-primary) 30%, transparent),
+      0 8px 24px -4px color-mix(in srgb, var(--l-primary) 18%, transparent),
+      0 1px 3px rgba(0, 0, 0, 0.05);
+    transform: scale(1.015);
 
     &:hover {
-      transform: scale(1.03) translateY(-4px);
-      box-shadow: 0 0 32px -2px color-mix(in srgb, var(--l-primary) 40%, transparent);
+      transform: scale(1.025) translateY(-4px);
+      box-shadow:
+        0 0 0 1px var(--l-primary),
+        0 16px 36px -6px color-mix(in srgb, var(--l-primary) 26%, transparent);
     }
 
     h3 {
@@ -1044,31 +1050,34 @@ mat-icon {
 
 .lp-plan-badge {
   position: absolute;
-  top: -12px;
+  top: -11px;
   left: 50%;
   transform: translateX(-50%);
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 12px;
+  padding: 3px 12px;
   border-radius: 9999px;
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  background: var(--l-line);
-  color: var(--l-ink);
+  letter-spacing: 0.04em;
+  background: var(--l-surface);
+  color: var(--l-muted);
+  border: 1px solid var(--l-line);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 
   mat-icon {
-    width: 14px;
-    height: 14px;
-    font-size: 14px;
+    width: 13px;
+    height: 13px;
+    font-size: 13px;
   }
 
   &.badge-featured {
     background: var(--l-primary);
     color: var(--l-on-primary);
-    box-shadow: 0 2px 10px color-mix(in srgb, var(--l-primary) 40%, transparent);
+    border-color: var(--l-primary);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--l-primary) 35%, transparent);
   }
 }
 

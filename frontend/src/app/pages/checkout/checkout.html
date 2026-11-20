@@ -8,6 +8,14 @@
       </a>
 
       <div class="header-actions">
+        <button
+          type="button"
+          class="theme-toggle-btn"
+          (click)="alternarTema()"
+          [attr.aria-label]="temaEscuro() ? 'Ativar tema claro' : 'Ativar tema escuro'"
+        >
+          <mat-icon>{{ temaEscuro() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+        </button>
         <a routerLink="/" class="nav-back-link">
           <mat-icon>arrow_back</mat-icon>
           <span>Voltar para o início</span>
