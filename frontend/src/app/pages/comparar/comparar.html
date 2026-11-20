@@ -169,75 +169,7 @@
       }
 
       @if (webcam.webcamAtiva() && !webcam.carregandoHardware()) {
-        <div
-          class="webcam-viewport"
-          [class.droidcam-portrait]="webcam.droidCamRetrato()"
-          #webcamContainer
-        >
-          @if (webcam.dispararFlash()) {
-            <div class="camera-flash-overlay"></div>
-          }
-
-          <video #videoElement width="1280" height="720" autoplay muted></video>
-
-          <div class="status-badge" [ngClass]="webcam.tipoStatus()">
-            <mat-icon>
-              {{ webcam.tipoStatus() === 'success' ? 'check_circle' : 'warning' }}
-            </mat-icon>
-            <span>{{ webcam.statusValidacao() }}</span>
-          </div>
-
-          <div class="face-overlay">
-            <div
-              class="face-oval"
-              [class.valid]="webcam.tipoStatus() === 'success'"
-              [class.dynamic]="!!webcam.faceBox()"
-              [style]="obterEstiloOvalDinamico()"
-            >
-              @if (webcam.progressoAutoCaptura() > 0) {
-                <svg class="progress-ring">
-                  <circle
-                    r="48%"
-                    cx="50%"
-                    cy="50%"
-                    [style.strokeDashoffset]="600 - (600 * webcam.progressoAutoCaptura()) / 100"
-                  />
-                </svg>
-              }
-            </div>
-
-            <span class="guide-text">
-              {{
-                webcam.emCooldown()
-                  ? 'Acesso processado — aguardando próxima tentativa'
-                  : modoTotem()
-                    ? 'Mantenha a posição para auto-captura'
-                    : 'Centralize o rosto e capture quando estiver pronto'
-              }}
-            </span>
-          </div>
-
-          @if (webcam.modoDebug()) {
-            <div class="debug-hud">
-              <div class="hud-metrics">
-                <span
-                  >LUMA: <b>{{ webcam.valorLuma() }}</b></span
-                >
-                <span
-                  >EAR: <b>{{ webcam.earAtual() }}</b></span
-                >
-                <span
-                  >ROSTO: <b>{{ webcam.proporcaoAtual() }}%</b></span
-                >
-              </div>
-              <span class="hud-badge">CUBETERNET DEBUG</span>
-            </div>
-          }
-
-          @if (scanning()) {
-            <div class="scan-line"></div>
-          }
-        </div>
+        <app-visor-facial [validandoTitular]="scanning()" />
       }
 
       @if (!webcam.webcamAtiva() && !fotoPreviewUrl && !webcam.carregandoHardware()) {
@@ -361,38 +293,128 @@
 
   @if (exibirOverlayTotem()) {
     <div class="totem-overlay" [class.liberado]="aprovado()" [class.negado]="!aprovado()">
-      <div class="totem-card">
-        <mat-icon class="totem-icon">
-          {{ aprovado() ? 'check_circle' : 'cancel' }}
-        </mat-icon>
+      <div
+        class="totem-card"
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-label]="aprovado() ? 'Acesso Liberado' : 'Acesso Negado'"
+      >
+        <!-- Halo luminoso suave de topo -->
+        <div class="totem-glow-halo" aria-hidden="true"></div>
 
-        @if (fotoPreviewUrl) {
-          <img [src]="fotoPreviewUrl" class="totem-avatar" alt="Rosto capturado" />
+        <!-- Barra superior com status chip e botão fechar -->
+        <div class="totem-card-topbar">
+          <div class="status-chip" [class.chip-success]="aprovado()" [class.chip-danger]="!aprovado()">
+            <span class="status-dot"></span>
+            <span>{{ aprovado() ? 'AUTENTICAÇÃO APROVADA' : 'AUTENTICAÇÃO RECUSADA' }}</span>
+          </div>
+
+          <button
+            type="button"
+            class="btn-close-totem"
+            (click)="encerrarCicloAcesso()"
+            title="Fechar e aguardar próximo acesso"
+            aria-label="Fechar"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <!-- Hero com avatar e identificação -->
+        <div class="totem-hero">
+          <div class="avatar-wrapper" [class.avatar-success]="aprovado()" [class.avatar-danger]="!aprovado()">
+            @if (fotoPreviewUrl) {
+              <img [src]="fotoPreviewUrl" class="totem-avatar" alt="Rosto capturado" />
+            } @else {
+              <div class="avatar-fallback">
+                <mat-icon>{{ aprovado() ? 'face' : 'person_off' }}</mat-icon>
+              </div>
+            }
+
+            <div class="status-stamp" [class.stamp-success]="aprovado()" [class.stamp-danger]="!aprovado()">
+              <mat-icon>{{ aprovado() ? 'check' : 'close' }}</mat-icon>
+            </div>
+          </div>
+
+          <div class="totem-titles">
+            <h1 class="totem-title">
+              {{ aprovado() ? 'Acesso Liberado' : 'Acesso Negado' }}
+            </h1>
+            @if (usuarioEncontrado()) {
+              <h2 class="totem-user-name">{{ usuarioEncontrado() }}</h2>
+            } @else {
+              <p class="totem-user-sub">
+                {{ aprovado() ? 'Titular identificado' : 'Identificação não confirmada' }}
+              </p>
+            }
+          </div>
+        </div>
+
+        <!-- Grade de Métricas Biométricas Minimalistas -->
+        <div class="totem-metrics-grid">
+          <div class="metric-card">
+            <div class="metric-label">
+              <mat-icon>face</mat-icon>
+              <span>Similaridade</span>
+            </div>
+            <div class="metric-value" [class.text-success]="aprovado()" [class.text-danger]="!aprovado()">
+              {{ similaridade() > 0 ? (similaridade() * 100 | number: '1.1-1') + '%' : 'N/D' }}
+            </div>
+            <div class="metric-sub">
+              Meta: {{ minSimilaridade() * 100 | number: '1.0-0' }}%
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-label">
+              <mat-icon>{{ aprovado() ? 'lock_open' : 'lock' }}</mat-icon>
+              <span>Trava / Porta</span>
+            </div>
+            <div class="metric-value" [class.text-success]="aprovado()" [class.text-danger]="!aprovado()">
+              {{ aprovado() ? 'Destravada' : 'Bloqueada' }}
+            </div>
+            <div class="metric-sub">
+              Sinal ESP32
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-label">
+              <mat-icon>speed</mat-icon>
+              <span>Tempo</span>
+            </div>
+            <div class="metric-value text-neutral">
+              {{ tempoRespostaMs() !== null ? tempoRespostaMs() + ' ms' : '< 300 ms' }}
+            </div>
+            <div class="metric-sub">
+              Inferência 1:1
+            </div>
+          </div>
+        </div>
+
+        <!-- Mensagem de Motivo da Recusa (quando negado) -->
+        @if (mensagemStatus() && !aprovado()) {
+          <div class="totem-reason-box" role="alert">
+            <mat-icon>error_outline</mat-icon>
+            <div class="reason-text">
+              <strong>Motivo do bloqueio:</strong>
+              <span>{{ mensagemStatus() }}</span>
+            </div>
+          </div>
         }
 
-        <h1>
-          {{ aprovado() ? 'ACESSO LIBERADO' : 'ACESSO NEGADO' }}
-        </h1>
-
-        @if (usuarioEncontrado()) {
-          <h2>{{ usuarioEncontrado() }}</h2>
-        }
-
-        <div class="totem-details">
-          @if (similaridade() > 0) {
-            <span class="totem-similaridade">
-              Similaridade: {{ similaridade() * 100 | number: '1.2-2' }}% (mínimo
-              {{ minSimilaridade() * 100 | number: '1.0-0' }}%)
-            </span>
-          }
-
-          @if (tempoRespostaMs() !== null) {
-            <span class="totem-tempo">Tempo total: {{ tempoRespostaMs() }} ms</span>
-          }
-
-          @if (mensagemStatus() && !aprovado()) {
-            <span class="totem-motivo">{{ mensagemStatus() }}</span>
-          }
+        <!-- Barra inferior de contagem regressiva e ação rápida -->
+        <div class="totem-card-footer">
+          <div class="auto-reset-bar" aria-hidden="true">
+            <div class="reset-progress"></div>
+          </div>
+          <div class="footer-info">
+            <span class="countdown-text">Retornando para leitura RFID em 3 segundos...</span>
+            <button type="button" class="btn-advance-now" (click)="encerrarCicloAcesso()">
+              <span>Próximo</span>
+              <mat-icon>arrow_forward</mat-icon>
+            </button>
+          </div>
         </div>
       </div>
     </div>

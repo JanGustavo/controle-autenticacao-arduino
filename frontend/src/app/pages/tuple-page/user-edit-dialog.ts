@@ -2,7 +2,6 @@ import { CpfMaskDirective } from '../../directives/cpf-mask.directive';
 import {
   ChangeDetectorRef,
   Component,
-  ElementRef,
   OnDestroy,
   OnInit,
   signal,
@@ -25,6 +24,7 @@ import {
   UsuarioResponse,
 } from '../../services/api.service';
 import { SpeechService } from '../../services/speech.service';
+import { VisorFacial } from '../../components/visor-facial/visor-facial';
 import { WebcamService } from '../../services/webcam.service';
 import { WebSocketLogsService } from '../../services/websocket-logs.service';
 
@@ -42,6 +42,7 @@ export interface UserEditDialogResult {
   imports: [
     CpfMaskDirective,
     CommonModule,
+    VisorFacial,
     FormsModule,
     MatButtonModule,
     MatIconModule,
@@ -52,8 +53,7 @@ export interface UserEditDialogResult {
   styleUrl: './user-edit-dialog.scss',
 })
 export class UserEditDialog implements OnInit, OnDestroy {
-  @ViewChild('editVideo') videoElement?: ElementRef<HTMLVideoElement>;
-  @ViewChild('webcamContainer') webcamContainer?: ElementRef<HTMLDivElement>;
+  @ViewChild(VisorFacial) visorFacial?: VisorFacial;
 
   private api = inject(ApiService);
   private cdr = inject(ChangeDetectorRef);
@@ -330,38 +330,6 @@ export class UserEditDialog implements OnInit, OnDestroy {
     }
   }
 
-  obterEstiloOvalDinamico(): { [key: string]: string } {
-    const box = this.webcam.faceBox();
-    const video = this.videoElement?.nativeElement;
-    const container = this.webcamContainer?.nativeElement;
-
-    const larguraFrame = this.webcam.larguraFrameProcessado() || video?.videoWidth || 0;
-    const alturaFrame = this.webcam.alturaFrameProcessado() || video?.videoHeight || 0;
-
-    if (!box || !video || !container || !larguraFrame || !alturaFrame) {
-      return {};
-    }
-
-    const scaleX = container.clientWidth / larguraFrame;
-    const scaleY = container.clientHeight / alturaFrame;
-    const scaleFactor = 0.85;
-    const size = Math.max(box.width * scaleX, box.height * scaleY) * scaleFactor;
-
-    // A prévia é espelhada para navegação natural. A bounding box vem
-    // do frame não espelhado, então refletimos o eixo X para coincidir.
-    const boxXEspelhado = larguraFrame - box.x - box.width;
-    const left = (boxXEspelhado + box.width / 2) * scaleX - size / 2;
-    const top = (box.y + box.height / 2) * scaleY - size / 2 - 10;
-
-    return {
-      left: `${left}px`,
-      top: `${top}px`,
-      width: `${size}px`,
-      height: `${size}px`,
-      transform: 'none',
-    };
-  }
-
   async iniciarWebcam(): Promise<void> {
     this.fotoCapturada = null;
     this.fotoPreviewUrl = null;
@@ -370,7 +338,7 @@ export class UserEditDialog implements OnInit, OnDestroy {
       this.speech.falar('Centralize o rosto na moldura para atualizar a biometria.');
     }
     await this.webcam.iniciarWebcam(
-      () => this.videoElement,
+      () => this.visorFacial?.videoElement(),
       this.modoTotem(),
       () => void this.capturarFoto()
     );

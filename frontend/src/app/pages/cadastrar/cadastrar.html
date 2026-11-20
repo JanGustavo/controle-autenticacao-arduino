@@ -205,74 +205,7 @@
       </div>
 
       @if (webcam.webcamAtiva()) {
-        <div
-          class="webcam-viewport"
-          [class.droidcam-portrait]="webcam.droidCamRetrato()"
-          #webcamContainer
-        >
-          <video #videoElement autoplay playsinline muted></video>
-
-          @if (webcam.dispararFlash()) {
-            <div class="camera-flash-overlay"></div>
-          }
-
-          <!-- Badge Visual Dinâmico de IA -->
-          <div class="status-badge" [ngClass]="webcam.tipoStatus()">
-            <mat-icon>{{
-              webcam.tipoStatus() === 'success' ? 'check_circle' : 'warning'
-            }}</mat-icon>
-            <span>{{ webcam.statusValidacao() }}</span>
-          </div>
-
-          <!-- Guia Oval de Centralização Facial -->
-          <div class="face-overlay">
-            <div
-              class="face-oval"
-              [class.valid]="webcam.tipoStatus() === 'success'"
-              [class.dynamic]="!!webcam.faceBox()"
-              [style]="obterEstiloOvalDinamico()"
-            >
-              @if (webcam.progressoAutoCaptura() > 0) {
-                <svg class="progress-ring">
-                  <circle
-                    r="48%"
-                    cx="50%"
-                    cy="50%"
-                    [style.strokeDashoffset]="600 - (600 * webcam.progressoAutoCaptura()) / 100"
-                  />
-                </svg>
-              }
-            </div>
-            <span class="guide-text">
-              {{
-                modoTotem()
-                  ? 'Mantenha a posição para auto-captura'
-                  : 'Centralize o rosto no círculo e clique em Capturar'
-              }}
-            </span>
-          </div>
-
-          @if (webcam.modoDebug()) {
-            <div class="debug-hud">
-              <div class="hud-metrics">
-                <span
-                  >LUMA: <b>{{ webcam.valorLuma() }}</b></span
-                >
-                <span
-                  >EAR: <b>{{ webcam.earAtual() }}</b></span
-                >
-                <span
-                  >ROSTO: <b>{{ webcam.proporcaoAtual() }}%</b></span
-                >
-              </div>
-              <span class="hud-badge">CUBETERNET DEBUG</span>
-            </div>
-          }
-
-          @if (scanning) {
-            <div class="scan-line"></div>
-          }
-        </div>
+        <app-visor-facial />
 
         <div class="webcam-controls">
           @if (!modoTotem()) {

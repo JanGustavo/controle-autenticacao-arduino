@@ -1,44 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────
-// Partial SCSS compartilhado: estilos de webcam, guia facial, badges e Totem
-// ─────────────────────────────────────────────────────────────────────
-
-/* Viewport da webcam */
-.webcam-viewport {
-  position: relative;
-  width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
-  border-radius: 16px;
-  overflow: hidden;
-  background: #090d16;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-
-  video {
-    width: 100%;
-    height: auto;
-    display: block;
-    transform: scaleX(-1); // Espelha a imagem para navegação natural
-  }
-
-  // DroidCam no Linux frequentemente entrega 640x480 mesmo com o celular
-  // fisicamente em retrato. Nesse caso a UI gira o preview para 480x640.
-  &.droidcam-portrait {
-    aspect-ratio: 3 / 4;
-
-    video {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 133.3333%;
-      max-width: none;
-      height: auto;
-      transform-origin: center;
-      translate: -50% -50%;
-      transform: scaleX(-1) rotate(-90deg);
-    }
-  }
-}
-
 /* Skeleton Loading de Inicialização de Câmera/IA */
 .skeleton-viewport {
   display: flex;
@@ -71,135 +30,6 @@
   100% { background-position: -200% 0; }
 }
 
-/* Flash de Obturador de Câmera (150ms) */
-.camera-flash-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: #ffffff;
-  z-index: 10;
-  pointer-events: none;
-  animation: flash-animation 150ms ease-out forwards;
-}
-
-@keyframes flash-animation {
-  0% { opacity: 1; }
-  100% { opacity: 0; }
-}
-
-/* Badge Dinâmico de Status da IA */
-.status-badge {
-  position: absolute;
-  top: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
-  z-index: 4;
-  backdrop-filter: blur(6px);
-  color: white;
-  transition: all 0.3s ease;
-
-  &.info {
-    background: rgba(30, 41, 59, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-  }
-
-  &.warn {
-    background: rgba(220, 38, 38, 0.85);
-    border: 1px solid #f87171;
-  }
-
-  &.success {
-    background: rgba(22, 163, 74, 0.85);
-    border: 1px solid #4ade80;
-  }
-}
-
-/* Guia Oval de Centralização Facial */
-.face-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  z-index: 2;
-}
-
-.face-oval {
-  position: relative;
-  width: min(210px, 45%);
-  height: min(270px, 65%);
-  border: 2px dashed #00d2ff;
-  border-radius: 50%;
-  box-shadow: 0 0 20px rgba(0, 210, 255, 0.4);
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
-
-  &.valid {
-    border-color: #22c55e;
-    box-shadow: 0 0 25px rgba(34, 197, 94, 0.6);
-  }
-
-  // Quando a IA fornece uma bounding box, as coordenadas são relativas
-  // ao canto superior esquerdo do vídeo. O guia precisa sair do fluxo
-  // flex centralizado para usar essas coordenadas corretamente.
-  &.dynamic {
-    position: absolute !important;
-    margin: 0;
-    transition:
-      left 0.12s ease-out,
-      top 0.12s ease-out,
-      width 0.12s ease-out,
-      height 0.12s ease-out,
-      border-color 0.3s ease,
-      box-shadow 0.3s ease;
-  }
-}
-
-/* Anel SVG de Progresso da Auto-captura */
-.progress-ring {
-  position: absolute;
-  top: -6px;
-  left: -6px;
-  width: calc(100% + 12px);
-  height: calc(100% + 12px);
-  pointer-events: none;
-
-  circle {
-    fill: transparent;
-    stroke: #22c55e;
-    stroke-width: 5;
-    stroke-dasharray: 600;
-    stroke-dashoffset: 600;
-    stroke-linecap: round;
-    transition: stroke-dashoffset 0.2s linear;
-  }
-}
-
-.guide-text {
-  margin-top: 16px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #ffffff;
-  background: rgba(0, 0, 0, 0.65);
-  padding: 6px 16px;
-  border-radius: 20px;
-  backdrop-filter: blur(4px);
-  letter-spacing: 0.3px;
-}
-
 /* Controles abaixo da webcam */
 .webcam-controls {
   display: flex;
@@ -213,24 +43,7 @@
   }
 }
 
-/* Linha animada de escaneamento */
-.scan-line {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, transparent, rgba(0, 210, 255, 0.8), transparent);
-  animation: scan-line 2s linear infinite;
-  z-index: 3;
-}
-
-@keyframes scan-line {
-  0% { top: 0; }
-  100% { top: 100%; }
-}
-
-/* Overlay / Modal Modo Totem em Tela Cheia */
+/* Overlay / Modal Modo Totem - Design Minimalista com Luz e Sombra (sem colorir a tela toda) */
 .totem-overlay {
   position: fixed;
   inset: 0;
@@ -239,134 +52,417 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 32px;
-  backdrop-filter: blur(12px);
-  animation: totem-pop 300ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-
-  &.liberado {
-    background: rgba(22, 163, 74, 0.92);
-    color: #ffffff;
-  }
-
-  &.negado {
-    background: rgba(220, 38, 38, 0.92);
-    color: #ffffff;
-  }
+  padding: 24px;
+  background: rgba(11, 17, 32, 0.78);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  animation: totem-overlay-fade 0.25s ease-out forwards;
 
   .totem-card {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    background: var(--ard-surface, #ffffff);
+    border: 1px solid var(--ard-line, #e2e8f0);
+    border-radius: 20px;
+    padding: 28px 24px 20px;
+    box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.35), 0 0 1px rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    animation: totem-card-pop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  // Halo luminoso suave de topo
+  .totem-glow-halo {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 120px;
+    pointer-events: none;
+    opacity: 0.8;
+  }
+
+  // Variação Sucesso (Acesso Liberado)
+  &.liberado .totem-card {
+    border-color: rgba(34, 197, 94, 0.45);
+    box-shadow: 0 20px 48px -10px rgba(0, 0, 0, 0.35), 0 0 32px -4px rgba(34, 197, 94, 0.22);
+
+    .totem-glow-halo {
+      background: radial-gradient(circle at 50% -20%, rgba(34, 197, 94, 0.22) 0%, transparent 70%);
+    }
+  }
+
+  // Variação Negado (Acesso Recusado)
+  &.negado .totem-card {
+    border-color: rgba(239, 68, 68, 0.45);
+    box-shadow: 0 20px 48px -10px rgba(0, 0, 0, 0.35), 0 0 32px -4px rgba(239, 68, 68, 0.22);
+
+    .totem-glow-halo {
+      background: radial-gradient(circle at 50% -20%, rgba(239, 68, 68, 0.22) 0%, transparent 70%);
+    }
+  }
+
+  /* Barra Superior do Card */
+  .totem-card-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 2;
+
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+
+      .status-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+      }
+
+      &.chip-success {
+        background: color-mix(in srgb, var(--ard-success, #16a34a) 12%, var(--ard-surface));
+        color: var(--ard-success, #16a34a);
+        border: 1px solid color-mix(in srgb, var(--ard-success, #16a34a) 30%, transparent);
+
+        .status-dot {
+          background: var(--ard-success, #16a34a);
+          box-shadow: 0 0 6px var(--ard-success, #16a34a);
+          animation: pulse-dot 1.5s infinite;
+        }
+      }
+
+      &.chip-danger {
+        background: color-mix(in srgb, var(--ard-danger, #dc2626) 12%, var(--ard-surface));
+        color: var(--ard-danger, #dc2626);
+        border: 1px solid color-mix(in srgb, var(--ard-danger, #dc2626) 30%, transparent);
+
+        .status-dot {
+          background: var(--ard-danger, #dc2626);
+          box-shadow: 0 0 6px var(--ard-danger, #dc2626);
+          animation: pulse-dot 1.5s infinite;
+        }
+      }
+    }
+
+    .btn-close-totem {
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      background: transparent;
+      border: 1px solid var(--ard-line, #e2e8f0);
+      border-radius: 50%;
+      color: var(--ard-muted, #64748b);
+      cursor: pointer;
+      transition: all 0.18s ease;
+
+      mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+      }
+
+      &:hover {
+        background: var(--ard-canvas, #f8fafc);
+        color: var(--ard-ink, #0f172a);
+        border-color: var(--ard-muted, #64748b);
+      }
+    }
+  }
+
+  /* Hero: Avatar e Títulos */
+  .totem-hero {
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    max-width: 500px;
+    margin-bottom: 22px;
+    position: relative;
+    z-index: 2;
 
-    .totem-icon {
-      font-size: 96px;
-      width: 96px;
-      height: 96px;
-      margin-bottom: 16px;
-      animation: pulse-icon 1s infinite alternate;
+    .avatar-wrapper {
+      position: relative;
+      margin-bottom: 14px;
+
+      .totem-avatar {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid var(--ard-line, #e2e8f0);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        display: block;
+      }
+
+      .avatar-fallback {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: var(--ard-canvas, #f1f5f9);
+        border: 2px solid var(--ard-line, #e2e8f0);
+        color: var(--ard-muted, #64748b);
+
+        mat-icon {
+          font-size: 42px;
+          width: 42px;
+          height: 42px;
+        }
+      }
+
+      .status-stamp {
+        position: absolute;
+        bottom: -2px;
+        right: -2px;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        border: 2px solid var(--ard-surface, #ffffff);
+        color: #ffffff;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+
+        mat-icon {
+          font-size: 16px;
+          width: 16px;
+          height: 16px;
+          font-weight: 700;
+        }
+
+        &.stamp-success {
+          background: var(--ard-success, #16a34a);
+        }
+
+        &.stamp-danger {
+          background: var(--ard-danger, #dc2626);
+        }
+      }
+
+      &.avatar-success .totem-avatar {
+        border-color: var(--ard-success, #16a34a);
+      }
+
+      &.avatar-danger .totem-avatar {
+        border-color: var(--ard-danger, #dc2626);
+      }
     }
 
-    .totem-avatar {
-      width: 128px;
-      height: 128px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 4px solid white;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-      margin-bottom: 20px;
-    }
+    .totem-titles {
+      .totem-title {
+        font-size: 1.45rem;
+        font-weight: 700;
+        margin: 0 0 4px;
+        color: var(--ard-ink, #0f172a);
+        letter-spacing: -0.02em;
+      }
 
-    h1 {
-      font-size: 3rem;
-      font-weight: 900;
-      margin: 0 0 8px 0;
-      letter-spacing: 0.02em;
-      text-transform: uppercase;
-    }
+      .totem-user-name {
+        font-size: 1.15rem;
+        font-weight: 600;
+        margin: 0;
+        color: var(--ard-primary, #2563eb);
+      }
 
-    h2 {
-      font-size: 1.8rem;
-      font-weight: 700;
-      margin: 0 0 16px 0;
-      opacity: 0.95;
+      .totem-user-sub {
+        font-size: 0.88rem;
+        color: var(--ard-muted, #64748b);
+        margin: 0;
+      }
     }
+  }
 
-    .totem-details {
+  /* Grid de Métricas Técnicas */
+  .totem-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 18px;
+    position: relative;
+    z-index: 2;
+
+    .metric-card {
+      background: var(--ard-canvas, #f8fafc);
+      border: 1px solid var(--ard-line, #e2e8f0);
+      border-radius: 12px;
+      padding: 10px 8px;
+      text-align: center;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      font-size: 1.1rem;
-      opacity: 0.95;
-      background: rgba(0, 0, 0, 0.25);
-      padding: 16px 28px;
-      border-radius: 20px;
-      margin-top: 12px;
+      gap: 3px;
+
+      .metric-label {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--ard-muted, #64748b);
+        font-weight: 600;
+
+        mat-icon {
+          font-size: 13px;
+          width: 13px;
+          height: 13px;
+          color: var(--ard-muted, #64748b);
+        }
+      }
+
+      .metric-value {
+        font-size: 0.98rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+
+        &.text-success {
+          color: var(--ard-success, #16a34a);
+        }
+
+        &.text-danger {
+          color: var(--ard-danger, #dc2626);
+        }
+
+        &.text-neutral {
+          color: var(--ard-ink, #0f172a);
+        }
+      }
+
+      .metric-sub {
+        font-size: 0.68rem;
+        color: var(--ard-muted, #64748b);
+      }
+    }
+  }
+
+  /* Caixa do Motivo da Recusa */
+  .totem-reason-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: color-mix(in srgb, var(--ard-danger, #dc2626) 8%, var(--ard-surface));
+    border: 1px solid color-mix(in srgb, var(--ard-danger, #dc2626) 25%, transparent);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 18px;
+    text-align: left;
+    position: relative;
+    z-index: 2;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      color: var(--ard-danger, #dc2626);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .reason-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-size: 0.84rem;
       line-height: 1.4;
 
-      span {
-        display: block;
-        text-align: center;
+      strong {
+        color: var(--ard-danger, #dc2626);
+        font-weight: 600;
       }
 
-      .totem-motivo {
-        margin-top: 4px;
-        font-size: 1.05rem;
-        font-weight: 600;
-        color: #fef08a;
+      span {
+        color: var(--ard-ink, #0f172a);
       }
     }
   }
-}
 
-@keyframes totem-pop {
-  0% { opacity: 0; transform: scale(0.9); }
-  100% { opacity: 1; transform: scale(1); }
-}
+  /* Rodapé do Card com Barra de Reset */
+  .totem-card-footer {
+    position: relative;
+    z-index: 2;
+    padding-top: 14px;
+    border-top: 1px solid var(--ard-line, #e2e8f0);
 
-/* Painel HUD de Telemetria e Diagnóstico de Câmera */
-.debug-hud {
-  position: absolute;
-  bottom: 12px;
-  left: 12px;
-  right: 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
-  padding: 6px 12px;
-  font-family: monospace;
-  font-size: 11px;
-  color: #38bdf8;
-  z-index: 5;
-  backdrop-filter: blur(4px);
+    .auto-reset-bar {
+      width: 100%;
+      height: 3px;
+      background: var(--ard-line, #e2e8f0);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 10px;
 
-  .hud-metrics {
-    display: flex;
-    gap: 12px;
+      .reset-progress {
+        height: 100%;
+        background: var(--ard-primary, #2563eb);
+        animation: auto-reset-countdown 3s linear forwards;
+      }
+    }
 
-    span {
+    .footer-info {
       display: flex;
       align-items: center;
-      gap: 4px;
+      justify-content: space-between;
 
-      b {
-        color: #f1f5f9;
+      .countdown-text {
+        font-size: 0.78rem;
+        color: var(--ard-muted, #64748b);
+      }
+
+      .btn-advance-now {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: transparent;
+        border: none;
+        color: var(--ard-primary, #2563eb);
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 6px;
+        transition: background-color 0.15s ease;
+
+        mat-icon {
+          font-size: 15px;
+          width: 15px;
+          height: 15px;
+        }
+
+        &:hover {
+          background: color-mix(in srgb, var(--ard-primary, #2563eb) 10%, transparent);
+        }
       }
     }
   }
+}
 
-  .hud-badge {
-    background: #0284c7;
-    color: #ffffff;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-weight: bold;
-    font-size: 10px;
-    text-transform: uppercase;
-  }
+@keyframes totem-overlay-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes totem-card-pop {
+  0% { opacity: 0; transform: scale(0.94) translateY(8px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.7; }
+}
+
+@keyframes auto-reset-countdown {
+  from { width: 100%; }
+  to { width: 0%; }
 }

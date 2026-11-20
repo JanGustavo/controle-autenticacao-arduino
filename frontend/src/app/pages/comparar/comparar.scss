@@ -269,17 +269,6 @@
         height: 64px;
       }
     }
-
-    /* Suporte a transição suave para o Círculo Guia Dinâmico */
-    .face-oval {
-      transition: all 0.12s ease-out;
-
-      &.dynamic {
-        position: absolute !important;
-        border-radius: 50%;
-        pointer-events: none;
-      }
-    }
   }
 
   .card-logs {

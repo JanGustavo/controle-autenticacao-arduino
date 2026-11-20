@@ -1,0 +1,248 @@
+:host {
+  display: block;
+}
+
+.webcam-viewport {
+  --scan-color: #7dd3fc;
+  --scan-stable: #6ee7b7;
+  --scan-warning: #fdba74;
+  --scan-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  position: relative;
+  max-width: 800px;
+  margin-inline: auto;
+  border-radius: 16px;
+  overflow: hidden;
+  isolation: isolate;
+  background: #0b0f17;
+
+  video {
+    display: block;
+    width: 100%;
+    height: auto;
+    transform: scaleX(-1);
+  }
+
+  &.droidcam-portrait {
+    aspect-ratio: var(--proporcao-retrato);
+
+    video {
+      position: absolute;
+      inset: 50% auto auto 50%;
+      width: calc(100% / var(--proporcao-retrato));
+      translate: -50% -50%;
+      transform: scaleX(-1) rotate(-90deg);
+    }
+  }
+}
+
+.status-badge,
+.capture-progress {
+  position: absolute;
+  z-index: 2;
+  color: #f8fafc;
+  background: rgba(11, 15, 23, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  font: 600 0.75rem / 1.3 system-ui, sans-serif;
+}
+
+.status-badge {
+  top: 10px;
+  inset-inline: 10px;
+  width: fit-content;
+  max-width: calc(100% - 20px);
+  box-sizing: border-box;
+  margin-inline: auto;
+  padding: 6px 10px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  text-align: start;
+
+  mat-icon {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+    color: var(--scan-color);
+  }
+
+  &.warn mat-icon { color: var(--scan-warning); }
+  &.success mat-icon { color: var(--scan-stable); }
+}
+
+.face-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.face-reticle {
+  --reticle-color: var(--scan-color);
+  --corner-length: clamp(12px, 16%, 24px);
+  position: absolute;
+  top: 20%;
+  left: 30%;
+  width: 40%;
+  height: 60%;
+  color: var(--reticle-color);
+  transition: color 150ms ease;
+
+  &.tracking {
+    transition:
+      top 220ms var(--scan-ease), left 220ms var(--scan-ease),
+      width 220ms var(--scan-ease), height 220ms var(--scan-ease),
+      color 150ms ease;
+  }
+
+  &.warning { --reticle-color: var(--scan-warning); }
+  &.stable { --reticle-color: var(--scan-stable); }
+}
+
+.corner {
+  position: absolute;
+  width: var(--corner-length);
+  aspect-ratio: 1;
+  box-sizing: border-box;
+  border: 0 solid currentColor;
+  filter: drop-shadow(0 0 3px rgba(11, 15, 23, 0.75));
+
+  &.top-left {
+    inset: 0 auto auto 0;
+    border-width: 2px 0 0 2px;
+    border-top-left-radius: 5px;
+  }
+  &.top-right {
+    inset: 0 0 auto auto;
+    border-width: 2px 2px 0 0;
+    border-top-right-radius: 5px;
+  }
+  &.bottom-left {
+    inset: auto auto 0 0;
+    border-width: 0 0 2px 2px;
+    border-bottom-left-radius: 5px;
+  }
+  &.bottom-right {
+    inset: auto 0 0 auto;
+    border-width: 0 2px 2px 0;
+    border-bottom-right-radius: 5px;
+  }
+}
+
+.face-node {
+  position: absolute;
+  width: 5px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  translate: -50% -50%;
+  background: #e0f2fe;
+  box-shadow: 0 0 0 2px rgba(11, 15, 23, 0.6);
+  transition: top 220ms var(--scan-ease), left 220ms var(--scan-ease);
+}
+
+.scanner-beam {
+  position: absolute;
+  inset: 10% 5% auto;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--scan-color) 22%, #ecfeff 50%, var(--scan-color) 78%, transparent);
+  box-shadow: 0 0 9px 1px rgba(125, 211, 252, 0.48);
+  animation: scan-sweep 820ms ease-in-out both;
+}
+
+@keyframes scan-sweep {
+  0% { top: 10%; opacity: 0.35; }
+  22% { opacity: 1; }
+  100% { top: 90%; opacity: 0.5; }
+}
+
+.stability-pulse {
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--scan-stable);
+  border-radius: 10px;
+  animation: stability-ripple 650ms var(--scan-ease) both;
+}
+
+@keyframes stability-ripple {
+  from { transform: scale(0.97); opacity: 0.7; }
+  to { transform: scale(1.12); opacity: 0; }
+}
+
+.capture-progress {
+  inset: auto 10px 10px;
+  max-width: 290px;
+  margin-inline: auto;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.phase-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  text-align: start;
+  font-variant-numeric: tabular-nums;
+}
+
+.phase-segments {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.phase-track,
+.phase-fill {
+  display: block;
+  height: 3px;
+  border-radius: 3px;
+}
+
+.phase-track {
+  flex-basis: 0;
+  background: #334155;
+
+  &:last-child .phase-fill {
+    background: var(--scan-stable);
+  }
+}
+
+.phase-fill {
+  background: var(--scan-color);
+  transform-origin: left;
+  transition: transform 180ms linear;
+}
+
+.camera-flash-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: white;
+  animation: camera-flash 150ms ease-out both;
+}
+
+@keyframes camera-flash {
+  from { opacity: 0.38; }
+  to { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .face-reticle.tracking,
+  .face-node,
+  .phase-fill {
+    transition: none;
+  }
+
+  .scanner-beam {
+    animation: none;
+    top: 50%;
+  }
+
+  .stability-pulse,
+  .camera-flash-overlay {
+    display: none;
+  }
+}
