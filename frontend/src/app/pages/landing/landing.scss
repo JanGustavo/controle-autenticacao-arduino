@@ -974,6 +974,243 @@ mat-icon {
   }
 }
 
+// ---------- Planos e Licenças ----------
+.lp-plans-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+  margin-top: 40px;
+  align-items: stretch;
+
+  @media (max-width: 1080px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 680px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.lp-plan-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 32px 24px;
+  border-radius: var(--ard-radius-md, 12px);
+  border: 1px solid var(--l-line);
+  background: var(--l-surface);
+  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.25);
+    border-color: var(--l-primary);
+  }
+
+  // Plano Decoy (gatilho de meio termo)
+  &.lp-plan-decoy {
+    opacity: 0.85;
+    background: color-mix(in srgb, var(--l-surface) 70%, transparent);
+    border-style: dashed;
+
+    &:hover {
+      opacity: 1;
+      border-style: solid;
+    }
+  }
+
+  // Plano Destaque (Avançado Empresarial)
+  &.lp-plan-featured {
+    border: 2px solid var(--l-primary);
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--l-primary) 10%, var(--l-surface)) 0%,
+      var(--l-surface) 100%
+    );
+    box-shadow: 0 0 24px -4px color-mix(in srgb, var(--l-primary) 30%, transparent);
+    transform: scale(1.02);
+
+    &:hover {
+      transform: scale(1.03) translateY(-4px);
+      box-shadow: 0 0 32px -2px color-mix(in srgb, var(--l-primary) 40%, transparent);
+    }
+
+    h3 {
+      color: var(--l-ink);
+      font-weight: 700;
+    }
+  }
+}
+
+.lp-plan-badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--l-line);
+  color: var(--l-ink);
+
+  mat-icon {
+    width: 14px;
+    height: 14px;
+    font-size: 14px;
+  }
+
+  &.badge-featured {
+    background: var(--l-primary);
+    color: var(--l-on-primary);
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--l-primary) 40%, transparent);
+  }
+}
+
+.lp-plan-card-header {
+  margin-bottom: 20px;
+
+  h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 8px;
+  }
+
+  .lp-plan-card-desc {
+    color: var(--l-muted);
+    font-size: 0.88rem;
+    line-height: 1.45;
+    min-height: 48px;
+    margin: 0 0 16px;
+  }
+
+  .lp-plan-price {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--l-line);
+
+    .price-val {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--l-ink);
+    }
+
+    .price-sub {
+      font-size: 0.9rem;
+      color: var(--l-muted);
+    }
+  }
+}
+
+.lp-plan-specs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--l-ink) 4%, transparent);
+  margin-bottom: 20px;
+
+  .spec-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    color: var(--l-ink);
+
+    mat-icon {
+      width: 16px;
+      height: 16px;
+      font-size: 16px;
+      color: var(--l-primary);
+      flex-shrink: 0;
+    }
+  }
+}
+
+.lp-plan-features {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 24px;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: var(--l-ink);
+
+    mat-icon {
+      width: 18px;
+      height: 18px;
+      font-size: 18px;
+      flex-shrink: 0;
+      margin-top: 1px;
+      color: var(--l-primary);
+
+      &.icon-check {
+        color: var(--l-success);
+      }
+    }
+
+    &.item-excluded {
+      color: var(--l-muted);
+      text-decoration: line-through;
+
+      mat-icon {
+        color: var(--l-muted);
+      }
+    }
+
+    &.item-highlight {
+      font-weight: 600;
+    }
+  }
+}
+
+.lp-plan-card-footer {
+  margin-top: auto;
+
+  .lp-btn-card {
+    width: 100%;
+    min-height: 42px;
+    font-size: 0.92rem;
+    text-decoration: none;
+  }
+}
+
+.lp-plans-cta-footer {
+  margin-top: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 28px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--l-primary) 8%, var(--l-surface));
+  border: 1px solid var(--l-line);
+  flex-wrap: wrap;
+  gap: 16px;
+
+  p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--l-ink);
+  }
+}
+
 // ---------- CTA e rodapé ----------
 .cta {
   padding: clamp(48px, 7vw, 80px) 0;

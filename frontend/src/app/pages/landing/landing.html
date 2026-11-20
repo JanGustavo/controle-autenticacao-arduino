@@ -22,6 +22,7 @@
       >
         <mat-icon aria-hidden="true">{{ temaEscuro() ? 'light_mode' : 'dark_mode' }}</mat-icon>
       </button>
+      <a class="btn btn-ghost btn-compact" routerLink="/checkout">Adquirir licença</a>
       <a class="btn btn-primary btn-compact" [routerLink]="destinoPainel()">{{ rotuloPainel() }}</a>
     </div>
   </div>
@@ -40,6 +41,9 @@
         </p>
         <div class="hero-actions">
           <a class="btn btn-primary" [routerLink]="destinoPainel()">{{ rotuloPainel() }}</a>
+          <a class="btn btn-ghost" href="#planos" (click)="irPara($event, 'planos')">
+            Ver planos e licenças
+          </a>
           <a class="btn btn-ghost" href="#demonstracao" (click)="irPara($event, 'demonstracao')">
             Simular uma tentativa de acesso
           </a>
@@ -345,6 +349,99 @@
           </li>
         }
       </ol>
+    </div>
+  </section>
+
+  <!-- Planos e Licenças -->
+  <section id="planos" class="lp-section lp-section-alt" tabindex="-1" aria-labelledby="planos-titulo">
+    <div class="lp-container">
+      <div class="section-head">
+        <h2 id="planos-titulo">Planos e licenças de acesso</h2>
+        <p>
+          Estrutura pronta para escalar da primeira porta até prédios inteiros, com biometria facial,
+          RFID e garantia técnica presencial de hardware.
+        </p>
+      </div>
+
+      <div class="lp-plans-grid">
+        @for (plano of planosLanding; track plano.id) {
+          <article
+            class="lp-plan-card"
+            [class.lp-plan-featured]="plano.destaque"
+            [class.lp-plan-decoy]="plano.decoy"
+          >
+            @if (plano.badge) {
+              <span class="lp-plan-badge" [class.badge-featured]="plano.destaque">
+                @if (plano.destaque) { <mat-icon aria-hidden="true">star</mat-icon> }
+                {{ plano.badge }}
+              </span>
+            }
+
+            <header class="lp-plan-card-header">
+              <h3>{{ plano.nome }}</h3>
+              <p class="lp-plan-card-desc">{{ plano.descricao }}</p>
+              <div class="lp-plan-price">
+                <span class="price-val">{{ plano.preco }}</span>
+                @if (plano.periodo) { <span class="price-sub">{{ plano.periodo }}</span> }
+              </div>
+            </header>
+
+            <div class="lp-plan-specs">
+              <div class="spec-row">
+                <mat-icon aria-hidden="true">router</mat-icon>
+                <span>{{ plano.dispositivos }}</span>
+              </div>
+              <div class="spec-row">
+                <mat-icon aria-hidden="true">groups</mat-icon>
+                <span>{{ plano.usuarios }}</span>
+              </div>
+              <div class="spec-row">
+                <mat-icon aria-hidden="true">support_agent</mat-icon>
+                <span>{{ plano.suporte }}</span>
+              </div>
+            </div>
+
+            <ul class="lp-plan-features">
+              @for (v of plano.vantagens; track v.texto) {
+                <li [class.item-highlight]="v.destaque" [class.item-excluded]="v.incluido === false">
+                  <mat-icon aria-hidden="true" [class.icon-check]="v.destaque">
+                    {{ v.incluido === false ? 'close' : v.icone }}
+                  </mat-icon>
+                  <span>{{ v.texto }}</span>
+                </li>
+              }
+            </ul>
+
+            <footer class="lp-plan-card-footer">
+              @if (plano.id === 'personalizado') {
+                <a [href]="obterLinkEmailDemanda()" class="btn btn-ghost lp-btn-card">
+                  <mat-icon aria-hidden="true">mail</mat-icon>
+                  <span>Falar com consultor</span>
+                </a>
+              } @else {
+                <a
+                  [routerLink]="['/checkout']"
+                  [queryParams]="{ plano: plano.id }"
+                  class="btn lp-btn-card"
+                  [class.btn-primary]="plano.destaque"
+                  [class.btn-ghost]="!plano.destaque"
+                >
+                  <span>Adquirir licença</span>
+                  <mat-icon aria-hidden="true">arrow_forward</mat-icon>
+                </a>
+              }
+            </footer>
+          </article>
+        }
+      </div>
+
+      <div class="lp-plans-cta-footer">
+        <p>Precisa de um fluxo de faturamento customizado ou emissão de nota técnica?</p>
+        <a routerLink="/checkout" class="btn btn-primary">
+          <mat-icon aria-hidden="true">shopping_cart_checkout</mat-icon>
+          <span>Ir para o Checkout de Licenças</span>
+        </a>
+      </div>
     </div>
   </section>
 

@@ -30,6 +30,16 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/landing/landing').then((m) => m.LandingPage),
   },
   {
+    path: 'checkout',
+    data: { layout: 'publico' },
+    loadComponent: () => import('./pages/checkout/checkout').then((m) => m.CheckoutPage),
+  },
+  {
+    path: 'planos',
+    redirectTo: 'checkout',
+    pathMatch: 'full',
+  },
+  {
     path: 'redocs',
     redirectTo: redirectByAuth,
   },

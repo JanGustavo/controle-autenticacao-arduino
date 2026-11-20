@@ -38,6 +38,29 @@ const MOTIVO_HORARIO =
   'Cartão válido, mas fora do horário de acesso permitido para este usuário.';
 const MOTIVO_ROSTO = 'Similaridade facial insuficiente com o titular do cartão.';
 
+interface VantagemLanding {
+  texto: string;
+  icone: string;
+  destaque?: boolean;
+  incluido?: boolean;
+}
+
+interface PlanoLanding {
+  id: string;
+  nome: string;
+  preco: string;
+  periodo: string;
+  badge?: string;
+  destaque: boolean;
+  decoy: boolean;
+  descricao: string;
+  dispositivos: string;
+  usuarios: string;
+  suporte: string;
+  emailContato?: string;
+  vantagens: VantagemLanding[];
+}
+
 @Component({
   selector: 'app-landing',
   standalone: true,
@@ -63,7 +86,108 @@ export class LandingPage implements AfterViewInit, OnDestroy {
     { id: 'funcionamento', rotulo: 'Como funciona' },
     { id: 'demonstracao', rotulo: 'Demonstração' },
     { id: 'seguranca', rotulo: 'Segurança' },
+    { id: 'planos', rotulo: 'Planos e Licenças' },
   ];
+
+  readonly emailDemanda = 'janderson.gustavo1@gmail.com';
+
+  readonly planosLanding: PlanoLanding[] = [
+    {
+      id: 'basico',
+      nome: 'Básico',
+      preco: 'R$ 149',
+      periodo: '/mês',
+      badge: 'Início Rápido',
+      destaque: false,
+      decoy: false,
+      descricao: 'Ideal para um ponto de acesso inicial ou pequenas salas com até 50 usuários.',
+      dispositivos: '1 dispositivo (ESP32/RFID)',
+      usuarios: 'Até 50 usuários',
+      suporte: 'Suporte e manutenção padrão (horário comercial)',
+      vantagens: [
+        { texto: '1 dispositivo leitor RFID/ESP32', icone: 'memory', incluido: true },
+        { texto: 'Até 50 usuários cadastrados', icone: 'groups', incluido: true },
+        { texto: 'Biometria facial 1:1 e regras de horário', icone: 'face', incluido: true },
+        { texto: 'Suporte de manutenção padrão', icone: 'build', incluido: true },
+        { texto: 'Sem visita ou suporte prioritário presencial', icone: 'close', incluido: false },
+      ],
+    },
+    {
+      id: 'intermediario',
+      nome: 'Profissional',
+      preco: 'R$ 329',
+      periodo: '/mês',
+      badge: 'Intermediário',
+      destaque: false,
+      decoy: true,
+      descricao: 'Operações em transição que necessitam de mais leitores com suporte médio comercial.',
+      dispositivos: 'Até 4 dispositivos',
+      usuarios: 'Até 150 usuários',
+      suporte: 'Suporte médio comercial',
+      vantagens: [
+        { texto: 'Até 4 dispositivos integrados', icone: 'developer_board', incluido: true },
+        { texto: 'Até 150 usuários cadastrados', icone: 'groups', incluido: true },
+        { texto: 'Biometria facial 1:1 e múltiplos locais', icone: 'verified_user', incluido: true },
+        { texto: 'Suporte médio comercial', icone: 'support_agent', incluido: true },
+        { texto: 'Sem suporte presencial emergencial', icone: 'close', incluido: false },
+      ],
+    },
+    {
+      id: 'premium',
+      nome: 'Avançado Empresarial',
+      preco: 'R$ 389',
+      periodo: '/mês',
+      badge: 'Mais Escolhido',
+      destaque: true,
+      decoy: false,
+      descricao: 'Máxima segurança e tranquilidade com suporte presencial da equipe para conserto e reposição de hardware.',
+      dispositivos: 'Até 7 dispositivos',
+      usuarios: 'Até 500 usuários',
+      suporte: 'Suporte prioritário 24/7 com equipe técnica presencial',
+      vantagens: [
+        { texto: 'Até 7 dispositivos (ESP32/Arduino) simultâneos', icone: 'router', destaque: true, incluido: true },
+        { texto: 'Até 500 usuários ativos e visitantes', icone: 'badge', destaque: true, incluido: true },
+        {
+          texto: 'Equipe técnica presencial garantida: substituição e conserto on-site se quebrar peça ou Arduino',
+          icone: 'engineering',
+          destaque: true,
+          incluido: true,
+        },
+        { texto: 'Canal VIP de suporte 24/7 (WhatsApp e Telefone)', icone: 'headset_mic', destaque: true, incluido: true },
+        { texto: 'Assistente iArdLock com Inteligência Artificial incluso', icone: 'psychology', destaque: true, incluido: true },
+        { texto: 'Auditoria e relatórios em tempo real', icone: 'analytics', destaque: true, incluido: true },
+      ],
+    },
+    {
+      id: 'personalizado',
+      nome: 'Personalizado',
+      preco: 'Sob Demanda',
+      periodo: '',
+      badge: 'Sob Demanda',
+      destaque: false,
+      decoy: false,
+      descricao: 'Infraestrutura dedicada, customização de firmware e integração com ERP sob medida.',
+      dispositivos: 'Ilimitados',
+      usuarios: 'Ilimitados',
+      suporte: 'SLA contratual e engenheiro de conta dedicado',
+      emailContato: 'janderson.gustavo1@gmail.com',
+      vantagens: [
+        { texto: 'Dispositivos e catracas ilimitados', icone: 'all_inclusive', incluido: true },
+        { texto: 'Usuários e permissões ilimitadas', icone: 'groups_3', incluido: true },
+        { texto: 'Engenharia de hardware e integrações dedicadas', icone: 'code', incluido: true },
+        { texto: 'SLA sob medida e visitas preventivas', icone: 'verified', incluido: true },
+        { texto: 'Contato: janderson.gustavo1@gmail.com', icone: 'email', destaque: true, incluido: true },
+      ],
+    },
+  ];
+
+  obterLinkEmailDemanda(): string {
+    const assunto = encodeURIComponent('Solicitação de Proposta Personalizada ArdLock');
+    const corpo = encodeURIComponent(
+      'Olá Janderson,\n\nTenho interesse em um plano personalizado do ArdLock para a nossa infraestrutura.\n\nNome:\nEmpresa:\nTelefone:\nQuantidade de portas/dispositivos:',
+    );
+    return `mailto:${this.emailDemanda}?subject=${assunto}&body=${corpo}`;
+  }
 
   readonly publicos = [
     {

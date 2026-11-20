@@ -390,6 +390,59 @@ export class ApiService {
   deletarAdministrador(id: number): Observable<{ mensagem: string }> {
     return this.http.delete<{ mensagem: string }>(`${API_BASE}/administradores/${id}`);
   }
+
+  obterPlanos(): Observable<PlanoItem[]> {
+    return this.http.get<PlanoItem[]>(`${API_BASE}/planos`);
+  }
+
+  validarTransacaoCheckout(dados: CheckoutValidacaoRequest): Observable<CheckoutValidacaoResponse> {
+    return this.http.post<CheckoutValidacaoResponse>(`${API_BASE}/planos/validar-transacao`, dados);
+  }
+}
+
+export interface PlanoVantagem {
+  texto: string;
+  icone: string;
+  destaque?: boolean;
+  incluido?: boolean;
+}
+
+export interface PlanoItem {
+  id: string;
+  nome: string;
+  slug: string;
+  badge?: string | null;
+  preco_mensal: number;
+  preco_formatado: string;
+  periodo: string;
+  descricao: string;
+  dispositivos: number | string;
+  usuarios: number | string;
+  tipo_suporte: string;
+  destaque: boolean;
+  decoy: boolean;
+  email_contato?: string | null;
+  vantagens: PlanoVantagem[];
+}
+
+export interface CheckoutValidacaoRequest {
+  plano_id: string;
+  nome_organizacao: string;
+  email_gestor: string;
+  documento?: string;
+  forma_pagamento: string;
+  valor_esperado: number;
+}
+
+export interface CheckoutValidacaoResponse {
+  sucesso: boolean;
+  mensagem: string;
+  codigo_transacao: string;
+  plano_id: string;
+  plano_nome: string;
+  valor_cobrado: number;
+  valor_formatado: string;
+  data_autorizacao: string;
 }
 
 export interface AdministradorResponse {

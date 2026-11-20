@@ -21,6 +21,7 @@ from app.api import (
     ia,
     locais,
     permissoes,
+    planos,
     rfid,
     usuarios,
     websocket,
@@ -98,6 +99,10 @@ TAGS_METADATA = [
     {
         "name": "WebSocket",
         "description": "Eventos em tempo real para painel e Totem.",
+    },
+    {
+        "name": "Planos e Checkout",
+        "description": "Planos de licenciamento e validação de transações no checkout.",
     },
     {
         "name": "Health Check",
@@ -367,3 +372,9 @@ app.include_router(
 )
 
 app.include_router(ia.router, prefix=f"{BASE_PREFIX}/ia", tags=["IA"])
+
+app.include_router(
+    planos.router,
+    prefix=BASE_PREFIX,
+    tags=["Planos e Checkout"],
+)

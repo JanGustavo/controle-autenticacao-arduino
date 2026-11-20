@@ -15,6 +15,35 @@
   background: var(--mat-sys-surface, #ffffff);
 }
 
+.login-card-topbar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--ard-muted, #64748b);
+    text-decoration: none;
+    transition: color 0.2s ease, transform 0.2s ease;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    &:hover,
+    &:focus-visible {
+      color: var(--mat-sys-primary, #3b82f6);
+      transform: translateX(-2px);
+    }
+  }
+}
+
 .login-header {
   display: flex;
   flex-direction: column;
