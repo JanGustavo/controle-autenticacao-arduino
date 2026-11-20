@@ -432,6 +432,7 @@ export class WebcamService {
         this.suavizarRostoPerdido();
       } finally {
         this.processandoDeteccao = false;
+        if (!this.webcamAtiva()) this.frameProcessamentoCanvas.width = 0;
       }
     }, INTERVALO_ANALISE);
   }
@@ -583,8 +584,8 @@ export class WebcamService {
       this.stream.getTracks().forEach((track) => track.stop());
       this.stream = null;
     }
-    this.frameProcessamentoCanvas.width = 0;
-    this.frameProcessamentoCanvas.height = 0;
+    // O face-api ainda consulta as dimensões do canvas durante uma inferência cancelada.
+    if (!this.processandoDeteccao) this.frameProcessamentoCanvas.width = 0;
     this.webcamAtiva.set(false);
     this.autoCapturaHabilitada.set(false);
     this.dispararFlash.set(false);

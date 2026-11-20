@@ -78,6 +78,10 @@ html:has(> body.dark-mode) {
   --ard-scrollbar-thumb-hover: #60a5fa;
 }
 
+app-root:has(app-comparar-page app-visor-facial) > app-insights-launcher {
+  display: none;
+}
+
 body {
   color-scheme: light;
   background-color: var(--ard-canvas);
