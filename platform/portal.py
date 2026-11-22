@@ -7,7 +7,7 @@ from fastapi import Request
 import bcrypt
 import psycopg
 from fastapi import Depends, FastAPI, HTTPException, Query
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
@@ -52,6 +52,12 @@ def painel(papel, credentials):
 def root(credentials: HTTPBasicCredentials = Depends(security)):
     autenticar('root', credentials)
     return HTMLResponse(Path('/portal/dashboard.html').read_text(), headers={'Cache-Control':'no-store'})
+
+@app.post('/plataforma/logout')
+def logout():
+    response = RedirectResponse('/login', status_code=303, headers={'Cache-Control':'no-store'})
+    response.delete_cookie('ardlock_root', path='/plataforma', secure=True, httponly=True, samesite='strict')
+    return response
 
 @app.get('/plataforma/gestor')
 def gestor(credentials: HTTPBasicCredentials = Depends(security)):

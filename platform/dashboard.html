@@ -1376,6 +1376,7 @@
       <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></symbol>
       <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="m8 12 3 3 5-6" /></symbol>
       <symbol id="i-open" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9" /><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5" /></symbol>
+      <symbol id="i-logout" viewBox="0 0 24 24"><path d="M10 17l5-5-5-5M15 12H3" /><path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6" /></symbol>
     </svg>
 
     <a class="skip" href="#main">Ir para o painel</a>
@@ -1388,6 +1389,12 @@
           <button type="button" class="icon-btn" id="theme" aria-label="Ativar tema claro">
             <svg class="icon" aria-hidden="true"><use href="#i-sun" /></svg>
           </button>
+          <form action="/plataforma/logout" method="post">
+            <button type="submit" class="btn" aria-label="Sair do painel root">
+              <svg class="icon" aria-hidden="true"><use href="#i-logout" /></svg>
+              <span>Sair</span>
+            </button>
+          </form>
         </div>
       </div>
     </header>
