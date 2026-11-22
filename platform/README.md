@@ -9,7 +9,7 @@ O Nginx encaminha /plataforma/ ao serviço ardlock-portal:8080.
 
 - dashboard.html: interface do root, filtros, indicadores e gaveta.
 - portal.py: autenticação e consultas reais da API.
-- 001_catalogo.sql a 004_license_capacity.sql: esquema e migrações.
+- 001_catalogo.sql a 005_license_plan.sql: esquema e migrações.
 - compose.yaml: PostgreSQL separado e serviço portal.
 - DASHBOARD.md: cálculo dos indicadores e regras de consulta.
 

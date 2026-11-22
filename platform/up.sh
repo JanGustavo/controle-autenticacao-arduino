@@ -15,6 +15,7 @@ docker compose exec -T db psql -X -v ON_ERROR_STOP=1 -U plataforma -d plataforma
 docker compose exec -T db psql -X -v ON_ERROR_STOP=1 -U plataforma -d plataforma < 002_contas.sql
 docker compose exec -T db psql -X -v ON_ERROR_STOP=1 -U plataforma -d plataforma < 003_dashboard.sql
 docker compose exec -T db psql -X -v ON_ERROR_STOP=1 -U plataforma -d plataforma < 004_license_capacity.sql
+docker compose exec -T db psql -X -v ON_ERROR_STOP=1 -U plataforma -d plataforma < 005_license_plan.sql
 
 python3 bootstrap_platform.py "$@"
 docker compose up -d portal

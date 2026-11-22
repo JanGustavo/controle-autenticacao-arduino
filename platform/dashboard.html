@@ -1047,6 +1047,21 @@
       .d-card .btn {
         margin-top: 12px;
       }
+      .plan-assignment {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: end;
+        gap: 10px;
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid var(--line);
+      }
+      .plan-assignment label { display: grid; gap: 5px; color: var(--muted); font-size: .82rem; }
+      .plan-assignment select {
+        min-height: 42px; width: 100%; padding: 0 10px; border: 1px solid var(--line-strong);
+        border-radius: var(--radius-sm); background: var(--canvas); color: var(--ink); font: inherit;
+      }
+      .plan-status { grid-column: 1 / -1; min-height: 1.2em; color: var(--muted); font-size: .82rem; }
       .d-empty {
         color: var(--muted);
         font-size: 0.9rem;
@@ -2076,6 +2091,7 @@
           : '<p class="d-empty">Nenhuma operação registrada.</p>';
 
         const limite = (v) => (v == null ? "Não definido" : number(v));
+        const planoCatalogo = d.catalogo_planos || [];
         const licencas = d.licencas.length
           ? d.licencas
               .map((l) => {
@@ -2092,6 +2108,10 @@
                   "<dt>Pessoas credenciadas</dt><dd>" + limite(l.limite_usuarios) + "</dd><dt>Dispositivos</dt><dd>" + limite(l.limite_dispositivos) +
                   "</dd><dt>Gestores</dt><dd>" + limite(l.limite_gestores) + "</dd></dl>" +
                   (l.observacoes ? '<p class="note">' + h(l.observacoes) + "</p>" : "") +
+                  '<div class="plan-assignment"><label for="plan-' + l.id + '">Plano desta licença<select id="plan-' + l.id + '" data-plan-select>' +
+                  '<option value="">Selecione um plano</option>' + planoCatalogo.map((p) => '<option value="' + h(p.id) + '" ' + (l.plano_json?.id === p.id ? "selected" : "") + '>' + h(p.name) + " · " + money(p.pricing.amount) + "/mês</option>").join("") +
+                  '</select></label><button type="button" class="btn btn-primary" data-action="save-plan" data-license="' + l.id + '">Aplicar plano</button>' +
+                  '<span class="plan-status" id="plan-status-' + l.id + '" role="status">' + (l.plano_json ? 'Plano atual: ' + h(l.plano_json.name) : 'A aplicação atualiza os limites da licença; não gera cobrança.') + '</span></div>' +
                   "</div>"
                 );
               })
@@ -2175,7 +2195,9 @@
       /* ---------- Eventos ---------- */
       document.addEventListener("click", (e) => {
         const acao = e.target.closest("[data-action]")?.dataset.action;
-        if (acao === "clear-search") {
+        if (acao === "save-plan") {
+          savePlan(e.target.closest("[data-action='save-plan']"));
+        } else if (acao === "clear-search") {
           $("search").value = "";
           renderLedger();
           $("search").focus();
@@ -2186,6 +2208,24 @@
           loadDetail(openId);
         }
       });
+      async function savePlan(button) {
+        const id = button.dataset.license;
+        const select = button.closest(".plan-assignment").querySelector("[data-plan-select]");
+        const status = $("plan-status-" + id);
+        if (!select.value) { status.textContent = "Selecione Profissional ou Avançado Empresarial."; select.focus(); return; }
+        button.disabled = true;
+        status.textContent = "Salvando configuração do plano…";
+        try {
+          const res = await fetch("/plataforma/api/licencas/" + encodeURIComponent(id) + "/plano", {
+            method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ plano_id: select.value }), cache: "no-store",
+          });
+          if (!res.ok) throw { status: res.status };
+          status.textContent = "Plano aplicado. Atualizando os dados da licença…";
+          loadDetail(openId);
+        } catch (e) {
+          status.textContent = e.status === 401 ? "Sessão root expirada. Entre novamente." : "Não foi possível aplicar o plano. Tente novamente.";
+        } finally { button.disabled = false; }
+      }
       $("ledger").addEventListener("click", (e) => {
         const row = e.target.closest("tr[data-id]");
         if (row) openDrawer(row.dataset.id, row.querySelector(".client-btn"));

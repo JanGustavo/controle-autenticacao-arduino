@@ -41,6 +41,23 @@
       </div>
       <p class="muted">Os limites exibidos correspondem ao cadastro da licença.</p>
     </section>
+    @if (d.licenca?.plano_json; as plano) {
+      <section class="panel">
+        <h2>Plano da licença</h2>
+        <p class="metric">{{ plano.name }}</p>
+        <p>{{ plano.description }}</p>
+        <dl>
+          <dt>Valor de referência</dt><dd>{{ valor(plano.pricing.amount) }} / mês</dd>
+          <dt>Plano</dt><dd>{{ plano.id }}</dd>
+        </dl>
+        @if (plano.features.length) {
+          <ul class="plan-features">
+            @for (recurso of plano.features; track recurso) { <li>{{ recurso }}</li> }
+          </ul>
+        }
+        <p class="muted">Preço informativo. Nenhuma cobrança é gerada por esta configuração.</p>
+      </section>
+    }
     <section class="panel">
       <h2>Contrato e hospedagem</h2>
       <dl><dt>Hospedagem</dt><dd>{{ d.instancia.hospedagem === 'gerenciada' ? 'Gerenciada' : 'Própria' }}</dd><dt>Domínio</dt><dd>{{ d.instancia.dominio || 'Não cadastrado' }}</dd></dl>

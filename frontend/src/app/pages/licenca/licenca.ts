@@ -7,7 +7,13 @@ import { MatIconModule } from '@angular/material/icon';
 interface Licenca {
   inicio: string; fim: string | null; situacao: string; dias_restantes: number | null;
   limite_usuarios: number | null; limite_dispositivos: number | null;
-  limite_gestores: number | null; observacoes: string | null;
+  limite_gestores: number | null; observacoes: string | null; plano_json: PlanoLicenca | null;
+}
+interface PlanoLicenca {
+  schema_version: number; id: string; slug: string; name: string; badge: string;
+  description: string; pricing: { amount: number; currency: string; interval: string; provider: string; provider_price_id: string | null };
+  limits: { users: number | null; devices: number | null; managers: number | null }; features: string[];
+  assignment: { status: string; assigned_at: string };
 }
 interface Contrato {
   id: number; plano: string; valor_mensal: number; inicio: string; fim: string | null;

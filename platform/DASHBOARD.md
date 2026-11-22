@@ -17,6 +17,13 @@ vigente, não entram na contagem de ativos; sem verificações, a disponibilidad
 desconhecida. A seed de apresentação descrita abaixo preenche as duas instâncias
 demo. Este módulo não executa sondagens de disponibilidade nem emite cobranças.
 
+Na gaveta de cliente, root pode atribuir os planos Profissional ou Avançado
+Empresarial a uma licença existente. A API salva um snapshot JSON versionado do
+plano em `licenca.plano_json` e sincroniza os limites de pessoas e dispositivos.
+O preço aparece como referência; essa configuração manual não cria contrato,
+fatura ou cobrança. O JSON guarda preço e provedor para permitir integrar um
+gateway posteriormente.
+
 Filtros de período afetam faturamento e disponibilidade. Receita mensal e licenças
 refletem a data atual. Hospedagem afeta todos os totais. A consulta renova a cada
 60 segundos com a página visível e a gaveta fechada, ou pelo botão Atualizar dados.

@@ -6,6 +6,7 @@ with psycopg.connect(host='plataforma-db',dbname='plataforma',user='plataforma',
     if not db.execute("SELECT 1 FROM pg_roles WHERE rolname='portal_leitura'").fetchone():
         db.execute(sql.SQL('CREATE ROLE portal_leitura LOGIN PASSWORD {}').format(sql.Literal(cfg['portal'])))
     db.execute('GRANT SELECT ON cliente, instancia, conta_plataforma, licenca, contrato, fatura, verificacao_operacional TO portal_leitura')
+    db.execute('GRANT UPDATE (plano_json,limite_usuarios,limite_dispositivos,limite_gestores) ON licenca TO portal_leitura')
     clients = {'gestor.openhouse': 'demo-open-house', 'gestor.horizonte': 'demo-horizonte'}
     for login, password in cfg['accounts'].items():
         if login != 'root' and login not in clients:

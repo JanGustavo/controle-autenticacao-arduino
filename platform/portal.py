@@ -2,6 +2,8 @@ from html import escape
 from pathlib import Path
 import jwt
 import time
+from copy import deepcopy
+from datetime import datetime, timezone
 from pydantic import BaseModel
 from fastapi import Request
 import bcrypt
@@ -12,6 +14,27 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 basic = HTTPBasic(auto_error=False)
+
+# Snapshot local dos planos que o root pode atribuir enquanto não há gateway.
+# O formato já separa catálogo, limites e preço para permitir trocar a origem depois.
+PLANOS_OPERACIONAIS = {
+    'intermediario': {
+        'schema_version': 1, 'id': 'intermediario', 'slug': 'profissional',
+        'name': 'Profissional', 'badge': 'Intermediário',
+        'description': 'Para operações em crescimento que precisam de mais de um ponto de acesso.',
+        'pricing': {'amount': 329.00, 'currency': 'BRL', 'interval': 'month', 'provider': 'manual', 'provider_price_id': None},
+        'limits': {'users': 150, 'devices': 4, 'managers': None},
+        'features': ['Biometria facial e regras de horários', 'Suporte médio comercial', 'Manutenção remota sob agendamento'],
+    },
+    'premium': {
+        'schema_version': 1, 'id': 'premium', 'slug': 'avancado-empresarial',
+        'name': 'Avançado Empresarial', 'badge': 'Mais Escolhido',
+        'description': 'Solução completa com infraestrutura garantida e atendimento presencial.',
+        'pricing': {'amount': 389.00, 'currency': 'BRL', 'interval': 'month', 'provider': 'manual', 'provider_price_id': None},
+        'limits': {'users': 500, 'devices': 7, 'managers': None},
+        'features': ['Suporte prioritário 24/7 com equipe on-site', 'Assistente iArdLock com IA', 'Auditoria detalhada', 'Painel de múltiplos gestores'],
+    },
+}
 
 def security(request: Request, credentials = Depends(basic)):
     token = request.cookies.get("ardlock_root")
@@ -134,7 +157,31 @@ def detalhe(cliente_id: int, credentials: HTTPBasicCredentials = Depends(securit
         faturas=db.execute('SELECT f.* FROM fatura f JOIN contrato ct ON ct.id=f.contrato_id JOIN instancia i ON i.slug=ct.instancia_slug WHERE i.cliente_id=%s ORDER BY f.emitida_em DESC,f.id DESC LIMIT 100',(cliente_id,)).fetchall()
         verificacoes=db.execute('SELECT v.* FROM verificacao_operacional v JOIN instancia i ON i.slug=v.instancia_slug WHERE i.cliente_id=%s ORDER BY v.verificada_em DESC,v.id DESC LIMIT 100',(cliente_id,)).fetchall()
         licencas=db.execute('SELECT l.* FROM licenca l JOIN instancia i ON i.slug=l.instancia_slug WHERE i.cliente_id=%s ORDER BY l.inicio DESC',(cliente_id,)).fetchall()
-    return dict(cliente=cliente,instancias=instancias,contratos=contratos,faturas=faturas,verificacoes=verificacoes,licencas=licencas)
+    return dict(cliente=cliente,instancias=instancias,contratos=contratos,faturas=faturas,verificacoes=verificacoes,licencas=licencas,
+                catalogo_planos=list(PLANOS_OPERACIONAIS.values()))
+
+class AtribuirPlano(BaseModel):
+    plano_id: str
+
+@app.put('/plataforma/api/licencas/{licenca_id}/plano')
+def atribuir_plano(licenca_id: int, body: AtribuirPlano,
+                   credentials: HTTPBasicCredentials = Depends(security)):
+    autenticar('root', credentials)
+    catalogo = PLANOS_OPERACIONAIS.get(body.plano_id)
+    if not catalogo:
+        raise HTTPException(422, 'Selecione um plano disponível.')
+    plano = deepcopy(catalogo)
+    plano['assignment'] = {'status': 'manual', 'assigned_at': datetime.now(timezone.utc).isoformat()}
+    with conexao() as db:
+        licenca = db.execute('SELECT id FROM licenca WHERE id=%s', (licenca_id,)).fetchone()
+        if not licenca:
+            raise HTTPException(404, 'Licença não encontrada.')
+        result = db.execute('''
+            UPDATE licenca SET plano_json=%s, limite_usuarios=%s, limite_dispositivos=%s,
+              limite_gestores=%s WHERE id=%s RETURNING id
+        ''', (psycopg.types.json.Jsonb(plano), plano['limits']['users'], plano['limits']['devices'],
+              plano['limits']['managers'], licenca_id)).fetchone()
+    return {'licenca_id': result['id'], 'plano': plano}
 
 class LoginRoot(BaseModel):
     usuario: str
