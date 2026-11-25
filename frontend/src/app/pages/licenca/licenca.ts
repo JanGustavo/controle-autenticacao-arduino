@@ -59,6 +59,21 @@ export class LicencaPage implements OnInit {
   data(valor: string) {
     return new Date(valor.slice(0, 10) + 'T12:00:00').toLocaleDateString('pt-BR');
   }
+  /** Tom do selo da licença: vigente (ok), agendada (info), vencendo em até 30 dias (aviso), expirada ou revogada (erro). */
+  tomLicenca(l: Licenca): 'ok' | 'info' | 'warn' | 'bad' {
+    if (l.situacao === 'expirada' || l.situacao === 'revogada') return 'bad';
+    if (l.situacao === 'agendada') return 'info';
+    if (l.fim && l.dias_restantes !== null && l.dias_restantes <= 30) return 'warn';
+    return 'ok';
+  }
+  /** Tom do selo da fatura, a partir da mesma regra de status(). */
+  tomFatura(fatura: Fatura, hoje: string): 'ok' | 'info' | 'bad' | 'neutral' {
+    const situacao = this.status(fatura, hoje);
+    if (situacao === 'Paga') return 'ok';
+    if (situacao === 'Vencida') return 'bad';
+    if (situacao === 'Cancelada') return 'neutral';
+    return 'info';
+  }
   status(fatura: Fatura, hoje: string) {
     if (fatura.cancelada_em) return 'Cancelada';
     if (fatura.paga_em) return 'Paga';

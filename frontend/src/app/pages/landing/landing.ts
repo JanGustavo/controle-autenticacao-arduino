@@ -86,7 +86,7 @@ export class LandingPage implements AfterViewInit, OnDestroy {
     { id: 'funcionamento', rotulo: 'Como funciona' },
     { id: 'demonstracao', rotulo: 'Demonstração' },
     { id: 'seguranca', rotulo: 'Segurança' },
-    { id: 'planos', rotulo: 'Planos e Licenças' },
+    { id: 'planos', rotulo: 'Planos e licenças' },
   ];
 
   readonly emailDemanda = 'janderson.gustavo1@gmail.com';

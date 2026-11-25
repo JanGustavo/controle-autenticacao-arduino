@@ -1,9 +1,10 @@
 import { ConfirmationService } from '../../components/confirmation-dialog/confirmation-dialog';
-import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, inject, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 
@@ -23,10 +24,11 @@ import {
     MatButtonModule,
     MatIconModule,
     MatSnackBarModule,
+    MatTooltipModule,
     RouterLink,
   ],
   templateUrl: './dispositivos.html',
-  styleUrl: '../locais/locais.scss',
+  styleUrl: './dispositivos.scss',
 })
 export class DispositivosPage implements OnInit {
   private confirmation = inject(ConfirmationService);
@@ -39,13 +41,40 @@ export class DispositivosPage implements OnInit {
   carregando = true;
   salvando = false;
   editandoId: number | null = null;
+  /** Erro do formulário (validação ou salvamento). */
   erro = '';
+  /** Erro ao carregar a lista; fica separado para não apagar a tabela. */
+  erroLista = '';
+  carregandoLocais = true;
+  destacadoId: number | null = null;
 
   filtroTexto = '';
   filtroAtivo = 'todos';
   filtroLocalId: number | null = null;
 
   form: DispositivoRequest = this.novoForm();
+
+  @ViewChild('editor') private editor?: ElementRef<HTMLElement>;
+  @ViewChild('localSelect') private localSelect?: ElementRef<HTMLSelectElement>;
+
+  get ativos(): number {
+    return this.dispositivos.filter((dispositivo) => dispositivo.ativo).length;
+  }
+
+  get filtrando(): boolean {
+    return !!this.filtroTexto.trim() || this.filtroAtivo !== 'todos' || this.filtroLocalId !== null;
+  }
+
+  /** Só locais ativos recebem leitor novo; o atual continua listado na edição. */
+  get locaisDoFormulario(): LocalResponse[] {
+    return this.locais.filter((local) => local.ativo || local.local_id === this.form.local_id);
+  }
+
+  limparFiltros(): void {
+    this.filtroTexto = '';
+    this.filtroAtivo = 'todos';
+    this.filtroLocalId = null;
+  }
 
   get displayedDispositivos(): DispositivoResponse[] {
     const termo = this.filtroTexto.trim().toLowerCase();
@@ -76,27 +105,28 @@ export class DispositivosPage implements OnInit {
 
   carregar(): void {
     this.carregando = true;
-
+    this.carregandoLocais = true;
+    this.erroLista = '';
     this.api.getLocais().subscribe({
       next: (locais) => {
         this.locais = locais;
+        this.carregandoLocais = false;
         this.cdr.markForCheck();
       },
       error: () => {
-        this.erro = 'Não foi possível carregar os locais.';
+        this.carregandoLocais = false;
+        this.erro = 'Não foi possível carregar os locais. Recarregue a página para escolher um local.';
         this.cdr.markForCheck();
       },
     });
-
     this.api.getDispositivos().subscribe({
       next: (dispositivos) => {
         this.dispositivos = dispositivos;
-        this.erro = '';
         this.carregando = false;
         this.cdr.markForCheck();
       },
       error: () => {
-        this.erro = 'Não foi possível carregar os dispositivos.';
+        this.erroLista = 'Não foi possível carregar os dispositivos.';
         this.carregando = false;
         this.cdr.markForCheck();
       },
@@ -118,7 +148,14 @@ export class DispositivosPage implements OnInit {
     };
 
     if (!payload.local_id || payload.nome.length < 2 || !payload.identificador) {
-      this.erro = 'Informe local, nome e identificador do dispositivo.';
+      this.erro = !payload.local_id
+        ? 'Escolha o local onde o leitor está instalado.'
+        : payload.nome.length < 2
+          ? 'Informe o nome do dispositivo, com pelo menos 2 caracteres.'
+          : 'Informe o identificador gravado no firmware do ESP32.';
+      // Leva o foco ao campo que precisa de ajuste, como em Locais.
+      const campo = !payload.local_id ? 'disp-local' : payload.nome.length < 2 ? 'disp-nome' : 'disp-identificador';
+      document.getElementById(campo)?.focus();
       return;
     }
 
@@ -143,12 +180,12 @@ export class DispositivosPage implements OnInit {
 
         this.snackBar.open(
           this.editandoId === null
-            ? 'Dispositivo criado com sucesso.'
-            : 'Dispositivo atualizado com sucesso.',
+            ? `Dispositivo ${dispositivo.nome} cadastrado.`
+            : `Alterações em ${dispositivo.nome} salvas.`,
           'Fechar',
           { duration: 4000 },
         );
-
+        this.destacar(dispositivo.dispositivo_id);
         this.cancelar();
         this.cdr.markForCheck();
       },
@@ -172,6 +209,11 @@ export class DispositivosPage implements OnInit {
       ativo: dispositivo.ativo,
     };
     this.erro = '';
+    setTimeout(() => {
+      const reduzir = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      this.editor?.nativeElement.scrollIntoView({ block: 'nearest', behavior: reduzir ? 'auto' : 'smooth' });
+      this.localSelect?.nativeElement.focus({ preventScroll: true });
+    });
   }
 
   async excluir(dispositivo: DispositivoResponse): Promise<void> {
@@ -202,11 +244,13 @@ export class DispositivosPage implements OnInit {
         this.dispositivos = this.dispositivos.filter(
           (item) => item.dispositivo_id !== dispositivo.dispositivo_id,
         );
-        this.snackBar.open('Dispositivo excluído com sucesso.', 'Fechar', { duration: 4000 });
+        this.snackBar.open(`Dispositivo ${dispositivo.nome} excluído.`, 'Fechar', { duration: 4000 });
         this.cdr.markForCheck();
       },
       error: () => {
-        this.erro = 'Não foi possível excluir o dispositivo.';
+        this.snackBar.open(`Não foi possível excluir ${dispositivo.nome}. Tente novamente.`, 'Fechar', {
+          duration: 6000,
+        });
         this.cdr.markForCheck();
       },
     });
@@ -214,7 +258,16 @@ export class DispositivosPage implements OnInit {
 
   cancelar(): void {
     this.editandoId = null;
+    this.erro = '';
     this.form = this.novoForm();
+  }
+
+  private destacar(id: number): void {
+    this.destacadoId = id;
+    setTimeout(() => {
+      if (this.destacadoId === id) this.destacadoId = null;
+      this.cdr.markForCheck();
+    }, 1700);
   }
 
   private novoForm(): DispositivoRequest {

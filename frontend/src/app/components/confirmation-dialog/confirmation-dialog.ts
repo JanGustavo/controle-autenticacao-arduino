@@ -1,6 +1,5 @@
 import { Component, inject, Injectable } from '@angular/core';
 import { MatDialog, MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { firstValueFrom } from 'rxjs';
 
@@ -20,164 +19,153 @@ export interface ConfirmationData {
 @Component({
   selector: 'app-confirmation-dialog',
   standalone: true,
-  imports: [MatDialogModule, MatButtonModule, MatIconModule],
+  imports: [MatDialogModule, MatIconModule],
   template: `
-    <div class="dialog-heading">
-      <span class="warning-mark" aria-hidden="true"><mat-icon>delete_outline</mat-icon></span>
-      <div>
-        <span class="eyebrow">Ação permanente</span>
-        <h2 mat-dialog-title>{{ data.title }}</h2>
+    <div class="ard-dialog">
+      <header class="ard-dialog-head">
+        <span class="alerta" aria-hidden="true"><mat-icon>delete</mat-icon></span>
+        <div>
+          <h2 id="confirmation-title">{{ data.title }}</h2>
+          <p id="confirmation-message">{{ data.message }}</p>
+        </div>
+      </header>
+
+      <div class="ard-dialog-body">
+        @if (data.items?.length) {
+          <section class="impacto" aria-labelledby="impact-title">
+            <h3 id="impact-title">O que será afetado</h3>
+            <ul>
+              @for (item of data.items; track item.label) {
+                <li>
+                  <mat-icon aria-hidden="true">{{ item.icon }}</mat-icon>
+                  <span>
+                    <strong>{{ item.label }}</strong>
+                    <small>{{ item.description }}</small>
+                  </span>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+        <p class="definitivo">
+          <mat-icon aria-hidden="true">info</mat-icon>
+          Esta ação não pode ser desfeita.
+        </p>
       </div>
+
+      <footer class="ard-dialog-foot">
+        <button type="button" class="ard-btn" [mat-dialog-close]="false">Cancelar</button>
+        <button type="button" class="ard-btn is-destructive" [mat-dialog-close]="true">
+          <mat-icon aria-hidden="true">delete</mat-icon>
+          {{ data.confirmLabel || 'Excluir' }}
+        </button>
+      </footer>
     </div>
-    <mat-dialog-content>
-      <p id="confirmation-message" class="confirmation-message">{{ data.message }}</p>
-      @if (data.items?.length) {
-        <section class="impact" aria-labelledby="impact-title">
-          <h3 id="impact-title">O que será afetado</h3>
-          <ul>
-            @for (item of data.items; track item.label) {
-              <li>
-                <mat-icon aria-hidden="true">{{ item.icon }}</mat-icon>
-                <span><strong>{{ item.label }}</strong><small>{{ item.description }}</small></span>
-              </li>
-            }
-          </ul>
-        </section>
-      }
-      <p class="confirmation-hint">
-        <mat-icon aria-hidden="true">info</mat-icon>
-        Esta ação não pode ser desfeita.
-      </p>
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button mat-stroked-button [mat-dialog-close]="false">Cancelar</button>
-      <button mat-flat-button class="confirm-delete" [mat-dialog-close]="true">
-        <mat-icon aria-hidden="true">delete</mat-icon>{{ data.confirmLabel || 'Excluir' }}
-      </button>
-    </mat-dialog-actions>
   `,
   styles: `
     :host {
       display: block;
-      color: var(--ard-ink);
-      background: var(--ard-surface);
     }
-    .dialog-heading {
-      display: flex;
-      align-items: center;
+    // Diálogo curto: cabeçalho sem divisória, texto lido de uma vez.
+    .ard-dialog-head {
       gap: 14px;
-      padding: 24px 24px 8px;
+      padding: 22px 22px 6px;
+      border-bottom: 0;
+      h2 {
+        overflow-wrap: anywhere;
+      }
+      p {
+        margin-top: 4px;
+        color: var(--ard-ink);
+        font-size: 0.95rem;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+      }
     }
-    .warning-mark {
+    .alerta {
       display: grid;
+      flex: 0 0 40px;
       place-items: center;
-      width: 42px;
-      height: 42px;
-      flex: 0 0 42px;
-      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--ard-danger) 14%, transparent);
       color: var(--ard-danger);
-      background: color-mix(in srgb, var(--ard-danger) 12%, transparent);
+      mat-icon {
+        width: 22px;
+        height: 22px;
+        font-size: 22px;
+      }
     }
-    .warning-mark mat-icon {
-      font-size: 23px;
+    .ard-dialog-body {
+      gap: 14px;
+      padding: 12px 22px 20px 76px;
     }
-    .eyebrow {
-      display: block;
-      margin-bottom: 3px;
-      color: var(--ard-danger);
-      font-size: 0.68rem;
-      font-weight: 800;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-    }
-    h2 {
-      margin: 0;
-      padding: 0;
-      color: var(--ard-ink);
-      font-size: 1.22rem;
-      line-height: 1.25;
-    }
-    mat-dialog-content {
-      padding: 8px 24px 0;
-    }
-    p {
-      margin: 0;
-      line-height: 1.6;
-      overflow-wrap: anywhere;
-      color: var(--ard-ink);
-    }
-    .confirmation-message {
-      font-size: 0.94rem;
-    }
-    .impact {
-      margin-top: 18px;
-      border: 1px solid color-mix(in srgb, var(--ard-danger) 18%, var(--ard-line));
+    .impacto {
+      padding: 12px 14px;
+      border: 1px solid var(--ard-line);
       border-radius: var(--ard-radius-sm);
-      background: color-mix(in srgb, var(--ard-danger) 4%, var(--ard-surface));
-      padding: 12px;
+      background: var(--ard-surface-2);
+      h3 {
+        margin: 0 0 10px;
+        color: var(--ard-muted);
+        font-size: 0.82rem;
+        font-weight: 500;
+      }
+      ul {
+        display: grid;
+        gap: 10px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      li {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      li > mat-icon {
+        flex: 0 0 18px;
+        width: 18px;
+        height: 18px;
+        margin-top: 1px;
+        color: var(--ard-muted);
+        font-size: 18px;
+      }
+      li span {
+        display: grid;
+        gap: 1px;
+        min-width: 0;
+      }
+      strong {
+        font-size: 0.9rem;
+        font-weight: 500;
+        overflow-wrap: anywhere;
+      }
+      small {
+        color: var(--ard-muted);
+        font-size: 0.82rem;
+        line-height: 1.4;
+      }
     }
-    .impact h3 {
-      margin: 0 0 8px;
-      color: var(--ard-ink);
-      font-size: 0.76rem;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-    ul {
-      display: grid;
-      gap: 9px;
-      padding: 0;
-      margin: 0;
-      list-style: none;
-    }
-    li {
-      display: flex;
-      align-items: flex-start;
-      gap: 9px;
-    }
-    li > mat-icon {
-      width: 18px;
-      height: 18px;
-      color: var(--ard-danger);
-      font-size: 18px;
-      flex: 0 0 18px;
-    }
-    li span {
-      display: grid;
-      gap: 2px;
-    }
-    li strong {
-      color: var(--ard-ink);
-      font-size: 0.84rem;
-    }
-    li small {
-      color: var(--ard-muted);
-      font-size: 0.76rem;
-      line-height: 1.35;
-    }
-    .confirmation-hint {
+    .definitivo {
       display: flex;
       align-items: center;
       gap: 6px;
-      margin-top: 16px;
+      margin: 0;
       color: var(--ard-muted);
-      font-size: 0.85rem;
+      font-size: 0.86rem;
+      mat-icon {
+        flex: 0 0 16px;
+        width: 16px;
+        height: 16px;
+        font-size: 16px;
+      }
     }
-    .confirmation-hint mat-icon {
-      width: 16px;
-      height: 16px;
-      font-size: 16px;
-    }
-    mat-dialog-actions {
-      gap: 12px;
-      padding: 16px 24px 24px;
-    }
-    :host-context(body.dark-mode) h2 mat-icon {
-      color: #f87171;
-    }
-    .confirm-delete {
-      background-color: var(--ard-danger);
-      color: #fff;
+    @media (max-width: 480px) {
+      .ard-dialog-body {
+        padding-left: 22px;
+      }
     }
   `,
 })
@@ -197,9 +185,11 @@ export class ConfirmationService {
       data: { title, message, ...options },
       width: '480px',
       maxWidth: 'calc(100vw - 32px)',
+      // O foco começa em Cancelar: a opção segura numa ação definitiva.
       autoFocus: 'first-tabbable',
       restoreFocus: true,
       role: 'alertdialog',
+      ariaLabelledBy: 'confirmation-title',
       ariaDescribedBy: 'confirmation-message',
       panelClass: 'ard-confirmation-dialog',
     });

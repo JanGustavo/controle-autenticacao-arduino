@@ -2,12 +2,8 @@ import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { AuthFrame, EtapaAuth } from '../../components/auth-frame/auth-frame';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 
@@ -19,12 +15,8 @@ import { AuthService } from '../../services/auth.service';
     CommonModule,
     FormsModule,
     RouterModule,
-    MatCardModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
     MatIconModule,
-    MatProgressSpinnerModule,
+    AuthFrame,
   ],
   templateUrl: './login.html',
   styleUrl: './login.scss',
@@ -34,6 +26,14 @@ export class Login {
   private authService = inject(AuthService);
   private router = inject(Router);
 
+
+  /** A decisão de acesso que o painel controla, na ordem em que acontece. */
+  readonly etapas: EtapaAuth[] = [
+    { titulo: 'Cartão RFID', texto: 'Lido pelo leitor ESP32 na porta.', icone: 'contactless', estado: 'done' },
+    { titulo: 'Permissão', texto: 'Local, dia da semana e horário.', icone: 'vpn_key', estado: 'done' },
+    { titulo: 'Rosto do titular', texto: 'Comparado 1:1 com a biometria cadastrada.', icone: 'face', estado: 'done' },
+    { titulo: 'Decisão', texto: 'Porta liberada ou negada, e tudo fica no histórico.', icone: 'lock_open', estado: 'ok' },
+  ];
 
   usuario = '';
   senha = '';

@@ -3,7 +3,9 @@
 // components according to the Material 3 design spec.
 // Learn more about theming and how to use it for your application's
 // custom components at https://material.angular.dev/guide/theming
+@use 'sass:string';
 @use '@angular/material' as mat;
+@use 'app/styles/ui';
 
 @font-face {
   font-family: 'Material Icons';
@@ -28,14 +30,23 @@
 }
 
 :root {
+  // Mesma paleta da landing, do painel root e do portal da plataforma.
+  --ard-font: Roboto, 'Helvetica Neue', Arial, 'Liberation Sans', sans-serif;
   --ard-canvas: #f6f8fb;
   --ard-surface: #ffffff;
+  --ard-surface-2: #f1f5f9;
   --ard-ink: #172033;
-  --ard-muted: #64748b;
+  --ard-muted: #5b6b82;
   --ard-line: #e2e8f0;
+  --ard-line-strong: #cbd5e1;
   --ard-primary: #2563eb;
+  --ard-on-primary: #ffffff;
   --ard-success: #15803d;
   --ard-danger: #b91c1c;
+  --ard-on-danger: #ffffff;
+  // Séries de gráfico aceitos/negados: par validado contra daltonismo (deutan ΔE 11 na superfície clara).
+  --ard-chart-ok: #16a34a;
+  --ard-chart-bad: #b91c1c;
   --ard-warning: #b45309;
   --ard-scrollbar-track: #e9eef5;
   --ard-scrollbar-thumb: #8da8cc;
@@ -66,7 +77,11 @@ html {
         primary: mat.$azure-palette,
         tertiary: mat.$blue-palette,
       ),
-      typography: Roboto,
+      // Com fonte reserva: sem a Google Fonts (rede bloqueada), o app não cai em serifa.
+      typography: (
+        plain-family: string.unquote("Roboto, 'Helvetica Neue', Arial, 'Liberation Sans', sans-serif"),
+        brand-family: string.unquote("Roboto, 'Helvetica Neue', Arial, 'Liberation Sans', sans-serif"),
+      ),
       density: 0,
     )
   );
@@ -87,6 +102,10 @@ body {
   background-color: var(--ard-canvas);
   color: var(--mat-sys-on-surface, #1e293b);
   font: var(--mat-sys-body-medium);
+  font-family: var(--ard-font);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
   margin: 0;
   height: 100%;
   transition:
@@ -97,10 +116,20 @@ body {
 body.dark-mode {
   --ard-canvas: #0b1220;
   --ard-surface: #111827;
+  --ard-surface-2: #172033;
   --ard-ink: #f8fafc;
   --ard-muted: #94a3b8;
-  --ard-line: rgba(255, 255, 255, 0.1);
+  --ard-line: rgb(148 163 184 / 18%);
+  --ard-line-strong: rgb(148 163 184 / 32%);
   --ard-primary: #60a5fa;
+  --ard-on-primary: #0b1220;
+  --ard-success: #4ade80;
+  --ard-danger: #fb7185;
+  --ard-on-danger: #0b1220;
+  // Mesmo par no escuro, validado na superfície #111827 (deutan ΔE 15,7).
+  --ard-chart-ok: #26bc5e;
+  --ard-chart-bad: #c4193f;
+  --ard-warning: #fbbf24;
   --ard-scrollbar-track: #172033;
   --ard-scrollbar-thumb: #647fa6;
   --ard-scrollbar-thumb-hover: #60a5fa;
@@ -109,65 +138,7 @@ body.dark-mode {
 
   color-scheme: dark;
   background-color: var(--ard-canvas) !important;
-  color: #f1f5f9 !important;
-
-  .app-header {
-    --surface: #1e293b;
-    --ink: #f8fafc;
-    --muted: #94a3b8;
-    --line: rgba(255, 255, 255, 0.1);
-    background: var(--surface) !important;
-    border-bottom: 1px solid var(--line) !important;
-
-    .user-profile {
-      background: var(--ard-canvas) !important;
-      border-color: var(--line) !important;
-    }
-  }
-
-  .login-card {
-    background: #1e293b !important;
-    color: #f8fafc !important;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
-
-    mat-card-title {
-      color: #f8fafc !important;
-    }
-    mat-card-subtitle {
-      color: #94a3b8 !important;
-    }
-  }
-
-  .tuple-page-container {
-    .tuple-header {
-      h2 {
-        color: #f8fafc !important;
-      }
-      p {
-        color: #94a3b8 !important;
-      }
-    }
-
-    .tuple-card {
-      background: #1e293b !important;
-      border-color: rgba(255, 255, 255, 0.1) !important;
-    }
-
-    .tuple-table {
-      th {
-        background: var(--ard-canvas) !important;
-        color: #94a3b8 !important;
-        border-bottom-color: rgba(255, 255, 255, 0.1) !important;
-      }
-      td {
-        color: #f8fafc !important;
-        border-bottom-color: rgba(255, 255, 255, 0.05) !important;
-      }
-      tr:hover td {
-        background: rgba(255, 255, 255, 0.03) !important;
-      }
-    }
-  }
+  color: var(--ard-ink) !important;
 }
 
 /* A mesma barra se aplica à página, tabelas e painéis com rolagem própria. */
@@ -199,23 +170,6 @@ body.dark-mode {
   cursor: pointer;
 }
 
-/* Zebra global para tabelas HTML que não importam o mixin compartilhado. */
-table tbody tr:nth-child(odd) > td {
-  background-color: var(--ard-table-row-odd);
-}
-
-table tbody tr:nth-child(even) > td {
-  background-color: var(--ard-table-row-even);
-}
-
-table tbody tr:hover > td {
-  filter: brightness(0.985);
-}
-
-body.dark-mode table tbody tr:hover > td {
-  filter: brightness(1.08);
-}
-
 /* Keep wide tables inside their scroll areas instead of widening the page. */
 *,
 *::before,
@@ -234,52 +188,12 @@ app-root {
     min-width: 0;
     max-width: 100%;
   }
-  .login-container,
-  .forgot-password-container,
-  .reset-password-container {
-    padding: 16px;
-  }
-  .login-card {
-    padding: 24px 16px;
-  }
 }
 
 // Estados e ações de continuação presentes em mais de um módulo.
-:where(a, button, input, select, summary):focus-visible {
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
   outline: 3px solid var(--ard-primary);
   outline-offset: 3px;
-}
-.next-step,
-.action-notice {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding: 16px 20px;
-  border: 1px solid var(--ard-line);
-  border-radius: var(--ard-radius-md);
-  background: var(--ard-surface);
-  color: var(--ard-ink);
-  font-size: 0.9rem;
-  > span {
-    flex: 1;
-    min-width: 180px;
-  }
-}
-.action-notice {
-  border-color: var(--ard-success);
-  color: var(--ard-success);
-}
-.register-form .next-step {
-  margin: 20px 32px;
-}
-@media (max-width: 760px) {
-  .register-form .next-step {
-    margin: 16px;
-  }
-  .next-step a {
-    flex: 1;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   html {
@@ -300,13 +214,22 @@ html.cdk-global-scrollblock {
 
 .ard-user-create-dialog,
 .ard-user-edit-dialog,
-.ard-confirmation-dialog {
-  max-width: calc(100vw - 32px) !important;
-
+.ard-confirmation-dialog,
+.ard-form-dialog {
+  max-width: calc(100vw - 24px) !important;
+}
+// Todos os diálogos com a mesma superfície.
+.mat-mdc-dialog-container {
   .mat-mdc-dialog-surface {
+    border: 1px solid var(--ard-line-strong);
+    border-radius: var(--ard-radius-md);
     background: var(--ard-surface);
     color: var(--ard-ink);
+    box-shadow: 0 24px 48px rgb(2 8 23 / 28%);
   }
+}
+.cdk-overlay-dark-backdrop {
+  background: rgb(2 8 23 / 62%);
 }
 
 .ard-confirmation-dialog .mat-mdc-dialog-surface {

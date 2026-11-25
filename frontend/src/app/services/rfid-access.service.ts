@@ -40,7 +40,7 @@ export class RfidAccessService {
           this.snackBar.open(
             `Leitura de ${quem}${leitor ? ` no leitor ${leitor}` : ''} não abriu a validação facial: ` +
               'há um cadastro aberto neste aparelho.',
-            'OK',
+            'Fechar',
             { duration: 6000 },
           );
           return;

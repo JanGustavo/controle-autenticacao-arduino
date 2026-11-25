@@ -1,423 +1,491 @@
-<div class="comparar-wrapper" [class.kiosk-mode]="modoKioskFullscreen()">
+<div class="ard-page validar" [class.kiosk-mode]="modoKioskFullscreen()">
   @if (!modoKioskFullscreen()) {
-    <div class="header">
-      <div class="header-top">
-        <a routerLink="/adm-page" class="back-link">
-          <mat-icon>arrow_back</mat-icon> Painel administrativo
-        </a>
-
-        <div class="header-actions">
-          <button
-            mat-stroked-button
-            (click)="selecionarAparelho()"
-            [disabled]="captura.carregando()"
-          >
-            <mat-icon>videocam</mat-icon>
-            {{ captura.ativa() ? 'Câmera neste aparelho' : 'Usar câmera deste aparelho' }}
-          </button>
-          <button mat-stroked-button (click)="toggleKioskFullscreen()" title="Atalho: F11">
-            <mat-icon>
-              {{ modoKioskFullscreen() ? 'fullscreen_exit' : 'fullscreen' }}
-            </mat-icon>
-            Modo Kiosk (F11)
-          </button>
-
-          <button
-            mat-stroked-button
-            [color]="modoTotem() ? 'accent' : 'primary'"
-            (click)="toggleModoTotem()"
-          >
-            <mat-icon>
-              {{ modoTotem() ? 'touch_app' : 'center_focus_strong' }}
-            </mat-icon>
-            {{ modoTotem() ? 'Modo Totem (Auto)' : 'Modo Assistido' }}
-          </button>
-        </div>
-      </div>
-
-      <div class="module-heading">
-        <span class="module-icon"><mat-icon>face</mat-icon></span>
+    <a routerLink="/adm-page" class="ard-back"><mat-icon aria-hidden="true">arrow_back</mat-icon>Painel administrativo</a>
+    <header class="ard-head">
+      <div class="ard-head-main">
+        <span class="ard-module-icon" data-tone="validacao" aria-hidden="true"><mat-icon>verified_user</mat-icon></span>
         <div>
-          <span class="eyebrow">Fluxo de autenticação</span>
-          <h2>Validar acesso</h2>
+          <h1>Validar acesso</h1>
           <p>
             {{
               tentativaId()
-                ? 'Tentativa criada. A face será comparada somente com o titular do cartão RFID.'
+                ? 'Tentativa criada. O rosto será comparado somente com o titular do cartão.'
                 : 'Aproxime o cartão do leitor e siga as orientações para confirmar o rosto.'
             }}
           </p>
         </div>
       </div>
-    </div>
-
-    <details class="simulator-card">
-      <summary>
-        <mat-icon>science</mat-icon> Testar sem leitor RFID
-        <span>Expandir opções de simulação</span>
-      </summary>
-      <div class="simulator-heading">
-        <div>
-          <span class="eyebrow">Sem hardware</span>
-          <h3>Simulador de leitura RFID</h3>
-          <p>Selecione uma pessoa e um dispositivo para testar o mesmo fluxo de acesso.</p>
-        </div>
-
-        @if (tentativaId()) {
-          <span class="attempt-badge">
-            <mat-icon>pending_actions</mat-icon>
-            Tentativa ativa
-          </span>
-        }
-      </div>
-
-      <div class="simulator-grid">
-        <label class="simulator-field">
-          <span>Usuário cadastrado</span>
-          <select
-            [(ngModel)]="usuarioSimuladoId"
-            (ngModelChange)="onUsuarioSimuladoChange()"
-            [disabled]="iniciandoTentativa() || !!tentativaId()"
-          >
-            <option [ngValue]="null">Selecione um usuário</option>
-            @for (usuario of usuarios; track usuario.user_id) {
-              <option [ngValue]="usuario.user_id" [disabled]="!usuario.uid_card">
-                {{ usuario.nome }}
-                {{ usuario.uid_card ? ' · ' + usuario.uid_card : ' · sem RFID' }}
-              </option>
-            }
-          </select>
-        </label>
-
-        <label class="simulator-field">
-          <span>Dispositivo / leitor</span>
-          <select
-            [(ngModel)]="dispositivoSimuladoId"
-            [disabled]="iniciandoTentativa() || !!tentativaId()"
-          >
-            <option [ngValue]="null">Selecione um dispositivo</option>
-            @for (dispositivo of dispositivos; track dispositivo.dispositivo_id) {
-              <option [ngValue]="dispositivo.dispositivo_id">
-                {{ dispositivo.nome }} · {{ dispositivo.identificador }}
-              </option>
-            }
-          </select>
-        </label>
-
-        <label class="simulator-field uid-field">
-          <span>UID RFID</span>
-          <input
-            type="text"
-            [(ngModel)]="uidManual"
-            maxlength="20"
-            placeholder="A1B2C3D4"
-            [disabled]="iniciandoTentativa() || !!tentativaId()"
-          />
-          <small>
-            Você pode selecionar um usuário ou informar um UID cadastrado manualmente.
-          </small>
-        </label>
-      </div>
-
-      <div class="simulator-actions">
+      <div class="ard-head-actions">
         <button
-          mat-flat-button
-          color="primary"
-          (click)="simularLeituraRfid()"
-          [disabled]="iniciandoTentativa() || !!tentativaId()"
+          type="button"
+          class="ard-btn"
+          (click)="selecionarAparelho()"
+          [disabled]="captura.carregando()"
+          [attr.aria-pressed]="captura.ativa()"
         >
-          @if (iniciandoTentativa()) {
-            <mat-spinner diameter="18"></mat-spinner>
-            <span>Validando RFID...</span>
+          @if (captura.carregando()) {
+            <span class="ard-spinner" aria-hidden="true"></span>
           } @else {
-            <span class="btn-content">
-              <svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <rect x="2.5" y="5.5" width="19" height="13" rx="2" />
-                <path d="M3 9.5h18M6.5 14.5h4" />
-              </svg>
-              <span>Simular cartão</span>
-            </span>
+            <mat-icon aria-hidden="true">{{ captura.ativa() ? 'videocam' : 'video_call' }}</mat-icon>
           }
+          {{ captura.ativa() ? 'Câmera neste aparelho' : 'Usar câmera deste aparelho' }}
         </button>
-
-        @if (tentativaId()) {
-          <button mat-stroked-button color="warn" (click)="resetar()">
-            <mat-icon>restart_alt</mat-icon>
-            Cancelar tentativa local
-          </button>
-        }
-
-        <div class="flow-hint">
-          <mat-icon>route</mat-icon>
-          RFID → tentativa → face 1:1 → decisão → histórico
-        </div>
+        <button type="button" class="ard-btn" (click)="toggleKioskFullscreen()" title="Atalho: F11">
+          <mat-icon aria-hidden="true">{{ modoKioskFullscreen() ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+          Modo quiosque
+          <kbd>F11</kbd>
+        </button>
       </div>
-    </details>
+    </header>
   }
 
-  @if (!modoKioskFullscreen()) {
-    <ol class="access-steps" aria-label="Etapas do acesso">
-      <li><span>1</span> Aproxime o cartão</li>
-      <li><span>2</span> Posicione o rosto</li>
-      <li><span>3</span> Confira o resultado</li>
-    </ol>
-  }
-  <div class="totem-grid">
-    <div class="card-cam">
-      @if (webcam.carregandoHardware()) {
-        <div class="skeleton-viewport">
-          <mat-spinner diameter="48"></mat-spinner>
-          <p>Iniciando câmera e modelos biométricos...</p>
-        </div>
-      }
-
-      @if (webcam.webcamAtiva() && !webcam.carregandoHardware()) {
-        <app-visor-facial [validandoTitular]="scanning()" />
-      }
-
-      @if (!webcam.webcamAtiva() && !fotoPreviewUrl && !webcam.carregandoHardware()) {
-        <div class="placeholder-cam">
-          <mat-icon>{{ tentativaId() ? 'face' : 'badge' }}</mat-icon>
-          <p>
-            {{
-              tentativaId()
-                ? 'Tentativa pronta para validação facial 1:1'
-                : 'Aproxime o cartão do leitor para começar'
-            }}
-          </p>
-        </div>
-      }
-
-      @if (fotoPreviewUrl && !webcam.webcamAtiva() && !exibirOverlayTotem()) {
-        <div class="preview-cam">
-          <img [src]="fotoPreviewUrl" alt="Foto capturada" />
-        </div>
-      }
-
-      @if (!modoKioskFullscreen()) {
-        <div class="webcam-controls">
-          @if (!webcam.webcamAtiva()) {
-            <button
-              mat-raised-button
-              color="primary"
-              (click)="iniciarWebcam()"
-              [disabled]="!tentativaId()"
+  <div class="validar-grid">
+    <div class="coluna-estacao">
+      <!-- Estação: trilha da decisão, câmera e resultado -->
+      <section class="ard-panel estacao" aria-labelledby="estacao-titulo" [attr.data-situacao]="situacao">
+        <h2 id="estacao-titulo" class="ard-sr-only">Estação de validação</h2>
+        <div class="estacao-topo">
+          <ol class="ard-trail is-row trilha" aria-label="Etapas do acesso">
+            <li
+              [attr.data-state]="
+                situacao === 'aguardando' ? 'active' : situacao === 'recusado' ? 'fail' : 'done'
+              "
             >
-              <mat-icon>videocam</mat-icon>
-              {{ tentativaId() ? 'Iniciar validação facial' : 'Aguardando tentativa RFID' }}
-            </button>
-          }
-
-          @if (webcam.webcamAtiva() && !modoTotem()) {
-            <button
-              mat-raised-button
-              color="accent"
-              (click)="capturarEValidar()"
-              [disabled]="!webcam.capturaPronta() || scanning()"
-            >
-              <mat-icon>verified_user</mat-icon>
-              Validar titular
-            </button>
-          }
-
-          @if (webcam.webcamAtiva()) {
-            <button mat-button color="warn" (click)="pararWebcam()">
-              <mat-icon>close</mat-icon>
-              Encerrar câmera
-            </button>
-          }
-        </div>
-      }
-
-      @if (mensagemStatus() && !exibirOverlayTotem()) {
-        <div
-          class="status-message"
-          [class.success]="aprovado()"
-          [class.pending]="!!tentativaId() && !aprovado()"
-        >
-          <mat-icon>
-            {{ aprovado() ? 'check_circle' : tentativaId() ? 'hourglass_top' : 'info' }}
-          </mat-icon>
-          <span>{{ mensagemStatus() }}</span>
-        </div>
-      }
-    </div>
-
-    <div class="card-logs">
-      <h3>
-        <mat-icon>history</mat-icon>
-        Últimos acessos
-      </h3>
-
-      <div class="logs-list">
-        @for (log of historicoRecente(); track log.id) {
-          <div class="log-item" [class.autorizado]="log.autorizado">
-            <mat-icon>
-              {{ log.autorizado ? 'check_circle' : 'cancel' }}
-            </mat-icon>
-
-            <div class="log-info">
-              <strong>
-                {{ log.autorizado ? 'Acesso Liberado' : 'Acesso Negado' }}
-              </strong>
-
-              <div class="log-meta">
-                <span class="user-name">{{ obterNomeUsuario(log) }}</span>
-                <span class="local-name"> &bull; {{ obterNomeLocal(log) }} </span>
-              </div>
-
-              <small>
-                {{ log.data_hora | date: 'dd/MM/yyyy HH:mm:ss' }}
-              </small>
-
-              @if (log.percentual_similaridade !== null) {
-                <p>
-                  Similaridade:
+              <span class="ard-trail-node" aria-hidden="true">
+                <mat-icon>{{ situacao === 'aguardando' ? 'contactless' : situacao === 'recusado' ? 'close' : 'check' }}</mat-icon>
+              </span>
+              <span class="ard-trail-text">
+                <strong>Cartão e permissão</strong>
+                <span>
                   {{
-                    (log.percentual_similaridade > 1
-                      ? log.percentual_similaridade
-                      : log.percentual_similaridade * 100
-                    ) | number: '1.2-2'
-                  }}%
-                </p>
-              }
+                    situacao === 'aguardando'
+                      ? 'Aguardando leitura'
+                      : situacao === 'recusado'
+                        ? 'Recusado'
+                        : usuarioEncontrado() || 'Aceito'
+                  }}
+                </span>
+              </span>
+            </li>
+            <li
+              [attr.data-state]="
+                situacao === 'camera' || situacao === 'verificando'
+                  ? 'active'
+                  : situacao === 'liberado'
+                    ? 'done'
+                    : situacao === 'negado'
+                      ? 'fail'
+                      : null
+              "
+            >
+              <span class="ard-trail-node" aria-hidden="true">
+                <mat-icon>{{ situacao === 'liberado' ? 'check' : situacao === 'negado' ? 'close' : 'face' }}</mat-icon>
+              </span>
+              <span class="ard-trail-text">
+                <strong>Rosto do titular</strong>
+                <span>
+                  {{
+                    situacao === 'camera'
+                      ? 'Olhe para a câmera'
+                      : situacao === 'verificando'
+                        ? 'Comparando 1:1'
+                        : situacao === 'liberado'
+                          ? 'Confere'
+                          : situacao === 'negado'
+                            ? 'Não confere'
+                            : 'Depois do cartão'
+                  }}
+                </span>
+              </span>
+            </li>
+            <li
+              [attr.data-state]="
+                situacao === 'liberado' ? 'ok' : situacao === 'negado' || situacao === 'recusado' ? 'fail' : null
+              "
+            >
+              <span class="ard-trail-node" aria-hidden="true">
+                <mat-icon>{{ situacao === 'liberado' ? 'lock_open' : 'lock' }}</mat-icon>
+              </span>
+              <span class="ard-trail-text">
+                <strong>Decisão</strong>
+                <span>
+                  {{
+                    situacao === 'liberado'
+                      ? 'Acesso liberado'
+                      : situacao === 'negado' || situacao === 'recusado'
+                        ? 'Acesso negado'
+                        : 'Pendente'
+                  }}
+                </span>
+              </span>
+            </li>
+          </ol>
 
-              @if (log.motivo_recusa) {
-                <p class="recusa">{{ log.motivo_recusa }}</p>
-              }
+          @if (modoKioskFullscreen()) {
+            <button type="button" class="ard-icon-btn sair-quiosque" (click)="toggleKioskFullscreen()" aria-label="Sair do modo quiosque" title="Sair do modo quiosque (F11)">
+              <mat-icon aria-hidden="true">fullscreen_exit</mat-icon>
+            </button>
+          }
+          @if (!modoKioskFullscreen()) {
+            <div class="ard-segmented" role="group" aria-label="Modo de captura">
+              <button type="button" [attr.aria-pressed]="modoTotem()" (click)="definirModoTotem(true)">
+                <mat-icon aria-hidden="true">center_focus_strong</mat-icon>
+                Automática
+              </button>
+              <button type="button" [attr.aria-pressed]="!modoTotem()" (click)="definirModoTotem(false)">
+                <mat-icon aria-hidden="true">touch_app</mat-icon>
+                Manual
+              </button>
             </div>
-          </div>
-        } @empty {
-          <div class="no-logs">Nenhum registro recente</div>
-        }
-      </div>
-    </div>
-  </div>
-
-  @if (exibirOverlayTotem()) {
-    <div class="totem-overlay" [class.liberado]="aprovado()" [class.negado]="!aprovado()">
-      <div
-        class="totem-card"
-        role="dialog"
-        aria-modal="true"
-        [attr.aria-label]="aprovado() ? 'Acesso Liberado' : 'Acesso Negado'"
-      >
-        <!-- Halo luminoso suave de topo -->
-        <div class="totem-glow-halo" aria-hidden="true"></div>
-
-        <!-- Barra superior com status chip e botão fechar -->
-        <div class="totem-card-topbar">
-          <div class="status-chip" [class.chip-success]="aprovado()" [class.chip-danger]="!aprovado()">
-            <span class="status-dot"></span>
-            <span>{{ aprovado() ? 'AUTENTICAÇÃO APROVADA' : 'AUTENTICAÇÃO RECUSADA' }}</span>
-          </div>
-
-          <button
-            type="button"
-            class="btn-close-totem"
-            (click)="encerrarCicloAcesso()"
-            title="Fechar e aguardar próximo acesso"
-            aria-label="Fechar"
-          >
-            <mat-icon>close</mat-icon>
-          </button>
+          }
         </div>
 
-        <!-- Hero com avatar e identificação -->
-        <div class="totem-hero">
-          <div class="avatar-wrapper" [class.avatar-success]="aprovado()" [class.avatar-danger]="!aprovado()">
-            @if (fotoPreviewUrl) {
-              <img [src]="fotoPreviewUrl" class="totem-avatar" alt="Rosto capturado" />
-            } @else {
-              <div class="avatar-fallback">
-                <mat-icon>{{ aprovado() ? 'face' : 'person_off' }}</mat-icon>
-              </div>
-            }
-
-            <div class="status-stamp" [class.stamp-success]="aprovado()" [class.stamp-danger]="!aprovado()">
-              <mat-icon>{{ aprovado() ? 'check' : 'close' }}</mat-icon>
+        <div class="visor">
+          @if (webcam.carregandoHardware()) {
+            <div class="visor-estado" role="status">
+              <span class="ard-spinner visor-spinner" aria-hidden="true"></span>
+              <p>Iniciando câmera e modelos biométricos...</p>
             </div>
-          </div>
+          }
 
-          <div class="totem-titles">
-            <h1 class="totem-title">
-              {{ aprovado() ? 'Acesso Liberado' : 'Acesso Negado' }}
-            </h1>
-            @if (usuarioEncontrado()) {
-              <h2 class="totem-user-name">{{ usuarioEncontrado() }}</h2>
-            } @else {
-              <p class="totem-user-sub">
-                {{ aprovado() ? 'Titular identificado' : 'Identificação não confirmada' }}
+          @if (webcam.webcamAtiva() && !webcam.carregandoHardware()) {
+            <app-visor-facial [validandoTitular]="scanning()" />
+          }
+
+          @if (!webcam.webcamAtiva() && !fotoPreviewUrl && !webcam.carregandoHardware()) {
+            <div class="visor-estado">
+              @if (!captura.ativa() && !captura.carregando()) {
+                <span class="leitor" aria-hidden="true"><mat-icon>videocam_off</mat-icon></span>
+                <p>Este aparelho não está recebendo as leituras de cartão.</p>
+                <span>Use a câmera deste aparelho para validar os acessos por aqui.</span>
+                <button type="button" class="ard-btn" (click)="selecionarAparelho()">
+                  <mat-icon aria-hidden="true">video_call</mat-icon>
+                  Usar câmera deste aparelho
+                </button>
+              } @else {
+                <span class="leitor" [class.is-waiting]="!tentativaId()" aria-hidden="true">
+                  <mat-icon>{{ tentativaId() ? 'face' : 'contactless' }}</mat-icon>
+                </span>
+                <p>
+                  {{
+                    tentativaId()
+                      ? 'Tentativa pronta para validação facial 1:1'
+                      : 'Aproxime o cartão do leitor para começar'
+                  }}
+                </p>
+                @if (!tentativaId()) {
+                  <span>A câmera abre sozinha quando o cartão é aceito.</span>
+                }
+              }
+            </div>
+          }
+
+          @if (fotoPreviewUrl && !webcam.webcamAtiva() && !exibirOverlayTotem()) {
+            <img class="visor-foto" [src]="fotoPreviewUrl" alt="Foto capturada" />
+          }
+        </div>
+
+        @if (mensagemStatus() && !exibirOverlayTotem()) {
+          <div
+            class="ard-notice status-message"
+            [class.success]="aprovado()"
+            [class.pending]="!!tentativaId() && !aprovado()"
+            [class.is-success]="situacao === 'liberado'"
+            [class.is-error]="situacao === 'negado' || situacao === 'recusado'"
+            [class.is-neutro]="situacao === 'aguardando'"
+            role="status"
+          >
+            <mat-icon aria-hidden="true">
+              {{
+                aprovado()
+                  ? 'check_circle'
+                  : situacao === 'negado' || situacao === 'recusado'
+                    ? 'error'
+                    : tentativaId()
+                      ? 'hourglass_top'
+                      : 'info'
+              }}
+            </mat-icon>
+            <span>{{ mensagemStatus() }}</span>
+          </div>
+        }
+
+        @if (!modoKioskFullscreen()) {
+          <div class="estacao-acoes">
+            @if (!webcam.webcamAtiva() && tentativaId()) {
+              <button type="button" class="ard-btn is-primary" (click)="iniciarWebcam()">
+                <mat-icon aria-hidden="true">videocam</mat-icon>
+                Iniciar validação facial
+                <kbd>Espaço</kbd>
+              </button>
+            }
+            @if (webcam.webcamAtiva() && !modoTotem()) {
+              <button
+                type="button"
+                class="ard-btn is-primary"
+                (click)="capturarEValidar()"
+                [disabled]="!webcam.capturaPronta() || scanning()"
+              >
+                <mat-icon aria-hidden="true">verified_user</mat-icon>
+                Validar titular
+              </button>
+            }
+            @if (webcam.webcamAtiva()) {
+              <button type="button" class="ard-btn" (click)="pararWebcam()">
+                <mat-icon aria-hidden="true">videocam_off</mat-icon>
+                Encerrar câmera
+              </button>
+            }
+            @if (!tentativaId() && !webcam.webcamAtiva()) {
+              <span class="ard-hint">
+                {{
+                  modoTotem()
+                    ? 'Captura automática: a foto é tirada quando o rosto estiver centralizado e nítido.'
+                    : 'Captura manual: depois do cartão, clique em Validar titular.'
+                }}
+              </span>
+            }
+          </div>
+        }
+      </section>
+
+      <!-- Simulador -->
+      @if (!modoKioskFullscreen()) {
+        <details class="ard-panel simulador">
+          <summary>
+            <mat-icon aria-hidden="true">science</mat-icon>
+            <span class="simulador-titulo">
+              <strong>Testar sem leitor RFID</strong>
+              <span>Simule a leitura de um cartão cadastrado e siga o mesmo fluxo de acesso.</span>
+            </span>
+            @if (tentativaId()) {
+              <span class="ard-badge is-info">Tentativa ativa</span>
+            }
+            <mat-icon class="chevron" aria-hidden="true">expand_more</mat-icon>
+          </summary>
+
+          <div class="simulador-corpo">
+            @if (erroAuxiliares()) {
+              <p class="ard-notice is-warning" role="alert">
+                <mat-icon aria-hidden="true">warning</mat-icon>
+                <span>
+                  Não foi possível carregar as pessoas e os leitores da simulação. Ainda dá para digitar o UID de um cartão.
+                  <button type="button" class="ard-link" (click)="carregarAuxiliares()">Tentar novamente</button>
+                </span>
               </p>
             }
+            <div class="ard-form-grid">
+              <div class="ard-field">
+                <label for="sim-usuario">Pessoa</label>
+                <select
+                  id="sim-usuario"
+                  [(ngModel)]="usuarioSimuladoId"
+                  (ngModelChange)="onUsuarioSimuladoChange()"
+                  [disabled]="iniciandoTentativa() || !!tentativaId()"
+                >
+                  <option [ngValue]="null">Selecione um usuário</option>
+                  @for (usuario of usuarios; track usuario.user_id) {
+                    <option [ngValue]="usuario.user_id" [disabled]="!usuario.uid_card">
+                      {{ usuario.nome }}{{ usuario.uid_card ? ' · ' + usuario.uid_card : ' · sem RFID' }}
+                    </option>
+                  }
+                </select>
+              </div>
+              <div class="ard-field">
+                <label for="sim-leitor">Leitor</label>
+                <select id="sim-leitor" [(ngModel)]="dispositivoSimuladoId" [disabled]="iniciandoTentativa() || !!tentativaId()">
+                  <option [ngValue]="null">Selecione um dispositivo</option>
+                  @for (dispositivo of dispositivos; track dispositivo.dispositivo_id) {
+                    <option [ngValue]="dispositivo.dispositivo_id">{{ dispositivo.nome }} · {{ dispositivo.identificador }}</option>
+                  }
+                </select>
+              </div>
+              <div class="ard-field">
+                <label for="sim-uid">Cartão (UID)</label>
+                <input
+                  id="sim-uid"
+                  class="uid"
+                  type="text"
+                  [(ngModel)]="uidManual"
+                  maxlength="20"
+                  placeholder="A1B2C3D4"
+                  autocomplete="off"
+                  [disabled]="iniciandoTentativa() || !!tentativaId()"
+                  aria-describedby="sim-uid-dica"
+                />
+                <span id="sim-uid-dica" class="ard-hint">Escolha uma pessoa ou digite o UID de um cartão cadastrado.</span>
+              </div>
+            </div>
+
+            <div class="simulador-acoes">
+              @if (tentativaId()) {
+                <button type="button" class="ard-btn is-danger" (click)="resetar()">
+                  <mat-icon aria-hidden="true">restart_alt</mat-icon>
+                  Cancelar tentativa local
+                </button>
+              }
+              <button
+                type="button"
+                class="ard-btn is-primary"
+                (click)="simularLeituraRfid()"
+                [disabled]="iniciandoTentativa() || !!tentativaId()"
+                [attr.aria-busy]="iniciandoTentativa()"
+              >
+                @if (iniciandoTentativa()) {
+                  <span class="ard-spinner" aria-hidden="true"></span>
+                  Validando cartão
+                } @else {
+                  <mat-icon aria-hidden="true">contactless</mat-icon>
+                  Simular cartão
+                }
+              </button>
+            </div>
           </div>
+        </details>
+      }
+    </div>
+
+    <!-- Últimos acessos -->
+    <aside class="ard-panel ultimos" aria-labelledby="ultimos-titulo">
+      <div class="ard-panel-head">
+        <div>
+          <h2 id="ultimos-titulo">Últimos acessos</h2>
+          <p>As tentativas mais recentes.</p>
+        </div>
+        @if (wsLogs.conectado()) {
+          <span class="ard-badge is-ok is-live">Ao vivo</span>
+        }
+      </div>
+      <ul class="ultimos-lista">
+        @for (log of historicoRecente(); track log.id) {
+          <li class="ultimo">
+            <div class="ultimo-topo">
+              <span class="ard-badge" [class.is-ok]="log.autorizado" [class.is-bad]="!log.autorizado">
+                {{ log.autorizado ? 'Liberado' : 'Negado' }}
+              </span>
+              <time class="ard-num" [attr.datetime]="log.data_hora">
+                {{ log.data_hora | date: 'HH:mm:ss' }}
+                <span>{{ log.data_hora | date: 'dd/MM/yyyy' }}</span>
+              </time>
+            </div>
+            <strong [class.ard-muted]="obterNomeUsuario(log) === 'Não identificado'">{{ obterNomeUsuario(log) }}</strong>
+            <span class="ultimo-local">{{ obterNomeLocal(log) }}</span>
+            @if (log.percentual_similaridade !== null) {
+              <span class="ultimo-dado">
+                Similaridade
+                {{
+                  (log.percentual_similaridade > 1 ? log.percentual_similaridade : log.percentual_similaridade * 100)
+                    | number: '1.2-2'
+                }}%
+              </span>
+            }
+            @if (log.motivo_recusa) {
+              <p class="ultimo-motivo">{{ log.motivo_recusa }}</p>
+            }
+          </li>
+        } @empty {
+          @switch (historicoEstado()) {
+            @case ('carregando') {
+              <li class="ultimos-carregando" aria-hidden="true">
+                <div class="ard-sk-rows">
+                  @for (linha of [1, 2, 3]; track linha) {
+                    <div><span class="ard-sk"></span><span class="ard-sk"></span><span class="ard-sk"></span><span class="ard-sk"></span></div>
+                  }
+                </div>
+              </li>
+            }
+            @case ('erro') {
+              <li class="ultimos-vazio is-erro" role="alert">
+                <mat-icon aria-hidden="true">cloud_off</mat-icon>
+                <span>
+                  Não foi possível carregar os últimos acessos.
+                  <button type="button" class="ard-link" (click)="carregarHistorico()">Tentar novamente</button>
+                </span>
+              </li>
+            }
+            @default {
+              <li class="ultimos-vazio">
+                <mat-icon aria-hidden="true">sensors</mat-icon>
+                <span>Nenhum acesso registrado ainda. As próximas tentativas aparecem aqui na hora.</span>
+              </li>
+            }
+          }
+        }
+      </ul>
+      @if (!modoKioskFullscreen()) {
+        <div class="ard-panel-foot">
+          <a routerLink="/dashboard" class="ard-link">Ver histórico completo</a>
+        </div>
+      }
+    </aside>
+  </div>
+
+  <!-- Decisão (modo automático) -->
+  @if (exibirOverlayTotem()) {
+    <div class="decisao" [class.is-ok]="aprovado()" [class.is-bad]="!aprovado()">
+      <div
+        class="decisao-card"
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-label]="aprovado() ? 'Acesso liberado' : 'Acesso negado'"
+        cdkTrapFocus
+        [cdkTrapFocusAutoCapture]="true"
+      >
+        <button
+          type="button"
+          class="ard-icon-btn decisao-fechar"
+          (click)="encerrarCicloAcesso()"
+          title="Fechar e aguardar próximo acesso"
+          aria-label="Fechar"
+        >
+          <mat-icon aria-hidden="true">close</mat-icon>
+        </button>
+
+        <div class="decisao-selo">
+          @if (fotoPreviewUrl) {
+            <img [src]="fotoPreviewUrl" alt="Rosto capturado" />
+          } @else {
+            <mat-icon aria-hidden="true">{{ aprovado() ? 'face' : 'person_off' }}</mat-icon>
+          }
+          <span class="decisao-marca" aria-hidden="true"><mat-icon>{{ aprovado() ? 'check' : 'close' }}</mat-icon></span>
         </div>
 
-        <!-- Grade de Métricas Biométricas Minimalistas -->
-        <div class="totem-metrics-grid">
-          <div class="metric-card">
-            <div class="metric-label">
-              <mat-icon>face</mat-icon>
-              <span>Similaridade</span>
-            </div>
-            <div class="metric-value" [class.text-success]="aprovado()" [class.text-danger]="!aprovado()">
-              {{ similaridade() > 0 ? (similaridade() * 100 | number: '1.1-1') + '%' : 'N/D' }}
-            </div>
-            <div class="metric-sub">
-              Meta: {{ minSimilaridade() * 100 | number: '1.0-0' }}%
-            </div>
-          </div>
-
-          <div class="metric-card">
-            <div class="metric-label">
-              <mat-icon>{{ aprovado() ? 'lock_open' : 'lock' }}</mat-icon>
-              <span>Trava / Porta</span>
-            </div>
-            <div class="metric-value" [class.text-success]="aprovado()" [class.text-danger]="!aprovado()">
-              {{ aprovado() ? 'Destravada' : 'Bloqueada' }}
-            </div>
-            <div class="metric-sub">
-              Sinal ESP32
-            </div>
-          </div>
-
-          <div class="metric-card">
-            <div class="metric-label">
-              <mat-icon>speed</mat-icon>
-              <span>Tempo</span>
-            </div>
-            <div class="metric-value text-neutral">
-              {{ tempoRespostaMs() !== null ? tempoRespostaMs() + ' ms' : '< 300 ms' }}
-            </div>
-            <div class="metric-sub">
-              Inferência 1:1
-            </div>
-          </div>
-        </div>
-
-        <!-- Mensagem de Motivo da Recusa (quando negado) -->
-        @if (mensagemStatus() && !aprovado()) {
-          <div class="totem-reason-box" role="alert">
-            <mat-icon>error_outline</mat-icon>
-            <div class="reason-text">
-              <strong>Motivo do bloqueio:</strong>
-              <span>{{ mensagemStatus() }}</span>
-            </div>
-          </div>
+        <h2 class="decisao-titulo">{{ aprovado() ? 'Acesso liberado' : 'Acesso negado' }}</h2>
+        @if (usuarioEncontrado()) {
+          <p class="decisao-nome">{{ usuarioEncontrado() }}</p>
+        } @else {
+          <p class="decisao-nome is-muted">{{ aprovado() ? 'Titular identificado' : 'Identificação não confirmada' }}</p>
         }
 
-        <!-- Barra inferior de contagem regressiva e ação rápida -->
-        <div class="totem-card-footer">
-          <div class="auto-reset-bar" aria-hidden="true">
-            <div class="reset-progress"></div>
+        @if (mensagemStatus() && !aprovado()) {
+          <p class="decisao-motivo" role="alert">
+            <mat-icon aria-hidden="true">error_outline</mat-icon>
+            <span>{{ mensagemStatus() }}</span>
+          </p>
+        }
+
+        <dl class="decisao-dados">
+          <div>
+            <dt>Similaridade</dt>
+            <dd class="ard-num">{{ similaridade() > 0 ? (similaridade() * 100 | number: '1.1-1') + '%' : 'N/D' }}</dd>
+            <dd class="sub">Mínimo {{ minSimilaridade() * 100 | number: '1.0-0' }}%</dd>
           </div>
-          <div class="footer-info">
-            <span class="countdown-text">Retornando para leitura RFID em 3 segundos...</span>
-            <button type="button" class="btn-advance-now" (click)="encerrarCicloAcesso()">
-              <span>Próximo</span>
-              <mat-icon>arrow_forward</mat-icon>
-            </button>
+          <div>
+            <dt>Porta</dt>
+            <dd>{{ aprovado() ? 'Destravada' : 'Bloqueada' }}</dd>
+            <dd class="sub">Sinal ESP32</dd>
           </div>
+          <div>
+            <dt>Tempo de resposta</dt>
+            <dd class="ard-num">{{ tempoRespostaMs() !== null ? tempoRespostaMs() + ' ms' : 'Sem medição' }}</dd>
+            <dd class="sub">Comparação 1:1</dd>
+          </div>
+        </dl>
+
+        <div class="decisao-rodape">
+          <div class="decisao-tempo" aria-hidden="true"><span></span></div>
+          <span>Voltando para a leitura do cartão em 3 segundos.</span>
+          <button type="button" class="ard-btn" (click)="encerrarCicloAcesso()" cdkFocusInitial>Próximo acesso</button>
         </div>
       </div>
     </div>

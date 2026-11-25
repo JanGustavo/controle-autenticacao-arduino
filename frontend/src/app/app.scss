@@ -21,30 +21,32 @@
 }
 
 .footer-content {
-  max-width: 1340px;
-  padding: 20px clamp(18px, 4vw, 56px);
-  box-sizing: border-box;
-  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 8px 24px;
-  font-size: 0.85rem;
-
-  strong {
-    color: var(--ard-ink);
-    font-size: 1rem;
-    letter-spacing: -0.02em;
+  max-width: 1328px;
+  margin: 0 auto;
+  padding: 18px clamp(16px, 3vw, 32px);
+  font-size: 0.86rem;
+}
+.footer-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ard-ink);
+  font-size: 0.95rem;
+  font-weight: 500;
+  img {
+    display: block;
   }
 }
-
-@media (max-width: 760px) {
+@media (max-width: 640px) {
   .footer-content {
-    padding: 16px 14px;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    align-items: flex-start;
     gap: 4px;
-    text-align: center;
+    padding-bottom: 76px;
   }
 }

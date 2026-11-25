@@ -9,11 +9,10 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -39,9 +38,8 @@ import { RfidAccessService } from '../../services/rfid-access.service';
     CommonModule,
     VisorFacial,
     FormsModule,
-    MatButtonModule,
     MatIconModule,
-    MatProgressSpinnerModule,
+    CdkTrapFocus,
     MatSnackBarModule,
     RouterLink,
   ],
@@ -86,9 +84,14 @@ export class CompararPage implements OnInit, OnDestroy {
   fotoPreviewUrl: string | null = null;
 
   modoTotem = signal(true);
+  /** A última tentativa parou no cartão (recusado antes da face). Só apresentação. */
+  recusaCartao = signal(false);
   modoKioskFullscreen = signal(false);
   exibirOverlayTotem = signal(false);
   historicoRecente = signal<HistoricoAcessoResponse[]>([]);
+  historicoEstado = signal<'carregando' | 'ok' | 'erro'>('carregando');
+  /** Pessoas ou leitores do simulador não carregaram. */
+  erroAuxiliares = signal(false);
 
   usuarios: UsuarioSimplesResponse[] = [];
   locais: LocalResponse[] = [];
@@ -134,6 +137,7 @@ export class CompararPage implements OnInit, OnDestroy {
           this.similaridade.set(0);
           this.tempoRespostaMs.set(null);
           this.usuarioEncontrado.set(null);
+          this.recusaCartao.set(true);
           this.mensagemStatus.set(
             evento.data.motivo || 'Cartão recusado.',
           );
@@ -160,6 +164,9 @@ export class CompararPage implements OnInit, OnDestroy {
   }
 
   carregarAuxiliares(): void {
+    this.erroAuxiliares.set(false);
+    const falhou = () => this.erroAuxiliares.set(true);
+
     this.api.getUsuariosSimples({ ativo: true }).subscribe({
       next: (usuarios) => {
         this.usuarios = usuarios;
@@ -170,10 +177,13 @@ export class CompararPage implements OnInit, OnDestroy {
           this.uidManual = primeiroComCartao.uid_card || '';
         }
       },
+      error: falhou,
     });
 
+    // Só completa nomes de local que o próprio registro não trouxe; sem a lista, vale o nome do registro.
     this.api.getLocais().subscribe({
       next: (locais) => (this.locais = locais),
+      error: () => {},
     });
 
     this.api.getDispositivosSimples({ ativo: true }).subscribe({
@@ -183,6 +193,7 @@ export class CompararPage implements OnInit, OnDestroy {
           this.dispositivoSimuladoId = dispositivos[0].dispositivo_id;
         }
       },
+      error: falhou,
     });
   }
 
@@ -243,6 +254,7 @@ export class CompararPage implements OnInit, OnDestroy {
         this.iniciandoTentativa.set(false);
 
         if (!resultado.tentativa_id) {
+          this.recusaCartao.set(true);
           this.mensagemStatus.set(
             resultado.mensagem || 'O backend não criou uma tentativa.',
           );
@@ -256,7 +268,7 @@ export class CompararPage implements OnInit, OnDestroy {
 
         this.snackBar.open(
           'RFID simulado. Tentativa 1:1 criada pelo backend.',
-          'OK',
+          'Fechar',
           { duration: 3500 },
         );
 
@@ -267,7 +279,7 @@ export class CompararPage implements OnInit, OnDestroy {
         this.tentativaId.set(null);
         this.aprovado.set(false);
         this.usuarioEncontrado.set(null);
-
+        this.recusaCartao.set(true);
         let mensagemErro = 'A leitura simulada foi recusada pelo backend.';
 
         if (error.error?.detail) {
@@ -297,6 +309,7 @@ export class CompararPage implements OnInit, OnDestroy {
     nomeUsuario: string | null,
   ): void {
     this.tentativaId.set(tentativaId);
+    this.recusaCartao.set(false);
     this.aprovado.set(false);
     this.similaridade.set(0);
     this.tempoRespostaMs.set(null);
@@ -333,11 +346,14 @@ export class CompararPage implements OnInit, OnDestroy {
   }
 
   carregarHistorico(): void {
+    if (this.historicoEstado() === 'erro') this.historicoEstado.set('carregando');
     this.api.getHistoricoAcesso().subscribe({
       next: (data) => {
         this.historicoRecente.set(data.slice(0, 5));
+        this.historicoEstado.set('ok');
       },
-      error: () => {},
+      // Se a lista já apareceu antes, ela continua na tela; o erro só aparece no lugar de uma lista vazia.
+      error: () => this.historicoEstado.set('erro'),
     });
   }
 
@@ -474,6 +490,25 @@ export class CompararPage implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Em que ponto do fluxo a tela está, derivado dos sinais acima.
+   * Serve só para a apresentação (trilha e tom da mensagem); não altera a captura.
+   */
+  get situacao(): 'aguardando' | 'recusado' | 'camera' | 'verificando' | 'liberado' | 'negado' {
+    const temResultado =
+      this.exibirOverlayTotem() ||
+      (!!this.fotoPreviewUrl && !this.webcam.webcamAtiva() && !this.tentativaId() && !this.scanning());
+    if (temResultado) return this.aprovado() ? 'liberado' : 'negado';
+    if (this.scanning()) return 'verificando';
+    if (this.tentativaId()) return 'camera';
+    return this.recusaCartao() ? 'recusado' : 'aguardando';
+  }
+
+  /** Escolhe o modo de captura sem alternar quando já está nele. */
+  definirModoTotem(automatico: boolean): void {
+    if (this.modoTotem() !== automatico) this.toggleModoTotem();
+  }
+
   toggleModoTotem(): void {
     this.modoTotem.set(!this.modoTotem());
     if (this.webcam.webcamAtiva() && this.tentativaId()) {
@@ -497,6 +532,12 @@ export class CompararPage implements OnInit, OnDestroy {
         })
         .catch(() => {});
     }
+  }
+
+  /** Sair da tela cheia pelo navegador (Esc) também encerra o layout de quiosque. */
+  @HostListener('document:fullscreenchange')
+  sincronizarQuiosque(): void {
+    this.modoKioskFullscreen.set(!!document.fullscreenElement);
   }
 
   @HostListener('window:keydown', ['$event'])
@@ -523,7 +564,7 @@ export class CompararPage implements OnInit, OnDestroy {
 
     this.exibirOverlayTotem.set(false);
     this.fotoPreviewUrl = null;
-
+    this.recusaCartao.set(false);
     // A tentativa já foi concluída. A câmera deve voltar ao estado ocioso
     // e só será aberta novamente após um novo RFID_APROVADO/tentativa_id.
     this.pararWebcam();
@@ -550,6 +591,7 @@ export class CompararPage implements OnInit, OnDestroy {
   }
 
   resetar(): void {
+    this.recusaCartao.set(false);
     this.limparResultadoPreservandoTentativa();
     this.usuarioEncontrado.set(null);
     this.tentativaId.set(null);

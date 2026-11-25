@@ -1,410 +1,371 @@
-<main class="register-page">
-  <header class="page-header">
-    <div class="dialog-heading">
-      <button
-        type="button"
-        mat-icon-button
-        aria-label="Fechar cadastro"
-        [disabled]="saving"
-        (click)="fechar()"
-      >
-        <mat-icon>close</mat-icon>
-      </button>
+<form class="ard-dialog cadastro" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <header class="ard-dialog-head">
+    <span class="ard-module-icon" data-tone="usuarios" aria-hidden="true"><mat-icon>person_add</mat-icon></span>
+    <div>
+      <h2 id="user-create-title">Cadastrar usuário</h2>
+      <p>Identifique a pessoa, vincule o cartão, cadastre o rosto e escolha onde ela pode entrar.</p>
     </div>
-    <div class="module-heading">
-      <span class="module-icon"><mat-icon>person_add</mat-icon></span>
-      <div>
-        <h1 id="user-create-title">Cadastrar usuário</h1>
-        <p>Siga as etapas para identificar a pessoa, associar um cartão e definir onde ela poderá entrar.</p>
-      </div>
-    </div>
-    <div class="setup-overview" aria-label="Etapas do cadastro">
-      <span><mat-icon>person</mat-icon> Pessoa</span>
-      <span><mat-icon>contactless</mat-icon> Cartão</span>
-      <span><mat-icon>face</mat-icon> Rosto</span>
-      <span><mat-icon>place</mat-icon> Locais</span>
-    </div>
+    <button type="button" class="ard-icon-btn" aria-label="Fechar cadastro" [disabled]="saving" (click)="fechar()">
+      <mat-icon aria-hidden="true">close</mat-icon>
+    </button>
   </header>
 
-  <form class="register-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
-    <section class="form-section">
-      <div class="section-heading">
-        <span class="section-number">01</span>
-        <div>
-          <h2>Identificação</h2>
-          <p>Comece pelos dados da pessoa.</p>
-        </div>
-      </div>
+  <nav class="ard-steps etapas" aria-label="Etapas do cadastro">
+    <ol>
+      @for (etapa of etapas; track etapa.secao) {
+        <li [attr.data-state]="etapa.ok ? 'done' : 'todo'">
+          <button type="button" (click)="irPara(etapa.secao)">
+            <span class="ard-steps-node" aria-hidden="true">
+              @if (etapa.ok) {
+                <mat-icon>check</mat-icon>
+              }
+            </span>
+            {{ etapa.rotulo }}
+            <span class="ard-sr-only">{{ etapa.ok ? ', concluída' : ', pendente' }}</span>
+          </button>
+        </li>
+      }
+    </ol>
+  </nav>
 
-      <div class="field-grid">
-        <label class="field full-width">
-          <span>Nome <b>*</b></span>
-          <input formControlName="nome" type="text" maxlength="255" placeholder="João Silva" />
+  <div class="ard-dialog-body corpo">
+    <!-- Pessoa -->
+    <section class="secao" aria-labelledby="secao-pessoa">
+      <h3 id="secao-pessoa" tabindex="-1">Pessoa</h3>
+      <div class="ard-form-grid pessoa-grid">
+        <div
+          class="ard-field campo-inteiro"
+          [class.is-invalid]="hasError('nome', 'required') || hasError('nome', 'minlength') || hasError('nome', 'maxlength')"
+        >
+          <label for="cad-nome">Nome completo</label>
+          <input id="cad-nome" formControlName="nome" type="text" maxlength="255" autocomplete="off" />
           @if (hasError('nome', 'required')) {
-            <small>Informe o nome do usuário.</small>
+            <span class="ard-error-text">Informe o nome do usuário.</span>
           } @else if (hasError('nome', 'minlength')) {
-            <small>Informe pelo menos 2 caracteres.</small>
+            <span class="ard-error-text">Informe pelo menos 2 caracteres.</span>
           } @else if (hasError('nome', 'maxlength')) {
-            <small>O nome deve ter no máximo 255 caracteres.</small>
+            <span class="ard-error-text">O nome deve ter no máximo 255 caracteres.</span>
           }
-        </label>
-
-        <label class="field">
-          <span>CPF <small class="optional-label">opcional</small></span>
+        </div>
+        <div class="ard-field" [class.is-invalid]="hasError('cpf', 'pattern')">
+          <label for="cad-cpf">CPF <span class="opcional">opcional</span></label>
           <input
+            id="cad-cpf"
             formControlName="cpf"
             appCpfMask
             type="text"
             inputmode="numeric"
+            autocomplete="off"
             placeholder="000.000.000-00"
           />
           @if (hasError('cpf', 'pattern')) {
-            <small>Informe um CPF com 11 dígitos.</small>
+            <span class="ard-error-text">Informe um CPF com 11 dígitos.</span>
           }
-        </label>
-
-        <label class="field">
-          <span>Tipo de usuário <b>*</b></span>
-          <select formControlName="tipo_usuario">
+        </div>
+        <div class="ard-field">
+          <label for="cad-tipo">Tipo de usuário</label>
+          <select id="cad-tipo" formControlName="tipo_usuario">
             <option value="INTERNO">Interno</option>
             <option value="VISITANTE">Visitante</option>
           </select>
-          <small>Define se o acesso pertence a uma pessoa interna ou visitante.</small>
-        </label>
+          <span class="ard-hint">Pessoa interna ou visitante.</span>
+        </div>
       </div>
     </section>
 
-    <section class="form-section">
-      <div class="section-heading">
-        <span class="section-number">02</span>
-        <div>
-          <h2>Vincular cartão de acesso</h2>
-          <p>Use o leitor conectado ao ESP32 para identificar o cartão físico.</p>
-        </div>
-      </div>
-      <div class="rfid-walkthrough" aria-label="Como vincular o cartão">
-        <span><b>1</b> Escolha o leitor</span>
-        <span><b>2</b> Inicie a leitura</span>
-        <span><b>3</b> Aproxime o cartão</span>
-      </div>
-      <div class="field-grid">
+    <!-- Cartão -->
+    <section class="secao" aria-labelledby="secao-cartao">
+      <h3 id="secao-cartao" tabindex="-1">Cartão de acesso</h3>
+      <p class="secao-texto">Escolha o leitor, inicie a leitura e aproxime o cartão do leitor escolhido.</p>
 
-        <div class="field full-width uid-field">
-          <label for="rfid-device-select">
-            <span>Leitor que receberá o cartão <b>*</b></span>
-          </label>
-          <select
-            id="rfid-device-select"
-            [(ngModel)]="dispositivoRfidSelecionadoId"
-            [ngModelOptions]="{ standalone: true }"
-            [disabled]="saving || aguardandoRfid || dispositivosCarregando"
-          >
-            <option [ngValue]="null">
-              {{
-                dispositivosCarregando ? 'Carregando leitores...' : 'Selecione o leitor de cartões'
-              }}
-            </option>
-            @for (dispositivo of dispositivosRfid; track dispositivo.dispositivo_id) {
-              <option [ngValue]="dispositivo.dispositivo_id">
-                {{ dispositivo.nome }} · {{ dispositivo.identificador }}
-              </option>
-            }
-          </select>
-
-          @if (dispositivosErro) {
-            <small class="field-error" role="alert">{{ dispositivosErro }}</small>
-          } @else if (!dispositivosCarregando && !dispositivosRfid.length) {
-            <small class="field-hint">Nenhum dispositivo RFID ativo disponível.</small>
+      <div class="ard-field">
+        <label for="rfid-device-select">Leitor</label>
+        <select
+          id="rfid-device-select"
+          [(ngModel)]="dispositivoRfidSelecionadoId"
+          [ngModelOptions]="{ standalone: true }"
+          [disabled]="saving || aguardandoRfid || dispositivosCarregando"
+        >
+          <option [ngValue]="null">
+            {{ dispositivosCarregando ? 'Carregando leitores...' : 'Selecione o leitor de cartões' }}
+          </option>
+          @for (dispositivo of dispositivosRfid; track dispositivo.dispositivo_id) {
+            <option [ngValue]="dispositivo.dispositivo_id">{{ dispositivo.nome }} · {{ dispositivo.identificador }}</option>
           }
+        </select>
+        @if (dispositivosErro) {
+          <span class="ard-error-text" role="alert">{{ dispositivosErro }}</span>
+        } @else if (!dispositivosCarregando && !dispositivosRfid.length) {
+          <span class="ard-hint">Nenhum leitor RFID ativo. Cadastre ou ative um em Dispositivos.</span>
+        }
+      </div>
 
-          <label for="uid_card_input">
-            <span>Cartão identificado <b>*</b></span>
-          </label>
-
-          <div class="input-with-action">
-            <input
-              id="uid_card_input"
-              formControlName="uid_card"
-              type="text"
-              maxlength="20"
-              readonly
-              placeholder="O número do cartão aparece aqui após a leitura"
-            />
-
-            @if (aguardandoRfid) {
-              <button
-                type="button"
-                mat-stroked-button
-                class="btn-rfid-mock"
-                (click)="cancelarLeituraRfid()"
-              >
-                <span class="btn-mock-content">
-                  <mat-progress-spinner diameter="18" mode="indeterminate"></mat-progress-spinner>
-                  <span>Cancelar espera</span>
-                </span>
-              </button>
-            } @else {
-              <button
-                type="button"
-                mat-stroked-button
-                class="btn-rfid-mock"
-                (click)="iniciarLeituraRfid()"
-                [disabled]="!identificadorRfidSelecionado || saving"
-                title="Aguarda uma leitura real do ESP32 selecionado"
-              >
-                <span class="btn-mock-content">
-                  <mat-icon>contactless</mat-icon>
-                  <span>Iniciar leitura</span>
-                </span>
-              </button>
-
-            }
-          </div>
-
-          <div class="capture-state" role="status">
-            <mat-icon>{{ aguardandoRfid ? 'sensors' : form.get('uid_card')?.value ? 'check_circle' : 'info' }}</mat-icon>
-            <span>{{ aguardandoRfid ? 'Pronto para ler: aproxime o cartão do leitor selecionado' + (operacoes.segundosRestantes() ? ' (' + operacoes.segundosRestantes() + ' s). Esta leitura só preenche o campo.' : '.') : form.get('uid_card')?.value ? 'Cartão identificado. Continue o cadastro.' : 'Selecione um leitor e clique em Iniciar leitura. O cartão será preenchido automaticamente.' }}</span>
-          </div>
-          <details class="demo-tools">
-            <summary>Sem o cartão físico? Modo de demonstração</summary>
-            <p>Gera um número fictício para apresentar o fluxo. Ele não representa um cartão real.</p>
-            <button type="button" mat-stroked-button class="btn-rfid-mock" (click)="capturarRfidMock()"
-              [disabled]="!identificadorRfidSelecionado || saving || lendoRfidMock || aguardandoRfid">
-              <mat-icon>developer_mode</mat-icon> Simular leitura
+      <div class="ard-field">
+        <label for="uid_card_input">Cartão</label>
+        <div class="cartao-linha">
+          <input
+            id="uid_card_input"
+            class="cartao-uid"
+            formControlName="uid_card"
+            type="text"
+            maxlength="20"
+            readonly
+            placeholder="Aparece aqui depois da leitura"
+          />
+          @if (aguardandoRfid) {
+            <button type="button" class="ard-btn" (click)="cancelarLeituraRfid()">
+              <span class="ard-spinner" aria-hidden="true"></span>
+              Cancelar espera
             </button>
-          </details>
+          } @else {
+            <button
+              type="button"
+              class="ard-btn"
+              [class.is-primary]="!form.get('uid_card')?.value"
+              (click)="iniciarLeituraRfid()"
+              [disabled]="!identificadorRfidSelecionado || saving"
+              title="Aguarda uma leitura real do ESP32 selecionado"
+            >
+              <mat-icon aria-hidden="true">contactless</mat-icon>
+              {{ form.get('uid_card')?.value ? 'Ler outro cartão' : 'Iniciar leitura' }}
+            </button>
+          }
         </div>
       </div>
-      <aside class="mobile-credential-tip">
-        <mat-icon>smartphone</mat-icon>
-        <div><strong>Quer usar o celular como credencial?</strong>
-          <p>Esse recurso ainda não está disponível no ArdLock. Por enquanto, use um cartão físico; copiar seu número para um aplicativo não garante que o celular funcione neste leitor.</p>
-        </div>
-      </aside>
+
+      <div
+        class="capture-state"
+        role="status"
+        [attr.data-state]="aguardandoRfid ? 'active' : form.get('uid_card')?.value ? 'ok' : 'idle'"
+      >
+        <mat-icon aria-hidden="true">{{ aguardandoRfid ? 'sensors' : form.get('uid_card')?.value ? 'check_circle' : 'info' }}</mat-icon>
+        <span>{{ aguardandoRfid ? 'Pronto para ler: aproxime o cartão do leitor selecionado' + (operacoes.segundosRestantes() ? ' (' + operacoes.segundosRestantes() + ' s). Esta leitura só preenche o campo.' : '.') : form.get('uid_card')?.value ? 'Cartão identificado. Continue o cadastro.' : 'Selecione um leitor e clique em Iniciar leitura. O cartão será preenchido automaticamente.' }}</span>
+      </div>
+
+      <details class="demo">
+        <summary>Sem o cartão físico? Modo de demonstração</summary>
+        <p>Gera um número fictício para apresentar o fluxo. Ele não representa um cartão real.</p>
+        <button
+          type="button"
+          class="ard-btn is-compact"
+          (click)="capturarRfidMock()"
+          [disabled]="!identificadorRfidSelecionado || saving || lendoRfidMock || aguardandoRfid"
+        >
+          <mat-icon aria-hidden="true">developer_mode</mat-icon>
+          Simular leitura
+        </button>
+      </details>
+
+      <p class="nota">
+        <mat-icon aria-hidden="true">smartphone</mat-icon>
+        <span>
+          Usar o celular como credencial ainda não é possível no ArdLock. Use um cartão físico: copiar o número dele
+          para um aplicativo não garante que o celular funcione neste leitor.
+        </span>
+      </p>
     </section>
 
-    <section class="form-section">
-      <div class="section-heading">
-        <span class="section-number">03</span>
-        <div class="heading-with-action">
-          <div>
-            <h2>Biometria facial</h2>
-            <p>Cadastre o rosto para confirmar o titular do cartão.</p>
-          </div>
-          <button
-            type="button"
-            mat-stroked-button
-            class="btn-totem-toggle"
-            [color]="modoTotem() ? 'accent' : 'primary'"
-            (click)="toggleModoTotem()"
-          >
-            <mat-icon>{{ modoTotem() ? 'touch_app' : 'center_focus_strong' }}</mat-icon>
-            {{ modoTotem() ? 'Modo Totem (Auto)' : 'Modo Assistido' }}
+    <!-- Rosto -->
+    <section class="secao" aria-labelledby="secao-rosto">
+      <div class="secao-topo">
+        <h3 id="secao-rosto" tabindex="-1">Biometria facial</h3>
+        <div class="ard-segmented" role="group" aria-label="Modo de captura">
+          <button type="button" [attr.aria-pressed]="modoTotem()" (click)="definirModoTotem(true)">
+            <mat-icon aria-hidden="true">center_focus_strong</mat-icon>
+            Automática
+          </button>
+          <button type="button" [attr.aria-pressed]="!modoTotem()" (click)="definirModoTotem(false)">
+            <mat-icon aria-hidden="true">touch_app</mat-icon>
+            Manual
           </button>
         </div>
       </div>
+      <p class="secao-texto">
+        {{
+          modoTotem()
+            ? 'A foto é tirada sozinha quando o rosto estiver centralizado e nítido.'
+            : 'Você decide o momento: centralize o rosto e clique em Capturar foto.'
+        }}
+      </p>
 
       @if (webcam.webcamAtiva()) {
         <app-visor-facial />
-
-        <div class="webcam-controls">
+        <div class="camera-acoes">
           @if (!modoTotem()) {
-            <button
-              type="button"
-              mat-flat-button
-              color="primary"
-              (click)="capturarFrameWebcam()"
-              [disabled]="!webcam.capturaPronta()"
-            >
-              <mat-icon>camera</mat-icon>
-              Capturar Foto
+            <button type="button" class="ard-btn is-primary" (click)="capturarFrameWebcam()" [disabled]="!webcam.capturaPronta()">
+              <mat-icon aria-hidden="true">photo_camera</mat-icon>
+              Capturar foto
             </button>
           }
-          <button type="button" mat-button color="warn" (click)="pararWebcam()">
-            <mat-icon>close</mat-icon>
-            Cancelar Webcam
+          <button type="button" class="ard-btn" (click)="pararWebcam()">
+            <mat-icon aria-hidden="true">videocam_off</mat-icon>
+            Fechar câmera
           </button>
         </div>
       } @else {
         <div
-          class="camera-capture"
+          class="captura"
           [class.ready]="webcam.capturaPronta()"
+          [class.tem-foto]="fotoPreviewUrl"
           [class.scanning]="scanning"
           (animationend)="onScanFinished($event)"
         >
           @if (fotoPreviewUrl) {
-            <img class="photo-preview" [src]="fotoPreviewUrl" alt="Prévia da captura facial" />
+            <img class="captura-foto" [src]="fotoPreviewUrl" alt="Prévia da captura facial" />
           } @else {
-            <div class="camera-icon"><mat-icon>face</mat-icon></div>
+            <span class="captura-icone" aria-hidden="true"><mat-icon>face</mat-icon></span>
           }
-          <div class="camera-copy">
-            <strong>{{
-              webcam.capturaPronta()
-                ? 'Captura pronta para validação'
-                : fotoPreviewUrl
-                  ? 'Captura selecionada'
-                  : 'Biometria ainda não capturada'
-            }}</strong>
-            <small>{{
-              webcam.capturaPronta()
-                ? 'Ao salvar, o sistema processará a imagem para cadastrar a referência biométrica.'
-                : fotoPreviewUrl
-                  ? 'A imagem será verificada antes de cadastrar a biometria.'
-                  : 'Ative a webcam ou selecione um arquivo de imagem com um rosto visível.'
-            }}</small>
+          <div class="captura-texto">
+            <strong>{{ fotoPreviewUrl ? 'Foto pronta para o cadastro' : 'Biometria ainda não capturada' }}</strong>
+            <span>
+              {{
+                fotoPreviewUrl
+                  ? 'Ao salvar, o sistema verifica a imagem e cadastra a referência biométrica.'
+                  : 'Abra a câmera ou carregue uma imagem com o rosto visível.'
+              }}
+            </span>
           </div>
-          <input
-            id="foto-captura"
-            type="file"
-            accept="image/*"
-            (change)="onPhotoSelected($event)"
-            hidden
-          />
-          <div class="capture-buttons">
-            <button type="button" mat-flat-button color="primary" (click)="iniciarWebcam()">
-              <mat-icon>videocam</mat-icon>
-              Abrir Webcam
+          <input id="foto-captura" type="file" accept="image/*" (change)="onPhotoSelected($event)" hidden />
+          <div class="captura-acoes">
+            <button type="button" class="ard-btn" [class.is-primary]="!fotoPreviewUrl" (click)="iniciarWebcam()">
+              <mat-icon aria-hidden="true">videocam</mat-icon>
+              {{ fotoPreviewUrl ? 'Tirar outra foto' : 'Abrir câmera' }}
             </button>
-            <button type="button" mat-stroked-button (click)="openFileInput()">
-              <mat-icon>file_upload</mat-icon>
-              Carregar Imagem
+            <button type="button" class="ard-btn" (click)="openFileInput()">
+              <mat-icon aria-hidden="true">upload</mat-icon>
+              Carregar imagem
             </button>
           </div>
         </div>
       }
 
       @if (webcam.webcamErro()) {
-        <p class="error-message inline-message" role="alert">
-          <mat-icon>error</mat-icon>{{ webcam.webcamErro() }}
+        <p class="ard-notice is-error" role="alert">
+          <mat-icon aria-hidden="true">error</mat-icon><span>{{ webcam.webcamErro() }}</span>
         </p>
       }
     </section>
 
-    <section class="form-section status-section">
-      <div class="section-heading">
-        <span class="section-number">04</span>
-        <div>
-          <h2>Status</h2>
-          <p>Novos usuários começam ativos.</p>
-        </div>
-      </div>
-
-      <label class="switch-field">
-        <input formControlName="ativo" type="checkbox" />
-        <span class="switch"></span>
-        <span><strong>Usuário ativo</strong><small>Permitir o acesso após o cadastro.</small></span>
-      </label>
-    </section>
-
-    <section class="form-section access-section">
-      <div class="section-heading">
-        <span class="section-number">05</span>
-        <div>
-          <h2>Locais e permissão</h2>
-          <p>Selecione os locais e configure os horários de acesso específicos de cada um.</p>
-        </div>
-      </div>
+    <!-- Locais -->
+    <section class="secao" aria-labelledby="secao-locais">
+      <h3 id="secao-locais" tabindex="-1">Locais e horários</h3>
+      <p class="secao-texto">Marque onde a pessoa pode entrar e ajuste os dias e horários de cada local.</p>
 
       @if (locaisCarregando) {
-        <p class="inline-message">Carregando locais disponíveis...</p>
+        <div class="ard-sk-rows" aria-hidden="true">
+          @for (linha of [1, 2, 3]; track linha) {
+            <div><span class="ard-sk"></span><span class="ard-sk"></span></div>
+          }
+        </div>
+        <span class="ard-sr-only" role="status">Carregando locais disponíveis.</span>
       } @else if (locaisErro) {
-        <p class="error-message inline-message" role="alert">
-          <mat-icon>error</mat-icon>{{ locaisErro }}
+        <p class="ard-notice is-error" role="alert">
+          <mat-icon aria-hidden="true">error</mat-icon><span>{{ locaisErro }}</span>
         </p>
       } @else if (!locaisPermissao.length) {
-        <p class="warning-message" role="alert">
-          <mat-icon>warning</mat-icon>
-          Nenhum local ativo foi cadastrado. Cadastre um local antes de criar usuários.
+        <p class="ard-notice is-warning" role="alert">
+          <mat-icon aria-hidden="true">warning</mat-icon>
+          <span>Nenhum local ativo foi cadastrado. Cadastre um local antes de criar usuários.</span>
         </p>
       } @else {
-        <div class="locais-config-list">
+        <ul class="locais">
           @for (item of locaisPermissao; track item.local_id) {
-            <div class="local-card-config" [class.selected]="item.selecionado">
-              <div class="local-header" (click)="toggleLocal(item)">
-                <mat-icon class="check-icon">{{
-                  item.selecionado ? 'check_box' : 'check_box_outline_blank'
-                }}</mat-icon>
-                <div class="local-title">
-                  <strong>{{ item.nome_local }}</strong>
-                </div>
-              </div>
-
+            <li class="local" [class.is-on]="item.selecionado">
+              <label class="local-topo">
+                <input type="checkbox" [checked]="item.selecionado" (change)="toggleLocal(item)" />
+                <span class="local-nome">{{ item.nome_local }}</span>
+                @if (item.selecionado) {
+                  <span class="local-resumo ard-num">{{ item.horario_inicio }} às {{ item.horario_fim }}</span>
+                }
+              </label>
               @if (item.selecionado) {
-                <div class="local-body">
-                  <div class="schedule-grid">
-                    <label class="field">
-                      <span>Início</span>
+                <div class="local-config">
+                  <div class="local-horario">
+                    <div class="ard-field">
+                      <label [for]="'cad-ini-' + item.local_id">Das</label>
                       <input
+                        [id]="'cad-ini-' + item.local_id"
                         [(ngModel)]="item.horario_inicio"
                         [ngModelOptions]="{ standalone: true }"
                         type="time"
                       />
-                    </label>
-                    <label class="field">
-                      <span>Fim</span>
+                    </div>
+                    <div class="ard-field">
+                      <label [for]="'cad-fim-' + item.local_id">Até</label>
                       <input
+                        [id]="'cad-fim-' + item.local_id"
                         [(ngModel)]="item.horario_fim"
                         [ngModelOptions]="{ standalone: true }"
                         type="time"
                       />
-                    </label>
-                  </div>
-
-                  <div class="days-section">
-                    <span class="field-label">Dias de acesso permitidos:</span>
-                    <div class="days-list" aria-label="Dias permitidos">
-                      @for (
-                        dia of [
-                          { id: 1, label: 'Dom' },
-                          { id: 2, label: 'Seg' },
-                          { id: 3, label: 'Ter' },
-                          { id: 4, label: 'Qua' },
-                          { id: 5, label: 'Qui' },
-                          { id: 6, label: 'Sex' },
-                          { id: 7, label: 'Sáb' },
-                        ];
-                        track dia.id
-                      ) {
-                        <button
-                          type="button"
-                          [class.selected]="item.dias_semana.includes(dia.id)"
-                          [attr.aria-pressed]="item.dias_semana.includes(dia.id)"
-                          (click)="toggleDiaLocal(item, dia.id)"
-                        >
-                          {{ dia.label }}
-                        </button>
-                      }
                     </div>
+                  </div>
+                  <div class="ard-toggles is-week" role="group" [attr.aria-label]="'Dias de acesso em ' + item.nome_local">
+                    @for (
+                      dia of [
+                        { id: 1, label: 'Dom', nome: 'Domingo' },
+                        { id: 2, label: 'Seg', nome: 'Segunda' },
+                        { id: 3, label: 'Ter', nome: 'Terça' },
+                        { id: 4, label: 'Qua', nome: 'Quarta' },
+                        { id: 5, label: 'Qui', nome: 'Quinta' },
+                        { id: 6, label: 'Sex', nome: 'Sexta' },
+                        { id: 7, label: 'Sáb', nome: 'Sábado' },
+                      ];
+                      track dia.id
+                    ) {
+                      <button
+                        type="button"
+                        [attr.aria-label]="dia.nome"
+                        [attr.aria-pressed]="item.dias_semana.includes(dia.id)"
+                        (click)="toggleDiaLocal(item, dia.id)"
+                      >
+                        {{ dia.label }}
+                      </button>
+                    }
                   </div>
                 </div>
               }
-            </div>
+            </li>
           }
-        </div>
+        </ul>
       }
     </section>
 
+    <!-- Status -->
+    <section class="secao" aria-labelledby="secao-status">
+      <h3 id="secao-status">Status</h3>
+      <div class="status-campo">
+        <label class="ard-check">
+          <input formControlName="ativo" type="checkbox" aria-describedby="cad-ativo-dica" />
+          <span>Usuário ativo</span>
+        </label>
+        <span id="cad-ativo-dica" class="ard-hint">Ativo, o acesso vale assim que o cadastro terminar.</span>
+      </div>
+    </section>
+  </div>
+
+  <footer class="ard-dialog-foot rodape">
     @if (successMessage) {
-      <p class="success-message" role="status">
-        <mat-icon>check_circle</mat-icon>
-        {{ successMessage }}
+      <p class="ard-notice is-success rodape-aviso" role="status">
+        <mat-icon aria-hidden="true">check_circle</mat-icon><span>{{ successMessage }}</span>
       </p>
     }
-
     @if (errorMessage) {
-      <p class="error-message" role="alert">
-        <mat-icon>error</mat-icon>
-        {{ errorMessage }}
+      <p class="ard-notice is-error rodape-aviso" role="alert">
+        <mat-icon aria-hidden="true">error</mat-icon><span>{{ errorMessage }}</span>
       </p>
     }
-
-    <footer class="form-actions">
-      <button type="button" mat-button [disabled]="saving" (click)="fechar()">Cancelar</button>
-      <button type="button" mat-button [disabled]="saving" (click)="reset()">Limpar</button>
-      <button type="submit" mat-flat-button color="primary" [disabled]="saving">
-        <mat-icon>person_add</mat-icon>
-        {{ saving ? 'Salvando...' : 'Criar usuário' }}
-      </button>
-    </footer>
-  </form>
-</main>
+    <button type="button" class="ard-btn is-quiet" [disabled]="saving" (click)="reset()">Limpar</button>
+    <span class="rodape-espaco"></span>
+    <button type="button" class="ard-btn" [disabled]="saving" (click)="fechar()">Cancelar</button>
+    <button type="submit" class="ard-btn is-primary" [disabled]="saving" [attr.aria-busy]="saving">
+      @if (saving) {
+        <span class="ard-spinner" aria-hidden="true"></span>
+        Cadastrando
+      } @else {
+        <mat-icon aria-hidden="true">person_add</mat-icon>
+        Cadastrar usuário
+      }
+    </button>
+  </footer>
+</form>

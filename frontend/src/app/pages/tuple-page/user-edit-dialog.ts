@@ -11,9 +11,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 import {
@@ -43,9 +41,7 @@ export interface UserEditDialogResult {
     CommonModule,
     VisorFacial,
     FormsModule,
-    MatButtonModule,
     MatIconModule,
-    MatProgressSpinnerModule,
     MatSnackBarModule,
   ],
   templateUrl: './user-edit-dialog.html',
@@ -108,6 +104,11 @@ export class UserEditDialog implements OnInit, OnDestroy {
 
   get identificadorDispositivo(): string {
     return this.dispositivoSelecionado?.identificador ?? '';
+  }
+
+  /** Escolhe o modo de captura facial sem alternar quando já está nele. */
+  definirModoTotem(automatico: boolean): void {
+    if (this.modoTotem() !== automatico) this.toggleModoTotem();
   }
 
   get temBiometria(): boolean {
@@ -175,8 +176,8 @@ export class UserEditDialog implements OnInit, OnDestroy {
           this.ativo = usuario.ativo;
           this.salvandoDados = false;
           this.alterado = true;
-          this.aviso = 'Dados do usuário atualizados.';
-          this.snackBar.open(this.aviso, 'OK', { duration: 3000 });
+          this.aviso = '';
+          this.snackBar.open('Dados salvos.', 'Fechar', { duration: 4000 });
         },
         error: (error) => {
           this.salvandoDados = false;
@@ -307,9 +308,9 @@ export class UserEditDialog implements OnInit, OnDestroy {
           this.uidNovo = resultado.uid_card ?? uid;
           this.usuario = { ...this.usuario, uid_card: this.uidNovo };
           this.cartaoDisponivel = true;
-          this.aviso = resultado.mensagem || 'Cartão atualizado com sucesso.';
-          this.snackBar.open('Cartão RFID atualizado.', 'OK', {
-            duration: 3500,
+          this.aviso = '';
+          this.snackBar.open(resultado.mensagem || 'Novo cartão salvo.', 'Fechar', {
+            duration: 4000,
           });
         },
         error: (error) => {
@@ -396,20 +397,21 @@ export class UserEditDialog implements OnInit, OnDestroy {
     this.salvandoBiometria = true;
     this.erro = '';
     this.aviso = '';
-
+    const substituindo = this.temBiometria;
     this.api
       .cadastrarBiometria(this.usuario.user_id, this.fotoCapturada)
       .subscribe({
-        next: (resultado) => {
+        next: () => {
           this.salvandoBiometria = false;
           this.alterado = true;
           this.fotoCapturada = null;
           this.fotoPreviewUrl = null;
-          this.aviso =
-            `Biometria cadastrada com sucesso (${resultado.vector_length} dimensões).`;
-          this.snackBar.open('Biometria facial atualizada.', 'OK', {
-            duration: 3500,
-          });
+          this.aviso = '';
+          this.snackBar.open(
+            substituindo ? 'Biometria substituída.' : 'Biometria cadastrada.',
+            'Fechar',
+            { duration: 4000 },
+          );
 
           // Recarrega o usuário real para atualizar o estado do modal sem
           // fabricar um vetor placeholder no frontend.

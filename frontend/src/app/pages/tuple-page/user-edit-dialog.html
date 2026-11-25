@@ -1,312 +1,271 @@
-<section class="user-edit-dialog">
-  <header class="dialog-header">
+<div class="ard-dialog edicao">
+  <header class="ard-dialog-head">
+    <span class="ard-module-icon" data-tone="usuarios" aria-hidden="true"><mat-icon>manage_accounts</mat-icon></span>
     <div>
-      <span class="eyebrow">Usuário #{{ usuario.user_id }}</span>
-      <h2>Editar usuário</h2>
-      <p>Altere os dados da pessoa, substitua o cartão ou atualize a biometria em etapas independentes.</p>
-      <div class="edit-overview" aria-label="Áreas de edição">
-        <span><mat-icon>person</mat-icon> Dados</span>
-        <span><mat-icon>contactless</mat-icon> Cartão</span>
-        <span><mat-icon>face</mat-icon> Biometria</span>
+      <h2 id="user-edit-title">Editar {{ usuario.nome }}</h2>
+      <p>Cada parte é salva separadamente: dados, cartão e biometria.</p>
+      <div class="situacao" aria-label="Situação atual">
+        @if (usuario.uid_card) {
+          <span class="ard-badge is-ok">Cartão vinculado</span>
+        } @else {
+          <span class="ard-badge is-warn">Sem cartão</span>
+        }
+        @if (temBiometria) {
+          <span class="ard-badge is-ok">Biometria cadastrada</span>
+        } @else {
+          <span class="ard-badge is-warn">Biometria pendente</span>
+        }
       </div>
     </div>
-    <button type="button" mat-icon-button (click)="fechar()" title="Fechar">
-      <mat-icon>close</mat-icon>
+    <button type="button" class="ard-icon-btn" (click)="fechar()" aria-label="Fechar edição">
+      <mat-icon aria-hidden="true">close</mat-icon>
     </button>
   </header>
 
-  @if (aviso) {
-    <div class="notice success" role="status">
-      <mat-icon>check_circle</mat-icon>
-      <span>{{ aviso }}</span>
-    </div>
-  }
-
-  @if (erro) {
-    <div class="notice error" role="alert">
-      <mat-icon>error</mat-icon>
-      <span>{{ erro }}</span>
-    </div>
-  }
-
-  <div class="dialog-body">
-    <section class="edit-section">
-      <div class="section-title">
-        <mat-icon>person</mat-icon>
-        <div>
-          <h3>Dados básicos</h3>
-          <p>Nome e disponibilidade do usuário no controle de acesso.</p>
+  <div class="ard-dialog-body corpo">
+    <!-- Dados -->
+    <section class="secao" aria-labelledby="edit-dados">
+      <h3 id="edit-dados">Dados da pessoa</h3>
+      <div class="ard-form-grid pessoa-grid">
+        <div class="ard-field campo-inteiro">
+          <label for="edit-nome">Nome completo</label>
+          <input id="edit-nome" type="text" [(ngModel)]="nome" maxlength="255" autocomplete="off" [disabled]="salvandoDados" />
         </div>
-      </div>
-
-      <div class="basic-grid profile-grid">
-        <label class="profile-name">
-          <span>Nome</span>
+        <div class="ard-field">
+          <label for="edit-cpf">CPF <span class="opcional">opcional</span></label>
           <input
-            type="text"
-            [(ngModel)]="nome"
-            maxlength="255"
-            [disabled]="salvandoDados"
-          />
-        </label>
-
-        <label>
-          <span>CPF <small class="optional-label">opcional</small></span>
-          <input
+            id="edit-cpf"
             type="text"
             [(ngModel)]="cpf"
             appCpfMask
             inputmode="numeric"
+            autocomplete="off"
             placeholder="000.000.000-00"
             [disabled]="salvandoDados"
           />
-        </label>
-
-        <label>
-          <span>Tipo de usuário</span>
-          <select [(ngModel)]="tipoUsuario" [disabled]="salvandoDados">
+        </div>
+        <div class="ard-field">
+          <label for="edit-tipo">Tipo de usuário</label>
+          <select id="edit-tipo" [(ngModel)]="tipoUsuario" [disabled]="salvandoDados">
             <option value="INTERNO">Interno</option>
             <option value="VISITANTE">Visitante</option>
           </select>
-        </label>
-
-        <label class="switch-field profile-status">
-          <input type="checkbox" [(ngModel)]="ativo" [disabled]="salvandoDados" />
-          <span class="switch"></span>
-          <span>
-            <strong>Usuário ativo</strong>
-            <small>Usuários inativos são negados antes da biometria.</small>
-          </span>
-        </label>
+        </div>
+        <div class="status-campo campo-inteiro">
+          <label class="ard-check">
+            <input type="checkbox" [(ngModel)]="ativo" [disabled]="salvandoDados" aria-describedby="edit-ativo-dica" />
+            <span>Usuário ativo</span>
+          </label>
+          <span id="edit-ativo-dica" class="ard-hint">Usuários inativos são negados antes da biometria.</span>
+        </div>
       </div>
-
-      <div class="section-actions">
-        <button
-          type="button"
-          mat-flat-button
-          color="primary"
-          (click)="salvarDadosBasicos()"
-          [disabled]="salvandoDados"
-        >
+      <div class="secao-acoes">
+        <button type="button" class="ard-btn is-primary" (click)="salvarDadosBasicos()" [disabled]="salvandoDados" [attr.aria-busy]="salvandoDados">
           @if (salvandoDados) {
-            <mat-progress-spinner diameter="18"></mat-progress-spinner>
+            <span class="ard-spinner" aria-hidden="true"></span>
+            Salvando
           } @else {
-            <mat-icon>save</mat-icon>
+            <mat-icon aria-hidden="true">save</mat-icon>
+            Salvar dados
           }
-          Salvar dados
         </button>
       </div>
     </section>
 
-    <section class="edit-section">
-      <div class="section-title">
-        <mat-icon>contactless</mat-icon>
-        <div>
-          <h3>Substituir cartão de acesso</h3>
-          <p>
-            Cartão atual:
-            <strong>{{ usuario.uid_card || 'Não cadastrado' }}</strong>
-          </p>
-        </div>
+    <!-- Cartão -->
+    <section class="secao" aria-labelledby="edit-cartao">
+      <div class="secao-topo">
+        <h3 id="edit-cartao">Cartão de acesso</h3>
+        <span class="cartao-atual">
+          Atual:
+          @if (usuario.uid_card) {
+            <code class="ard-code">{{ usuario.uid_card }}</code>
+          } @else {
+            <span class="ard-muted">não cadastrado</span>
+          }
+        </span>
       </div>
+      <p class="secao-texto">Para trocar, escolha o leitor, inicie a leitura, aproxime o novo cartão e salve.</p>
 
-      <div class="rfid-walkthrough" aria-label="Como trocar o cartão">
-        <span><b>1</b> Escolha o leitor</span>
-        <span><b>2</b> Inicie a leitura</span>
-        <span><b>3</b> Aproxime o novo cartão</span>
-        <span><b>4</b> Salve</span>
-      </div>
-
-      <div class="rfid-grid">
-        <label>
-          <span>Leitor do novo cartão</span>
+      <div class="ard-form-grid">
+        <div class="ard-field">
+          <label for="edit-leitor">Leitor do novo cartão</label>
           <select
+            id="edit-leitor"
             [(ngModel)]="dispositivoSelecionadoId"
             [disabled]="carregandoDispositivos || aguardandoRfid || salvandoCartao"
           >
-            <option [ngValue]="null">
-              {{ carregandoDispositivos ? 'Carregando...' : 'Selecione o leitor' }}
-            </option>
+            <option [ngValue]="null">{{ carregandoDispositivos ? 'Carregando...' : 'Selecione o leitor' }}</option>
             @for (dispositivo of dispositivos; track dispositivo.dispositivo_id) {
-              <option [ngValue]="dispositivo.dispositivo_id">
-                {{ dispositivo.nome }} · {{ dispositivo.identificador }}
-              </option>
+              <option [ngValue]="dispositivo.dispositivo_id">{{ dispositivo.nome }} · {{ dispositivo.identificador }}</option>
             }
           </select>
-        </label>
-
-        <label>
-          <span>Número do novo cartão</span>
+        </div>
+        <div class="ard-field" [class.is-invalid]="cartaoDisponivel === false">
+          <label for="edit-uid">Número do novo cartão</label>
           <input
+            id="edit-uid"
+            class="cartao-uid"
             type="text"
             [(ngModel)]="uidNovo"
             (ngModelChange)="onUidManualChange()"
             (blur)="validarUidAtual()"
             maxlength="20"
             placeholder="A1B2C3D4"
+            autocomplete="off"
             [disabled]="aguardandoRfid || salvandoCartao || verificandoCartao"
+            aria-describedby="edit-uid-dica"
           />
-          <small>Preenchido pela leitura. Digite manualmente apenas se necessário.</small>
-        </label>
+          <span id="edit-uid-dica" class="ard-hint">Preenchido pela leitura. Digite apenas se necessário.</span>
+        </div>
       </div>
 
-      <div class="capture-state" role="status">
-        <mat-icon>{{ aguardandoRfid ? 'sensors' : uidNovo && uidNovo !== usuario.uid_card ? 'check_circle' : 'info' }}</mat-icon>
+      <div
+        class="capture-state"
+        role="status"
+        [attr.data-state]="aguardandoRfid ? 'active' : uidNovo && uidNovo !== usuario.uid_card ? 'ok' : 'idle'"
+      >
+        <mat-icon aria-hidden="true">{{ aguardandoRfid ? 'sensors' : uidNovo && uidNovo !== usuario.uid_card ? 'check_circle' : 'info' }}</mat-icon>
         <span>{{ aguardandoRfid ? 'Pronto para ler: aproxime o novo cartão do leitor' + (operacoes.segundosRestantes() ? ' (' + operacoes.segundosRestantes() + ' s). Esta leitura só preenche o campo.' : '.') : uidNovo && uidNovo !== usuario.uid_card ? 'Novo cartão identificado. Confira e salve a troca.' : 'Escolha o leitor, inicie a leitura e aproxime o novo cartão.' }}</span>
       </div>
 
-      <div class="section-actions">
+      <div class="secao-acoes">
         @if (aguardandoRfid) {
-          <button type="button" mat-stroked-button (click)="cancelarLeituraRfid()">
-            <mat-progress-spinner diameter="18"></mat-progress-spinner>
+          <button type="button" class="ard-btn" (click)="cancelarLeituraRfid()">
+            <span class="ard-spinner" aria-hidden="true"></span>
             Cancelar espera
           </button>
         } @else {
-          <button
-            type="button"
-            mat-stroked-button
-            (click)="iniciarLeituraRfid()"
-            [disabled]="!identificadorDispositivo || salvandoCartao"
-          >
-            <mat-icon>sensors</mat-icon>
+          <button type="button" class="ard-btn" (click)="iniciarLeituraRfid()" [disabled]="!identificadorDispositivo || salvandoCartao">
+            <mat-icon aria-hidden="true">contactless</mat-icon>
             Iniciar leitura
           </button>
         }
-
         <button
           type="button"
-          mat-flat-button
-          color="primary"
+          class="ard-btn is-primary"
           (click)="salvarNovoCartao()"
           [disabled]="
-            !uidNovo
-            || uidNovo === usuario.uid_card
-            || !identificadorDispositivo
-            || salvandoCartao
-            || verificandoCartao
-            || cartaoDisponivel === false
+            !uidNovo || uidNovo === usuario.uid_card || !identificadorDispositivo || salvandoCartao || verificandoCartao || cartaoDisponivel === false
           "
+          [attr.aria-busy]="salvandoCartao"
         >
           @if (salvandoCartao) {
-            <mat-progress-spinner diameter="18"></mat-progress-spinner>
+            <span class="ard-spinner" aria-hidden="true"></span>
+            Salvando
           } @else {
-            <mat-icon>credit_card</mat-icon>
+            <mat-icon aria-hidden="true">credit_card</mat-icon>
+            Salvar novo cartão
           }
-          Salvar novo cartão
         </button>
       </div>
-      <aside class="mobile-credential-tip">
-        <mat-icon>smartphone</mat-icon>
-        <div><strong>Credencial no celular</strong>
-          <p>Ainda não disponível no ArdLock. Um aplicativo que copia o número do cartão não garante compatibilidade com este leitor; mantenha um cartão físico cadastrado.</p>
-        </div>
-      </aside>
+
+      <p class="nota">
+        <mat-icon aria-hidden="true">smartphone</mat-icon>
+        <span>
+          Credencial no celular ainda não é possível no ArdLock. Um aplicativo que copia o número do cartão não garante
+          compatibilidade com este leitor; mantenha um cartão físico cadastrado.
+        </span>
+      </p>
     </section>
 
-    <section class="edit-section">
-      <div class="section-title heading-with-action">
-        <div class="title-left">
-          <mat-icon>face</mat-icon>
-          <div>
-            <h3>Biometria facial</h3>
-            <p>
-              Status:
-              <strong>{{ temBiometria ? 'Cadastrada' : 'Não cadastrada' }}</strong>
-            </p>
-          </div>
+    <!-- Biometria -->
+    <section class="secao" aria-labelledby="edit-biometria">
+      <div class="secao-topo">
+        <h3 id="edit-biometria">Biometria facial</h3>
+        <div class="ard-segmented" role="group" aria-label="Modo de captura">
+          <button type="button" [attr.aria-pressed]="modoTotem()" (click)="definirModoTotem(true)">
+            <mat-icon aria-hidden="true">center_focus_strong</mat-icon>
+            Automática
+          </button>
+          <button type="button" [attr.aria-pressed]="!modoTotem()" (click)="definirModoTotem(false)">
+            <mat-icon aria-hidden="true">touch_app</mat-icon>
+            Manual
+          </button>
         </div>
-        <button
-          type="button"
-          mat-stroked-button
-          class="btn-totem-toggle"
-          [color]="modoTotem() ? 'accent' : 'primary'"
-          (click)="toggleModoTotem()"
-        >
-          <mat-icon>{{ modoTotem() ? 'touch_app' : 'center_focus_strong' }}</mat-icon>
-          {{ modoTotem() ? 'Modo Totem (Auto)' : 'Modo Assistido' }}
-        </button>
       </div>
+      <p class="secao-texto">
+        {{
+          temBiometria
+            ? 'A biometria atual continua valendo até você salvar uma nova.'
+            : 'Esta pessoa ainda não tem biometria: o cartão sozinho não libera o acesso.'
+        }}
+      </p>
 
       @if (webcam.webcamAtiva()) {
         <app-visor-facial />
-
-        <div class="section-actions">
+        <div class="camera-acoes">
           @if (!modoTotem()) {
-            <button
-              type="button"
-              mat-flat-button
-              color="primary"
-              (click)="capturarFoto()"
-              [disabled]="!webcam.capturaPronta()"
-            >
-              <mat-icon>photo_camera</mat-icon>
-              Capturar Foto
+            <button type="button" class="ard-btn is-primary" (click)="capturarFoto()" [disabled]="!webcam.capturaPronta()">
+              <mat-icon aria-hidden="true">photo_camera</mat-icon>
+              Capturar foto
             </button>
           }
-          <button type="button" mat-button color="warn" (click)="pararWebcam()">
-            Cancelar câmera
+          <button type="button" class="ard-btn" (click)="pararWebcam()">
+            <mat-icon aria-hidden="true">videocam_off</mat-icon>
+            Fechar câmera
           </button>
         </div>
       } @else {
-        <div class="biometric-preview">
+        <div class="captura" [class.tem-foto]="fotoPreviewUrl">
           @if (fotoPreviewUrl) {
-            <img [src]="fotoPreviewUrl" alt="Prévia da nova biometria" />
+            <img class="captura-foto" [src]="fotoPreviewUrl" alt="Prévia da nova biometria" />
           } @else {
-            <mat-icon>face_retouching_natural</mat-icon>
-            <span>Nenhuma nova captura selecionada.</span>
+            <span class="captura-icone" aria-hidden="true"><mat-icon>face</mat-icon></span>
           }
+          <div class="captura-texto">
+            <strong>{{ fotoPreviewUrl ? 'Nova foto pronta' : 'Nenhuma nova captura' }}</strong>
+            <span>
+              {{
+                fotoPreviewUrl
+                  ? 'Salve para ' + (temBiometria ? 'substituir a biometria atual.' : 'cadastrar a biometria.')
+                  : 'Abra a câmera ou carregue uma imagem com o rosto visível.'
+              }}
+            </span>
+          </div>
         </div>
 
-        <input
-          #biometriaInput
-          type="file"
-          accept="image/*"
-          hidden
-          (change)="selecionarImagem($event)"
-        />
+        <input #biometriaInput type="file" accept="image/*" hidden (change)="selecionarImagem($event)" />
 
-        <div class="section-actions">
-          <button type="button" mat-stroked-button (click)="iniciarWebcam()">
-            <mat-icon>videocam</mat-icon>
-            Abrir webcam
+        <div class="secao-acoes">
+          <button type="button" class="ard-btn" (click)="iniciarWebcam()">
+            <mat-icon aria-hidden="true">videocam</mat-icon>
+            Abrir câmera
           </button>
-          <button type="button" mat-stroked-button (click)="biometriaInput.click()">
-            <mat-icon>upload</mat-icon>
+          <button type="button" class="ard-btn" (click)="biometriaInput.click()">
+            <mat-icon aria-hidden="true">upload</mat-icon>
             Carregar imagem
           </button>
           <button
             type="button"
-            mat-flat-button
-            color="primary"
+            class="ard-btn is-primary"
             (click)="salvarBiometria()"
             [disabled]="!fotoCapturada || salvandoBiometria"
+            [attr.aria-busy]="salvandoBiometria"
           >
             @if (salvandoBiometria) {
-              <mat-progress-spinner diameter="18"></mat-progress-spinner>
+              <span class="ard-spinner" aria-hidden="true"></span>
+              Salvando
             } @else {
-              <mat-icon>fingerprint</mat-icon>
+              <mat-icon aria-hidden="true">fingerprint</mat-icon>
+              {{ temBiometria ? 'Substituir biometria' : 'Cadastrar biometria' }}
             }
-            {{ temBiometria ? 'Substituir biometria' : 'Cadastrar biometria' }}
           </button>
         </div>
       }
     </section>
   </div>
 
-  <footer class="dialog-footer">
-    <div class="status-summary">
-      <span>
-        <mat-icon>{{ usuario.uid_card ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
-        RFID
-      </span>
-      <span>
-        <mat-icon>{{ temBiometria ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
-        Facial
-      </span>
-    </div>
-
-    <button type="button" mat-flat-button color="primary" (click)="fechar()">
-      Concluir edição
-    </button>
+  <footer class="ard-dialog-foot rodape">
+    @if (erro) {
+      <p class="ard-notice is-error rodape-aviso" role="alert">
+        <mat-icon aria-hidden="true">error</mat-icon><span>{{ erro }}</span>
+      </p>
+    } @else if (aviso) {
+      <p class="ard-notice is-info rodape-aviso" role="status">
+        <mat-icon aria-hidden="true">info</mat-icon><span>{{ aviso }}</span>
+      </p>
+    }
+    <button type="button" class="ard-btn" (click)="fechar()">Concluir edição</button>
   </footer>
-</section>
+</div>

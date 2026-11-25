@@ -1,141 +1,196 @@
-<main class="locations-page" data-module="locations">
-  <header class="page-header">
-    <a routerLink="/adm-page" class="back-link">
-      <mat-icon>arrow_back</mat-icon> Painel administrativo
-    </a>
-
-    <div class="module-heading">
-      <span class="module-icon"><mat-icon>location_on</mat-icon></span>
-      <div><h1>Locais</h1><p>Gerencie os locais físicos. Os dispositivos ficam vinculados aos locais.</p></div>
+<div class="ard-page">
+  <a routerLink="/adm-page" class="ard-back"><mat-icon aria-hidden="true">arrow_back</mat-icon>Painel administrativo</a>
+  <header class="ard-head">
+    <div class="ard-head-main">
+      <span class="ard-module-icon" data-tone="locais" aria-hidden="true"><mat-icon>location_on</mat-icon></span>
+      <div>
+        <h1>Locais</h1>
+        <p>Cada porta ou ambiente controlado. Leitores e permissões de acesso são vinculados a um local.</p>
+      </div>
     </div>
   </header>
 
-  <section class="editor">
-    <div class="editor-heading">
-      <div>
-        <span class="eyebrow">{{ editandoId === null ? 'Novo local' : 'Edição' }}</span>
-        <h2>{{ editandoId === null ? 'Cadastrar local' : 'Editar local' }}</h2>
+  <div class="ard-workspace">
+    <section class="ard-panel is-editor" #editor aria-labelledby="editor-titulo">
+      <div class="ard-panel-head">
+        <div>
+          <h2 id="editor-titulo">{{ editandoId === null ? 'Cadastrar local' : 'Editar local' }}</h2>
+          <p>
+            {{
+              editandoId === null
+                ? 'Depois, vincule um leitor ao local em Dispositivos.'
+                : 'As alterações valem para os leitores e permissões deste local.'
+            }}
+          </p>
+        </div>
       </div>
-      @if (erro) {
-        <span class="error" role="alert">{{ erro }}</span>
-      }
-    </div>
+      <form class="ard-panel-body ard-form" (ngSubmit)="salvar()" novalidate>
+        <div class="ard-field" [class.is-invalid]="!!erro">
+          <label for="local-nome">Nome do local</label>
+          <input
+            id="local-nome"
+            name="nome"
+            #nomeInput
+            [(ngModel)]="form.nome"
+            maxlength="255"
+            placeholder="Ex.: Laboratório de redes"
+            autocomplete="off"
+            [attr.aria-describedby]="erro ? 'local-erro' : null"
+          />
+        </div>
+        <label class="ard-check">
+          <input type="checkbox" name="ativo" [(ngModel)]="form.ativo" />
+          <span>Local ativo</span>
+        </label>
+        <p class="ard-hint cadastro-dica">Um local inativo não libera acesso, mas mantém o histórico.</p>
 
-    <div class="form-grid">
-      <label>
-        <span class="floating-label">Nome do local</span>
-        <input [(ngModel)]="form.nome" maxlength="255" placeholder="Entrada principal" />
-      </label>
-      <label class="status">
-        <input type="checkbox" [(ngModel)]="form.ativo" />
-        <span>Local ativo</span>
-      </label>
-    </div>
-
-    <div class="actions">
-      <button mat-flat-button color="primary" [disabled]="salvando" (click)="salvar()">
-        <mat-icon>save</mat-icon>{{ salvando ? 'Salvando...' : 'Salvar local' }}
-      </button>
-      @if (editandoId !== null) {
-        <button mat-button (click)="cancelar()">Cancelar</button>
-      }
-    </div>
-  </section>
-
-  <section class="table-card">
-    <div class="filter-bar">
-      <div class="search-box">
-        <mat-icon>search</mat-icon>
-        <input type="text" [(ngModel)]="filtroTexto" placeholder="Pesquisar por nome..." />
-        @if (filtroTexto) {
-          <button type="button" mat-icon-button (click)="filtroTexto = ''" title="Limpar pesquisa">
-            <mat-icon>close</mat-icon>
-          </button>
+        @if (erro) {
+          <p class="ard-notice is-error" id="local-erro" role="alert">
+            <mat-icon aria-hidden="true">error</mat-icon><span>{{ erro }}</span>
+          </p>
         }
+
+        <div class="ard-form-actions">
+          @if (editandoId !== null) {
+            <button type="button" class="ard-btn is-quiet" (click)="cancelar()">Cancelar edição</button>
+          }
+          <button type="submit" class="ard-btn is-primary" [disabled]="salvando" [attr.aria-busy]="salvando">
+            @if (salvando) {
+              <span class="ard-spinner" aria-hidden="true"></span>
+              Salvando
+            } @else {
+              <mat-icon aria-hidden="true">{{ editandoId === null ? 'add_location_alt' : 'save' }}</mat-icon>
+              {{ editandoId === null ? 'Cadastrar local' : 'Salvar alterações' }}
+            }
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <section class="ard-panel is-list" aria-labelledby="lista-titulo" [attr.aria-busy]="carregando">
+      <div class="ard-panel-head">
+        <div>
+          <h2 id="lista-titulo">Locais cadastrados</h2>
+          <p>
+            @if (carregando) {
+              Carregando os locais.
+            } @else if (!erroLista) {
+              {{ locais.length }} {{ locais.length === 1 ? 'local' : 'locais' }}, {{ ativos }}
+              {{ ativos === 1 ? 'ativo' : 'ativos' }}
+            }
+          </p>
+        </div>
       </div>
 
-      <div class="filter-group">
-        <label for="filtro-ativo-select">Status</label>
-        <select id="filtro-ativo-select" [(ngModel)]="filtroAtivo">
-          <option value="todos">Todos</option>
-          <option value="ativo">Ativos</option>
-          <option value="inativo">Inativos</option>
-        </select>
+      <div class="ard-toolbar">
+        <label class="ard-search">
+          <span class="ard-sr-only">Buscar local por nome</span>
+          <mat-icon aria-hidden="true">search</mat-icon>
+          <input type="search" [(ngModel)]="filtroTexto" placeholder="Buscar por nome" autocomplete="off" />
+        </label>
+        <div class="ard-filter">
+          <label for="filtro-ativo-select">Status</label>
+          <select id="filtro-ativo-select" [(ngModel)]="filtroAtivo">
+            <option value="todos">Todos</option>
+            <option value="ativo">Ativos</option>
+            <option value="inativo">Inativos</option>
+          </select>
+        </div>
       </div>
-    </div>
 
-    @if (erro) {
-      <p class="error" style="margin: 16px">{{ erro }}</p>
-    } @else if (carregando) {
-      <div class="skeleton-table" aria-label="Carregando locais">
-        @for (item of [1, 2, 3, 4, 5]; track item) {
-          <div class="skeleton-row">
-            <span class="skeleton-cell"></span>
-            <span class="skeleton-cell"></span>
-            <span class="skeleton-cell"></span>
-            <span class="skeleton-cell"></span>
-            <span class="skeleton-cell"></span>
+      @if (erroLista) {
+        <div class="ard-state is-error" role="alert">
+          <mat-icon aria-hidden="true">cloud_off</mat-icon>
+          <div>
+            <strong>{{ erroLista }}</strong>
+            <p>Verifique a conexão com o servidor e tente de novo.</p>
+            <div class="ard-state-actions">
+              <button type="button" class="ard-btn" (click)="carregar()">Tentar novamente</button>
+            </div>
+          </div>
+        </div>
+      } @else if (carregando) {
+        <div class="ard-sk-rows" aria-hidden="true">
+          @for (linha of [1, 2, 3, 4]; track linha) {
+            <div><span class="ard-sk"></span><span class="ard-sk"></span><span class="ard-sk"></span></div>
+          }
+        </div>
+      } @else if (!displayedLocais.length) {
+        <div class="ard-state">
+          <mat-icon aria-hidden="true">{{ filtrando ? 'search_off' : 'location_off' }}</mat-icon>
+          <div>
+            @if (filtrando) {
+              <strong>Nenhum local corresponde aos filtros</strong>
+              <p>A busca considera o nome do local.</p>
+              <div class="ard-state-actions">
+                <button type="button" class="ard-btn" (click)="limparFiltros()">Limpar filtros</button>
+              </div>
+            } @else {
+              <strong>Nenhum local cadastrado</strong>
+              <p>Use Cadastrar local para criar o primeiro ponto de acesso.</p>
+            }
+          </div>
+        </div>
+      } @else {
+        <div class="ard-table-wrap">
+          <table class="ard-table">
+            <thead>
+              <tr>
+                <th scope="col">Local</th>
+                <th scope="col">Status</th>
+                <th scope="col"><span class="ard-sr-only">Ações</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (local of displayedLocais; track local.local_id) {
+                <tr
+                  [class.is-editing]="editandoId === local.local_id"
+                  [class.is-new]="destacadoId === local.local_id"
+                  [class.is-inactive]="!local.ativo"
+                >
+                  <td class="is-lead">
+                    <span class="ard-cell-title">{{ local.nome }}</span>
+                    <span class="ard-cell-sub">#{{ local.local_id }}</span>
+                  </td>
+                  <td data-label="Status">
+                    <span class="ard-badge" [class.is-ok]="local.ativo" [class.is-neutral]="!local.ativo">
+                      {{ local.ativo ? 'Ativo' : 'Inativo' }}
+                    </span>
+                  </td>
+                  <td class="is-actions">
+                    <div class="ard-row-actions">
+                      <button
+                        type="button"
+                        class="ard-icon-btn"
+                        (click)="editar(local)"
+                        [attr.aria-label]="'Editar ' + local.nome"
+                        matTooltip="Editar"
+                      >
+                        <mat-icon aria-hidden="true">edit</mat-icon>
+                      </button>
+                      <button
+                        type="button"
+                        class="ard-icon-btn is-danger"
+                        (click)="excluir(local)"
+                        [attr.aria-label]="'Excluir ' + local.nome"
+                        matTooltip="Excluir"
+                      >
+                        <mat-icon aria-hidden="true">delete</mat-icon>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        @if (filtrando) {
+          <div class="ard-panel-foot">
+            <span>{{ displayedLocais.length }} de {{ locais.length }} locais</span>
+            <button type="button" class="ard-btn is-quiet is-compact" (click)="limparFiltros()">Limpar filtros</button>
           </div>
         }
-      </div>
-    } @else if (!displayedLocais.length) {
-      <div class="empty-state">
-        <mat-icon>location_off</mat-icon>
-        <strong>Nenhum local encontrado</strong>
-        <span>{{
-          locais.length === 0
-            ? 'Cadastre o primeiro local para começar.'
-            : 'Ajuste os filtros para ver outros resultados.'
-        }}</span>
-      </div>
-    } @else {
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Nome</th>
-            <th>Status</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (local of displayedLocais; track local.local_id) {
-            <tr>
-              <td>{{ local.local_id }}</td>
-              <td>{{ local.nome }}</td>
-              <td>
-                <span
-                  class="status-badge"
-                  [class.active]="local.ativo"
-                  [class.inactive]="!local.ativo"
-                >{{
-                  local.ativo ? 'Ativo' : 'Inativo'
-                }}</span>
-              </td>
-              <td class="row-actions">
-                <div class="record-actions">
-                  <button
-                    mat-icon-button
-                    title="Editar"
-                    aria-label="Editar"
-                    (click)="editar(local)"
-                  >
-                    <mat-icon>edit</mat-icon>
-                  </button>
-                  <button
-                    mat-icon-button
-                    title="Excluir"
-                    aria-label="Excluir"
-                    (click)="excluir(local)"
-                  >
-                    <mat-icon>delete</mat-icon>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    }
-  </section>
-</main>
+      }
+    </section>
+  </div>
+</div>

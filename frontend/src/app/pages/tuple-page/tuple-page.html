@@ -1,386 +1,456 @@
 @if (config; as cfg) {
-  <div class="tuple-wrapper" [ngClass]="cfg.accentColor">
-    <!-- HEADER DO COMPONENTE -->
-    <header class="tuple-header" [ngClass]="cfg.accentColor">
-      <div class="header-top">
-        <a routerLink="/adm-page" class="back-link">
-          <mat-icon>arrow_back</mat-icon>
-          <span>Painel administrativo</span>
-        </a>
-      </div>
-
-      <div class="header-main">
-        <div class="module-icon">
-          <mat-icon>{{ cfg.icon }}</mat-icon>
-        </div>
-        <div class="title-group">
-          <h2>{{ cfg.title }}</h2>
+  <div class="ard-page">
+    <a routerLink="/adm-page" class="ard-back"><mat-icon aria-hidden="true">arrow_back</mat-icon>Painel administrativo</a>
+    <header class="ard-head">
+      <div class="ard-head-main">
+        <span class="ard-module-icon" [attr.data-tone]="cfg.resource" aria-hidden="true"><mat-icon>{{ cfg.icon }}</mat-icon></span>
+        <div>
+          <h1>{{ cfg.title }}</h1>
           <p>{{ cfg.subtitle }}</p>
         </div>
       </div>
+      @if (cfg.resource === 'usuarios') {
+        <div class="ard-head-actions">
+          <button type="button" class="ard-btn is-primary create-user-action" (click)="cadastrarUsuario()">
+            <mat-icon aria-hidden="true">person_add</mat-icon>
+            Cadastrar usuário
+          </button>
+        </div>
+      }
+      @if (cfg.resource === 'historico') {
+        <div class="ard-head-actions">
+          <a routerLink="/validar-acesso" class="ard-btn">
+            <mat-icon aria-hidden="true">face</mat-icon>
+            Validar acesso
+          </a>
+        </div>
+      }
     </header>
 
-    @if (dataNotice(); as notice) {
-      <div class="data-notice" role="status">
-        <mat-icon>info</mat-icon>
-        <span>{{ notice }}</span>
-      </div>
+    @if (dataNotice() && allRows.length) {
+      <p class="ard-notice is-error tuple-aviso" role="alert">
+        <mat-icon aria-hidden="true">error</mat-icon><span>{{ dataNotice() }}</span>
+      </p>
     }
-
-    @if (acaoNotice && cfg.resource !== 'permissoes') {
-      <div class="action-notice" role="status">
-        <mat-icon>check_circle</mat-icon>{{ acaoNotice }}
-      </div>
+    @if (erroReferencias) {
+      <p class="ard-notice is-warning tuple-aviso" role="alert">
+        <mat-icon aria-hidden="true">warning</mat-icon>
+        <span>
+          Não foi possível carregar a lista de pessoas e locais, usada nos filtros{{ cfg.resource === 'permissoes' ? ' e no editor' : '' }}.
+          <button type="button" class="ard-link" (click)="carregarReferencias()">Tentar novamente</button>
+        </span>
+      </p>
     }
-    <!-- BARRA DE FILTRO / PESQUISA DINÂMICA -->
-    <section class="filter-bar">
-      <div class="search-box">
-        <mat-icon>search</mat-icon>
-        <input
-          type="text"
-          [ngModel]="filtroTexto()"
-          (ngModelChange)="filtroTexto.set($event); carregarDados()"
-          placeholder="Pesquisar em {{ cfg.title.toLowerCase() }}..."
-          [attr.aria-label]="'Pesquisar em ' + cfg.title.toLowerCase()"
-        />
-        @if (filtroTexto()) {
-          <button
-            type="button"
-            mat-icon-button
-            (click)="filtroTexto.set(''); carregarDados()"
-            title="Limpar pesquisa"
-          >
-            <mat-icon>close</mat-icon>
-          </button>
-        }
-      </div>
-
-      <!-- Filtro de Status para Usuários -->
-      @if (cfg.resource === 'usuarios') {
-        <div class="filter-group">
-          <label for="filtro-status">Status</label>
-          <select
-            id="filtro-status"
-            [ngModel]="filtroAtivo()"
-            (ngModelChange)="filtroAtivo.set($event); carregarDados()"
-          >
-            <option value="todos">Todos</option>
-            <option value="ativo">Ativos</option>
-            <option value="inativo">Inativos</option>
-          </select>
-        </div>
-
-        <button
-          type="button"
-          (click)="cadastrarUsuario()"
-          mat-flat-button
-          color="primary"
-          class="create-user-action"
-        >
-          <mat-icon>person_add</mat-icon>
-          Cadastrar usuário
-        </button>
-      }
-
-      <!-- Filtros de Usuário e Local para Permissões -->
+    <div [class.ard-workspace]="cfg.resource === 'permissoes'">
+      <!-- Editor de permissão -->
       @if (cfg.resource === 'permissoes') {
-        <div class="filter-group">
-          <label for="filtro-usuario">Usuário</label>
-          <select
-            id="filtro-usuario"
-            [ngModel]="filtroUsuarioId()"
-            (ngModelChange)="filtroUsuarioId.set($event); carregarDados()"
-          >
-            <option [ngValue]="null">Todos os usuários</option>
-            @for (u of usuarios; track u.user_id) {
-              <option [ngValue]="u.user_id">{{ u.nome }}</option>
-            }
-          </select>
-
-          <label for="filtro-local">Local</label>
-          <select
-            id="filtro-local"
-            [ngModel]="filtroLocalId()"
-            (ngModelChange)="filtroLocalId.set($event); carregarDados()"
-          >
-            <option [ngValue]="null">Todos os locais</option>
-            @for (l of locais; track l.local_id) {
-              <option [ngValue]="l.local_id">{{ l.nome }}</option>
-            }
-          </select>
-        </div>
-      }
-
-      <!-- Filtros para Histórico (Logs) -->
-      @if (cfg.resource === 'historico') {
-        <div class="filter-group">
-          <label for="filtro-usuario">Usuário</label>
-          <select
-            id="filtro-usuario"
-            [ngModel]="filtroUsuarioId()"
-            (ngModelChange)="filtroUsuarioId.set($event); carregarDados()"
-          >
-            <option [ngValue]="null">Todos os usuários</option>
-            @for (u of usuarios; track u.user_id) {
-              <option [ngValue]="u.user_id">{{ u.nome }}</option>
-            }
-          </select>
-
-          <label for="filtro-local">Local</label>
-          <select
-            id="filtro-local"
-            [ngModel]="filtroLocalId()"
-            (ngModelChange)="filtroLocalId.set($event); carregarDados()"
-          >
-            <option [ngValue]="null">Todos os locais</option>
-            @for (l of locais; track l.local_id) {
-              <option [ngValue]="l.local_id">{{ l.nome }}</option>
-            }
-          </select>
-
-          <label for="filtro-resultado">Resultado</label>
-          <select
-            id="filtro-resultado"
-            [ngModel]="filtroAutorizado()"
-            (ngModelChange)="filtroAutorizado.set($event); carregarDados()"
-          >
-            <option value="todos">Todos</option>
-            <option value="autorizado">Autorizado</option>
-            <option value="negado">Negado</option>
-          </select>
-        </div>
-      }
-    </section>
-
-    @if (cfg.resource === 'permissoes') {
-      <section class="permission-editor">
-        <div class="editor-heading">
-          <div>
-            <span class="eyebrow">{{
-              editandoPermissaoId === null ? 'Nova regra' : 'Editando regra'
-            }}</span>
-            <h3>{{ editandoPermissaoId === null ? 'Criar permissão' : 'Editar permissão' }}</h3>
+        <section class="ard-panel is-editor" #editorPermissao aria-labelledby="perm-editor-titulo">
+          <div class="ard-panel-head">
+            <div>
+              <h2 id="perm-editor-titulo">{{ editandoPermissaoId === null ? 'Criar permissão' : 'Editar permissão' }}</h2>
+              <p>Quem pode entrar, onde e quando.</p>
+            </div>
           </div>
-          @if (acaoNotice) {
-            <span class="editor-notice" role="status">{{ acaoNotice }}</span>
+          <form class="ard-panel-body ard-form" (ngSubmit)="permissaoValida && salvarPermissao()" novalidate>
+            <div class="ard-field">
+              <label for="perm-usuario">Pessoa</label>
+              <select id="perm-usuario" name="usuario_id" [(ngModel)]="permissaoForm.usuario_id" [disabled]="editandoPermissaoId !== null">
+                <option [ngValue]="0" disabled>Escolha uma pessoa</option>
+                @for (usuario of usuarios; track usuario.user_id) {
+                  <option [ngValue]="usuario.user_id">{{ usuario.nome }}</option>
+                }
+              </select>
+              @if (editandoPermissaoId !== null) {
+                <span class="ard-hint">Para outra pessoa, crie uma permissão nova.</span>
+              }
+            </div>
+            <div class="ard-field">
+              <label for="perm-local">Local</label>
+              <select id="perm-local" name="local_id" #localPermissao [(ngModel)]="permissaoForm.local_id">
+                <option [ngValue]="0" disabled>Escolha um local</option>
+                @for (local of locais; track local.local_id) {
+                  <option [ngValue]="local.local_id">{{ local.nome }}</option>
+                }
+              </select>
+            </div>
+            <div class="horario">
+              <div class="ard-field">
+                <label for="perm-inicio">Das</label>
+                <input id="perm-inicio" name="horario_inicio" type="time" [(ngModel)]="permissaoForm.horario_inicio" />
+              </div>
+              <div class="ard-field">
+                <label for="perm-fim">Até</label>
+                <input id="perm-fim" name="horario_fim" type="time" [(ngModel)]="permissaoForm.horario_fim" />
+              </div>
+            </div>
+            <div class="dias" role="group" aria-labelledby="perm-dias-titulo">
+              <div class="dias-topo">
+                <span id="perm-dias-titulo" class="dias-titulo">Dias da semana</span>
+                <span class="dias-atalhos">
+                  <button type="button" class="ard-link" (click)="permissaoForm.dias_semana = [2, 3, 4, 5, 6]">Seg a sex</button>
+                  <button type="button" class="ard-link" (click)="permissaoForm.dias_semana = [1, 2, 3, 4, 5, 6, 7]">Todos</button>
+                </span>
+              </div>
+              <div class="ard-toggles is-week">
+                @for (dia of [1, 2, 3, 4, 5, 6, 7]; track dia) {
+                  <button
+                    type="button"
+                    [attr.aria-label]="nomeDia(dia)"
+                    [attr.aria-pressed]="permissaoForm.dias_semana.includes(dia)"
+                    (click)="togglePermissaoDia(dia)"
+                  >
+                    {{ nomeDia(dia).slice(0, 3) }}
+                  </button>
+                }
+              </div>
+            </div>
+
+            @if (acaoNotice) {
+              <p class="ard-notice is-error" role="alert">
+                <mat-icon aria-hidden="true">error</mat-icon><span>{{ acaoNotice }}</span>
+              </p>
+            } @else if (!permissaoValida) {
+              <p class="ard-hint">Escolha a pessoa, o local e pelo menos um dia.</p>
+            }
+
+            <div class="ard-form-actions">
+              @if (editandoPermissaoId !== null) {
+                <button type="button" class="ard-btn is-quiet" (click)="cancelarEdicao()">Cancelar edição</button>
+              }
+              <button type="submit" class="ard-btn is-primary" [disabled]="!permissaoValida || salvandoPermissao" [attr.aria-busy]="salvandoPermissao">
+                @if (salvandoPermissao) {
+                  <span class="ard-spinner" aria-hidden="true"></span>
+                  Salvando
+                } @else {
+                  <mat-icon aria-hidden="true">{{ editandoPermissaoId === null ? 'add' : 'save' }}</mat-icon>
+                  {{ editandoPermissaoId === null ? 'Criar permissão' : 'Salvar alterações' }}
+                }
+              </button>
+            </div>
+          </form>
+        </section>
+      }
+
+      <!-- Lista -->
+      <section class="ard-panel is-list" aria-labelledby="lista-titulo" [attr.aria-busy]="rowsFromApi() === null">
+        <div class="ard-panel-head">
+          <div>
+            @switch (cfg.resource) {
+              @case ('usuarios') {
+                <h2 id="lista-titulo">Pessoas cadastradas</h2>
+              }
+              @case ('permissoes') {
+                <h2 id="lista-titulo">Permissões definidas</h2>
+              }
+              @default {
+                <h2 id="lista-titulo">Tentativas de acesso</h2>
+              }
+            }
+            <p>
+              @if (rowsFromApi() === null) {
+                Carregando.
+              } @else if (dataNotice() && !allRows.length) {
+                Lista indisponível.
+              } @else {
+                @switch (cfg.resource) {
+                  @case ('usuarios') {
+                    {{ allRows.length }} {{ allRows.length === 1 ? 'pessoa' : 'pessoas' }}
+                  }
+                  @case ('permissoes') {
+                    {{ allRows.length }} {{ allRows.length === 1 ? 'regra' : 'regras' }} de acesso
+                  }
+                  @default {
+                    {{ displayedRows.length }} {{ displayedRows.length === 1 ? 'tentativa' : 'tentativas' }},
+                    {{ contarResultado('Sim') }} {{ contarResultado('Sim') === 1 ? 'autorizada' : 'autorizadas' }},
+                    {{ contarResultado('Não') }} {{ contarResultado('Não') === 1 ? 'negada' : 'negadas' }}
+                  }
+                }
+              }
+            </p>
+          </div>
+          @if (cfg.resource === 'historico') {
+            @if (tempoReal) {
+              <span class="ard-badge is-ok is-live">Ao vivo</span>
+            } @else {
+              <span class="ard-badge is-neutral" matTooltip="Novas tentativas voltam a aparecer sozinhas quando a conexão voltar.">Reconectando</span>
+            }
           }
         </div>
-        <div class="permission-form">
-          <label>
-            <span class="floating-label">Usuário</span>
-            <select
-              [(ngModel)]="permissaoForm.usuario_id"
-              [disabled]="editandoPermissaoId !== null"
-            >
-              <option [ngValue]="0" disabled>Selecione...</option>
-              @for (usuario of usuarios; track usuario.user_id) {
-                <option [ngValue]="usuario.user_id">
-                  {{ usuario.nome }}
-                </option>
-              }
-            </select>
-          </label>
-          <label>
-            <span class="floating-label">Local</span>
-            <select [(ngModel)]="permissaoForm.local_id">
-              <option [ngValue]="0" disabled>Selecione...</option>
-              @for (local of locais; track local.local_id) {
-                <option [ngValue]="local.local_id">{{ local.nome }}</option>
-              }
-            </select>
-          </label>
-          <label
-            ><span class="floating-label">Início</span
-            ><input type="time" [(ngModel)]="permissaoForm.horario_inicio"
-          /></label>
-          <label
-            ><span class="floating-label">Fim</span
-            ><input type="time" [(ngModel)]="permissaoForm.horario_fim"
-          /></label>
-          <div class="permission-days">
-            <span>Dias</span>
-            @for (dia of [1, 2, 3, 4, 5, 6, 7]; track dia) {
-              <button
-                type="button"
-                [attr.title]="nomeDia(dia)"
-                [attr.aria-label]="nomeDia(dia)"
-                [class.selected]="permissaoForm.dias_semana.includes(dia)"
-                [attr.aria-pressed]="permissaoForm.dias_semana.includes(dia)"
-                (click)="togglePermissaoDia(dia)"
-              >
-                {{ nomeDia(dia).slice(0, 3) }}
-              </button>
-            }
-          </div>
-          <div class="editor-actions">
-            <button
-              type="button"
-              mat-flat-button
-              color="primary"
-              [disabled]="
-                !permissaoForm.usuario_id ||
-                !permissaoForm.local_id ||
-                !permissaoForm.dias_semana.length
-              "
-              (click)="salvarPermissao()"
-            >
-              <mat-icon>save</mat-icon> Salvar
-            </button>
-            @if (editandoPermissaoId !== null) {
-              <button type="button" mat-button (click)="cancelarEdicao()">Cancelar</button>
-            }
-          </div>
-        </div>
-      </section>
-    }
+        @if (cfg.resource === 'historico') {
+          <p class="ard-sr-only" aria-live="polite">{{ anuncio() }}</p>
+        }
 
-    @if (cfg.resource === 'permissoes') {
-      <div class="next-step">
-        <mat-icon>arrow_forward</mat-icon>
-        <span>Após salvar as permissões, confira o acesso com o cartão do usuário.</span>
-        <a routerLink="/validar-acesso" mat-stroked-button>Validar acesso</a>
-      </div>
-    }
-    <!-- CONTEÚDO PRINCIPAL (TABELA DE TUPLAS) -->
-    <main class="tuple-content">
-      <div
-        class="table-card"
-        tabindex="0"
-        role="region"
-        aria-label="Tabela de registros; deslize para ver todas as colunas"
-      >
+        <div class="ard-toolbar">
+          <label class="ard-search">
+            <span class="ard-sr-only">Buscar em {{ cfg.title.toLowerCase() }}</span>
+            <mat-icon aria-hidden="true">search</mat-icon>
+            <input
+              type="search"
+              [ngModel]="filtroTexto()"
+              (ngModelChange)="filtroTexto.set($event); carregarDados()"
+              [placeholder]="cfg.resource === 'usuarios' ? 'Nome, CPF ou cartão' : 'Buscar'"
+              autocomplete="off"
+            />
+          </label>
+
+          @if (cfg.resource === 'usuarios') {
+            <div class="ard-filter">
+              <label for="filtro-status">Status</label>
+              <select id="filtro-status" [ngModel]="filtroAtivo()" (ngModelChange)="filtroAtivo.set($event); carregarDados()">
+                <option value="todos">Todos</option>
+                <option value="ativo">Ativos</option>
+                <option value="inativo">Inativos</option>
+              </select>
+            </div>
+          }
+
+          @if (cfg.resource === 'permissoes' || cfg.resource === 'historico') {
+            <div class="ard-filter">
+              <label for="filtro-usuario">Pessoa</label>
+              <select id="filtro-usuario" [ngModel]="filtroUsuarioId()" (ngModelChange)="filtroUsuarioId.set($event); carregarDados()">
+                <option [ngValue]="null">Todas</option>
+                @for (u of usuarios; track u.user_id) {
+                  <option [ngValue]="u.user_id">{{ u.nome }}</option>
+                }
+              </select>
+            </div>
+            <div class="ard-filter">
+              <label for="filtro-local">Local</label>
+              <select id="filtro-local" [ngModel]="filtroLocalId()" (ngModelChange)="filtroLocalId.set($event); carregarDados()">
+                <option [ngValue]="null">Todos</option>
+                @for (l of locais; track l.local_id) {
+                  <option [ngValue]="l.local_id">{{ l.nome }}</option>
+                }
+              </select>
+            </div>
+          }
+
+          @if (cfg.resource === 'historico') {
+            <div class="ard-filter">
+              <label for="filtro-resultado">Resultado</label>
+              <select id="filtro-resultado" [ngModel]="filtroAutorizado()" (ngModelChange)="filtroAutorizado.set($event); carregarDados()">
+                <option value="todos">Todos</option>
+                <option value="autorizado">Autorizados</option>
+                <option value="negado">Negados</option>
+              </select>
+            </div>
+          }
+        </div>
+
         @if (rowsFromApi() === null) {
-          <div class="skeleton-table" aria-label="Carregando dados">
-            @for (item of [1, 2, 3, 4, 5]; track item) {
-              <div class="skeleton-row">
-                <span class="skeleton-cell"></span>
-                <span class="skeleton-cell"></span>
-                <span class="skeleton-cell"></span>
-                <span class="skeleton-cell"></span>
-                <span class="skeleton-cell"></span>
-              </div>
+          <div class="ard-sk-rows" aria-hidden="true">
+            @for (linha of [1, 2, 3, 4, 5]; track linha) {
+              <div><span class="ard-sk"></span><span class="ard-sk"></span><span class="ard-sk"></span><span class="ard-sk"></span></div>
             }
+          </div>
+        } @else if (!allRows.length && dataNotice()) {
+          <div class="ard-state is-error" role="alert">
+            <mat-icon aria-hidden="true">cloud_off</mat-icon>
+            <div>
+              <strong>{{ dataNotice() }}</strong>
+              <p>Verifique a conexão com o servidor e tente de novo.</p>
+              <div class="ard-state-actions">
+                <button type="button" class="ard-btn" (click)="carregarDados()">Tentar novamente</button>
+              </div>
+            </div>
           </div>
         } @else if (!displayedRows.length) {
-          <div class="empty-state">
-            <mat-icon>inbox</mat-icon>
-            <strong>Nenhum registro encontrado</strong>
-            <span>
-              {{
-                filtroTexto()
-                  ? 'Ajuste a pesquisa ou limpe os filtros.'
-                  : 'Ainda não há dados para exibir.'
-              }}
-            </span>
+          <div class="ard-state">
+            @if (filtrando) {
+              <mat-icon aria-hidden="true">search_off</mat-icon>
+              <div>
+                <strong>Nenhum resultado para estes filtros</strong>
+                <p>Limpe os filtros para ver todos os registros.</p>
+                <div class="ard-state-actions">
+                  <button type="button" class="ard-btn" (click)="limparFiltros()">Limpar filtros</button>
+                </div>
+              </div>
+            } @else {
+              @switch (cfg.resource) {
+                @case ('usuarios') {
+                  <mat-icon aria-hidden="true">group_add</mat-icon>
+                  <div>
+                    <strong>Nenhuma pessoa cadastrada</strong>
+                    <p>Cadastre cada pessoa com cartão RFID e biometria facial para que ela possa entrar.</p>
+                    <div class="ard-state-actions">
+                      <button type="button" class="ard-btn is-primary" (click)="cadastrarUsuario()">Cadastrar usuário</button>
+                    </div>
+                  </div>
+                }
+                @case ('permissoes') {
+                  <mat-icon aria-hidden="true">vpn_key</mat-icon>
+                  <div>
+                    <strong>Nenhuma permissão definida</strong>
+                    <p>Sem permissão, o cartão é recusado mesmo cadastrado. Use Criar permissão para liberar um local.</p>
+                  </div>
+                }
+                @default {
+                  <mat-icon aria-hidden="true">sensors</mat-icon>
+                  <div>
+                    <strong>Nenhuma tentativa registrada</strong>
+                    <p>Quando um cartão for aproximado de um leitor, o resultado aparece aqui na hora.</p>
+                  </div>
+                }
+              }
+            }
           </div>
         } @else {
-          <table class="tuple-table">
-            <thead>
-              <tr>
-                @for (col of cfg.columns; track col.key) {
-                  <th>{{ col.label }}</th>
-                }
-                @if (cfg.resource === 'permissoes' || cfg.resource === 'usuarios') {
-                  <th>Ações</th>
-                }
-              </tr>
-            </thead>
-            <tbody>
-              @for (row of displayedRows; track $index) {
-                <tr>
-                  @for (col of cfg.columns; track col.key) {
-                    <td>
-                      @if (isBadgeStatus(row[col.key])) {
-                        <span class="badge" [ngClass]="getStatusClass(row[col.key])">
-                          {{
-                            col.key === 'autorizado'
-                              ? row[col.key] === 'Sim'
-                                ? 'Autorizado'
-                                : 'Negado'
-                              : col.key === 'ativo'
-                                ? row[col.key] === 'Sim'
-                                  ? 'Ativo'
-                                  : 'Inativo'
-                                : row[col.key]
-                          }}
-                        </span>
-                      } @else {
-                        <span class="cell-value">{{ row[col.key] }}</span>
-                      }
-                    </td>
-                  }
-                  @if (cfg.resource === 'permissoes') {
-                    <td class="row-actions">
-                      <div class="record-actions">
-                        <button
-                          type="button"
-                          mat-icon-button
-                          title="Editar"
-                          aria-label="Editar"
-                          (click)="iniciarEdicao(row)"
-                        >
-                          <mat-icon>edit</mat-icon>
-                        </button>
-                        <button
-                          type="button"
-                          mat-icon-button
-                          title="Excluir"
-                          aria-label="Excluir"
-                          (click)="excluirPermissao(row)"
-                        >
-                          <mat-icon>delete</mat-icon>
-                        </button>
-                      </div>
-                    </td>
-                  }
-                  @if (cfg.resource === 'usuarios') {
-                    <td class="row-actions">
-                      <div class="record-actions">
-                        <button
-                          type="button"
-                          mat-icon-button
-                          title="Editar usuário"
-                          aria-label="Editar usuário"
-                          (click)="editarUsuario(row)"
-                        >
-                          <mat-icon>edit</mat-icon>
-                        </button>
-                        <button
-                          type="button"
-                          mat-icon-button
-                          class="danger-action"
-                          title="Excluir usuário"
-                          aria-label="Excluir usuário"
-                          (click)="excluirUsuario(row)"
-                        >
-                          <mat-icon>delete</mat-icon>
-                        </button>
-                      </div>
-                    </td>
-                  }
-                </tr>
+          <div class="ard-table-wrap">
+            @switch (cfg.resource) {
+              <!-- Usuários -->
+              @case ('usuarios') {
+                <table class="ard-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Pessoa</th>
+                      <th scope="col">Tipo</th>
+                      <th scope="col">Cartão RFID</th>
+                      <th scope="col">Biometria</th>
+                      <th scope="col">Status</th>
+                      <th scope="col">Cadastro</th>
+                      <th scope="col"><span class="ard-sr-only">Ações</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of displayedRows; track chaveLinha(row, $index)) {
+                      <tr [class.is-inactive]="row['ativo'] === 'Não'" [class.is-new]="destacado === row['user_id']">
+                        <td class="is-lead">
+                          <span class="ard-cell-title">{{ row['nome'] }}</span>
+                          <span class="ard-cell-sub">{{ row['cpf'] === '-' ? 'Sem CPF' : 'CPF ' + row['cpf'] }}</span>
+                        </td>
+                        <td data-label="Tipo"><span class="ard-tag">{{ row['tipo_usuario'] }}</span></td>
+                        <td data-label="Cartão RFID">
+                          @if (row['uid_card'] !== '-') {
+                            <code class="ard-code">{{ row['uid_card'] }}</code>
+                          } @else {
+                            <span class="ard-badge is-warn">Sem cartão</span>
+                          }
+                        </td>
+                        <td data-label="Biometria">
+                          <span class="ard-badge" [class.is-ok]="row['vetor_facial'] === 'Cadastrada'" [class.is-warn]="row['vetor_facial'] !== 'Cadastrada'">
+                            {{ row['vetor_facial'] === 'Cadastrada' ? 'Cadastrada' : 'Pendente' }}
+                          </span>
+                        </td>
+                        <td data-label="Status">
+                          <span class="ard-badge" [class.is-ok]="row['ativo'] === 'Sim'" [class.is-neutral]="row['ativo'] !== 'Sim'">
+                            {{ row['ativo'] === 'Sim' ? 'Ativo' : 'Inativo' }}
+                          </span>
+                        </td>
+                        <td data-label="Cadastro" class="ard-num">{{ row['criado_em'] }}</td>
+                        <td class="is-actions">
+                          <div class="ard-row-actions">
+                            <button type="button" class="ard-icon-btn" (click)="editarUsuario(row)" [attr.aria-label]="'Editar ' + row['nome']" matTooltip="Editar">
+                              <mat-icon aria-hidden="true">edit</mat-icon>
+                            </button>
+                            <button type="button" class="ard-icon-btn is-danger" (click)="excluirUsuario(row)" [attr.aria-label]="'Excluir ' + row['nome']" matTooltip="Excluir">
+                              <mat-icon aria-hidden="true">delete</mat-icon>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
               }
-            </tbody>
-          </table>
-        }
-      </div>
-    </main>
 
-    <!-- FOOTER DO COMPONENTE -->
-    <footer class="tuple-footer">
-      <div class="footer-info">
-        <mat-icon>info</mat-icon>
-        <span>
-          Exibindo <strong>{{ displayedRows.length }}</strong> de
-          <strong>{{ allRows.length }}</strong> registros
-        </span>
-      </div>
-      <div class="footer-actions">
-        <a routerLink="/adm-page" mat-stroked-button>
-          <mat-icon>arrow_back</mat-icon>
-          Painel administrativo
-        </a>
-      </div>
-    </footer>
+              <!-- Permissões -->
+              @case ('permissoes') {
+                <table class="ard-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Pessoa</th>
+                      <th scope="col">Local</th>
+                      <th scope="col">Horário</th>
+                      <th scope="col">Dias</th>
+                      <th scope="col"><span class="ard-sr-only">Ações</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of displayedRows; track chaveLinha(row, $index)) {
+                      @let dias = diasDaPermissao(row);
+                      <tr [class.is-editing]="editandoPermissaoId === row['permissao_id']" [class.is-new]="destacado === row['permissao_id']">
+                        <td class="is-lead">
+                          <span class="ard-cell-title">{{ row['usuario_id'] }}</span>
+                        </td>
+                        <td data-label="Local">{{ row['local_id'] }}</td>
+                        <td data-label="Horário" class="ard-num horario-celula">{{ horaCurta(row['horario_inicio']) }} às {{ horaCurta(row['horario_fim']) }}</td>
+                        <td data-label="Dias" class="is-wide">
+                          <span class="semana" role="img" [attr.aria-label]="row['dias_semana']">
+                            @for (dia of [1, 2, 3, 4, 5, 6, 7]; track dia) {
+                              <span [class.is-on]="dias.includes(dia)" aria-hidden="true">{{ nomeDia(dia).charAt(0) }}</span>
+                            }
+                          </span>
+                        </td>
+                        <td class="is-actions">
+                          <div class="ard-row-actions">
+                            <button type="button" class="ard-icon-btn" (click)="iniciarEdicao(row)" [attr.aria-label]="'Editar a permissão de ' + row['usuario_id'] + ' em ' + row['local_id']" matTooltip="Editar">
+                              <mat-icon aria-hidden="true">edit</mat-icon>
+                            </button>
+                            <button type="button" class="ard-icon-btn is-danger" (click)="excluirPermissao(row)" [attr.aria-label]="'Excluir a permissão de ' + row['usuario_id'] + ' em ' + row['local_id']" matTooltip="Excluir">
+                              <mat-icon aria-hidden="true">delete</mat-icon>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+
+              <!-- Histórico -->
+              @default {
+                <table class="ard-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Quando</th>
+                      <th scope="col">Pessoa</th>
+                      <th scope="col">Local</th>
+                      <th scope="col">Resultado</th>
+                      <th scope="col" class="is-num">Similaridade</th>
+                      <th scope="col">Motivo da recusa</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of displayedRows; track chaveLinha(row, $index)) {
+                      @let quando = partesDataHora(row['data_hora']);
+                      <tr [class.is-new]="row['_novo']">
+                        <td class="is-lead ard-num">
+                          <span class="ard-cell-title">{{ quando.hora }}</span>
+                          <span class="ard-cell-sub">{{ quando.data }}</span>
+                        </td>
+                        <td data-label="Pessoa">
+                          <span [class.ard-muted]="row['usuario_id'] === 'Não identificado'">{{ row['usuario_id'] }}</span>
+                          @if (row['uid_card_lido'] !== '-') {
+                            <span class="ard-cell-sub"><code class="ard-code">{{ row['uid_card_lido'] }}</code></span>
+                          }
+                        </td>
+                        <td data-label="Local">{{ row['local_id'] }}</td>
+                        <td data-label="Resultado" class="is-corner">
+                          <span class="ard-badge" [class.is-ok]="row['autorizado'] === 'Sim'" [class.is-bad]="row['autorizado'] !== 'Sim'">
+                            {{ row['autorizado'] === 'Sim' ? 'Autorizado' : 'Negado' }}
+                          </span>
+                        </td>
+                        <td data-label="Similaridade" class="is-num" [class.is-empty]="row['percentual_similaridade'] === '-'">{{ row['percentual_similaridade'] === '-' ? '' : row['percentual_similaridade'] }}</td>
+                        <td data-label="Motivo da recusa" class="is-wide motivo" [class.is-empty]="row['motivo_recusa'] === '-'">
+                          @if (row['motivo_recusa'] !== '-') {
+                            {{ row['motivo_recusa'] }}
+                          }
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+            }
+          </div>
+          @if (filtrando) {
+            <div class="ard-panel-foot">
+              <span>Exibindo {{ displayedRows.length }} de {{ allRows.length }} registros</span>
+              <button type="button" class="ard-btn is-quiet is-compact" (click)="limparFiltros()">Limpar filtros</button>
+            </div>
+          }
+        }
+      </section>
+    </div>
   </div>
 }

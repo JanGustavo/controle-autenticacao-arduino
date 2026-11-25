@@ -2,12 +2,8 @@ import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { AuthFrame, EtapaAuth } from '../../components/auth-frame/auth-frame';
 import { ApiService } from '../../services/api.service';
 
 @Component({
@@ -17,18 +13,24 @@ import { ApiService } from '../../services/api.service';
     CommonModule,
     FormsModule,
     RouterModule,
-    MatCardModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
     MatIconModule,
-    MatProgressSpinnerModule,
+    AuthFrame,
   ],
   templateUrl: './forgot-password.html',
   styleUrl: './forgot-password.scss'
 })
 export class ForgotPassword {
   private api = inject(ApiService);
+
+  /** Etapas da recuperação; depois do envio, a próxima é abrir o link do e-mail. */
+  get etapas(): EtapaAuth[] {
+    const enviado = !!this.sucesso();
+    return [
+      { titulo: 'Informe seu e-mail', texto: 'O mesmo usado para entrar no painel.', icone: 'alternate_email', estado: enviado ? 'done' : 'active' },
+      { titulo: 'Abra o link recebido', texto: 'Ele leva à tela de nova senha.', icone: 'mark_email_read', estado: enviado ? 'active' : null },
+      { titulo: 'Crie uma nova senha', texto: 'E entre de novo no painel.', icone: 'password', estado: null },
+    ];
+  }
 
   email = '';
   carregando = signal(false);

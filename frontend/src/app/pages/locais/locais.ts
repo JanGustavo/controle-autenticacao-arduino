@@ -1,9 +1,10 @@
 import { ConfirmationService } from '../../components/confirmation-dialog/confirmation-dialog';
-import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, inject, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 
@@ -18,6 +19,7 @@ import { ApiService, LocalRequest, LocalResponse } from '../../services/api.serv
     MatButtonModule,
     MatIconModule,
     MatSnackBarModule,
+    MatTooltipModule,
     RouterLink,
   ],
   templateUrl: './locais.html',
@@ -33,8 +35,16 @@ export class LocaisPage implements OnInit {
   carregando = true;
   salvando = false;
   editandoId: number | null = null;
+  /** Erro do formulário (validação ou salvamento). */
   erro = '';
+  /** Erro ao carregar a lista; fica separado para não apagar a tabela. */
+  erroLista = '';
+  /** Linha recém-criada ou alterada, destacada por um instante. */
+  destacadoId: number | null = null;
   form: LocalRequest = this.novoForm();
+
+  @ViewChild('editor') private editor?: ElementRef<HTMLElement>;
+  @ViewChild('nomeInput') private nomeInput?: ElementRef<HTMLInputElement>;
 
   // Filtros de busca
   filtroTexto = '';
@@ -55,21 +65,34 @@ export class LocaisPage implements OnInit {
     });
   }
 
+  get ativos(): number {
+    return this.locais.filter((local) => local.ativo).length;
+  }
+
+  get filtrando(): boolean {
+    return !!this.filtroTexto.trim() || this.filtroAtivo !== 'todos';
+  }
+
+  limparFiltros(): void {
+    this.filtroTexto = '';
+    this.filtroAtivo = 'todos';
+  }
+
   ngOnInit(): void {
     this.carregar();
   }
 
   carregar(): void {
     this.carregando = true;
+    this.erroLista = '';
     this.api.getLocais().subscribe({
       next: (locais) => {
         this.locais = locais;
-        this.erro = '';
         this.carregando = false;
         this.cdr.markForCheck();
       },
       error: () => {
-        this.erro = 'Não foi possível carregar os locais.';
+        this.erroLista = 'Não foi possível carregar os locais.';
         this.carregando = false;
         this.cdr.markForCheck();
       },
@@ -83,7 +106,8 @@ export class LocaisPage implements OnInit {
       ativo: this.form.ativo,
     };
     if (payload.nome.length < 2) {
-      this.erro = 'Informe o nome do local.';
+      this.erro = 'Informe o nome do local, com pelo menos 2 caracteres.';
+      this.nomeInput?.nativeElement.focus();
       return;
     }
 
@@ -101,10 +125,11 @@ export class LocaisPage implements OnInit {
             ? [...this.locais, local].sort((a, b) => a.local_id - b.local_id)
             : this.locais.map((item) => (item.local_id === local.local_id ? local : item));
         this.snackBar.open(
-          this.editandoId === null ? 'Local criado com sucesso.' : 'Local atualizado com sucesso.',
+          this.editandoId === null ? `Local ${local.nome} cadastrado.` : `Alterações em ${local.nome} salvas.`,
           'Fechar',
           { duration: 4000 },
         );
+        this.destacar(local.local_id);
         this.cancelar();
         this.cdr.markForCheck();
       },
@@ -123,6 +148,7 @@ export class LocaisPage implements OnInit {
       ativo: local.ativo,
     };
     this.erro = '';
+    this.focarEditor();
   }
 
   async excluir(local: LocalResponse): Promise<void> {
@@ -150,11 +176,13 @@ export class LocaisPage implements OnInit {
     this.api.deletarLocal(local.local_id).subscribe({
       next: () => {
         this.locais = this.locais.filter((item) => item.local_id !== local.local_id);
-        this.snackBar.open('Local excluído com sucesso.', 'Fechar', { duration: 4000 });
+        this.snackBar.open(`Local ${local.nome} excluído.`, 'Fechar', { duration: 4000 });
         this.cdr.markForCheck();
       },
       error: () => {
-        this.erro = 'Não foi possível excluir o local.';
+        this.snackBar.open(`Não foi possível excluir ${local.nome}. Tente novamente.`, 'Fechar', {
+          duration: 6000,
+        });
         this.cdr.markForCheck();
       },
     });
@@ -162,7 +190,25 @@ export class LocaisPage implements OnInit {
 
   cancelar(): void {
     this.editandoId = null;
+    this.erro = '';
     this.form = this.novoForm();
+  }
+
+  /** Leva o formulário à vista (no celular ele fica acima da lista) e foca o nome. */
+  private focarEditor(): void {
+    setTimeout(() => {
+      const reduzir = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      this.editor?.nativeElement.scrollIntoView({ block: 'nearest', behavior: reduzir ? 'auto' : 'smooth' });
+      this.nomeInput?.nativeElement.focus({ preventScroll: true });
+    });
+  }
+
+  private destacar(id: number): void {
+    this.destacadoId = id;
+    setTimeout(() => {
+      if (this.destacadoId === id) this.destacadoId = null;
+      this.cdr.markForCheck();
+    }, 1700);
   }
 
   private novoForm(): LocalRequest {

@@ -1,281 +1,280 @@
-<div class="locais-wrapper">
-  <!-- CABEÇALHO -->
-  <div class="header">
-    <a routerLink="/adm-page" class="back-link">
-      <mat-icon>arrow_back</mat-icon>
-      Painel administrativo
-    </a>
-    <div class="module-heading">
-      <span class="module-icon"><mat-icon>admin_panel_settings</mat-icon></span>
-      <div><h2>Administradores</h2><p class="subtitle">Cadastre e controle as contas administrativas do sistema</p></div>
+<div class="ard-page">
+  <a routerLink="/adm-page" class="ard-back"><mat-icon aria-hidden="true">arrow_back</mat-icon>Painel administrativo</a>
+  <header class="ard-head">
+    <div class="ard-head-main">
+      <span class="ard-module-icon" data-tone="administradores" aria-hidden="true"><mat-icon>admin_panel_settings</mat-icon></span>
+      <div>
+        <h1>Administradores</h1>
+        <p>Contas com acesso a este painel. Cada ação feita por elas fica registrada na auditoria.</p>
+      </div>
     </div>
-  </div>
+    <div class="ard-head-actions">
+      <button type="button" class="ard-btn is-primary" (click)="novo()">
+        <mat-icon aria-hidden="true">person_add</mat-icon>
+        Cadastrar administrador
+      </button>
+    </div>
+  </header>
 
-  <div class="page-toolbar">
-    <span>{{ administradores.length }} administrador(es) cadastrado(s)</span>
-    <button type="button" class="btn btn-primary" (click)="novo()">
-      <mat-icon>person_add</mat-icon> Cadastrar administrador
-    </button>
-  </div>
-  <div class="content-grid">
-    <ng-template #adminForm>
-    <div class="form-card admin-dialog">
-      <div class="card-title">
-        <mat-icon>{{ editandoId !== null ? 'edit' : 'admin_panel_settings' }}</mat-icon>
-        <h3 id="admin-dialog-title">{{ editandoId !== null ? 'Editar Administrador' : 'Novo Administrador' }}</h3>
-        <button type="button" class="btn-icon close-dialog" (click)="cancelar()" [disabled]="salvando" aria-label="Fechar formulário">
-          <mat-icon>close</mat-icon>
+  <!-- Formulário aberto em diálogo (cadastro e edição) -->
+  <ng-template #adminForm>
+    <form class="ard-dialog" (ngSubmit)="salvar()" novalidate>
+      <div class="ard-dialog-head">
+        <div>
+          <h2 id="admin-dialog-title">{{ editandoId !== null ? 'Editar administrador' : 'Cadastrar administrador' }}</h2>
+          <p>
+            {{
+              editandoId !== null
+                ? 'Deixe a senha em branco para manter a atual.'
+                : 'A pessoa entra no painel com o e-mail e a senha definidos aqui.'
+            }}
+          </p>
+        </div>
+        <button type="button" class="ard-icon-btn" (click)="cancelar()" [disabled]="salvando" aria-label="Fechar formulário">
+          <mat-icon aria-hidden="true">close</mat-icon>
         </button>
       </div>
 
-      <form (ngSubmit)="salvar()">
-        @if (erro) {
-          <div class="error-banner">
-            <mat-icon>error_outline</mat-icon>
-            <span>{{ erro }}</span>
+      <div class="ard-dialog-body">
+        <div class="foto-linha">
+          <span class="ard-avatar is-large" aria-hidden="true">
+            @if (form.foto_url && !formImgFailed) {
+              <img [src]="form.foto_url" alt="" (error)="onFormImgError()" />
+            } @else {
+              {{ form.nome ? form.nome.trim().charAt(0).toUpperCase() : 'A' }}
+            }
+          </span>
+          <div class="ard-field">
+            <label for="nome">Nome completo</label>
+            <input id="nome" type="text" [(ngModel)]="form.nome" name="nome" placeholder="Ex.: João da Silva" autocomplete="name" required />
           </div>
-        }
-
-        <div class="field">
-          <label for="nome">Nome completo *</label>
-          <input
-            id="nome"
-            type="text"
-            [(ngModel)]="form.nome"
-            name="nome"
-            placeholder="Ex: João da Silva"
-            required
-          />
         </div>
-
-        <div class="field">
-          <label for="email">E-mail de acesso *</label>
-          <input
-            id="email"
-            type="email"
-            [(ngModel)]="form.email"
-            name="email"
-            placeholder="Ex: joao@ardlock.local"
-            required
-          />
+        <div class="ard-field">
+          <label for="email">E-mail de acesso</label>
+          <input id="email" type="email" [(ngModel)]="form.email" name="email" placeholder="joao@empresa.com.br" autocomplete="email" required />
         </div>
-
-        <div class="field">
-          <label for="senha">
-            Senha {{ editandoId !== null ? '(deixe em branco para manter a atual)' : '*' }}
-          </label>
+        <div class="ard-field">
+          <label for="senha">{{ editandoId !== null ? 'Nova senha (opcional)' : 'Senha' }}</label>
           <input
             id="senha"
             type="password"
             [(ngModel)]="form.senha"
             name="senha"
-            placeholder="{{ editandoId !== null ? '•••••••• (Inalterada)' : 'Mínimo 6 caracteres' }}"
+            autocomplete="new-password"
+            [placeholder]="editandoId !== null ? 'Manter a senha atual' : 'Mínimo de 6 caracteres'"
           />
         </div>
-
-        <div class="field checkbox-field">
-          <label class="checkbox-label">
-            <input
-              type="checkbox"
-              [(ngModel)]="form.ativo"
-              name="ativo"
-              [disabled]="editandoPrincipal"
-            />
-            <span>Administrador ativo no sistema</span>
+        <div>
+          <label class="ard-check">
+            <input type="checkbox" [(ngModel)]="form.ativo" name="ativo" [disabled]="editandoPrincipal" />
+            <span>Administrador ativo</span>
           </label>
           @if (editandoPrincipal) {
-            <small class="hint-warn">A conta principal do ArdLock não pode ser desativada.</small>
-          }
-        </div>
-
-        <div class="field">
-          <label for="foto_url">URL da foto de perfil</label>
-          <div class="foto-input-wrapper">
-            <div class="form-avatar-preview">
-              @if (form.foto_url && !formImgFailed) {
-                <img
-                  [src]="form.foto_url"
-                  alt="Pré-visualização da foto"
-                  class="preview-img"
-                  (error)="onFormImgError()"
-                />
-              } @else {
-                <span class="preview-initial">{{ form.nome ? form.nome.trim().charAt(0).toUpperCase() : 'A' }}</span>
-              }
-            </div>
-            <input
-              id="foto_url"
-              type="text"
-              [(ngModel)]="form.foto_url"
-              (ngModelChange)="onFotoUrlChange()"
-              name="foto_url"
-              placeholder="https://exemplo.com/foto.jpg"
-            />
-          </div>
-          @if (form.foto_url && formImgFailed) {
-            <small class="hint-warn">
-              <mat-icon style="font-size: 14px; width: 14px; height: 14px; vertical-align: middle;">warning</mat-icon>
-              Não foi possível carregar a imagem. Certifique-se de usar o <strong>link direto da imagem</strong> (ex: <code>https://i.ibb.co/...</code> ou final em <code>.jpg</code> / <code>.png</code>) e não o link da página web.
-            </small>
+            <p class="ard-hint">A conta principal do ArdLock não pode ser desativada.</p>
           } @else {
-            <small class="hint-info">Use o link direto de uma imagem (ex: <code>https://i.ibb.co/...</code> ou <code>.jpg/.png</code>).</small>
+            <p class="ard-hint">Uma conta inativa não consegue entrar no painel.</p>
           }
         </div>
 
-        <div class="actions">
-          <button type="button" class="btn btn-secondary" (click)="cancelar()" [disabled]="salvando">
-            Cancelar
-          </button>
-          <button type="submit" class="btn btn-primary" [disabled]="salvando">
-            <mat-icon>{{ editandoId !== null ? 'save' : 'add' }}</mat-icon>
-            {{ salvando ? 'Salvando...' : (editandoId !== null ? 'Salvar alterações' : 'Cadastrar') }}
-          </button>
-        </div>
-      </form>
-    </div>
-
-    </ng-template>
-    <!-- LISTAGEM E FILTROS -->
-    <div class="list-card">
-      <div class="list-header">
-        <div class="search-box">
-          <mat-icon>search</mat-icon>
+        <div class="ard-field">
+          <label for="foto_url">Foto de perfil (opcional)</label>
           <input
-            type="text"
-            [(ngModel)]="filtroTexto"
-            aria-label="Buscar administrador por nome ou e-mail"
-            placeholder="Buscar por nome ou e-mail..."
+            id="foto_url"
+            type="url"
+            [(ngModel)]="form.foto_url"
+            (ngModelChange)="onFotoUrlChange()"
+            name="foto_url"
+            placeholder="https://exemplo.com/foto.jpg"
+            autocomplete="off"
+            aria-describedby="foto-dica"
           />
+          @if (form.foto_url && formImgFailed) {
+            <p class="ard-notice is-warning" id="foto-dica">
+              <mat-icon aria-hidden="true">warning</mat-icon>
+              <span>A imagem não carregou. Use o link direto do arquivo (terminado em .jpg ou .png), não o da página.</span>
+            </p>
+          } @else {
+            <p class="ard-hint" id="foto-dica">Link direto de uma imagem. Sem foto, aparece a inicial do nome.</p>
+          }
         </div>
 
-        <div class="filter-box">
-          <select [(ngModel)]="filtroAtivo" aria-label="Filtrar por status">
-            <option value="todos">Todos os status</option>
-            <option value="ativo">Somente Ativos</option>
-            <option value="inativo">Somente Inativos</option>
-          </select>
-        </div>
+        @if (erro) {
+          <p class="ard-notice is-error" role="alert">
+            <mat-icon aria-hidden="true">error</mat-icon><span>{{ erro }}</span>
+          </p>
+        }
       </div>
 
-      @if (erroLista) {
-        <div class="error-banner" style="margin: 24px;">
-          <mat-icon>error_outline</mat-icon>
-          <span>{{ erroLista }}</span>
-        </div>
-      } @else if (carregando) {
-        <div class="skeleton-table" aria-label="Carregando administradores">
-          @for (item of [1, 2, 3, 4, 5]; track item) {
-            <div class="skeleton-row">
-              <span class="skeleton-cell"></span>
-              <span class="skeleton-cell"></span>
-              <span class="skeleton-cell"></span>
-              <span class="skeleton-cell"></span>
-              <span class="skeleton-cell"></span>
-            </div>
+      <div class="ard-dialog-foot">
+        <button type="button" class="ard-btn is-quiet" (click)="cancelar()" [disabled]="salvando">Cancelar</button>
+        <button type="submit" class="ard-btn is-primary" [disabled]="salvando" [attr.aria-busy]="salvando">
+          @if (salvando) {
+            <span class="ard-spinner" aria-hidden="true"></span>
+            Salvando
+          } @else {
+            <mat-icon aria-hidden="true">{{ editandoId !== null ? 'save' : 'person_add' }}</mat-icon>
+            {{ editandoId !== null ? 'Salvar alterações' : 'Cadastrar administrador' }}
           }
+        </button>
+      </div>
+    </form>
+  </ng-template>
+
+  <section class="ard-panel" aria-labelledby="lista-titulo" [attr.aria-busy]="carregando">
+    <div class="ard-panel-head">
+      <div>
+        <h2 id="lista-titulo">Contas administrativas</h2>
+        <p>
+          @if (carregando) {
+            Carregando as contas.
+          } @else if (!erroLista) {
+            {{ administradores.length }} {{ administradores.length === 1 ? 'administrador' : 'administradores' }},
+            {{ ativos }} {{ ativos === 1 ? 'ativo' : 'ativos' }}
+          }
+        </p>
+      </div>
+    </div>
+
+    <div class="ard-toolbar">
+      <label class="ard-search">
+        <span class="ard-sr-only">Buscar administrador por nome ou e-mail</span>
+        <mat-icon aria-hidden="true">search</mat-icon>
+        <input type="search" [(ngModel)]="filtroTexto" placeholder="Nome ou e-mail" autocomplete="off" />
+      </label>
+      <div class="ard-filter">
+        <label for="filtro-status">Status</label>
+        <select id="filtro-status" [(ngModel)]="filtroAtivo">
+          <option value="todos">Todos</option>
+          <option value="ativo">Ativos</option>
+          <option value="inativo">Inativos</option>
+        </select>
+      </div>
+    </div>
+
+    @if (erroLista) {
+      <div class="ard-state is-error" role="alert">
+        <mat-icon aria-hidden="true">cloud_off</mat-icon>
+        <div>
+          <strong>{{ erroLista }}</strong>
+          <p>Verifique a conexão com o servidor e tente de novo.</p>
+          <div class="ard-state-actions">
+            <button type="button" class="ard-btn" (click)="carregar()">Tentar novamente</button>
+          </div>
         </div>
-      } @else if (administradores.length === 0) {
-        <div class="empty-state">
-          <mat-icon>admin_panel_settings</mat-icon>
-          <p>Nenhum administrador cadastrado no sistema.</p>
+      </div>
+    } @else if (carregando) {
+      <div class="ard-sk-rows" aria-hidden="true">
+        @for (linha of [1, 2, 3]; track linha) {
+          <div><span class="ard-sk"></span><span class="ard-sk"></span><span class="ard-sk"></span></div>
+        }
+      </div>
+    } @else if (administradores.length === 0) {
+      <div class="ard-state">
+        <mat-icon aria-hidden="true">admin_panel_settings</mat-icon>
+        <div>
+          <strong>Nenhum administrador cadastrado</strong>
+          <p>Cadastre quem vai operar o painel junto com você.</p>
+          <div class="ard-state-actions">
+            <button type="button" class="ard-btn is-primary" (click)="novo()">Cadastrar administrador</button>
+          </div>
         </div>
-      } @else if (displayedAdmins.length === 0) {
-        <div class="empty-state">
-          <mat-icon>search_off</mat-icon>
-          <p>Nenhum administrador corresponde ao filtro aplicado.</p>
+      </div>
+    } @else if (displayedAdmins.length === 0) {
+      <div class="ard-state">
+        <mat-icon aria-hidden="true">search_off</mat-icon>
+        <div>
+          <strong>Nenhum administrador corresponde aos filtros</strong>
+          <p>A busca considera nome e e-mail.</p>
+          <div class="ard-state-actions">
+            <button type="button" class="ard-btn" (click)="limparFiltros()">Limpar filtros</button>
+          </div>
         </div>
-      } @else {
-        <p class="table-hint">Deslize a tabela para ver todas as colunas.</p>
-        <div class="table-container" tabindex="0" role="region" aria-label="Tabela de administradores; deslize para ver todas as colunas">
-          <table class="locais-table">
-            <thead>
-              <tr>
-                <th scope="col">ID</th>
-                <th scope="col">Administrador</th>
-                <th scope="col">E-mail</th>
-                <th scope="col">Tipo</th>
-                <th scope="col">Status</th>
-                <th scope="col">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (admin of displayedAdmins; track admin.admin_id) {
-                <tr [class.principal-row]="admin.principal">
-                  <td>#{{ admin.admin_id }}</td>
-                  <td>
-                    <div class="admin-name-col">
-                      <div class="admin-avatar">
-                        @if (admin.foto_url && !hasAdminImgError(admin.admin_id)) {
-                          <img
-                            [src]="admin.foto_url"
-                            alt="Foto de {{ admin.nome }}"
-                            class="admin-avatar-img"
-                            (error)="onAdminImgError(admin.admin_id)"
-                          />
-                        } @else {
-                          <span class="admin-avatar-initial">{{ admin.nome.trim().charAt(0).toUpperCase() }}</span>
-                        }
-                      </div>
-                      <strong>{{ admin.nome }}</strong>
-                    </div>
-                  </td>
-                  <td class="admin-email">{{ admin.email }}</td>
-                  <td>
-                    @if (admin.principal) {
-                      <span class="badge badge-principal">
-                        <mat-icon>star</mat-icon>
-                        Conta Principal
-                      </span>
-                    } @else {
-                      <span class="badge badge-comum">Comum</span>
-                    }
-                  </td>
-                  <td>
-                    <span
-                      class="status-pill"
-                      [class.ativo]="admin.ativo"
-                      [class.inativo]="!admin.ativo"
-                    >
-                      {{ admin.ativo ? 'Ativo' : 'Inativo' }}
+      </div>
+    } @else {
+      <div class="ard-table-wrap">
+        <table class="ard-table">
+          <thead>
+            <tr>
+              <th scope="col">Administrador</th>
+              <th scope="col">Tipo de conta</th>
+              <th scope="col">Status</th>
+              <th scope="col"><span class="ard-sr-only">Ações</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (admin of displayedAdmins; track admin.admin_id) {
+              <tr [class.is-inactive]="!admin.ativo">
+                <td class="is-lead">
+                  <span class="ard-person">
+                    <span class="ard-avatar" aria-hidden="true">
+                      @if (admin.foto_url && !hasAdminImgError(admin.admin_id)) {
+                        <img [src]="admin.foto_url" alt="" (error)="onAdminImgError(admin.admin_id)" />
+                      } @else {
+                        {{ admin.nome.trim().charAt(0).toUpperCase() }}
+                      }
                     </span>
-                  </td>
-                  <td>
-                    <div class="action-buttons">
+                    <span>
+                      <span class="ard-cell-title">{{ admin.nome }}</span>
+                      <span class="ard-cell-sub">{{ admin.email }}</span>
+                    </span>
+                  </span>
+                </td>
+                <td data-label="Tipo de conta">
+                  @if (admin.principal) {
+                    <span class="ard-tag is-accent"><mat-icon aria-hidden="true">star</mat-icon>Conta principal</span>
+                  } @else {
+                    <span class="ard-tag">Comum</span>
+                  }
+                </td>
+                <td data-label="Status">
+                  <span class="ard-badge" [class.is-ok]="admin.ativo" [class.is-neutral]="!admin.ativo">
+                    {{ admin.ativo ? 'Ativo' : 'Inativo' }}
+                  </span>
+                </td>
+                <td class="is-actions">
+                  <div class="ard-row-actions">
+                    <button
+                      type="button"
+                      class="ard-icon-btn"
+                      (click)="editar(admin)"
+                      [attr.aria-label]="'Editar ' + admin.nome"
+                      matTooltip="Editar"
+                    >
+                      <mat-icon aria-hidden="true">edit</mat-icon>
+                    </button>
+                    @if (!admin.principal) {
                       <button
                         type="button"
-                        mat-icon-button
-                        class="btn-icon edit"
-                        (click)="editar(admin)"
-                        aria-label="Editar administrador"
-                        title="Editar Administrador"
+                        class="ard-icon-btn is-danger"
+                        (click)="excluir(admin)"
+                        [attr.aria-label]="'Excluir ' + admin.nome"
+                        matTooltip="Excluir"
                       >
-                        <mat-icon>edit</mat-icon>
+                        <mat-icon aria-hidden="true">delete</mat-icon>
                       </button>
-
-                      @if (!admin.principal) {
-                        <button
-                          type="button"
-                          mat-icon-button
-                          class="btn-icon delete"
-                          (click)="excluir(admin)"
-                          aria-label="Excluir administrador"
-                          title="Excluir Administrador"
-                        >
-                          <mat-icon>delete</mat-icon>
-                        </button>
-                      } @else {
-                        <span class="locked-icon" role="img" aria-label="Conta principal protegida contra exclusão" title="Conta principal protegida contra exclusão">
-                          <mat-icon>lock</mat-icon>
-                        </span>
-                      }
-                    </div>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
+                    } @else {
+                      <span
+                        class="ard-icon-btn conta-protegida"
+                        role="img"
+                        aria-label="Conta principal protegida contra exclusão"
+                        matTooltip="Conta principal: não pode ser excluída"
+                      >
+                        <mat-icon aria-hidden="true">lock</mat-icon>
+                      </span>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      @if (filtrando) {
+        <div class="ard-panel-foot">
+          <span>{{ displayedAdmins.length }} de {{ administradores.length }} administradores</span>
+          <button type="button" class="ard-btn is-quiet is-compact" (click)="limparFiltros()">Limpar filtros</button>
         </div>
       }
-    </div>
-  </div>
+    }
+  </section>
 </div>

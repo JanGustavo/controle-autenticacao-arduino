@@ -10,9 +10,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
 import {
@@ -43,9 +41,7 @@ export interface LocalPermissaoItem {
     CommonModule,
     VisorFacial,
     FormsModule,
-    MatButtonModule,
     MatIconModule,
-    MatProgressSpinnerModule,
     MatSnackBarModule,
     ReactiveFormsModule,
     MatDialogModule,
@@ -108,6 +104,31 @@ export class CadastrarPage implements OnInit, OnDestroy {
 
   get identificadorRfidSelecionado(): string {
     return this.dispositivoRfidSelecionado?.identificador ?? '';
+  }
+
+  /** Etapas obrigatórias do cadastro, na ordem do formulário, com o estado real de cada uma. */
+  get etapas(): { rotulo: string; secao: string; ok: boolean }[] {
+    const { nome, cpf, uid_card } = this.form.controls;
+    return [
+      { rotulo: 'Pessoa', secao: 'secao-pessoa', ok: nome.valid && cpf.valid },
+      { rotulo: 'Cartão', secao: 'secao-cartao', ok: !!uid_card.value },
+      { rotulo: 'Rosto', secao: 'secao-rosto', ok: !!this.fotoCapturada },
+      { rotulo: 'Locais', secao: 'secao-locais', ok: this.locaisPermissao.some((item) => item.selecionado) },
+    ];
+  }
+
+  /** Rola o formulário até uma seção e leva o foco para o título dela. */
+  irPara(secao: string): void {
+    const alvo = document.getElementById(secao);
+    if (!alvo) return;
+    const reduzir = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    alvo.scrollIntoView({ behavior: reduzir ? 'auto' : 'smooth', block: 'start' });
+    alvo.focus({ preventScroll: true });
+  }
+
+  /** Escolhe o modo de captura facial sem alternar quando já está nele. */
+  definirModoTotem(automatico: boolean): void {
+    if (this.modoTotem() !== automatico) this.toggleModoTotem();
   }
 
   form = this.formBuilder.nonNullable.group({
@@ -260,7 +281,7 @@ export class CadastrarPage implements OnInit, OnDestroy {
     this.form.get('uid_card')?.markAsTouched();
     this.cdr.markForCheck();
 
-    this.snackBar.open(`Cartão RFID lido: ${uidNormalizado}`, 'OK', { duration: 3500 });
+    this.snackBar.open(`Cartão RFID lido: ${uidNormalizado}`, 'Fechar', { duration: 3500 });
     this.speech.falar('Cartão identificado.');
   }
 
@@ -290,11 +311,13 @@ export class CadastrarPage implements OnInit, OnDestroy {
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.irPara('secao-pessoa');
       return;
     }
 
     if (!this.identificadorRfidSelecionado) {
       this.errorMessage = 'Selecione o dispositivo que fará a leitura do cartão.';
+      this.irPara('secao-cartao');
       return;
     }
 
@@ -302,11 +325,13 @@ export class CadastrarPage implements OnInit, OnDestroy {
 
     if (!locaisSelecionados.length) {
       this.errorMessage = 'Selecione pelo menos um local e configure seu horário de acesso.';
+      this.irPara('secao-locais');
       return;
     }
 
     if (!this.fotoCapturada) {
-      this.errorMessage = 'Conclua a captura facial antes de criar o usuário.';
+      this.errorMessage = 'Conclua a captura facial antes de cadastrar o usuário.';
+      this.irPara('secao-rosto');
       return;
     }
 
@@ -316,6 +341,7 @@ export class CadastrarPage implements OnInit, OnDestroy {
 
     if (!uidNormalizado) {
       this.errorMessage = 'Faça a leitura do cartão RFID antes de salvar.';
+      this.irPara('secao-cartao');
       return;
     }
 
@@ -351,7 +377,8 @@ export class CadastrarPage implements OnInit, OnDestroy {
                   next: () => {
                     this.saving = false;
                     this.cdr.markForCheck();
-                    this.successMessage = `Usuário ${usuario.nome} cadastrado com cartão, biometria e ${locaisSelecionados.length} permissões.`;
+                    const total = locaisSelecionados.length;
+                    this.successMessage = `Usuário ${usuario.nome} cadastrado com cartão, biometria e ${total} ${total === 1 ? 'permissão' : 'permissões'}.`;
                     this.snackBar.open(this.successMessage, 'Fechar', { duration: 6000 });
                     this.speech.falar('Usuário cadastrado com sucesso.');
                     this.dialogRef.close({ criado: true, mensagem: this.successMessage });
@@ -444,6 +471,10 @@ export class CadastrarPage implements OnInit, OnDestroy {
 
   toggleLocal(item: LocalPermissaoItem): void {
     item.selecionado = !item.selecionado;
+    // O aviso de "selecione um local" deixa de valer assim que um local é marcado.
+    if (item.selecionado && this.errorMessage.startsWith('Selecione pelo menos um local')) {
+      this.errorMessage = '';
+    }
   }
 
   toggleDiaLocal(item: LocalPermissaoItem, dia: number): void {
