@@ -639,11 +639,6 @@ textarea:focus,
     border-color: #60a5fa !important;
   }
 
-  // ── Webcam viewport ──
-  .webcam-viewport {
-    border-color: rgba(255, 255, 255, 0.1) !important;
-  }
-
   .webcam-controls {
     button[mat-button] {
       color: #f87171 !important;
@@ -769,27 +764,6 @@ textarea:focus,
   }
 }
 
-/* 1. Inverte o vídeo ao vivo na webcam */
-.webcam-viewport {
-  position: relative;
-  width: 100%;
-  overflow: hidden;
-
-  video {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover;
-    transform: scaleX(-1) !important;
-    -webkit-transform: scaleX(-1) !important;
-  }
-
-  .status-badge,
-  .face-overlay,
-  .debug-hud {
-    transform: none !important;
-  }
-}
-
 /* 2. Inverte a foto estática pós-captura (bloco da foto selecionada) */
 .camera-capture {
   .photo-preview {
@@ -854,17 +828,32 @@ textarea:focus,
 @include pages.ard-page-pattern('.register-page');
 
 .register-page {
-  padding: 24px;
-  background: var(--ard-surface);
+  --module-accent: #2563eb;
 }
 .dialog-heading {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 12px;
 }
+:host-context(body.dark-mode) .register-page { --module-accent: #60a5fa; }
 @media (max-width: 760px) {
-  .register-page {
-    padding: 16px;
-  }
+  .register-page { padding: 24px 14px 56px; }
 }
+
+.setup-overview,.rfid-walkthrough { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 18px; }
+.setup-overview span,.rfid-walkthrough span { display: inline-flex; align-items: center; gap: 7px; padding: 8px 11px; border: 1px solid var(--ard-line); border-radius: 999px; background: var(--ard-canvas); color: var(--ard-ink); font-size: .77rem; font-weight: 700; }
+.setup-overview mat-icon { width: 17px; height: 17px; font-size: 17px; color: var(--ard-primary); }
+.rfid-walkthrough { margin: 0 0 20px; }
+.rfid-walkthrough b { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--ard-primary); color: #fff; font-size: .7rem; }
+.uid-field .capture-state,.mobile-credential-tip { display: flex; align-items: flex-start; gap: 11px; padding: 13px 15px; border-radius: 12px; line-height: 1.45; }
+.uid-field .capture-state { background: color-mix(in srgb,var(--ard-primary) 9%,var(--ard-surface)); color: var(--ard-ink); font-size: .83rem; font-weight: 600; }
+.uid-field .capture-state mat-icon,.mobile-credential-tip mat-icon { flex: none; width: 21px; height: 21px; font-size: 21px; color: var(--ard-primary); }
+.demo-tools { padding: 9px 0; color: var(--ard-muted); font-size: .8rem; font-weight: 500; }
+.demo-tools summary { cursor: pointer; color: var(--ard-primary); font-weight: 700; }
+.demo-tools p { margin: 9px 0; }
+.demo-tools button { display: inline-flex; align-items: center; gap: 6px; }
+.mobile-credential-tip { margin-top: 20px; border: 1px solid var(--ard-line); background: var(--ard-canvas); color: var(--ard-ink); font-size: .84rem; }
+.mobile-credential-tip strong { display: block; margin-bottom: 4px; }
+.mobile-credential-tip p { margin: 0; color: var(--ard-muted); font-weight: 400; }
+@media (max-width: 760px) { .setup-overview,.rfid-walkthrough { gap: 6px; } .setup-overview span,.rfid-walkthrough span { font-size: .7rem; padding: 7px 9px; } }

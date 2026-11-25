@@ -2,7 +2,6 @@ import {
   Component,
   effect,
   untracked,
-  ElementRef,
   HostListener,
   OnDestroy,
   OnInit,
@@ -27,6 +26,7 @@ import {
   UsuarioSimplesResponse,
 } from '../../services/api.service';
 import { SpeechService } from '../../services/speech.service';
+import { VisorFacial } from '../../components/visor-facial/visor-facial';
 import { WebcamService } from '../../services/webcam.service';
 import { WebSocketLogsService } from '../../services/websocket-logs.service';
 import { CaptureStationService } from '../../services/capture-station.service';
@@ -37,6 +37,7 @@ import { RfidAccessService } from '../../services/rfid-access.service';
   standalone: true,
   imports: [
     CommonModule,
+    VisorFacial,
     FormsModule,
     MatButtonModule,
     MatIconModule,
@@ -71,8 +72,7 @@ export class CompararPage implements OnInit, OnDestroy {
   public wsLogs = inject(WebSocketLogsService);
   private rfidAccess = inject(RfidAccessService);
 
-  @ViewChild('videoElement') videoElement?: ElementRef<HTMLVideoElement>;
-  @ViewChild('webcamContainer') webcamContainer?: ElementRef<HTMLDivElement>;
+  @ViewChild(VisorFacial) visorFacial?: VisorFacial;
 
   scanning = signal(false);
   iniciandoTentativa = signal(false);
@@ -355,7 +355,7 @@ export class CompararPage implements OnInit, OnDestroy {
     this.tentativaId.set(tentativaPendente);
 
     await this.webcam.iniciarWebcam(
-      () => this.videoElement,
+      () => this.visorFacial?.videoElement(),
       this.modoTotem(),
       () => this.capturarEValidar(),
     );
@@ -364,45 +364,6 @@ export class CompararPage implements OnInit, OnDestroy {
   pararWebcam(): void {
     this.webcam.pararWebcam();
     this.scanning.set(false);
-  }
-
-  /**
-   * Mapeia as coordenadas da Bounding Box para o círculo dinâmico
-   * ajustado de forma proporcional ao rosto.
-   */
-  obterEstiloOvalDinamico(): { [key: string]: string } {
-    const box = this.webcam.faceBox();
-    const video = this.videoElement?.nativeElement;
-    const container = this.webcamContainer?.nativeElement;
-
-    const larguraFrame = this.webcam.larguraFrameProcessado() || video?.videoWidth || 0;
-    const alturaFrame = this.webcam.alturaFrameProcessado() || video?.videoHeight || 0;
-
-    if (!box || !video || !container || !larguraFrame || !alturaFrame) {
-      return {};
-    }
-
-    const scaleX = container.clientWidth / larguraFrame;
-    const scaleY = container.clientHeight / alturaFrame;
-    const scaleFactor = 0.85;
-    const size =
-      Math.max(box.width * scaleX, box.height * scaleY) * scaleFactor;
-
-    // A prévia é espelhada para navegação natural. A bounding box vem
-    // do frame não espelhado, então refletimos o eixo X para coincidir.
-    const boxXEspelhado = larguraFrame - box.x - box.width;
-    const left =
-      (boxXEspelhado + box.width / 2) * scaleX - size / 2;
-    const top =
-      (box.y + box.height / 2) * scaleY - size / 2 - 10;
-
-    return {
-      left: `${left}px`,
-      top: `${top}px`,
-      width: `${size}px`,
-      height: `${size}px`,
-      transform: 'none',
-    };
   }
 
   async capturarEValidar(): Promise<void> {
@@ -554,7 +515,7 @@ export class CompararPage implements OnInit, OnDestroy {
     }
   }
 
-  private encerrarCicloAcesso(): void {
+  encerrarCicloAcesso(): void {
     if (this.timeoutOverlay) {
       clearTimeout(this.timeoutOverlay);
       this.timeoutOverlay = null;

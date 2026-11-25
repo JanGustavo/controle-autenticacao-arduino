@@ -323,6 +323,20 @@ export class AdministradoresPage implements OnInit, OnDestroy {
       !(await this.confirmation.excluir(
         'Excluir administrador?',
         `A conta de "${admin.nome}" (${admin.email}) será removida.`,
+        {
+          items: [
+            {
+              icon: 'admin_panel_settings',
+              label: admin.nome,
+              description: 'Conta de administrador e acesso ao painel.',
+            },
+            {
+              icon: 'mail_outline',
+              label: admin.email,
+              description: 'Credencial de acesso vinculada à conta.',
+            },
+          ],
+        },
       ))
     )
       return;

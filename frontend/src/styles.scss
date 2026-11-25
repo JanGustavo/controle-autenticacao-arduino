@@ -5,6 +5,28 @@
 // custom components at https://material.angular.dev/guide/theming
 @use '@angular/material' as mat;
 
+@font-face {
+  font-family: 'Material Icons';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('/fonts/MaterialIcons-Regular.ttf') format('truetype');
+}
+
+.mat-icon, .material-icons {
+  font-family: 'Material Icons' !important;
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+
 :root {
   --ard-canvas: #f6f8fb;
   --ard-surface: #ffffff;
@@ -15,6 +37,9 @@
   --ard-success: #15803d;
   --ard-danger: #b91c1c;
   --ard-warning: #b45309;
+  --ard-scrollbar-track: #e9eef5;
+  --ard-scrollbar-thumb: #8da8cc;
+  --ard-scrollbar-thumb-hover: #2563eb;
   --ard-table-row-odd: #ffffff;
   --ard-table-row-even: #f3f6fa;
   --ard-radius-sm: 10px;
@@ -30,6 +55,11 @@
 
 html {
   height: 100%;
+  scroll-behavior: smooth;
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+  scrollbar-color: var(--ard-scrollbar-thumb) var(--ard-scrollbar-track);
+  scrollbar-width: thin;
   @include mat.theme(
     (
       color: (
@@ -40,6 +70,16 @@ html {
       density: 0,
     )
   );
+}
+
+html:has(> body.dark-mode) {
+  --ard-scrollbar-track: #172033;
+  --ard-scrollbar-thumb: #647fa6;
+  --ard-scrollbar-thumb-hover: #60a5fa;
+}
+
+app-root:has(app-comparar-page app-visor-facial) > app-insights-launcher {
+  display: none;
 }
 
 body {
@@ -61,6 +101,9 @@ body.dark-mode {
   --ard-muted: #94a3b8;
   --ard-line: rgba(255, 255, 255, 0.1);
   --ard-primary: #60a5fa;
+  --ard-scrollbar-track: #172033;
+  --ard-scrollbar-thumb: #647fa6;
+  --ard-scrollbar-thumb-hover: #60a5fa;
   --ard-table-row-odd: #111827;
   --ard-table-row-even: #172033;
 
@@ -79,69 +122,6 @@ body.dark-mode {
     .user-profile {
       background: var(--ard-canvas) !important;
       border-color: var(--line) !important;
-    }
-  }
-
-  .adm-wrapper {
-    --canvas: #0f172a;
-    --surface: #1e293b;
-    --ink: #f8fafc;
-    --muted: #94a3b8;
-    --line: rgba(255, 255, 255, 0.1);
-    background: var(--ard-canvas) !important;
-
-    .adm-header {
-      h2 {
-        color: #f8fafc !important;
-      }
-      .eyebrow {
-        color: #cbd5e1 !important;
-      }
-    }
-
-    .tile-card {
-      background: #1e293b !important;
-      border-color: rgba(255, 255, 255, 0.1) !important;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
-
-      .tile-icon {
-        background: rgba(255, 255, 255, 0.08) !important;
-      }
-
-      .tile-info h3 {
-        color: #f8fafc !important;
-      }
-      .tile-info p {
-        color: #94a3b8 !important;
-      }
-      .tile-arrow {
-        color: #94a3b8 !important;
-      }
-
-      &.blue {
-        --accent: #60a5fa;
-        .tile-icon mat-icon {
-          color: #60a5fa !important;
-        }
-      }
-      &.green {
-        --accent: #4ade80;
-        .tile-icon mat-icon {
-          color: #4ade80 !important;
-        }
-      }
-      &.orange {
-        --accent: #fbbf24;
-        .tile-icon mat-icon {
-          color: #fbbf24 !important;
-        }
-      }
-      &.purple {
-        --accent: #c084fc;
-        .tile-icon mat-icon {
-          color: #c084fc !important;
-        }
-      }
     }
   }
 
@@ -188,6 +168,35 @@ body.dark-mode {
       }
     }
   }
+}
+
+/* A mesma barra se aplica à página, tabelas e painéis com rolagem própria. */
+* {
+  scrollbar-color: var(--ard-scrollbar-thumb) var(--ard-scrollbar-track);
+  scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--ard-scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 2px solid var(--ard-scrollbar-track);
+  border-radius: 999px;
+  background: var(--ard-scrollbar-thumb);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--ard-scrollbar-thumb-hover);
+}
+
+:where(a[href], button:not(:disabled), summary, [role='button']:not([aria-disabled='true'])) {
+  cursor: pointer;
 }
 
 /* Zebra global para tabelas HTML que não importam o mixin compartilhado. */
@@ -273,6 +282,9 @@ app-root {
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
   *,
   *::before,
   *::after {
@@ -282,17 +294,35 @@ app-root {
   }
 }
 
-.ard-user-create-dialog .mat-mdc-dialog-surface {
-  background: var(--ard-surface);
+html.cdk-global-scrollblock {
+  overflow-y: scroll !important;
+}
+
+.ard-user-create-dialog,
+.ard-user-edit-dialog,
+.ard-confirmation-dialog {
+  max-width: calc(100vw - 32px) !important;
+
+  .mat-mdc-dialog-surface {
+    background: var(--ard-surface);
+    color: var(--ard-ink);
+  }
+}
+
+.ard-confirmation-dialog .mat-mdc-dialog-surface {
+  border-radius: var(--ard-radius-lg);
+  overflow: hidden;
 }
 @media (max-width: 760px) {
-  .ard-user-create-dialog {
+  .ard-user-create-dialog,
+  .ard-user-edit-dialog {
     width: 100vw !important;
     max-width: 100vw !important;
     height: 100dvh;
     max-height: 100dvh !important;
   }
-  .ard-user-create-dialog .mat-mdc-dialog-surface {
+  .ard-user-create-dialog .mat-mdc-dialog-surface,
+  .ard-user-edit-dialog .mat-mdc-dialog-surface {
     border-radius: 0;
   }
 }
@@ -319,4 +349,22 @@ table .action-buttons > button {
   --mdc-snackbar-container-color: var(--ard-ink);
   --mdc-snackbar-supporting-text-color: var(--ard-surface);
   --mat-snack-bar-button-color: var(--ard-surface);
+}
+
+.ia-response .markdown-body {
+  line-height: 1.65;
+
+  > :first-child { margin-top: 0; }
+  > :last-child { margin-bottom: 0; }
+  h1, h2, h3 { margin: 18px 0 8px; font-size: 1.08rem; }
+  p, ul, ol { margin: 8px 0; }
+  ul, ol { padding-left: 24px; }
+  li + li { margin-top: 4px; }
+  strong { color: var(--ard-ink); }
+  code { padding: 2px 5px; border-radius: 5px; background: var(--ard-canvas); }
+  pre { overflow-x: auto; padding: 12px; border-radius: 9px; background: var(--ard-canvas); }
+  pre code { padding: 0; }
+  th, td { border: 1px solid var(--ard-line); padding: 8px 11px; text-align: left; }
+  th { background: var(--ard-canvas); }
+  blockquote { margin: 12px 0; padding-left: 13px; border-left: 3px solid #a85482; }
 }

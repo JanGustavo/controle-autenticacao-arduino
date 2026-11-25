@@ -2,9 +2,12 @@
 @use '../../styles/webcam';
 
 .comparar-wrapper {
-  max-width: 1200px;
-  margin: 32px auto;
-  padding: 0 24px;
+  --module-accent: #15803d;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  box-sizing: border-box;
 
   .header {
     margin-bottom: 24px;
@@ -51,6 +54,17 @@
     font-weight: 800;
     letter-spacing: 0.1em;
     text-transform: uppercase;
+  }
+
+  .card-icon {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
 
   .simulator-card {
@@ -264,17 +278,6 @@
         font-size: 64px;
         width: 64px;
         height: 64px;
-      }
-    }
-
-    /* Suporte a transição suave para o Círculo Guia Dinâmico */
-    .face-oval {
-      transition: all 0.12s ease-out;
-
-      &.dynamic {
-        position: absolute !important;
-        border-radius: 50%;
-        pointer-events: none;
       }
     }
   }
@@ -583,7 +586,12 @@
 
 @include pages.ard-page-pattern('.comparar-wrapper');
 
+:host-context(body.dark-mode) .comparar-wrapper {
+  --module-accent: #4ade80;
+}
+
 .comparar-wrapper {
+  --module-accent: #15803d;
   .header-actions {
     display: flex;
     flex-wrap: wrap;
@@ -639,3 +647,5 @@
     }
   }
 }
+
+:host-context(body.dark-mode) .comparar-wrapper { --module-accent: #4ade80; }

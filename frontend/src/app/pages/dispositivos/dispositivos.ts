@@ -179,6 +179,20 @@ export class DispositivosPage implements OnInit {
       !(await this.confirmation.excluir(
         'Excluir dispositivo?',
         `O dispositivo "${dispositivo.nome}" será removido.`,
+        {
+          items: [
+            {
+              icon: 'memory',
+              label: dispositivo.nome,
+              description: 'Dispositivo e identificador de comunicação.',
+            },
+            {
+              icon: 'location_on',
+              label: 'Vínculo com o local',
+              description: 'A associação deste dispositivo será removida.',
+            },
+          ],
+        },
       ))
     )
       return;

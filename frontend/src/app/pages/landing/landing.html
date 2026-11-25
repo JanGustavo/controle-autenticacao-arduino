@@ -1,0 +1,490 @@
+<a class="skip-link" href="#conteudo" (click)="irPara($event, 'conteudo')">Pular para o conteúdo</a>
+
+<header class="lp-header">
+  <div class="lp-container lp-header-inner">
+    <a class="lp-brand" href="#topo" (click)="irPara($event, 'topo')" aria-label="ArdLock, início da página">
+      <img src="ard-lock-icon.svg" alt="" width="40" height="24" />
+      <span>ArdLock</span>
+    </a>
+
+    <nav class="lp-nav" aria-label="Seções da página">
+      @for (secao of secoes; track secao.id) {
+        <a [href]="'#' + secao.id" (click)="irPara($event, secao.id)">{{ secao.rotulo }}</a>
+      }
+    </nav>
+
+    <div class="lp-header-actions">
+      <button
+        type="button"
+        class="icon-button"
+        (click)="alternarTema()"
+        [attr.aria-label]="temaEscuro() ? 'Ativar tema claro' : 'Ativar tema escuro'"
+      >
+        <mat-icon aria-hidden="true">{{ temaEscuro() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+      </button>
+      <a class="btn btn-ghost btn-compact" routerLink="/checkout">Adquirir licença</a>
+      <a class="btn btn-primary btn-compact" [routerLink]="destinoPainel()">{{ rotuloPainel() }}</a>
+    </div>
+  </div>
+</header>
+
+<main id="conteudo" tabindex="-1">
+  <!-- Hero -->
+  <section id="topo" class="navy hero" tabindex="-1" aria-labelledby="hero-titulo">
+    <div class="lp-container hero-grid">
+      <div class="hero-copy">
+        <p class="hero-kicker">Controle de acesso físico com cartão RFID e reconhecimento facial</p>
+        <h1 id="hero-titulo">A porta só abre para quem tem o cartão, a permissão e o rosto certo.</h1>
+        <p class="hero-lead">
+          O ArdLock confere as três coisas antes de liberar a entrada. Cada tentativa, liberada ou negada,
+          fica registrada com data, local e motivo.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" [routerLink]="destinoPainel()">{{ rotuloPainel() }}</a>
+          <a class="btn btn-ghost" href="#planos" (click)="irPara($event, 'planos')">
+            Ver planos e licenças
+          </a>
+          <a class="btn btn-ghost" href="#demonstracao" (click)="irPara($event, 'demonstracao')">
+            Simular uma tentativa de acesso
+          </a>
+        </div>
+      </div>
+
+      <!-- Animação autoral: a trilha de decisão de uma tentativa liberada -->
+      <figure class="trilha" aria-labelledby="trilha-legenda">
+        <figcaption id="trilha-legenda">O caminho de uma tentativa de acesso</figcaption>
+        <ol>
+          <li style="--i: 0">
+            <span class="no"><mat-icon aria-hidden="true">contactless</mat-icon></span>
+            <span class="texto"><strong>Cartão lido no leitor</strong><span>O ESP32 envia a identificação ao servidor</span></span>
+          </li>
+          <li style="--i: 1">
+            <span class="no"><mat-icon aria-hidden="true">rule</mat-icon></span>
+            <span class="texto"><strong>Permissão conferida</strong><span>Local, dia da semana e horário</span></span>
+          </li>
+          <li style="--i: 2">
+            <span class="no no-rosto"><mat-icon aria-hidden="true">face</mat-icon></span>
+            <span class="texto"><strong>Rosto comparado ao do titular</strong><span>Biometria facial um para um</span></span>
+          </li>
+          <li style="--i: 3" class="final">
+            <span class="no"><mat-icon aria-hidden="true">lock_open</mat-icon></span>
+            <span class="texto"><strong>Acesso liberado</strong><span>O leitor recebe a ordem do servidor</span></span>
+          </li>
+          <li style="--i: 4">
+            <span class="no"><mat-icon aria-hidden="true">receipt_long</mat-icon></span>
+            <span class="texto"><strong>Tentativa registrada</strong><span>Visível no histórico de acesso</span></span>
+          </li>
+        </ol>
+      </figure>
+    </div>
+
+    <div class="lp-container">
+      <ul class="publicos" aria-label="Para quem o ArdLock foi criado">
+        @for (publico of publicos; track publico.titulo) {
+          <li>
+            <mat-icon aria-hidden="true">{{ publico.icone }}</mat-icon>
+            <div>
+              <h2>{{ publico.titulo }}</h2>
+              <p>{{ publico.texto }}</p>
+            </div>
+          </li>
+        }
+      </ul>
+    </div>
+  </section>
+
+  <!-- Problema -->
+  <section id="problema" class="lp-section" tabindex="-1" aria-labelledby="problema-titulo">
+    <div class="lp-container">
+      <div class="section-head">
+        <h2 id="problema-titulo">Um cartão emprestado abre a mesma porta.</h2>
+        <p>
+          Cartões e chaves identificam o objeto, não a pessoa. Quando algo acontece em uma área restrita,
+          falta a resposta mais simples: quem estava ali.
+        </p>
+      </div>
+
+      <div class="comparacao" role="table" aria-label="Comparação entre o controle só com cartão e o ArdLock">
+        <div class="comparacao-cabecalho" role="row">
+          <span role="columnheader">Só com cartão ou chave</span>
+          <span role="columnheader">Com o ArdLock</span>
+        </div>
+        @for (linha of comparacao; track linha.antes) {
+          <div class="comparacao-linha" role="row">
+            <p class="antes" role="cell">
+              <mat-icon aria-hidden="true">remove_circle_outline</mat-icon><span>{{ linha.antes }}</span>
+            </p>
+            <p class="depois" role="cell">
+              <mat-icon aria-hidden="true">check_circle</mat-icon><span>{{ linha.depois }}</span>
+            </p>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Funcionamento -->
+  <section id="funcionamento" class="lp-section lp-section-alt" tabindex="-1" aria-labelledby="funcionamento-titulo">
+    <div class="lp-container">
+      <div class="section-head">
+        <h2 id="funcionamento-titulo">Quatro verificações entre o cartão e a porta</h2>
+        <p>O leitor só lê e executa. Quem decide é sempre o servidor, com as regras que você cadastrou.</p>
+      </div>
+
+      <ol class="passos" data-tracar>
+        @for (passo of passos; track passo.titulo; let i = $index) {
+          <li [style.--i]="i">
+            <span class="passo-marca">
+              <span class="passo-numero">{{ i + 1 }}</span>
+              <mat-icon aria-hidden="true">{{ passo.icone }}</mat-icon>
+            </span>
+            <h3>{{ passo.titulo }}</h3>
+            <p>{{ passo.texto }}</p>
+          </li>
+        }
+      </ol>
+    </div>
+  </section>
+
+  <!-- Demonstração -->
+  <section id="demonstracao" class="navy lp-section" tabindex="-1" aria-labelledby="demo-titulo">
+    <div class="lp-container">
+      <div class="section-head">
+        <h2 id="demo-titulo">Veja a decisão acontecer</h2>
+        <p>
+          Mude as condições e aproxime o cartão. A sequência e os motivos de recusa são os mesmos que o
+          servidor aplica e grava no histórico de acesso.
+        </p>
+      </div>
+
+      <div class="demo">
+        <div class="demo-controles">
+          <h3>Condições da tentativa</h3>
+          <div class="switches">
+            <button
+              type="button"
+              role="switch"
+              class="switch"
+              [attr.aria-checked]="cartaoCadastrado()"
+              [disabled]="simulando()"
+              (click)="alternar('cartao')"
+            >
+              <span class="switch-trilho" aria-hidden="true"><span></span></span>
+              <span class="switch-texto">Cartão cadastrado</span>
+            </button>
+            <button
+              type="button"
+              role="switch"
+              class="switch"
+              [attr.aria-checked]="dentroDoHorario()"
+              [disabled]="simulando()"
+              (click)="alternar('horario')"
+            >
+              <span class="switch-trilho" aria-hidden="true"><span></span></span>
+              <span class="switch-texto">Dentro do horário permitido</span>
+            </button>
+            <button
+              type="button"
+              role="switch"
+              class="switch"
+              [attr.aria-checked]="rostoConfere()"
+              [disabled]="simulando()"
+              (click)="alternar('rosto')"
+            >
+              <span class="switch-trilho" aria-hidden="true"><span></span></span>
+              <span class="switch-texto">Rosto do titular do cartão</span>
+            </button>
+          </div>
+          <button type="button" class="btn btn-primary demo-acao" [disabled]="simulando()" (click)="simular()">
+            <mat-icon aria-hidden="true">contactless</mat-icon>
+            {{ simulando() ? 'Validando' : 'Aproximar o cartão' }}
+          </button>
+        </div>
+
+        <div class="demo-painel">
+          <ol class="etapas" aria-label="Etapas da validação">
+            @for (etapa of etapas; track etapa.id) {
+              <li class="etapa" [attr.data-estado]="estados()[etapa.id]">
+                <span class="etapa-icone" aria-hidden="true">
+                  <mat-icon>
+                    @if (etapa.id === 'decisao') {
+                      {{ estados().decisao === 'ok' ? 'lock_open' : 'lock' }}
+                    } @else {
+                      {{ etapa.icone }}
+                    }
+                  </mat-icon>
+                </span>
+                <span class="etapa-texto">
+                  <strong>{{ etapa.titulo }}</strong>
+                  <span>{{ etapa.detalhe }}</span>
+                </span>
+                <span class="etapa-estado">{{ rotuloEstado(estados()[etapa.id]) }}</span>
+              </li>
+            }
+          </ol>
+
+          <div class="veredito" role="status" aria-live="polite">
+            @if (resultado(); as r) {
+              <p class="veredito-linha" [class.negado]="!r.autorizado">
+                <mat-icon aria-hidden="true">{{ r.autorizado ? 'check_circle' : 'block' }}</mat-icon>
+                <span>
+                  <strong>{{ r.autorizado ? 'Acesso liberado' : 'Acesso negado' }}</strong>
+                  @if (r.motivo) {
+                    {{ r.motivo }}
+                  } @else {
+                    Cartão, permissão e rosto conferem.
+                  }
+                </span>
+              </p>
+            } @else if (simulando()) {
+              <p class="veredito-espera">Validando a tentativa.</p>
+            } @else {
+              <p class="veredito-espera">Aproxime o cartão para ver a decisão.</p>
+            }
+          </div>
+
+          <div class="demo-historico">
+            <h3>Histórico de acesso</h3>
+            @if (registros().length) {
+              <div class="tabela-rolagem">
+                <table>
+                  <thead>
+                    <tr>
+                      <th scope="col">Data / Hora</th>
+                      <th scope="col">Resultado</th>
+                      <th scope="col">Motivo da recusa</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (registro of registros(); track registro.id) {
+                      <tr>
+                        <td class="num">{{ registro.dataHora | date: 'dd/MM/yyyy HH:mm:ss' }}</td>
+                        <td>
+                          <span class="selo" [class.negado]="!registro.autorizado">
+                            {{ registro.autorizado ? 'Autorizado' : 'Negado' }}
+                          </span>
+                        </td>
+                        <td>{{ registro.motivo ?? '-' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <p class="vazio">Nenhuma tentativa ainda. Cada simulação acrescenta uma linha aqui.</p>
+            }
+          </div>
+        </div>
+      </div>
+
+      <p class="demo-nota">
+        Simulação executada no seu navegador. Nenhum dado real é consultado; na plataforma, cada linha também
+        traz usuário, local, cartão e similaridade facial.
+      </p>
+    </div>
+  </section>
+
+  <!-- Benefícios -->
+  <section id="beneficios" class="lp-section" tabindex="-1" aria-labelledby="beneficios-titulo">
+    <div class="lp-container">
+      <div class="section-head">
+        <h2 id="beneficios-titulo">O que muda para quem responde pelo acesso</h2>
+      </div>
+      <div class="beneficios">
+        @for (grupo of beneficios; track grupo.titulo) {
+          <div class="beneficio">
+            <h3>{{ grupo.titulo }}</h3>
+            <ul>
+              @for (item of grupo.itens; track item) {
+                <li>{{ item }}</li>
+              }
+            </ul>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Segurança, controle e rastreabilidade -->
+  <section id="seguranca" class="lp-section lp-section-alt" tabindex="-1" aria-labelledby="seguranca-titulo">
+    <div class="lp-container">
+      <div class="section-head">
+        <h2 id="seguranca-titulo">Segurança, controle e rastreabilidade, ponto por ponto</h2>
+        <p>Sem promessa genérica: abaixo está o que a plataforma faz hoje.</p>
+      </div>
+      <div class="pilares">
+        @for (pilar of pilares; track pilar.titulo) {
+          <article class="pilar">
+            <header>
+              <mat-icon aria-hidden="true">{{ pilar.icone }}</mat-icon>
+              <div>
+                <h3>{{ pilar.titulo }}</h3>
+                <p>{{ pilar.resumo }}</p>
+              </div>
+            </header>
+            <ul>
+              @for (item of pilar.itens; track item) {
+                <li>{{ item }}</li>
+              }
+            </ul>
+          </article>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Fluxo operacional -->
+  <section id="fluxo" class="lp-section" tabindex="-1" aria-labelledby="fluxo-titulo">
+    <div class="lp-container">
+      <div class="section-head">
+        <h2 id="fluxo-titulo">Da instalação ao primeiro acesso em cinco passos</h2>
+        <p>Tudo é feito pelo painel, na ordem em que a operação precisa.</p>
+      </div>
+      <ol class="fluxo" data-tracar>
+        @for (item of fluxo; track item.titulo; let i = $index) {
+          <li [style.--i]="i">
+            <span class="fluxo-no"><mat-icon aria-hidden="true">{{ item.icone }}</mat-icon></span>
+            <h3>{{ item.titulo }}</h3>
+            <p>{{ item.texto }}</p>
+          </li>
+        }
+      </ol>
+    </div>
+  </section>
+
+  <!-- Planos e Licenças -->
+  <section id="planos" class="lp-section lp-section-alt" tabindex="-1" aria-labelledby="planos-titulo">
+    <div class="lp-container">
+      <div class="section-head">
+        <h2 id="planos-titulo">Planos e licenças de acesso</h2>
+        <p>
+          Estrutura pronta para escalar da primeira porta até prédios inteiros, com biometria facial,
+          RFID e garantia técnica presencial de hardware.
+        </p>
+      </div>
+
+      <div class="lp-plans-grid">
+        @for (plano of planosLanding; track plano.id) {
+          <article
+            class="lp-plan-card"
+            [class.lp-plan-featured]="plano.destaque"
+            [class.lp-plan-decoy]="plano.decoy"
+          >
+            @if (plano.badge) {
+              <span class="lp-plan-badge" [class.badge-featured]="plano.destaque">
+                @if (plano.destaque) { <mat-icon aria-hidden="true">star</mat-icon> }
+                {{ plano.badge }}
+              </span>
+            }
+
+            <header class="lp-plan-card-header">
+              <h3>{{ plano.nome }}</h3>
+              <p class="lp-plan-card-desc">{{ plano.descricao }}</p>
+              <div class="lp-plan-price">
+                <span class="price-val">{{ plano.preco }}</span>
+                @if (plano.periodo) { <span class="price-sub">{{ plano.periodo }}</span> }
+              </div>
+            </header>
+
+            <div class="lp-plan-specs">
+              <div class="spec-row">
+                <mat-icon aria-hidden="true">router</mat-icon>
+                <span>{{ plano.dispositivos }}</span>
+              </div>
+              <div class="spec-row">
+                <mat-icon aria-hidden="true">groups</mat-icon>
+                <span>{{ plano.usuarios }}</span>
+              </div>
+              <div class="spec-row">
+                <mat-icon aria-hidden="true">support_agent</mat-icon>
+                <span>{{ plano.suporte }}</span>
+              </div>
+            </div>
+
+            <ul class="lp-plan-features">
+              @for (v of plano.vantagens; track v.texto) {
+                <li [class.item-highlight]="v.destaque" [class.item-excluded]="v.incluido === false">
+                  <mat-icon aria-hidden="true" [class.icon-check]="v.destaque">
+                    {{ v.incluido === false ? 'close' : v.icone }}
+                  </mat-icon>
+                  <span>{{ v.texto }}</span>
+                </li>
+              }
+            </ul>
+
+            <footer class="lp-plan-card-footer">
+              @if (plano.id === 'personalizado') {
+                <a [href]="obterLinkEmailDemanda()" class="btn btn-ghost lp-btn-card">
+                  <mat-icon aria-hidden="true">mail</mat-icon>
+                  <span>Falar com consultor</span>
+                </a>
+              } @else {
+                <a
+                  [routerLink]="['/checkout']"
+                  [queryParams]="{ plano: plano.id }"
+                  class="btn lp-btn-card"
+                  [class.btn-primary]="plano.destaque"
+                  [class.btn-ghost]="!plano.destaque"
+                >
+                  <span>Adquirir licença</span>
+                  <mat-icon aria-hidden="true">arrow_forward</mat-icon>
+                </a>
+              }
+            </footer>
+          </article>
+        }
+      </div>
+
+      <div class="lp-plans-cta-footer">
+        <p>Precisa de um fluxo de faturamento customizado ou emissão de nota técnica?</p>
+        <a routerLink="/checkout" class="btn btn-primary">
+          <mat-icon aria-hidden="true">shopping_cart_checkout</mat-icon>
+          <span>Ir para o Checkout de Licenças</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA final -->
+  <section class="navy cta" aria-labelledby="cta-titulo">
+    <div class="lp-container cta-inner">
+      <div>
+        <h2 id="cta-titulo">Configure o primeiro ponto de acesso.</h2>
+        <p>Entre no painel, cadastre um local e um leitor, e valide a primeira entrada.</p>
+      </div>
+      <div class="cta-acoes">
+        <a class="btn btn-primary" [routerLink]="destinoPainel()">{{ rotuloPainel() }}</a>
+        <a
+          class="btn btn-ghost"
+          href="https://github.com/JanGustavo/controle-autenticacao-arduino"
+          target="_blank"
+          rel="noopener"
+        >
+          Ver o código no GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="lp-footer">
+  <div class="lp-container lp-footer-inner">
+    <div class="lp-footer-marca">
+      <span class="lp-brand">
+        <img src="ard-lock-icon.svg" alt="" width="40" height="24" />
+        <span>ArdLock</span>
+      </span>
+      <p>
+        Controle de acesso com cartão RFID e biometria facial. Projeto integrador do curso de Análise e
+        Desenvolvimento de Sistemas.
+      </p>
+    </div>
+    <nav aria-label="Links do rodapé">
+      <a [routerLink]="destinoPainel()">{{ rotuloPainel() }}</a>
+      <a routerLink="/forgot-password">Recuperar senha</a>
+      <a href="https://github.com/JanGustavo/controle-autenticacao-arduino" target="_blank" rel="noopener">
+        Repositório no GitHub
+      </a>
+    </nav>
+  </div>
+</footer>

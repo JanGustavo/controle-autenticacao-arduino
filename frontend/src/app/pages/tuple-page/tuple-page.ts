@@ -151,9 +151,11 @@ export class TuplePage implements OnInit, OnDestroy {
       next: (usuario) => {
         const ref = this.dialog.open(UserEditDialog, {
           data: { usuario },
+          width: '1000px',
+          maxWidth: '96vw',
+          maxHeight: '92dvh',
           autoFocus: false,
           restoreFocus: true,
-          maxWidth: '96vw',
           disableClose: true,
           panelClass: 'ard-user-edit-dialog',
         });
@@ -180,6 +182,20 @@ export class TuplePage implements OnInit, OnDestroy {
       !(await this.confirmation.excluir(
         'Excluir usuário?',
         `O usuário "${row['nome']}" será removido.`,
+        {
+          items: [
+            {
+              icon: 'person',
+              label: String(row['nome']),
+              description: 'Cadastro, credenciais e dados biométricos.',
+            },
+            {
+              icon: 'vpn_key',
+              label: 'Permissões vinculadas',
+              description: 'Acessos deste usuário também serão removidos.',
+            },
+          ],
+        },
       ))
     )
       return;
@@ -479,6 +495,20 @@ export class TuplePage implements OnInit, OnDestroy {
       !(await this.confirmation.excluir(
         'Excluir permissão?',
         `A permissão de "${row['usuario_id']}" para "${row['local_id']}" será removida.`,
+        {
+          items: [
+            {
+              icon: 'person',
+              label: String(row['usuario_id']),
+              description: 'Usuário que perderá este acesso.',
+            },
+            {
+              icon: 'location_on',
+              label: String(row['local_id']),
+              description: 'Local que deixará de estar autorizado.',
+            },
+          ],
+        },
       ))
     )
       return;

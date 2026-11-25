@@ -1,9 +1,41 @@
 import json
+import ipaddress
+import socket
 import uuid
 from typing import Any
 from fastapi import Request
 
 from app.database.connection import get_connection
+
+
+def _enderecos_container(nome: str) -> set[str]:
+    try:
+        return {item[4][0] for item in socket.getaddrinfo(nome, None)}
+    except OSError:
+        return set()
+
+
+def _ip_valido(valor: str | None) -> str | None:
+    try:
+        return str(ipaddress.ip_address(valor)) if valor else None
+    except ValueError:
+        return None
+
+
+def _ip_cliente(request: Request | None) -> str | None:
+    if not request or not request.client:
+        return None
+    origem = request.client.host
+    # Only the frontend container can supply a trusted X-Real-IP. Requests sent
+    # directly to the backend cannot forge the visitor address with headers.
+    if origem not in _enderecos_container("frontend"):
+        return origem
+    intermediario = _ip_valido(request.headers.get("x-real-ip"))
+    if not intermediario:
+        return origem
+    if intermediario in _enderecos_container("cloudflared"):
+        return _ip_valido(request.headers.get("cf-connecting-ip")) or intermediario
+    return intermediario
 
 
 class AuditService:
@@ -18,7 +50,7 @@ class AuditService:
         status: str = "SUCCESS",
         metadata: dict[str, Any] | None = None
     ) -> None:
-        ip_address = request.client.host if request and request.client else None
+        ip_address = _ip_cliente(request)
         user_agent = request.headers.get("user-agent") if request else None
         
         # Se houver um X-Request-ID ou similar, poderíamos tentar pegar daqui

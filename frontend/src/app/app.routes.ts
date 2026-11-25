@@ -1,4 +1,6 @@
+import { inject } from '@angular/core';
 import { Routes } from '@angular/router';
+import { AuthService } from './services/auth.service';
 import { Login } from './pages/login/login';
 import { AdmPage } from './pages/adm-page/adm-page';
 import { TuplePage } from './pages/tuple-page/tuple-page';
@@ -8,18 +10,45 @@ import { LocaisPage } from './pages/locais/locais';
 import { DispositivosPage } from './pages/dispositivos/dispositivos';
 import { AdministradoresPage } from './pages/administradores/administradores';
 import { AuditLogsComponent } from './pages/audit-logs/audit-logs.component';
+import { LicencaPage } from './pages/licenca/licenca';
+import { IAPage } from './pages/ia/ia';
 import { authGuard } from './guards/auth.guard';
 import { DASHBOARD_MOCK, USUARIOS_MOCK, PERMISSOES_MOCK } from './models/tuple-page.model';
 
 import { ForgotPassword } from './pages/forgot-password/forgot-password';
 import { ResetPassword } from './pages/reset-password/reset-password';
 
+const redirectByAuth = () =>
+  inject(AuthService).isLoggedIn() ? '/adm-page' : '/login';
+
 export const routes: Routes = [
-  { path: '', redirectTo: 'login', pathMatch: 'full' },
+  {
+    // Landing pública: acessível sem autenticação e carregada sob demanda.
+    path: '',
+    pathMatch: 'full',
+    data: { layout: 'publico' },
+    loadComponent: () => import('./pages/landing/landing').then((m) => m.LandingPage),
+  },
+  {
+    path: 'checkout',
+    data: { layout: 'publico' },
+    loadComponent: () => import('./pages/checkout/checkout').then((m) => m.CheckoutPage),
+  },
+  {
+    path: 'planos',
+    redirectTo: 'checkout',
+    pathMatch: 'full',
+  },
+  {
+    path: 'redocs',
+    redirectTo: redirectByAuth,
+  },
   { path: 'login', component: Login },
   { path: 'forgot-password', component: ForgotPassword },
   { path: 'reset-password', component: ResetPassword },
   { path: 'adm-page', component: AdmPage, canActivate: [authGuard] },
+  { path: 'licenca', component: LicencaPage, canActivate: [authGuard] },
+  { path: 'ia', component: IAPage, canActivate: [authGuard] },
   { path: 'administradores', component: AdministradoresPage, canActivate: [authGuard] },
   { path: 'entidades', component: EntidadesPage, canActivate: [authGuard] },
 
@@ -63,5 +92,5 @@ export const routes: Routes = [
     component: AuditLogsComponent,
     canActivate: [authGuard],
   },
-  { path: '**', redirectTo: 'login' },
+  { path: '**', redirectTo: redirectByAuth },
 ];

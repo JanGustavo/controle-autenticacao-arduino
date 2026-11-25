@@ -11,7 +11,7 @@ export interface TuplePageConfig {
   title: string;
   subtitle: string;
   icon: string;
-  accentColor: 'blue' | 'green' | 'orange' | 'purple';
+  accentColor: 'blue' | 'green' | 'orange' | 'purple' | 'cyan';
   columns: TupleColumn[];
   rows: TupleRow[];
   resource?: 'usuarios' | 'permissoes' | 'historico';
@@ -20,8 +20,8 @@ export interface TuplePageConfig {
 export const DASHBOARD_MOCK: TuplePageConfig = {
   title: 'Histórico de acesso',
   subtitle: 'Consulte tentativas, resultados e motivos de recusa.',
-  icon: 'dashboard',
-  accentColor: 'blue',
+  icon: 'history',
+  accentColor: 'cyan',
   resource: 'historico',
   columns: [
     { key: 'usuario_id', label: 'Usuário' },
@@ -68,7 +68,7 @@ export const USUARIOS_MOCK: TuplePageConfig = {
   title: 'Usuários',
   subtitle: 'Gerencie dados, cartões e biometria das pessoas cadastradas.',
   icon: 'group',
-  accentColor: 'orange',
+  accentColor: 'blue',
   resource: 'usuarios',
   columns: [
     { key: 'user_id', label: 'ID' },
@@ -86,8 +86,8 @@ export const USUARIOS_MOCK: TuplePageConfig = {
 export const PERMISSOES_MOCK: TuplePageConfig = {
   title: 'Permissões',
   subtitle: 'Defina onde e quando cada pessoa pode acessar.',
-  icon: 'schedule',
-  accentColor: 'purple',
+  icon: 'vpn_key',
+  accentColor: 'orange',
   resource: 'permissoes',
   columns: [
     { key: 'permissao_id', label: 'ID Permissão' },

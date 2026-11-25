@@ -1,0 +1,45 @@
+name: ardlock-plataforma
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: plataforma
+      POSTGRES_USER: plataforma
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    networks:
+      default:
+        aliases: [plataforma-db]
+    secrets: [db_password]
+    volumes:
+      - catalogo:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD","pg_isready","-U","plataforma","-d","plataforma"]
+      interval: 3s
+      timeout: 3s
+      retries: 15
+  portal:
+    image: controle-acesso-arduino-backend:latest
+    restart: unless-stopped
+    working_dir: /portal
+    environment:
+      OPERATIONAL_BACKEND_URL: http://backend:8000
+      OPERATIONAL_INSTANCE_SLUG: ardlock-office
+    command: ["uvicorn","portal:app","--host","0.0.0.0","--port","8080"]
+    volumes: ["./portal.py:/portal/portal.py:ro", "./dashboard.html:/portal/dashboard.html:ro"]
+    secrets: [portal_password]
+    networks:
+      default: {}
+      acesso:
+        aliases: [ardlock-portal]
+networks:
+  acesso:
+    external: true
+    name: controle-acesso-arduino_acesso-net
+secrets:
+  portal_password:
+    file: ../instances/.portal-password
+  db_password:
+    file: ../instances/.platform-db-password
+volumes:
+  catalogo:

@@ -2,9 +2,20 @@ import { Injectable, inject, signal, ElementRef } from '@angular/core';
 import * as faceapi from '@vladmandic/face-api';
 import { SpeechService } from './speech.service';
 import { abrirCameraPreferida } from './camera-selection';
-import { regiaoCentralRosto, inclinacaoDosOlhos } from './face-capture-quality';
+import {
+  calcularEAR,
+  centroDosPontos,
+  EstabilidadeOcular,
+  inclinacaoDosOlhos,
+  INTERVALO_MAXIMO_ENTRE_FRAMES,
+  JANELA_MELHOR_FRAME,
+  melhorFrameRecente,
+  qualidadeDoFrame,
+  regiaoCentralRosto,
+  type Ponto,
+} from './face-capture-quality';
 
-export type EstadoEnquadramento = 'ok' | 'sem_rosto' | 'sorriso' | 'olhos' | 'escuro' | null;
+type EstadoEnquadramento = 'ok' | 'sem_rosto' | 'sorriso' | 'olhos' | null;
 
 export interface FaceBoxPosition {
   x: number;
@@ -12,6 +23,15 @@ export interface FaceBoxPosition {
   width: number;
   height: number;
 }
+
+interface FrameValidado {
+  canvas: HTMLCanvasElement;
+  instante: number;
+  qualidade: number;
+}
+
+const INTERVALO_ANALISE = 200;
+const TEMPO_AUTO_CAPTURA = 2100;
 
 @Injectable({ providedIn: 'root' })
 export class WebcamService {
@@ -29,8 +49,8 @@ export class WebcamService {
   larguraFrameProcessado = signal(0);
   alturaFrameProcessado = signal(0);
 
-  // Círculo Dinâmico (Bounding Box Suavizado)
   faceBox = signal<FaceBoxPosition | null>(null);
+  pontosFaciais = signal<Ponto[]>([]);
 
   // Totem: Progresso de Auto-captura, Cooldown e Flash
   progressoAutoCaptura = signal(0);
@@ -38,15 +58,11 @@ export class WebcamService {
   nivelIluminacao = signal<'boa' | 'baixa'>('boa');
   emCooldown = signal(false);
 
-  // Modos e Diagnósticos
-  modoDebug = signal(true);
-  valorLuma = signal(0);
-  earAtual = signal(0);
-  proporcaoAtual = signal(0);
+  modoDebug = signal(false);
 
   // Modo auto-captura
   autoCapturaHabilitada = signal(false);
-  onAutoCapturaCallback: (() => void) | null = null;
+  private onAutoCapturaCallback: (() => void) | null = null;
 
   // ── Estado público ────────────────────────────────────────────────
   stream: MediaStream | null = null;
@@ -56,6 +72,7 @@ export class WebcamService {
   private modelosCarregados = false;
   private modelosPromise: Promise<void> | null = null;
   private aberturaId = 0;
+  private validacaoId = 0;
   private ultimoEstadoEnquadramento: EstadoEnquadramento = null;
   private processandoDeteccao = false;
   private videoElementRef: ElementRef<HTMLVideoElement> | null = null;
@@ -71,9 +88,11 @@ export class WebcamService {
   private currentBox: FaceBoxPosition | null = null;
   private readonly SMOOTH_ALPHA = 0.35;
 
-  // Timer de auto-captura
-  private tempoAcumuladoValido = 0;
-  private readonly TEMPO_AUTO_CAPTURA = 1500;
+  private readonly estabilidadeOcular = new EstabilidadeOcular();
+  private framesValidados: FrameValidado[] = [];
+  private canvasesDisponiveis: HTMLCanvasElement[] = [];
+  private primeiroFrameValido: number | null = null;
+  private ultimoFrameValido: number | null = null;
   private ultimoTickTimestamp = 0;
 
   // Cooldown pós-acesso
@@ -119,6 +138,7 @@ export class WebcamService {
     enableAutoCaptura: boolean = false,
     onAutoCaptura?: () => void
   ): Promise<void> {
+    if (this.stream || this.carregandoHardware()) this.pararWebcam();
     const aberturaId = ++this.aberturaId;
     this.webcamErro.set('');
     this.carregandoHardware.set(true);
@@ -165,6 +185,10 @@ export class WebcamService {
           let tentativas = 0;
 
           const verificar = () => {
+            if (aberturaId !== this.aberturaId) {
+              reject(new Error('Abertura de câmera cancelada.'));
+              return;
+            }
             tentativas++;
             const el = getVideoElement();
 
@@ -203,20 +227,18 @@ export class WebcamService {
           return;
         }
 
-        let concluido = false;
         const concluir = () => {
-          if (concluido) return;
-          concluido = true;
+          clearTimeout(timeout);
           videoEl.removeEventListener('loadedmetadata', concluir);
           videoEl.removeEventListener('canplay', concluir);
           resolve();
         };
 
+        const timeout = setTimeout(concluir, 5000);
         videoEl.addEventListener('loadedmetadata', concluir);
         videoEl.addEventListener('canplay', concluir);
-
-        setTimeout(concluir, 5000);
       });
+      if (aberturaId !== this.aberturaId) return;
 
       const ehDroidCam = this.cameraAtivaLabel().toLowerCase().includes('droidcam');
       const precisaRotacionarDroidCam =
@@ -284,147 +306,151 @@ export class WebcamService {
     }, duracaoMs);
   }
 
-  iniciarLoopValidacao(): void {
+  private iniciarLoopValidacao(): void {
     this.pararLoopValidacao();
     this.ultimoEstadoEnquadramento = null;
+    const validacaoId = this.validacaoId;
+    let ultimoTempoVideo = -1;
+    let ultimoTotalFrames = -1;
 
     this.intervalValidacao = setInterval(async () => {
-      if (this.processandoDeteccao) return;
-      if (!this.webcamAtiva() || !this.videoElementRef?.nativeElement || !this.modelosCarregados) {
+      const video = this.videoElementRef?.nativeElement;
+      if (this.processandoDeteccao || !this.webcamAtiva() || !video || this.emCooldown()) {
         return;
       }
 
-      const video = this.videoElementRef.nativeElement;
-      if (video.paused || video.ended || !video.videoWidth) return;
+      if (video.paused || video.ended || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+        this.rejeitarEnquadramento('Aguardando imagem da câmera');
+        this.suavizarRostoPerdido();
+        return;
+      }
+
+      const instante = performance.now();
+      if (this.ultimoFrameValido !== null &&
+          instante - this.ultimoFrameValido > INTERVALO_MAXIMO_ENTRE_FRAMES) {
+        this.rejeitarEnquadramento('Aguardando novos quadros da câmera');
+        this.suavizarRostoPerdido();
+      }
+
+      const totalFrames = video.getVideoPlaybackQuality().totalVideoFrames;
+      if (totalFrames > 0 ? totalFrames === ultimoTotalFrames : video.currentTime === ultimoTempoVideo) return;
+      ultimoTotalFrames = totalFrames;
+      ultimoTempoVideo = video.currentTime;
 
       this.processandoDeteccao = true;
       try {
-        if (this.emCooldown()) {
-          this.resetAutoCaptura();
-          return;
-        }
-
-        const fonteProcessamento = this.obterFonteProcessamento(video);
-        const larguraProcessamento = this.larguraFrameProcessado() || video.videoWidth;
-
-        // Detecção com TinyFaceDetector em Resolução Otimizada (224px)
+        // A inferência e a foto leem o mesmo quadro, mesmo se o vídeo avançar.
+        const fonte = this.obterFonteProcessamento(video);
         const detection = await faceapi
-          .detectSingleFace(fonteProcessamento, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 }))
+          .detectSingleFace(fonte, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 }))
           .withFaceLandmarks()
           .withFaceExpressions();
+        if (validacaoId !== this.validacaoId || this.emCooldown()) return;
 
         if (!detection) {
-          this.capturaPronta.set(false);
-          this.statusValidacao.set('Rosto não detectado');
-          this.tipoStatus.set('warn');
-          this.resetAutoCaptura();
+          this.rejeitarEnquadramento('Rosto não detectado', 'sem_rosto', 'Rosto não detectado. Centralize-se na câmera.');
           this.suavizarRostoPerdido();
-
-          if (this.ultimoEstadoEnquadramento !== 'sem_rosto') {
-            this.speech.falar('Rosto não detectado. Centralize-se na câmera.');
-            this.ultimoEstadoEnquadramento = 'sem_rosto';
-          }
           return;
         }
 
-        // Atualização e Suavização da Bounding Box (Círculo Dinâmico)
-        const rawBox = detection.detection.box;
-        this.atualizarFaceBoxSuavizada({
-          x: rawBox.x,
-          y: rawBox.y,
-          width: rawBox.width,
-          height: rawBox.height,
-        });
+        const caixa = detection.detection.box;
+        this.atualizarFaceBoxSuavizada(caixa);
+        this.pontosFaciais.set([]);
 
-        // Mede o centro do rosto, sem deixar roupa ou fundo dominar a leitura.
-        const brilhoMedio = this.calcularLuminanciaOtimizada(fonteProcessamento, rawBox);
-        this.valorLuma.set(Math.round(brilhoMedio));
-        if (brilhoMedio < 30 || brilhoMedio > 235) {
-          this.capturaPronta.set(false);
-          this.statusValidacao.set(brilhoMedio < 30
-            ? 'Rosto escuro — Ilumine o rosto pela frente'
-            : 'Rosto muito iluminado — Evite luz direta forte');
-          this.tipoStatus.set('warn');
-          this.nivelIluminacao.set('baixa');
-          this.resetAutoCaptura();
-          return;
-        }
-        this.nivelIluminacao.set('boa');
-
-        const proporcaoRosto = rawBox.width / larguraProcessamento;
-        this.proporcaoAtual.set(Math.round(proporcaoRosto * 100));
-
-        if (proporcaoRosto < 0.18) {
-          this.capturaPronta.set(false);
-          this.statusValidacao.set('Aproxime-se da câmera');
-          this.tipoStatus.set('warn');
-          this.resetAutoCaptura();
+        const brilho = this.calcularLuminanciaOtimizada(fonte, caixa);
+        this.nivelIluminacao.set(brilho < 30 || brilho > 235 ? 'baixa' : 'boa');
+        if (brilho < 30 || brilho > 235) {
+          this.rejeitarEnquadramento(brilho < 30
+            ? 'Ilumine o rosto pela frente'
+            : 'Evite luz direta forte no rosto');
           return;
         }
 
-        if (proporcaoRosto > 0.70) {
-          this.capturaPronta.set(false);
-          this.statusValidacao.set('Afaste-se um pouco');
-          this.tipoStatus.set('warn');
-          this.resetAutoCaptura();
+        const proporcao = caixa.width / fonte.width;
+        if (proporcao < 0.18 || proporcao > 0.70) {
+          this.rejeitarEnquadramento(proporcao < 0.18 ? 'Aproxime-se da câmera' : 'Afaste-se um pouco');
           return;
         }
 
-        // Validação Olhos Fechados
+        const centroX = (caixa.x + caixa.width / 2) / fonte.width;
+        const centroY = (caixa.y + caixa.height / 2) / fonte.height;
+        if (Math.abs(centroX - 0.5) > 0.28 || Math.abs(centroY - 0.5) > 0.28) {
+          this.rejeitarEnquadramento('Centralize o rosto na câmera');
+          return;
+        }
+
         const olhoEsq = detection.landmarks.getLeftEye();
         const olhoDir = detection.landmarks.getRightEye();
-        // Orientação pelos olhos: não depende do cabelo nem da roupa.
         const inclinacao = inclinacaoDosOlhos(olhoEsq, olhoDir);
         if (inclinacao > 20) {
-          this.capturaPronta.set(false);
-          this.statusValidacao.set('Mantenha a cabeça reta e olhe para a câmera');
-          this.tipoStatus.set('warn');
-          this.resetAutoCaptura();
-          return;
-        }
-        const earMedio = (calcularEAR(olhoEsq) + calcularEAR(olhoDir)) / 2;
-        this.earAtual.set(Number(earMedio.toFixed(2)));
-
-        if (earMedio < 0.23) {
-          this.capturaPronta.set(false);
-          this.statusValidacao.set('Olhos fechados!');
-          this.tipoStatus.set('warn');
-          this.resetAutoCaptura();
-
-          if (this.ultimoEstadoEnquadramento !== 'olhos') {
-            this.speech.falar('Mantenha os olhos abertos.');
-            this.ultimoEstadoEnquadramento = 'olhos';
-          }
+          this.rejeitarEnquadramento('Mantenha a cabeça reta e olhe para a câmera');
           return;
         }
 
-        // Validação Sorriso
-        const ehSorriso = detection.expressions.happy > 0.6;
-
-        if (ehSorriso) {
-          this.capturaPronta.set(false);
-          this.statusValidacao.set('Sorriso detectado! Fique sério');
-          this.tipoStatus.set('warn');
-          this.resetAutoCaptura();
-
-          if (this.ultimoEstadoEnquadramento !== 'sorriso') {
-            this.speech.falar('Por favor, mantenha uma expressão neutra e fique sério.');
-            this.ultimoEstadoEnquadramento = 'sorriso';
-          }
-        } else {
-          this.capturaPronta.set(true);
-          this.statusValidacao.set('Rosto enquadrado - Pronto!');
-          this.tipoStatus.set('success');
-          this.ultimoEstadoEnquadramento = 'ok';
-
-          if (this.autoCapturaHabilitada()) {
-            this.incrementarAutoCaptura();
-          }
+        if (detection.expressions.happy > 0.6) {
+          this.rejeitarEnquadramento('Mantenha uma expressão neutra', 'sorriso', 'Por favor, mantenha uma expressão neutra.');
+          return;
         }
+
+        const esquerdo = calcularEAR(olhoEsq);
+        const direito = calcularEAR(olhoDir);
+        const estabilidade = this.estabilidadeOcular.avaliar({ instante, esquerdo, direito });
+
+        if (estabilidade === 'fechados' || estabilidade === 'queda') {
+          this.rejeitarEnquadramento(
+            'Mantenha os olhos abertos',
+            'olhos',
+            estabilidade === 'fechados' ? 'Mantenha os olhos abertos.' : undefined,
+          );
+          return;
+        }
+
+        this.pontosFaciais.set([
+          centroDosPontos(olhoEsq),
+          centroDosPontos(olhoDir),
+          detection.landmarks.getNose()[3],
+        ]);
+
+        this.primeiroFrameValido ??= instante;
+        this.ultimoFrameValido = instante;
+        const tempoValido = instante - this.primeiroFrameValido;
+        const estavel = estabilidade === 'estavel';
+        const auto = this.autoCapturaHabilitada();
+        this.capturaPronta.set(estavel && !auto);
+        this.statusValidacao.set(estavel ? 'Rosto estável' : 'Olhe para a câmera');
+        this.tipoStatus.set(estavel ? 'success' : 'info');
+        if (estavel) this.ultimoEstadoEnquadramento = 'ok';
+
+        if (estavel && (!auto || tempoValido >= TEMPO_AUTO_CAPTURA - JANELA_MELHOR_FRAME)) {
+          this.guardarFrame(fonte, instante, qualidadeDoFrame(esquerdo, direito, inclinacao));
+        }
+        if (auto) this.atualizarAutoCaptura(tempoValido, instante, estavel);
+      } catch (erro) {
+        if (validacaoId !== this.validacaoId) return;
+        console.warn('[Webcam] Falha ao analisar quadro:', erro);
+        this.rejeitarEnquadramento('Aguardando imagem da câmera');
+        this.suavizarRostoPerdido();
       } finally {
         this.processandoDeteccao = false;
+        if (!this.webcamAtiva()) this.frameProcessamentoCanvas.width = 0;
       }
-    }, 200);
+    }, INTERVALO_ANALISE);
+  }
+
+  private rejeitarEnquadramento(
+    mensagem: string,
+    estado: EstadoEnquadramento = null,
+    avisoFalado?: string,
+  ): void {
+    this.capturaPronta.set(false);
+    this.statusValidacao.set(mensagem);
+    this.tipoStatus.set('warn');
+    this.resetAutoCaptura();
+
+    if (avisoFalado && this.ultimoEstadoEnquadramento !== estado) {
+      this.speech.falar(avisoFalado);
+    }
+    this.ultimoEstadoEnquadramento = estado;
   }
 
   private atualizarFaceBoxSuavizada(target: FaceBoxPosition): void {
@@ -443,30 +469,45 @@ export class WebcamService {
   private suavizarRostoPerdido(): void {
     this.currentBox = null;
     this.faceBox.set(null);
+    this.pontosFaciais.set([]);
   }
 
-  private incrementarAutoCaptura(): void {
-    this.tempoAcumuladoValido += 200;
-    const pct = Math.min(100, Math.round((this.tempoAcumuladoValido / this.TEMPO_AUTO_CAPTURA) * 100));
-    this.progressoAutoCaptura.set(pct);
+  private atualizarAutoCaptura(tempoValido: number, instante: number, estavel: boolean): void {
+    const podeDisparar = estavel && this.framesValidados.length > 0 && tempoValido >= TEMPO_AUTO_CAPTURA;
+    const progresso = podeDisparar
+      ? 100
+      : Math.min(estavel ? 99 : 29, Math.floor(100 * tempoValido / TEMPO_AUTO_CAPTURA));
+    this.progressoAutoCaptura.set(progresso);
 
-    const agora = Date.now();
-    if (agora - this.ultimoTickTimestamp >= 450 && pct < 100) {
+    if (podeDisparar) {
+      this.capturaPronta.set(true);
+      this.onAutoCapturaCallback?.();
+    } else if (progresso > 0 && instante - this.ultimoTickTimestamp >= 450) {
       this.speech.tocarBipTick();
-      this.ultimoTickTimestamp = agora;
+      this.ultimoTickTimestamp = instante;
     }
+  }
 
-    if (this.tempoAcumuladoValido >= this.TEMPO_AUTO_CAPTURA) {
-      this.speech.tocarBipDisparo();
-      this.resetAutoCaptura();
-      if (this.onAutoCapturaCallback) {
-        this.onAutoCapturaCallback();
-      }
+  private guardarFrame(fonte: HTMLCanvasElement, instante: number, qualidade: number): void {
+    while (this.framesValidados.length && instante - this.framesValidados[0].instante > JANELA_MELHOR_FRAME) {
+      this.canvasesDisponiveis.push(this.framesValidados.shift()!.canvas);
     }
+    const canvas = this.canvasesDisponiveis.pop() ?? document.createElement('canvas');
+    if (canvas.width !== fonte.width) canvas.width = fonte.width;
+    if (canvas.height !== fonte.height) canvas.height = fonte.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.drawImage(fonte, 0, 0);
+    this.framesValidados.push({ canvas, instante, qualidade });
   }
 
   private resetAutoCaptura(): void {
-    this.tempoAcumuladoValido = 0;
+    this.estabilidadeOcular.limpar();
+    this.canvasesDisponiveis.push(...this.framesValidados.map(({ canvas }) => canvas));
+    this.framesValidados.length = 0;
+    this.primeiroFrameValido = null;
+    this.ultimoFrameValido = null;
+    this.ultimoTickTimestamp = 0;
     this.progressoAutoCaptura.set(0);
   }
 
@@ -481,40 +522,30 @@ export class WebcamService {
     this.alturaFrameProcessado.set(video.videoHeight);
   }
 
-  private obterFonteProcessamento(
-    video: HTMLVideoElement,
-  ): HTMLVideoElement | HTMLCanvasElement {
-    if (!this.droidCamRetrato()) {
-      this.atualizarDimensoesProcessamento(video);
-      return video;
+  private obterFonteProcessamento(video: HTMLVideoElement): HTMLCanvasElement {
+    this.atualizarDimensoesProcessamento(video);
+    const largura = this.larguraFrameProcessado();
+    const altura = this.alturaFrameProcessado();
+    const canvas = this.frameProcessamentoCanvas;
+    if (canvas.width !== largura || canvas.height !== altura) {
+      this.capturaPronta.set(false);
+      this.resetAutoCaptura();
+      this.suavizarRostoPerdido();
     }
-
-    const largura = video.videoHeight;
-    const altura = video.videoWidth;
-
-    if (
-      this.frameProcessamentoCanvas.width !== largura
-      || this.frameProcessamentoCanvas.height !== altura
-    ) {
-      this.frameProcessamentoCanvas.width = largura;
-      this.frameProcessamentoCanvas.height = altura;
-    }
-
-    this.larguraFrameProcessado.set(largura);
-    this.alturaFrameProcessado.set(altura);
+    if (canvas.width !== largura) canvas.width = largura;
+    if (canvas.height !== altura) canvas.height = altura;
 
     const ctx = this.frameProcessamentoCtx;
-    if (!ctx) return video;
-
-    ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, largura, altura);
-    ctx.translate(0, altura);
-    ctx.rotate(-Math.PI / 2);
-    ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-    ctx.restore();
-
-    return this.frameProcessamentoCanvas;
+    if (!ctx) throw new Error('Canvas de processamento indisponível.');
+    if (this.droidCamRetrato()) {
+      ctx.setTransform(0, -1, 1, 0, 0, altura);
+    }
+    try {
+      ctx.drawImage(video, 0, 0);
+    } finally {
+      ctx.resetTransform();
+    }
+    return canvas;
   }
 
   private calcularLuminanciaOtimizada(fonte: CanvasImageSource, rosto: FaceBoxPosition): number {
@@ -531,12 +562,15 @@ export class WebcamService {
     return somaLuma / (data.length / 4);
   }
 
-  pararLoopValidacao(): void {
+  private pararLoopValidacao(): void {
+    this.validacaoId++;
     if (this.intervalValidacao) {
       clearInterval(this.intervalValidacao);
       this.intervalValidacao = null;
     }
+    this.capturaPronta.set(false);
     this.resetAutoCaptura();
+    this.canvasesDisponiveis.length = 0;
     this.suavizarRostoPerdido();
   }
 
@@ -550,56 +584,71 @@ export class WebcamService {
       this.stream.getTracks().forEach((track) => track.stop());
       this.stream = null;
     }
+    // O face-api ainda consulta as dimensões do canvas durante uma inferência cancelada.
+    if (!this.processandoDeteccao) this.frameProcessamentoCanvas.width = 0;
     this.webcamAtiva.set(false);
-    this.capturaPronta.set(false);
+    this.autoCapturaHabilitada.set(false);
+    this.dispararFlash.set(false);
     this.cameraAtivaLabel.set('');
     this.droidCamRetrato.set(false);
     this.larguraFrameProcessado.set(0);
     this.alturaFrameProcessado.set(0);
     this.videoElementRef = null;
+    this.onAutoCapturaCallback = null;
     this.emCooldown.set(false);
   }
 
-  executarEfeitoFlash(): void {
+  private executarEfeitoFlash(): void {
+    const aberturaId = this.aberturaId;
     this.dispararFlash.set(true);
-    setTimeout(() => this.dispararFlash.set(false), 150);
+    setTimeout(() => {
+      if (aberturaId === this.aberturaId) this.dispararFlash.set(false);
+    }, 150);
   }
 
-async capturarFrameComPreview(): Promise<{ blob: Blob; previewUrl: string } | null> {
-    const video = this.videoElementRef?.nativeElement;
-    if (!video || !this.capturaPronta()) return Promise.resolve(null);
+  async capturarFrameComPreview(): Promise<{ blob: Blob; previewUrl: string } | null> {
+    if (!this.webcamAtiva() || !this.capturaPronta() || this.emCooldown()) return null;
+    const agora = performance.now();
+    if (this.ultimoFrameValido === null ||
+        agora - this.ultimoFrameValido > INTERVALO_MAXIMO_ENTRE_FRAMES) return null;
 
-    this.executarEfeitoFlash();
+    const melhor = melhorFrameRecente(this.framesValidados, agora);
+    if (!melhor) return null;
+
+    const aberturaId = this.aberturaId;
     this.pararLoopValidacao();
+    this.statusValidacao.set('Preparando a foto');
+    this.tipoStatus.set('info');
+    if (this.autoCapturaHabilitada()) this.speech.tocarBipDisparo();
+    this.executarEfeitoFlash();
 
-    const fonteProcessamento = this.obterFonteProcessamento(video);
-    const canvas = document.createElement('canvas');
-    canvas.width = this.larguraFrameProcessado() || video.videoWidth || 640;
-    canvas.height = this.alturaFrameProcessado() || video.videoHeight || 480;
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = melhor.canvas.width;
+      canvas.height = melhor.canvas.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Canvas de captura indisponível.');
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return Promise.resolve(null);
+      // Preserva o espelhamento e a orientação da foto enviada ao backend.
+      ctx.setTransform(-1, 0, 0, 1, canvas.width, 0);
+      ctx.drawImage(melhor.canvas, 0, 0);
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+      if (!blob) throw new Error('Não foi possível gerar a foto.');
+      if (aberturaId !== this.aberturaId) return null;
 
-    // Mantém a experiência de espelho, mas a foto já sai orientada em retrato
-    // quando a fonte ativa é DroidCam horizontal.
-    ctx.translate(canvas.width, 0);
-    ctx.scale(-1, 1);
-
-    ctx.drawImage(fonteProcessamento, 0, 0, canvas.width, canvas.height);
-    const previewUrl = canvas.toDataURL('image/jpeg', 0.85);
-
-    return new Promise((resolve) => {
-      canvas.toBlob(
-        (blob) => resolve(blob ? { blob, previewUrl } : null),
-        'image/jpeg',
-        0.85,
-      );
-    });
+      const previewUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(blob);
+      });
+      return aberturaId === this.aberturaId ? { blob, previewUrl } : null;
+    } catch (erro) {
+      if (aberturaId !== this.aberturaId) return null;
+      console.warn('[Webcam] Falha ao preparar captura:', erro);
+      this.rejeitarEnquadramento('Não foi possível preparar a foto. Tente novamente.');
+      this.iniciarLoopValidacao();
+      return null;
+    }
   }
-}
-function calcularEAR(olho: faceapi.Point[]): number {
-  const d1 = Math.hypot(olho[1].x - olho[5].x, olho[1].y - olho[5].y);
-  const d2 = Math.hypot(olho[2].x - olho[4].x, olho[2].y - olho[4].y);
-  const d3 = Math.hypot(olho[0].x - olho[3].x, olho[0].y - olho[3].y);
-  return (d1 + d2) / (2.0 * d3);
 }

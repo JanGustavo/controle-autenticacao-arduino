@@ -1,9 +1,13 @@
 import asyncio
+import logging
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from psycopg import OperationalError
+from psycopg_pool import PoolTimeout
 
 # ─────────────────────────────────────────────
 # Routers da API
@@ -14,8 +18,10 @@ from app.api import (
     audit_logs,
     dispositivos,
     historico_acesso,
+    ia,
     locais,
     permissoes,
+    planos,
     rfid,
     usuarios,
     websocket,
@@ -35,6 +41,7 @@ from app.services.face_service import FaceService
 # ─────────────────────────────────────────────
 
 BASE_PREFIX = "/api/v1"
+logger = logging.getLogger(__name__)
 
 TAGS_METADATA = [
     {
@@ -92,6 +99,10 @@ TAGS_METADATA = [
     {
         "name": "WebSocket",
         "description": "Eventos em tempo real para painel e Totem.",
+    },
+    {
+        "name": "Planos e Checkout",
+        "description": "Planos de licenciamento e validação de transações no checkout.",
     },
     {
         "name": "Health Check",
@@ -193,6 +204,27 @@ app = FastAPI(
         "defaultModelsExpandDepth": 1,
     },
 )
+
+
+@app.exception_handler(PoolTimeout)
+async def pool_timeout_handler(request: Request, _error: PoolTimeout) -> JSONResponse:
+    logger.warning("Timeout ao aguardar conexão PostgreSQL: %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        content={"detail": "Banco de dados temporariamente indisponível. Tente novamente."},
+    )
+
+
+@app.exception_handler(OperationalError)
+async def database_operational_error_handler(request: Request, error: OperationalError) -> JSONResponse:
+    logger.error(
+        "Falha operacional no PostgreSQL: %s %s", request.method, request.url.path,
+        exc_info=(type(error), error, error.__traceback__),
+    )
+    return JSONResponse(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        content={"detail": "Banco de dados temporariamente indisponível. Tente novamente."},
+    )
 
 
 # ─────────────────────────────────────────────
@@ -337,4 +369,12 @@ app.include_router(
     rfid.router,
     prefix=f"{BASE_PREFIX}/arduino",
     tags=["RFID"],
+)
+
+app.include_router(ia.router, prefix=f"{BASE_PREFIX}/ia", tags=["IA"])
+
+app.include_router(
+    planos.router,
+    prefix=BASE_PREFIX,
+    tags=["Planos e Checkout"],
 )

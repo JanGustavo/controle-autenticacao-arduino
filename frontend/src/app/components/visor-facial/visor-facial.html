@@ -1,0 +1,78 @@
+<div
+  class="webcam-viewport"
+  [class.droidcam-portrait]="webcam.droidCamRetrato()"
+  [style.--proporcao-retrato]="proporcaoRetrato()"
+>
+  <video #video autoplay playsinline muted></video>
+
+  @if (webcam.dispararFlash()) {
+    <div class="camera-flash-overlay" aria-hidden="true"></div>
+  }
+
+  <div
+    class="status-badge"
+    role="status"
+    [class.warn]="webcam.tipoStatus() === 'warn' && !validandoTitular()"
+    [class.success]="webcam.tipoStatus() === 'success' && !validandoTitular()"
+  >
+    <mat-icon aria-hidden="true">{{
+      validandoTitular()
+        ? 'verified_user'
+        : webcam.tipoStatus() === 'success'
+          ? 'check_circle'
+          : webcam.tipoStatus() === 'warn'
+            ? 'warning'
+            : 'center_focus_strong'
+    }}</mat-icon>
+    <span>{{ validandoTitular() ? 'Validando titular do cartão' : webcam.statusValidacao() }}</span>
+  </div>
+
+  @if (!validandoTitular()) {
+    <div class="face-overlay" aria-hidden="true">
+      <div
+        class="face-reticle"
+        [class.tracking]="reticulo()"
+        [class.warning]="webcam.tipoStatus() === 'warn'"
+        [class.stable]="webcam.tipoStatus() === 'success'"
+        [style]="reticulo()"
+      >
+        <span class="corner top-left"></span>
+        <span class="corner top-right"></span>
+        <span class="corner bottom-left"></span>
+        <span class="corner bottom-right"></span>
+
+        @if (reticulo() && faseAtual() === 1) {
+          <span class="scanner-beam"></span>
+        }
+        @if ((webcam.autoCapturaHabilitada() && faseAtual() === 2) || webcam.capturaPronta()) {
+          <span class="stability-pulse"></span>
+        }
+      </div>
+
+      @for (ponto of pontos(); track $index) {
+        <span class="face-node" [style]="ponto"></span>
+      }
+    </div>
+
+    @if (webcam.autoCapturaHabilitada() && !webcam.emCooldown()) {
+      <div class="capture-progress">
+        <div class="phase-label">
+          <span aria-live="polite">{{ fases[faseAtual()].texto }}</span>
+          <span aria-hidden="true">{{ webcam.progressoAutoCaptura() }}%</span>
+        </div>
+        <div
+          class="phase-segments"
+          role="progressbar"
+          aria-label="Progresso da captura facial"
+          [attr.aria-valuenow]="webcam.progressoAutoCaptura()"
+        >
+          @for (fase of fases; track fase.inicio) {
+            <span class="phase-track" [style.flex-grow]="fase.fim - fase.inicio">
+              <span class="phase-fill" [style.transform]="'scaleX(' + preenchimento(fase.inicio, fase.fim) + ')'"></span>
+            </span>
+          }
+        </div>
+      </div>
+    }
+  }
+</div>

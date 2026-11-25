@@ -130,6 +130,20 @@ export class LocaisPage implements OnInit {
       !(await this.confirmation.excluir(
         'Excluir local?',
         `O local "${local.nome}" e suas permissões vinculadas serão removidos.`,
+        {
+          items: [
+            {
+              icon: 'location_on',
+              label: local.nome,
+              description: 'Local físico e configuração de status.',
+            },
+            {
+              icon: 'vpn_key',
+              label: 'Permissões vinculadas',
+              description: 'Acessos configurados para este local.',
+            },
+          ],
+        },
       ))
     )
       return;

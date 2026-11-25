@@ -1,4 +1,5 @@
 #include <WiFi.h>
+#include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <SPI.h>
 #include <MFRC522.h>
@@ -302,7 +303,8 @@ String extrairCampoJson(const String &json, const String &campo)
 
 bool iniciarTentativaAcesso(const char *uuid, String &tentativaId)
 {
-    WiFiClient client;
+    WiFiClientSecure client;
+    client.setInsecure();
     HTTPClient http;
 
     if (!http.begin(client, api_verify_card))
@@ -328,8 +330,18 @@ bool iniciarTentativaAcesso(const char *uuid, String &tentativaId)
 
     if (httpCode != 200)
     {
-        Serial.print("Falha HTTP ao processar RFID: ");
-        Serial.println(httpCode);
+        if (httpCode < 0)
+        {
+            Serial.print("Falha de transporte HTTPS ao processar RFID: ");
+            Serial.println(http.errorToString(httpCode));
+        }
+        else
+        {
+            Serial.print("Resposta HTTP ao processar RFID: ");
+            Serial.println(httpCode);
+            Serial.print("Resposta da API: ");
+            Serial.println(http.getString());
+        }
         http.end();
         return false;
     }
@@ -375,7 +387,8 @@ bool aguardarDecisaoAcesso(const String &tentativaId)
             return false;
         }
 
-        WiFiClient client;
+        WiFiClientSecure client;
+        client.setInsecure();
         HTTPClient http;
 
         String url =
@@ -413,8 +426,18 @@ bool aguardarDecisaoAcesso(const String &tentativaId)
             continue;
         }
 
-        Serial.print("Falha ao consultar resultado. HTTP: ");
-        Serial.println(httpCode);
+        if (httpCode < 0)
+        {
+            Serial.print("Falha de transporte HTTPS ao consultar resultado: ");
+            Serial.println(http.errorToString(httpCode));
+        }
+        else
+        {
+            Serial.print("Resposta HTTP ao consultar resultado: ");
+            Serial.println(httpCode);
+            Serial.print("Resposta da API: ");
+            Serial.println(http.getString());
+        }
         http.end();
         delay(500);
     }
@@ -427,32 +450,58 @@ bool aguardarDecisaoAcesso(const String &tentativaId)
 void testarAPI()
 {
     Serial.println("\nTeste da API\nCriando requisicao...");
+    Serial.print("Endpoint HTTPS: ");
+    Serial.println(api_health);
+    Serial.print("Gateway Wi-Fi: ");
+    Serial.println(WiFi.gatewayIP());
+    Serial.print("DNS Wi-Fi: ");
+    Serial.println(WiFi.dnsIP());
+    Serial.printf("Sinal Wi-Fi: %d dBm\n", WiFi.RSSI());
 
-    WiFiClient client;
+    IPAddress apiIp;
+    if (WiFi.hostByName("ardlock.jangustavo.me", apiIp))
+    {
+        Serial.print("DNS ardlock.jangustavo.me: ");
+        Serial.println(apiIp);
+    }
+    else
+    {
+        Serial.println("Falha ao resolver DNS de ardlock.jangustavo.me.");
+    }
+
+    WiFiClientSecure secureClient;
+    secureClient.setInsecure();
     HTTPClient http;
 
-    if (!http.begin(client, api_health))
+    if (!http.begin(secureClient, api_health))
     {
         Serial.println("ERRO: nao foi possivel iniciar HTTPClient");
         return;
     }
+    http.setConnectTimeout(15000);
+    http.setTimeout(15000);
 
     int httpCode = http.GET();
-    Serial.print("HTTP status: ");
-    Serial.println(httpCode);
-
     if (httpCode == 200)
     {
         String response = http.getString();
+        Serial.println("HTTP status: 200");
         Serial.println("API viva.");
         Serial.print("Resposta da API: ");
         Serial.println(response);
     }
+    else if (httpCode < 0)
+    {
+        Serial.print("Falha de transporte HTTPS (HTTPClient): ");
+        Serial.println(http.errorToString(httpCode));
+        Serial.println("Nenhum status HTTP foi recebido.");
+    }
     else
     {
-        Serial.println("API inacessivel.");
-        Serial.print("Erro HTTP: ");
-        Serial.println(http.errorToString(httpCode));
+        Serial.print("Resposta HTTP do backend: ");
+        Serial.println(httpCode);
+        Serial.print("Resposta da API: ");
+        Serial.println(http.getString());
     }
     http.end();
 }

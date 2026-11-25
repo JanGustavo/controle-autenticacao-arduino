@@ -1,0 +1,2276 @@
+<!doctype html>
+<html lang="pt-BR" data-type="software" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="page-type" content="software" />
+    <meta name="site-kind" content="software" />
+    <meta name="description" content="Painel financeiro e operacional dos clientes ArdLock" />
+    <meta name="theme-color" content="#0b1220" />
+    <title>Clientes da plataforma · ArdLock</title>
+    <link rel="icon" type="image/svg+xml" href="/ard-lock-icon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet" />
+    <script>
+      // Mesma chave de tema do app Angular (mesma origem). Sem preferência salva, o painel root abre escuro.
+      try {
+        if (localStorage.getItem("theme") === "light") document.documentElement.dataset.theme = "light";
+      } catch (e) {}
+    </script>
+    <style>
+      /* Tokens alinhados a frontend/src/styles.scss (--ard-*). */
+      :root {
+        color-scheme: dark;
+        --canvas: #0b1220;
+        --surface: #111827;
+        --surface-2: #172033;
+        --ink: #f8fafc;
+        --muted: #94a3b8;
+        --line: rgb(148 163 184 / 18%);
+        --line-strong: rgb(148 163 184 / 32%);
+        --primary: #60a5fa;
+        --on-primary: #0b1220;
+        --success: #4ade80;
+        --danger: #fb7185;
+        --warning: #fbbf24;
+        --radius-sm: 10px;
+        --radius-md: 14px;
+        --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+      }
+      :root[data-theme="light"] {
+        color-scheme: light;
+        --canvas: #f6f8fb;
+        --surface: #ffffff;
+        --surface-2: #f1f5f9;
+        --ink: #172033;
+        --muted: #5b6b82;
+        --line: #e2e8f0;
+        --line-strong: #cbd5e1;
+        --primary: #2563eb;
+        --on-primary: #ffffff;
+        --success: #15803d;
+        --danger: #b91c1c;
+        --warning: #b45309;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scrollbar-gutter: stable;
+      }
+      body {
+        margin: 0;
+        background: var(--canvas);
+        color: var(--ink);
+        font: 15px/1.5 Roboto, "Helvetica Neue", Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      h1,
+      h2,
+      h3,
+      p,
+      dl,
+      dd,
+      ul,
+      ol {
+        margin: 0;
+      }
+      ul,
+      ol {
+        padding: 0;
+        list-style: none;
+      }
+      h1,
+      h2,
+      h3 {
+        font-weight: 500;
+        letter-spacing: -0.01em;
+      }
+      button,
+      input {
+        font: inherit;
+        color: inherit;
+      }
+      button {
+        cursor: pointer;
+      }
+      a {
+        color: var(--primary);
+        text-underline-offset: 3px;
+      }
+      :focus-visible {
+        outline: 3px solid var(--primary);
+        outline-offset: 2px;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      .num {
+        font-variant-numeric: tabular-nums;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+      }
+      .icon {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .skip {
+        position: absolute;
+        left: 16px;
+        top: -80px;
+        z-index: 50;
+        padding: 10px 16px;
+        border-radius: var(--radius-sm);
+        background: var(--primary);
+        color: var(--on-primary);
+        text-decoration: none;
+      }
+      .skip:focus {
+        top: 12px;
+      }
+
+      /* ---------- Botões ---------- */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 44px;
+        padding: 0 16px;
+        border: 1px solid var(--line-strong);
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+        font-weight: 500;
+        text-decoration: none;
+        white-space: nowrap;
+        transition:
+          background-color 160ms ease,
+          border-color 160ms ease,
+          transform 160ms ease;
+      }
+      .btn:hover {
+        border-color: var(--primary);
+        background: color-mix(in srgb, var(--primary) 8%, var(--surface));
+      }
+      .btn:active {
+        transform: translateY(1px);
+      }
+      .btn:disabled {
+        opacity: 0.65;
+        cursor: progress;
+      }
+      .btn-primary {
+        border-color: var(--primary);
+        background: var(--primary);
+        color: var(--on-primary);
+      }
+      .btn-primary:hover {
+        background: color-mix(in srgb, var(--primary) 86%, var(--ink));
+      }
+      .btn-link {
+        min-height: 44px;
+        padding: 0 4px;
+        border: 0;
+        background: none;
+        color: var(--primary);
+        font-weight: 500;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
+      .icon-btn {
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+        color: var(--muted);
+      }
+      .icon-btn:hover {
+        background: color-mix(in srgb, var(--ink) 8%, transparent);
+        color: var(--ink);
+      }
+      #refresh[aria-busy="true"] .icon {
+        animation: girar 900ms linear infinite;
+      }
+      @keyframes girar {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* ---------- Cabeçalho ---------- */
+      .top {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        border-bottom: 1px solid var(--line);
+        background: color-mix(in srgb, var(--surface) 94%, transparent);
+        backdrop-filter: blur(10px);
+      }
+      .top-inner,
+      main {
+        max-width: 1328px;
+        margin: 0 auto;
+        padding-inline: clamp(16px, 3vw, 24px);
+      }
+      .top-inner {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        min-height: 64px;
+      }
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 1.15rem;
+        font-weight: 500;
+        letter-spacing: -0.02em;
+      }
+      .brand img {
+        width: 38px;
+        height: 22px;
+      }
+      .scope {
+        padding-left: 14px;
+        border-left: 1px solid var(--line-strong);
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .top-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-left: auto;
+      }
+
+      /* ---------- Título e filtros ---------- */
+      main {
+        padding-top: 32px;
+        padding-bottom: 56px;
+      }
+      .heading {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px 24px;
+        margin-bottom: 24px;
+      }
+      h1 {
+        font-size: clamp(1.6rem, 2.6vw, 2.1rem);
+        line-height: 1.15;
+        letter-spacing: -0.03em;
+      }
+      .heading p {
+        margin-top: 6px;
+        color: var(--muted);
+      }
+      .toolbar {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px 20px;
+        padding: 12px 0;
+        border-block: 1px solid var(--line);
+      }
+      .filter {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .filter-label {
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+      .segments {
+        display: inline-flex;
+        gap: 2px;
+        padding: 3px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+      }
+      .segments button {
+        min-height: 38px;
+        padding: 0 14px;
+        border: 0;
+        border-radius: 7px;
+        background: transparent;
+        color: var(--muted);
+        font-size: 0.9rem;
+        font-weight: 500;
+        white-space: nowrap;
+        transition:
+          background-color 160ms ease,
+          color 160ms ease;
+      }
+      .segments button:hover {
+        color: var(--ink);
+      }
+      .segments button[aria-pressed="true"] {
+        background: color-mix(in srgb, var(--primary) 18%, var(--surface));
+        color: var(--ink);
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 55%, transparent);
+      }
+      .updated {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: auto;
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+      .updated-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--success);
+      }
+      .updated.is-fresh time {
+        animation: realce 1200ms ease;
+      }
+      .updated.is-stale .updated-dot {
+        background: var(--warning);
+      }
+      @keyframes realce {
+        from {
+          color: var(--primary);
+        }
+      }
+      .progress {
+        position: relative;
+        height: 2px;
+        margin-top: -1px;
+        overflow: hidden;
+      }
+      .progress::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        width: 35%;
+        background: var(--primary);
+        animation: progresso 1100ms var(--ease) infinite;
+      }
+      @keyframes progresso {
+        from {
+          transform: translateX(-100%);
+        }
+        to {
+          transform: translateX(300%);
+        }
+      }
+
+      /* ---------- Avisos ---------- */
+      .alert {
+        display: flex;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 20px;
+        padding: 14px 16px;
+        border: 1px solid color-mix(in srgb, var(--tone, var(--danger)) 40%, var(--line));
+        border-radius: var(--radius-sm);
+        background: color-mix(in srgb, var(--tone, var(--danger)) 8%, var(--surface));
+      }
+      .alert > .icon {
+        margin-top: 1px;
+        color: var(--tone, var(--danger));
+      }
+      .alert > div {
+        flex: 1 1 240px;
+      }
+      .alert strong {
+        display: block;
+        font-weight: 500;
+      }
+      .alert p {
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .alert .btn {
+        align-self: center;
+      }
+
+      /* ---------- Indicadores ---------- */
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        margin-top: 24px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        background: var(--surface);
+      }
+      .metric {
+        min-width: 0;
+        padding: 20px 22px;
+      }
+      .metric + .metric {
+        border-left: 1px solid var(--line);
+      }
+      .metric-label {
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+      .metric-value {
+        display: block;
+        margin: 6px 0 4px;
+        font-size: clamp(1.5rem, 2.4vw, 2rem);
+        font-weight: 500;
+        letter-spacing: -0.03em;
+        line-height: 1.15;
+        font-variant-numeric: tabular-nums;
+        overflow-wrap: anywhere;
+      }
+      .metric-note {
+        color: var(--muted);
+        font-size: 0.85rem;
+        line-height: 1.4;
+      }
+
+      /* ---------- Painéis ---------- */
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 340px;
+        gap: 20px;
+        align-items: start;
+        margin-top: 20px;
+      }
+      .side {
+        display: grid;
+        gap: 20px;
+      }
+      .panel {
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        background: var(--surface);
+      }
+      .panel-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px 16px;
+        padding: 18px 20px 14px;
+      }
+      .panel-head h2 {
+        font-size: 1.08rem;
+      }
+      .panel-head p {
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+      .panel-body {
+        padding: 0 20px 20px;
+      }
+
+      /* ---------- Busca ---------- */
+      .search {
+        position: relative;
+        display: flex;
+        align-items: center;
+        width: min(280px, 100%);
+      }
+      .search .icon {
+        position: absolute;
+        left: 12px;
+        width: 18px;
+        height: 18px;
+        color: var(--muted);
+        pointer-events: none;
+      }
+      .search input {
+        width: 100%;
+        min-height: 44px;
+        padding: 0 12px 0 38px;
+        border: 1px solid var(--line-strong);
+        border-radius: var(--radius-sm);
+        background: var(--canvas);
+      }
+      .search input::placeholder {
+        color: var(--muted);
+      }
+
+      /* ---------- Lista de clientes ---------- */
+      .table-wrap {
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th {
+        padding: 10px 14px;
+        border-block: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 0.8rem;
+        font-weight: 500;
+        text-align: left;
+        white-space: nowrap;
+      }
+      td {
+        padding: 14px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: top;
+      }
+      th:first-child,
+      td:first-child {
+        padding-left: 20px;
+      }
+      th:last-child,
+      td:last-child {
+        padding-right: 12px;
+      }
+      tbody tr:last-child td {
+        border-bottom: 0;
+      }
+      .row {
+        cursor: pointer;
+        transition: background-color 140ms ease;
+      }
+      .row:hover,
+      .row:focus-within {
+        background: color-mix(in srgb, var(--primary) 6%, transparent);
+      }
+      .row.is-open {
+        background: color-mix(in srgb, var(--primary) 11%, transparent);
+        box-shadow: inset 3px 0 0 var(--primary);
+      }
+      .cell-sub {
+        display: block;
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 0.85rem;
+        line-height: 1.4;
+        overflow-wrap: anywhere;
+      }
+      .cell-muted {
+        color: var(--muted);
+      }
+      .client-btn {
+        padding: 0;
+        border: 0;
+        background: none;
+        font-weight: 500;
+        text-align: left;
+        overflow-wrap: anywhere;
+      }
+      .client-btn:hover {
+        color: var(--primary);
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
+      .tag {
+        display: inline-block;
+        margin-top: 6px;
+        padding: 1px 8px;
+        border: 1px solid var(--line-strong);
+        border-radius: 999px;
+        color: var(--muted);
+        font-size: 0.78rem;
+        white-space: nowrap;
+      }
+      .badge {
+        --tone: var(--muted);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--tone);
+        font-size: 0.88rem;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+      .badge::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--tone);
+      }
+      .badge.ok {
+        --tone: var(--success);
+      }
+      .badge.down,
+      .badge.bad {
+        --tone: var(--danger);
+      }
+      .badge.down::before,
+      .badge.bad::before {
+        border-radius: 2px;
+      }
+      .badge.warn {
+        --tone: var(--warning);
+      }
+      .badge.neutral::before {
+        background: transparent;
+        box-shadow: inset 0 0 0 1.5px var(--tone);
+      }
+      /* Verificação recente e disponível: o anel indica monitoramento ativo. */
+      .badge.ok.live::before {
+        animation: vivo 2s ease-out infinite;
+      }
+      @keyframes vivo {
+        from {
+          box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 60%, transparent);
+        }
+        to {
+          box-shadow: 0 0 0 7px transparent;
+        }
+      }
+      .money {
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .chev {
+        width: 18px;
+        height: 18px;
+        margin-top: 2px;
+        color: var(--muted);
+        transition: transform 160ms ease;
+      }
+      .row:hover .chev {
+        transform: translateX(3px);
+        color: var(--primary);
+      }
+      .empty {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+        padding: 28px 20px 24px;
+        border-top: 1px solid var(--line);
+      }
+      .empty strong {
+        font-weight: 500;
+      }
+      .empty p {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      /* ---------- Acompanhamento ---------- */
+      .attention li + li {
+        border-top: 1px solid var(--line);
+      }
+      .attention button {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        width: 100%;
+        min-height: 56px;
+        padding: 12px 20px;
+        border: 0;
+        background: transparent;
+        text-align: left;
+      }
+      .attention button:hover {
+        background: color-mix(in srgb, var(--primary) 6%, transparent);
+      }
+      .attention .marker {
+        flex: 0 0 10px;
+        width: 10px;
+        height: 10px;
+        margin-top: 6px;
+        border-radius: 2px;
+        background: var(--tone);
+      }
+      .attention .warn .marker {
+        border-radius: 50%;
+      }
+      .attention .info .marker {
+        border-radius: 50%;
+        background: transparent;
+        box-shadow: inset 0 0 0 2px var(--tone);
+      }
+      .attention .bad {
+        --tone: var(--danger);
+      }
+      .attention .warn {
+        --tone: var(--warning);
+      }
+      .attention .info {
+        --tone: var(--primary);
+      }
+      .attention strong {
+        display: block;
+        font-weight: 500;
+        overflow-wrap: anywhere;
+      }
+      .attention span.reason {
+        display: block;
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+      .attention-ok {
+        display: flex;
+        gap: 12px;
+        margin: 0 20px 20px;
+        padding: 14px 16px;
+        border: 1px solid color-mix(in srgb, var(--success) 35%, var(--line));
+        border-radius: var(--radius-sm);
+        background: color-mix(in srgb, var(--success) 7%, var(--surface));
+      }
+      .attention-ok .icon {
+        color: var(--success);
+      }
+      .attention-ok strong {
+        display: block;
+        font-weight: 500;
+      }
+      .attention-ok p {
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+      .attention-note {
+        padding: 12px 20px 16px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+
+      /* ---------- Distribuição ---------- */
+      .split {
+        display: flex;
+        height: 10px;
+        margin: 10px 0 8px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: var(--surface-2);
+      }
+      .split span {
+        height: 100%;
+        transition: width 500ms var(--ease);
+      }
+      .split .a {
+        background: var(--primary);
+      }
+      .split .b {
+        background: repeating-linear-gradient(
+          135deg,
+          var(--warning) 0 4px,
+          color-mix(in srgb, var(--warning) 55%, transparent) 4px 7px
+        );
+      }
+      .split .c {
+        background: color-mix(in srgb, var(--primary) 40%, var(--surface-2));
+      }
+      .legend {
+        display: grid;
+        gap: 6px;
+      }
+      .legend div {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        font-size: 0.9rem;
+      }
+      .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+      }
+      .legend i {
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+      }
+      .dist-block + .dist-block {
+        margin-top: 18px;
+        padding-top: 16px;
+        border-top: 1px solid var(--line);
+      }
+      .dist-block h3 {
+        font-size: 0.95rem;
+      }
+      .footnote {
+        margin-top: 14px;
+        color: var(--muted);
+        font-size: 0.85rem;
+        line-height: 1.45;
+      }
+
+      /* ---------- Faturamento ---------- */
+      .revenue {
+        margin-top: 20px;
+      }
+      .revenue-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+        border-top: 1px solid var(--line);
+      }
+      .revenue-grid > div {
+        min-width: 0;
+        padding: 18px 20px 20px;
+      }
+      .revenue-grid > div + div {
+        border-left: 1px solid var(--line);
+      }
+      .revenue-grid h3 {
+        margin-bottom: 14px;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .bar-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 4px 12px;
+        padding: 10px 0;
+      }
+      .bar-row + .bar-row {
+        border-top: 1px solid var(--line);
+      }
+      .bar-row .name {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      .bar-row .split {
+        grid-column: 1 / -1;
+        margin: 4px 0 0;
+        height: 8px;
+      }
+      .trend {
+        position: relative;
+      }
+      .trend-max {
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+      .trend-bars {
+        display: flex;
+        align-items: flex-end;
+        gap: 2px;
+        height: 140px;
+        margin-top: 6px;
+        border-bottom: 1px solid var(--line-strong);
+      }
+      .trend-bars span {
+        flex: 1 1 0;
+        min-width: 1px;
+        max-width: 28px;
+        border-radius: 3px 3px 0 0;
+        background: var(--primary);
+        transform-origin: bottom;
+        animation: crescer 600ms var(--ease) both;
+      }
+      .trend-bars span.zero {
+        height: 2px !important;
+        border-radius: 0;
+        background: var(--line-strong);
+      }
+      .trend-bars span.is-hover {
+        background: color-mix(in srgb, var(--primary) 70%, var(--ink));
+      }
+      @keyframes crescer {
+        from {
+          transform: scaleY(0);
+        }
+      }
+      .trend-axis {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+      .tooltip {
+        position: absolute;
+        z-index: 2;
+        padding: 6px 10px;
+        border: 1px solid var(--line-strong);
+        border-radius: 8px;
+        background: var(--surface);
+        font-size: 0.85rem;
+        white-space: nowrap;
+        pointer-events: none;
+        transform: translate(-50%, calc(-100% - 8px));
+      }
+      .chart-empty {
+        padding: 20px 0;
+        color: var(--muted);
+      }
+
+      /* ---------- Carregamento ---------- */
+      .sk {
+        display: block;
+        border-radius: 6px;
+        background: color-mix(in srgb, var(--muted) 18%, transparent);
+        animation: pulso 900ms ease-in-out infinite alternate;
+      }
+      @keyframes pulso {
+        from {
+          opacity: 0.45;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      .sk-row {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        height: 64px;
+        padding: 0 20px;
+        border-top: 1px solid var(--line);
+      }
+
+      /* ---------- Gaveta do cliente ---------- */
+      dialog {
+        position: fixed;
+        inset: 0 0 0 auto;
+        width: min(600px, 100%);
+        max-width: 100%;
+        height: 100dvh;
+        max-height: 100dvh;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        border-left: 1px solid var(--line-strong);
+        background: var(--canvas);
+        color: var(--ink);
+      }
+      dialog::backdrop {
+        background: rgb(2 8 23 / 60%);
+      }
+      .drawer-head {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 18px 20px 16px;
+        border-bottom: 1px solid var(--line);
+        background: var(--surface);
+      }
+      .drawer-head h2 {
+        font-size: 1.25rem;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+      }
+      .drawer-head p {
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 0.88rem;
+        overflow-wrap: anywhere;
+      }
+      .drawer-head .btn {
+        flex-shrink: 0;
+      }
+      .drawer-body {
+        padding: 4px 20px 32px;
+      }
+      .d-section {
+        padding: 20px 0;
+      }
+      .d-section + .d-section {
+        border-top: 1px solid var(--line);
+      }
+      .d-section > h3 {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+        font-size: 1rem;
+      }
+      .d-section > h3 small {
+        color: var(--muted);
+        font-size: 0.82rem;
+        font-weight: 400;
+      }
+      .d-card {
+        padding: 14px 16px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+      }
+      .d-card + .d-card {
+        margin-top: 10px;
+      }
+      .d-card-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+      }
+      .d-card-head strong {
+        font-weight: 500;
+        overflow-wrap: anywhere;
+      }
+      .facts {
+        display: grid;
+        grid-template-columns: max-content minmax(0, 1fr);
+        gap: 6px 16px;
+        margin-top: 10px;
+        font-size: 0.9rem;
+      }
+      .facts dt {
+        color: var(--muted);
+      }
+      .facts dd {
+        overflow-wrap: anywhere;
+      }
+      .d-card .note {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+      .d-card .btn {
+        margin-top: 12px;
+      }
+      .plan-assignment {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: end;
+        gap: 10px;
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid var(--line);
+      }
+      .plan-assignment label { display: grid; gap: 5px; color: var(--muted); font-size: .82rem; }
+      .plan-assignment select {
+        min-height: 42px; width: 100%; padding: 0 10px; border: 1px solid var(--line-strong);
+        border-radius: var(--radius-sm); background: var(--canvas); color: var(--ink); font: inherit;
+      }
+      .plan-status { grid-column: 1 / -1; min-height: 1.2em; color: var(--muted); font-size: .82rem; }
+      .d-empty {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .totals {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+      .totals div {
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+      }
+      .totals span {
+        display: block;
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+      .totals strong {
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+      }
+      .d-table {
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+        overflow-x: auto;
+      }
+      .d-table table {
+        font-size: 0.88rem;
+      }
+      .d-table th,
+      .d-table td {
+        padding: 9px 12px;
+      }
+      .d-table th {
+        border-top: 0;
+      }
+      .d-table td {
+        overflow-wrap: anywhere;
+      }
+      .d-table .nw,
+      .d-table .num {
+        white-space: nowrap;
+      }
+      .d-table .badge {
+        white-space: normal;
+        align-items: baseline;
+      }
+      .d-table .badge::before {
+        flex-shrink: 0;
+        transform: translateY(-1px);
+      }
+      /* Trilha de verificações: da mais antiga à mais recente. */
+      .ticks {
+        display: flex;
+        align-items: flex-end;
+        gap: 2px;
+        height: 34px;
+        padding: 0 2px;
+      }
+      .ticks span {
+        flex: 1 1 0;
+        max-width: 8px;
+        height: 60%;
+        border-radius: 2px;
+        background: var(--success);
+        transform-origin: bottom;
+        animation: crescer 260ms var(--ease) both;
+        animation-delay: calc(var(--i) * 6ms);
+      }
+      .ticks span.down {
+        height: 100%;
+        background: var(--danger);
+      }
+      .ticks-axis {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+      details {
+        margin-top: 14px;
+      }
+      summary {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        color: var(--primary);
+        font-weight: 500;
+        cursor: pointer;
+      }
+      details .d-table {
+        margin-top: 6px;
+        max-height: 360px;
+        overflow-y: auto;
+      }
+      .d-loading .sk + .sk {
+        margin-top: 10px;
+      }
+
+      /* ---------- Rodapé ---------- */
+      .page-note {
+        max-width: 60rem;
+        margin-top: 20px;
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+
+      /* ---------- Responsivo ---------- */
+      @media (max-width: 1180px) {
+        /* Empilhado: o que pede ação vem antes da lista; a distribuição, depois. */
+        .layout {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .side {
+          display: contents;
+        }
+        .side > .attention-panel {
+          order: -1;
+        }
+      }
+      @media (max-width: 900px) {
+        .metrics {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .metric:nth-child(3) {
+          border-left: 0;
+        }
+        .metric:nth-child(n + 3) {
+          border-top: 1px solid var(--line);
+        }
+        .revenue-grid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .revenue-grid > div + div {
+          border-left: 0;
+          border-top: 1px solid var(--line);
+        }
+        .updated {
+          width: 100%;
+          margin-left: 0;
+        }
+      }
+      @media (max-width: 900px) {
+        /* A tabela vira uma lista de blocos por operação. */
+        .ledger table,
+        .ledger tbody {
+          display: block;
+        }
+        .ledger thead {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+        }
+        .ledger .row {
+          position: relative;
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px 16px;
+          padding: 16px;
+          border-top: 1px solid var(--line);
+        }
+        .ledger td {
+          padding: 0;
+          border: 0;
+          min-width: 0;
+        }
+        .ledger td:first-child {
+          grid-column: 1 / -1;
+          padding-right: 28px;
+        }
+        .ledger td:last-child {
+          position: absolute;
+          top: 16px;
+          right: 12px;
+        }
+        .ledger td[data-label]::before {
+          content: attr(data-label);
+          display: block;
+          margin-bottom: 2px;
+          color: var(--muted);
+          font-size: 0.78rem;
+        }
+        .money,
+        .badge {
+          white-space: normal;
+        }
+      }
+      @media (max-width: 560px) {
+        .scope {
+          display: none;
+        }
+        .heading .btn {
+          width: 100%;
+        }
+        .filter {
+          width: 100%;
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+        .filter-label {
+          width: 100%;
+        }
+        .segments {
+          width: 100%;
+        }
+        .segments button {
+          flex: 1;
+          padding: 0 6px;
+        }
+        .metric {
+          padding: 16px;
+        }
+        .panel-head .search {
+          width: 100%;
+        }
+        .totals {
+          gap: 6px;
+        }
+        .totals div {
+          padding: 8px 10px;
+        }
+        .totals strong {
+          font-size: 0.9rem;
+          overflow-wrap: anywhere;
+        }
+        .ticks {
+          gap: 1px;
+          padding: 0;
+        }
+        /* Tabelas da gaveta viram linhas empilhadas. */
+        .d-table.stack table,
+        .d-table.stack tbody {
+          display: block;
+        }
+        .d-table.stack thead {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+        }
+        .d-table.stack tr {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 4px 12px;
+          padding: 12px;
+          border-bottom: 1px solid var(--line);
+        }
+        .d-table.stack tr:last-child {
+          border-bottom: 0;
+        }
+        .d-table.stack td {
+          padding: 0;
+          border: 0;
+          min-width: 0;
+        }
+        .d-table.stack .end {
+          grid-column: 2;
+          justify-self: end;
+          text-align: right;
+        }
+        .d-table.stack .full {
+          grid-column: 1 / -1;
+        }
+        .faturas td:nth-child(1) {
+          grid-row: 1;
+        }
+        .faturas td:nth-child(2) {
+          grid-row: 2;
+        }
+        .faturas td:nth-child(3) {
+          grid-row: 1;
+        }
+        .faturas td:nth-child(4) {
+          grid-row: 2;
+        }
+        .drawer-head {
+          padding: 14px 16px;
+        }
+        .drawer-body {
+          padding: 0 16px 28px;
+        }
+        .drawer-head .btn span {
+          display: none;
+        }
+        .drawer-head .btn {
+          width: 44px;
+          padding: 0;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          animation-delay: 0s !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+        }
+        .progress::after {
+          animation: none !important;
+          width: 100%;
+          opacity: 0.6;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7" /><path d="M20 4v7h-7" /></symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z" /></symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></symbol>
+      <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" /></symbol>
+      <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" /></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3z" /><path d="M12 10v4M12 17h.01" /></symbol>
+      <symbol id="i-offline" viewBox="0 0 24 24"><path d="M3 3l18 18" /><path d="M8.5 8.5A6 6 0 0 0 6 13a4 4 0 0 0 1 7.9h10.5M20.5 17.5A4 4 0 0 0 17 12h-.3A6 6 0 0 0 11 7.1" /></symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="m8 12 3 3 5-6" /></symbol>
+      <symbol id="i-open" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9" /><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5" /></symbol>
+      <symbol id="i-logout" viewBox="0 0 24 24"><path d="M10 17l5-5-5-5M15 12H3" /><path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6" /></symbol>
+    </svg>
+
+    <a class="skip" href="#main">Ir para o painel</a>
+
+    <header class="top">
+      <div class="top-inner">
+        <span class="brand"><img src="/ard-lock-icon.svg" alt="" width="38" height="22" />ArdLock</span>
+        <span class="scope">Plataforma, conta root</span>
+        <div class="top-actions">
+          <button type="button" class="icon-btn" id="theme" aria-label="Ativar tema claro">
+            <svg class="icon" aria-hidden="true"><use href="#i-sun" /></svg>
+          </button>
+          <form action="/plataforma/logout" method="post">
+            <button type="submit" class="btn" aria-label="Sair do painel root">
+              <svg class="icon" aria-hidden="true"><use href="#i-logout" /></svg>
+              <span>Sair</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </header>
+
+    <main id="main" tabindex="-1">
+      <div class="heading">
+        <div>
+          <h1>Clientes da plataforma</h1>
+          <p>Licença, cobrança e disponibilidade de cada operação contratada.</p>
+        </div>
+        <button type="button" class="btn" id="refresh">
+          <svg class="icon" aria-hidden="true"><use href="#i-refresh" /></svg>
+          <span>Atualizar dados</span>
+        </button>
+      </div>
+
+      <div class="toolbar">
+        <div class="filter">
+          <span class="filter-label" id="period-label">Período</span>
+          <div class="segments" role="group" aria-labelledby="period-label">
+            <button type="button" data-days="7" aria-pressed="false">7 dias</button>
+            <button type="button" data-days="30" aria-pressed="true">30 dias</button>
+            <button type="button" data-days="90" aria-pressed="false">90 dias</button>
+          </div>
+        </div>
+        <div class="filter">
+          <span class="filter-label" id="host-label">Hospedagem</span>
+          <div class="segments" role="group" aria-labelledby="host-label">
+            <button type="button" data-host="todas" aria-pressed="true">Todas</button>
+            <button type="button" data-host="gerenciada" aria-pressed="false">Gerenciada</button>
+            <button type="button" data-host="propria" aria-pressed="false">Própria</button>
+          </div>
+        </div>
+        <p class="updated" id="updated" hidden>
+          <span class="updated-dot" aria-hidden="true"></span>
+          <span>Consultado às <time id="updated-time"></time>. Atualiza a cada minuto.</span>
+        </p>
+      </div>
+      <div class="progress" id="progress" hidden aria-hidden="true"></div>
+      <p class="sr-only" id="announcer" aria-live="polite"></p>
+
+      <div class="alert" id="error" role="alert" hidden>
+        <svg class="icon" aria-hidden="true"><use href="#i-offline" /></svg>
+        <div>
+          <strong id="error-title">Não foi possível consultar o painel.</strong>
+          <p id="error-text">Verifique a conexão e tente novamente.</p>
+        </div>
+        <button type="button" class="btn" id="retry">Tentar novamente</button>
+        <a class="btn btn-primary" id="relogin" href="/login" hidden>Entrar novamente</a>
+      </div>
+
+      <!-- Carregamento inicial -->
+      <div id="loading" role="status" aria-label="Consultando clientes e registros">
+        <div class="metrics" aria-hidden="true">
+          <div class="metric"><span class="sk" style="width: 60%; height: 14px"></span><span class="sk" style="width: 70%; height: 30px; margin-top: 10px"></span></div>
+          <div class="metric"><span class="sk" style="width: 50%; height: 14px"></span><span class="sk" style="width: 40%; height: 30px; margin-top: 10px"></span></div>
+          <div class="metric"><span class="sk" style="width: 55%; height: 14px"></span><span class="sk" style="width: 60%; height: 30px; margin-top: 10px"></span></div>
+          <div class="metric"><span class="sk" style="width: 65%; height: 14px"></span><span class="sk" style="width: 45%; height: 30px; margin-top: 10px"></span></div>
+        </div>
+        <div class="panel" style="margin-top: 20px" aria-hidden="true">
+          <div class="panel-head"><span class="sk" style="width: 220px; height: 18px"></span></div>
+          <div class="sk-row"><span class="sk" style="width: 30%; height: 14px"></span><span class="sk" style="width: 18%; height: 14px"></span><span class="sk" style="width: 22%; height: 14px"></span></div>
+          <div class="sk-row"><span class="sk" style="width: 26%; height: 14px"></span><span class="sk" style="width: 20%; height: 14px"></span><span class="sk" style="width: 18%; height: 14px"></span></div>
+          <div class="sk-row"><span class="sk" style="width: 32%; height: 14px"></span><span class="sk" style="width: 16%; height: 14px"></span><span class="sk" style="width: 24%; height: 14px"></span></div>
+        </div>
+      </div>
+
+      <div id="content" hidden>
+        <section class="metrics" aria-label="Indicadores">
+          <div class="metric">
+            <span class="metric-label">Receita recorrente mensal</span>
+            <strong class="metric-value" id="mrr">—</strong>
+            <span class="metric-note" id="mrr-note">Contratos vigentes hoje</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Clientes ativos</span>
+            <strong class="metric-value" id="active">—</strong>
+            <span class="metric-note" id="active-note">Com licença vigente</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Em aberto no período</span>
+            <strong class="metric-value" id="pending">—</strong>
+            <span class="metric-note" id="pending-note">Faturas emitidas e não pagas</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Disponibilidade medida</span>
+            <strong class="metric-value" id="availability">—</strong>
+            <span class="metric-note" id="availability-note">Verificações no período</span>
+          </div>
+        </section>
+
+        <div class="layout">
+          <section class="panel ledger" aria-labelledby="ledger-title">
+            <div class="panel-head">
+              <div>
+                <h2 id="ledger-title">Clientes e operações</h2>
+                <p id="count"></p>
+              </div>
+              <label class="search">
+                <span class="sr-only">Buscar por cliente ou operação</span>
+                <svg class="icon" aria-hidden="true"><use href="#i-search" /></svg>
+                <input id="search" type="search" placeholder="Buscar cliente ou operação" autocomplete="off" />
+              </label>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Cliente e operação</th>
+                    <th scope="col">Licença</th>
+                    <th scope="col">Disponibilidade</th>
+                    <th scope="col">Contrato mensal</th>
+                    <th scope="col">Faturado no período</th>
+                    <th scope="col"><span class="sr-only">Abrir detalhes</span></th>
+                  </tr>
+                </thead>
+                <tbody id="ledger"></tbody>
+              </table>
+            </div>
+            <div class="empty" id="empty" hidden></div>
+          </section>
+
+          <div class="side">
+            <section class="panel attention-panel" aria-labelledby="attention-title">
+              <div class="panel-head">
+                <div>
+                  <h2 id="attention-title">Acompanhamento</h2>
+                  <p>Operações que pedem uma ação agora.</p>
+                </div>
+              </div>
+              <ul class="attention" id="attention"></ul>
+              <div class="attention-ok" id="attention-ok" hidden>
+                <svg class="icon" aria-hidden="true"><use href="#i-check" /></svg>
+                <div>
+                  <strong>Nada pendente neste filtro</strong>
+                  <p>Licenças vigentes, nenhuma operação indisponível e nenhum valor em aberto.</p>
+                </div>
+              </div>
+              <p class="attention-note" id="attention-note" hidden></p>
+            </section>
+
+            <section class="panel" aria-labelledby="dist-title">
+              <div class="panel-head">
+                <div>
+                  <h2 id="dist-title">Distribuição</h2>
+                  <p>Valores em BRL.</p>
+                </div>
+              </div>
+              <div class="panel-body">
+                <div class="dist-block">
+                  <h3>Hospedagem das operações</h3>
+                  <div class="split" aria-hidden="true"><span class="a" id="host-managed-bar"></span><span class="c" id="host-own-bar"></span></div>
+                  <div class="legend">
+                    <div><span><i style="background: var(--primary)"></i>Gerenciada</span><strong class="num" id="host-managed">0</strong></div>
+                    <div><span><i style="background: color-mix(in srgb, var(--primary) 40%, var(--surface-2))"></i>Própria</span><strong class="num" id="host-own">0</strong></div>
+                  </div>
+                </div>
+                <div class="dist-block">
+                  <h3>Faturamento consolidado no período</h3>
+                  <div class="split" aria-hidden="true"><span class="a" id="paid-bar"></span><span class="b" id="open-bar"></span></div>
+                  <div class="legend">
+                    <div><span><i style="background: var(--primary)"></i>Recebido</span><strong class="num" id="paid">—</strong></div>
+                    <div><span><i style="background: var(--warning)"></i>Em aberto</span><strong class="num" id="open">—</strong></div>
+                    <div><span>Total faturado</span><strong class="num" id="billed">—</strong></div>
+                  </div>
+                </div>
+                <p class="footnote">
+                  Receita mensal considera contratos vigentes. Faturamento considera faturas emitidas no período, exceto canceladas.
+                </p>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <section class="panel revenue" aria-labelledby="revenue-title">
+          <div class="panel-head">
+            <div>
+              <h2 id="revenue-title">Faturamento no período</h2>
+              <p id="revenue-sub">Faturas emitidas, exceto canceladas.</p>
+            </div>
+          </div>
+          <div class="revenue-grid">
+            <div>
+              <h3>Por cliente</h3>
+              <div id="by-client"></div>
+            </div>
+            <div>
+              <h3>Por data de emissão</h3>
+              <div class="trend" id="trend"></div>
+            </div>
+          </div>
+        </section>
+
+        <p class="page-note">
+          Cliente ativo tem ao menos uma licença vigente e sem revogação. A disponibilidade atual usa a última
+          verificação registrada, considerada recente por até 5 minutos.
+        </p>
+      </div>
+    </main>
+
+    <dialog id="drawer" aria-labelledby="drawer-title">
+      <div class="drawer-head">
+        <div>
+          <h2 id="drawer-title">Detalhes do cliente</h2>
+          <p id="drawer-sub"></p>
+        </div>
+        <button type="button" class="btn" id="close" aria-label="Fechar detalhes">
+          <svg class="icon" aria-hidden="true"><use href="#i-close" /></svg>
+          <span>Fechar</span>
+        </button>
+      </div>
+      <div class="drawer-body" id="drawer-body" aria-live="polite"></div>
+    </dialog>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+      const h = (s) =>
+        String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+      const money = (n) => Number(n || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+      const number = (n) => Number(n || 0).toLocaleString("pt-BR");
+      const percent = (n) => n.toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + "%";
+      const plural = (n, um, varios) => number(n) + " " + (n === 1 ? um : varios);
+      const icon = (id) => '<svg class="icon" aria-hidden="true"><use href="#' + id + '" /></svg>';
+      // Datas (date) chegam como AAAA-MM-DD; o meio-dia evita troca de dia pelo fuso.
+      const dateOnly = (v) => new Date(String(v).slice(0, 10) + "T12:00:00");
+      const fmtDate = (v) => (v ? dateOnly(v).toLocaleDateString("pt-BR") : "");
+      const fmtShort = (v) => dateOnly(v).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+      const fmtDateTime = (v) =>
+        new Date(v).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+      const d10 = (v) => (v == null ? null : String(v).slice(0, 10));
+      const today = () => {
+        const d = new Date();
+        return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+      };
+      const HOSPEDAGEM = { gerenciada: "Gerenciada", propria: "Própria" };
+      const TIPO = { empresa: "Empresa", evento: "Evento" };
+      const RECENTE_MS = 5 * 60 * 1000;
+
+      let data = null;
+      let host = "todas";
+      let days = "30";
+      let requestId = 0;
+      let drawerRequest = 0;
+      let openId = null;
+      let opener = null;
+      let poll = null;
+      let sessionExpired = false;
+
+      /* ---------- Tema ---------- */
+      function applyThemeButton() {
+        const light = document.documentElement.dataset.theme === "light";
+        $("theme").setAttribute("aria-label", light ? "Ativar tema escuro" : "Ativar tema claro");
+        $("theme").innerHTML = icon(light ? "i-moon" : "i-sun");
+        document.querySelector('meta[name="theme-color"]').content = light ? "#ffffff" : "#0b1220";
+      }
+      $("theme").onclick = () => {
+        const light = document.documentElement.dataset.theme !== "light";
+        document.documentElement.dataset.theme = light ? "light" : "dark";
+        try {
+          localStorage.setItem("theme", light ? "light" : "dark");
+        } catch (e) {}
+        applyThemeButton();
+      };
+      applyThemeButton();
+
+      /* ---------- Regras de exibição ---------- */
+      function availability(r) {
+        if (!r.verificada_em) return { label: "Sem monitoramento", cls: "neutral", sub: "Nenhuma verificação registrada" };
+        const quando = "Última em " + fmtDateTime(r.verificada_em);
+        if (Date.now() - Date.parse(r.verificada_em) > RECENTE_MS)
+          return { label: "Sem verificação recente", cls: "warn", sub: quando };
+        return r.disponivel
+          ? { label: "Disponível", cls: "ok live", sub: quando }
+          : { label: "Indisponível", cls: "down", sub: quando };
+      }
+      function periodAvailability(r) {
+        const amostras = Number(r.amostras);
+        return amostras ? percent((100 * Number(r.sucessos)) / amostras) + " no período" : null;
+      }
+      function licenseSituation(l, hoje) {
+        if (l.revogada_em) return { label: "Revogada", cls: "bad" };
+        if (d10(l.inicio) > hoje) return { label: "Agendada", cls: "neutral" };
+        if (l.fim && d10(l.fim) < hoje) return { label: "Expirada", cls: "bad" };
+        return { label: "Vigente", cls: "ok" };
+      }
+      function invoiceSituation(f, hoje) {
+        if (f.cancelada_em) return { label: "Cancelada", cls: "neutral" };
+        if (f.paga_em) return { label: "Paga em " + fmtDate(f.paga_em), cls: "ok" };
+        if (d10(f.vencimento) < hoje) return { label: "Vencida", cls: "bad" };
+        return { label: "Em aberto", cls: "warn" };
+      }
+
+      /* ---------- Contagem animada dos indicadores ---------- */
+      function animate(id, value, formatter) {
+        const el = $(id);
+        const previous = Number(el.dataset.value || 0);
+        el.dataset.value = value;
+        if (reduced.matches || previous === value) {
+          el.textContent = formatter(value);
+          return;
+        }
+        let start;
+        const target = String(value);
+        function frame(t) {
+          if (el.dataset.value !== target) return;
+          start ??= t;
+          const p = Math.min(1, (t - start) / 450);
+          el.textContent = formatter(previous + (value - previous) * (1 - Math.pow(1 - p, 3)));
+          if (p < 1) requestAnimationFrame(frame);
+        }
+        requestAnimationFrame(frame);
+      }
+
+      /* ---------- Renderização ---------- */
+      function render() {
+        const rows = data.clientes;
+        const sum = (k) => rows.reduce((n, r) => n + Number(r[k] || 0), 0);
+        const clientes = new Set(rows.map((r) => r.id)).size;
+        const ativos = new Set(rows.filter((r) => r.ativa).map((r) => r.id)).size;
+        const managed = rows.filter((r) => r.hospedagem === "gerenciada").length;
+        const own = rows.length - managed;
+        const faturado = sum("faturado");
+        const recebido = sum("recebido");
+        const pendente = sum("pendente");
+        const amostras = sum("amostras");
+
+        animate("mrr", sum("mensal"), money);
+        $("mrr-note").textContent = "Faturado no período: " + money(faturado);
+        animate("active", ativos, (n) => number(Math.round(n)));
+        $("active-note").textContent = clientes
+          ? "De " + plural(clientes, "cliente cadastrado", "clientes cadastrados") + ", com licença vigente"
+          : "Nenhum cliente neste filtro";
+        animate("pending", pendente, money);
+        $("pending-note").textContent = faturado
+          ? "Recebido " + money(recebido) + " de " + money(faturado)
+          : "Nenhuma fatura emitida no período";
+        if (amostras) {
+          animate("availability", (100 * sum("sucessos")) / amostras, percent);
+          $("availability-note").textContent = plural(amostras, "verificação", "verificações") + " no período";
+        } else {
+          $("availability").textContent = "—";
+          delete $("availability").dataset.value;
+          $("availability-note").textContent = "Sem verificações registradas";
+        }
+
+        // Distribuição
+        const ops = Math.max(1, rows.length);
+        $("host-managed").textContent = number(managed);
+        $("host-own").textContent = number(own);
+        $("host-managed-bar").style.width = (100 * managed) / ops + "%";
+        $("host-own-bar").style.width = (100 * own) / ops + "%";
+        $("paid").textContent = money(recebido);
+        $("open").textContent = money(pendente);
+        $("billed").textContent = money(faturado);
+        $("paid-bar").style.width = faturado ? (100 * recebido) / faturado + "%" : "0";
+        $("open-bar").style.width = faturado ? (100 * pendente) / faturado + "%" : "0";
+
+        renderAttention(rows);
+        renderRevenue(rows);
+        renderLedger();
+
+        $("updated-time").textContent = new Date(data.atualizado_em).toLocaleTimeString("pt-BR");
+        $("updated").hidden = false;
+        $("updated").classList.remove("is-stale", "is-fresh");
+        void $("updated").offsetWidth;
+        $("updated").classList.add("is-fresh");
+      }
+
+      function renderAttention(rows) {
+        // Uma linha por operação, com todos os motivos; a mais grave primeiro.
+        const itens = [];
+        for (const r of rows) {
+          const motivos = [];
+          let peso = 9;
+          if (availability(r).cls === "down") {
+            motivos.push("Indisponível na última verificação, " + fmtDateTime(r.verificada_em));
+            peso = 0;
+          }
+          if (!r.ativa) {
+            motivos.push("Sem licença vigente");
+            peso = Math.min(peso, 1);
+          }
+          if (Number(r.pendente) > 0) {
+            motivos.push(money(r.pendente) + " em aberto no período");
+            peso = Math.min(peso, 2);
+          }
+          if (!motivos.length) continue;
+          const nome = r.nome + (rows.filter((x) => x.id === r.id).length > 1 ? ", " + r.operacao : "");
+          itens.push({ peso, cls: peso < 2 ? "bad" : "warn", id: r.id, nome, motivos, valor: Number(r.pendente) });
+        }
+        itens.sort((a, b) => a.peso - b.peso || b.motivos.length - a.motivos.length || b.valor - a.valor);
+        $("attention").innerHTML = itens
+          .map(
+            (i) =>
+              '<li class="' + i.cls + '"><button type="button" data-id="' + h(i.id) + '"><span class="marker" aria-hidden="true"></span><span><strong>' +
+              h(i.nome) + "</strong>" + i.motivos.map((m) => '<span class="reason">' + h(m) + "</span>").join("") + "</span></button></li>",
+          )
+          .join("");
+        $("attention-ok").hidden = itens.length > 0 || rows.length === 0;
+        const semRecente = rows.filter((r) => ["neutral", "warn"].includes(availability(r).cls)).length;
+        $("attention-note").hidden = !semRecente && rows.length > 0;
+        $("attention-note").textContent = !rows.length
+          ? "Nenhuma operação neste filtro."
+          : semRecente
+            ? plural(semRecente, "operação está", "operações estão") + " sem verificação nos últimos 5 minutos."
+            : "";
+      }
+
+      function renderRevenue(rows) {
+        $("revenue-sub").textContent = "Faturas emitidas nos últimos " + data.dias + " dias, exceto canceladas.";
+        const grupos = new Map();
+        for (const r of rows) {
+          const g = grupos.get(r.id) || { id: r.id, nome: r.nome, faturado: 0, recebido: 0, pendente: 0, operacoes: 0 };
+          g.faturado += Number(r.faturado);
+          g.recebido += Number(r.recebido);
+          g.pendente += Number(r.pendente);
+          g.operacoes++;
+          grupos.set(r.id, g);
+        }
+        const lista = [...grupos.values()].sort((a, b) => b.faturado - a.faturado);
+        const max = Math.max(1, ...lista.map((g) => g.faturado));
+        $("by-client").innerHTML = lista.length
+          ? lista
+              .map(
+                (g) =>
+                  '<div class="bar-row"><span class="name">' + h(g.nome) + '<span class="cell-sub">' +
+                  plural(g.operacoes, "operação", "operações") +
+                  (g.pendente ? ", " + money(g.pendente) + " em aberto" : "") +
+                  '</span></span><span class="money">' + money(g.faturado) +
+                  '</span><span class="split" aria-hidden="true"><span class="a" style="width:' + (100 * g.recebido) / max +
+                  '%"></span><span class="b" style="width:' + (100 * g.pendente) / max + '%"></span></span></div>',
+              )
+              .join("")
+          : '<p class="chart-empty">Nenhum cliente neste filtro.</p>';
+        renderTrend();
+      }
+
+      // Gráfico com todos os dias do período, inclusive os sem fatura.
+      function renderTrend() {
+        const serie = new Map(data.serie.map((r) => [String(r.dia).slice(0, 10), Number(r.valor)]));
+        if (!serie.size) {
+          $("trend").innerHTML = '<p class="chart-empty">Nenhuma fatura emitida nos últimos ' + h(data.dias) + " dias.</p>";
+          return;
+        }
+        // A API usa a data do banco (current_date); o fim do eixo acompanha a última data recebida.
+        let fim = new Date(data.atualizado_em).toISOString().slice(0, 10);
+        for (const dia of serie.keys()) if (dia > fim) fim = dia;
+        const dias = [];
+        const cursor = new Date(fim + "T12:00:00Z");
+        for (let i = Number(data.dias) - 1; i >= 0; i--) {
+          const d = new Date(cursor);
+          d.setUTCDate(cursor.getUTCDate() - i);
+          dias.push(d.toISOString().slice(0, 10));
+        }
+        const max = Math.max(...serie.values(), 1);
+        $("trend").innerHTML =
+          '<span class="trend-max">Maior dia: ' + money(max) + "</span>" +
+          '<div class="trend-bars" id="trend-bars" aria-hidden="true">' +
+          dias
+            .map((d, i) => {
+              const v = serie.get(d) || 0;
+              return '<span data-dia="' + d + '" data-valor="' + v + '" class="' + (v ? "" : "zero") +
+                '" style="height:' + (v ? Math.max(4, (100 * v) / max) : 0) + "%;animation-delay:" + Math.min(i * 8, 480) + 'ms"></span>';
+            })
+            .join("") +
+          "</div>" +
+          '<div class="trend-axis" aria-hidden="true"><span>' + fmtShort(dias[0]) + "</span><span>" + fmtShort(dias[dias.length - 1]) + "</span></div>" +
+          '<div class="sr-only"><table><caption>Faturamento por data de emissão</caption><thead><tr><th>Data</th><th>Valor</th></tr></thead><tbody>' +
+          [...serie.entries()].map(([d, v]) => "<tr><td>" + fmtDate(d) + "</td><td>" + money(v) + "</td></tr>").join("") +
+          "</tbody></table></div>" +
+          '<div class="tooltip" id="trend-tip" hidden></div>';
+        const bars = $("trend-bars");
+        const tip = $("trend-tip");
+        let ativo = null;
+        bars.onpointermove = (e) => {
+          const alvo = e.target.closest("span[data-dia]");
+          if (!alvo) return;
+          if (ativo !== alvo) {
+            ativo?.classList.remove("is-hover");
+            ativo = alvo;
+            ativo.classList.add("is-hover");
+          }
+          const box = $("trend").getBoundingClientRect();
+          const b = alvo.getBoundingClientRect();
+          tip.hidden = false;
+          tip.innerHTML = "<strong>" + money(alvo.dataset.valor) + "</strong> em " + fmtDate(alvo.dataset.dia);
+          const metade = tip.offsetWidth / 2;
+          const x = Math.min(Math.max(b.left - box.left + b.width / 2, metade), box.width - metade);
+          tip.style.left = x + "px";
+          tip.style.top = bars.offsetTop + "px";
+        };
+        bars.onpointerleave = () => {
+          tip.hidden = true;
+          ativo?.classList.remove("is-hover");
+          ativo = null;
+        };
+      }
+
+      function renderLedger() {
+        const termo = $("search").value.trim().toLocaleLowerCase("pt-BR");
+        const todas = data.clientes;
+        const rows = todas.filter((r) => (r.nome + " " + r.operacao).toLocaleLowerCase("pt-BR").includes(termo));
+        $("ledger").innerHTML = rows
+          .map((r) => {
+            const a = availability(r);
+            const periodo = periodAvailability(r);
+            const faturado = Number(r.faturado);
+            const pendente = Number(r.pendente);
+            return (
+              '<tr class="row' + (String(r.id) === String(openId) ? " is-open" : "") + '" data-id="' + h(r.id) + '">' +
+              '<td><button type="button" class="client-btn" data-id="' + h(r.id) + '" aria-haspopup="dialog">' + h(r.nome) +
+              '</button><span class="cell-sub">' + h(r.operacao) + '</span><span class="tag">' + h(HOSPEDAGEM[r.hospedagem] || r.hospedagem) + "</span></td>" +
+              '<td data-label="Licença"><span class="badge ' + (r.ativa ? "ok" : "bad") + '">' + (r.ativa ? "Vigente" : "Sem licença vigente") + "</span></td>" +
+              '<td data-label="Disponibilidade"><span class="badge ' + a.cls + '">' + a.label + '</span><span class="cell-sub">' +
+              h(a.cls === "down" ? a.sub : periodo || a.sub) + "</span></td>" +
+              '<td data-label="Contrato mensal"><span class="money">' + money(r.mensal) + '</span><span class="cell-sub">' +
+              h(r.planos || "Sem contrato vigente") + "</span></td>" +
+              '<td data-label="Faturado no período"><span class="money">' + money(faturado) + '</span><span class="cell-sub">' +
+              (pendente ? money(pendente) + " em aberto" : faturado ? "Tudo recebido" : "Sem faturas") + "</span></td>" +
+              '<td><svg class="icon chev" aria-hidden="true"><use href="#i-chevron" /></svg></td></tr>'
+            );
+          })
+          .join("");
+        const clientes = new Set(rows.map((r) => r.id)).size;
+        $("count").textContent = plural(clientes, "cliente", "clientes") + ", " + plural(rows.length, "operação", "operações");
+
+        const vazio = $("empty");
+        vazio.hidden = rows.length > 0;
+        if (rows.length) return;
+        if (termo) {
+          vazio.innerHTML =
+            "<strong>Nenhum resultado para “" + h($("search").value.trim()) + "”</strong><p>A busca considera o nome do cliente e da operação.</p>" +
+            '<button type="button" class="btn-link" data-action="clear-search">Limpar busca</button>';
+        } else if (host !== "todas") {
+          vazio.innerHTML =
+            "<strong>Nenhuma operação com hospedagem " + (host === "gerenciada" ? "gerenciada" : "própria") + "</strong>" +
+            '<p>Os outros filtros não restringem a lista.</p><button type="button" class="btn-link" data-action="all-hosts">Mostrar todas as hospedagens</button>';
+        } else {
+          vazio.innerHTML =
+            "<strong>Nenhum cliente cadastrado ainda</strong><p>Os clientes aparecem aqui depois do provisionamento da primeira operação.</p>";
+        }
+      }
+
+      /* ---------- Consulta ---------- */
+      function setBusy(busy) {
+        $("refresh").disabled = busy;
+        $("refresh").setAttribute("aria-busy", busy);
+        $("refresh").querySelector("span").textContent = busy ? "Atualizando" : "Atualizar dados";
+        $("progress").hidden = !busy || !data;
+      }
+      function showError(status) {
+        $("error").hidden = false;
+        $("relogin").hidden = true;
+        $("retry").hidden = false;
+        if (status === 401) {
+          sessionExpired = true;
+          $("error-title").textContent = "Sua sessão de root expirou.";
+          $("error-text").textContent = "Entre novamente para continuar consultando os clientes.";
+          $("relogin").hidden = false;
+          $("retry").hidden = true;
+        } else if (status === 403) {
+          $("error-title").textContent = "Esta conta não tem acesso ao painel root.";
+          $("error-text").textContent = "Entre com uma conta root da plataforma.";
+          $("relogin").hidden = false;
+          $("retry").hidden = true;
+        } else {
+          $("error-title").textContent = "Não foi possível consultar o painel.";
+          $("error-text").textContent = data
+            ? "Os dados abaixo são da consulta das " + new Date(data.atualizado_em).toLocaleTimeString("pt-BR") + "."
+            : "Verifique a conexão com o servidor e tente novamente.";
+        }
+        if (data) $("updated").classList.add("is-stale");
+      }
+      async function load({ silent = false } = {}) {
+        if (sessionExpired) return;
+        const id = ++requestId;
+        setBusy(true);
+        if (!data) $("loading").hidden = false;
+        if (!silent) $("error").hidden = true;
+        try {
+          const res = await fetch("/plataforma/api/dashboard?dias=" + days + "&hospedagem=" + host, { cache: "no-store" });
+          if (!res.ok) throw { status: res.status };
+          const result = await res.json();
+          if (id !== requestId) return;
+          data = result;
+          $("error").hidden = true;
+          $("loading").hidden = true;
+          $("content").hidden = false;
+          render();
+          if (!silent) $("announcer").textContent = "Dados atualizados às " + new Date(data.atualizado_em).toLocaleTimeString("pt-BR") + ".";
+        } catch (e) {
+          if (id !== requestId) return;
+          $("loading").hidden = true;
+          showError(e && e.status);
+        } finally {
+          if (id === requestId) setBusy(false);
+        }
+      }
+
+      /* ---------- Gaveta ---------- */
+      function drawerLoading() {
+        $("drawer-body").innerHTML =
+          '<div class="d-loading d-section" role="status" aria-label="Consultando registros do cliente">' +
+          '<span class="sk" style="height:18px;width:40%"></span><span class="sk" style="height:72px"></span>' +
+          '<span class="sk" style="height:18px;width:30%;margin-top:24px"></span><span class="sk" style="height:96px"></span></div>';
+      }
+      function openDrawer(id, trigger) {
+        opener = trigger || null;
+        openId = id;
+        document.querySelectorAll(".row").forEach((tr) => tr.classList.toggle("is-open", tr.dataset.id === String(id)));
+        const row = data?.clientes.find((r) => String(r.id) === String(id));
+        $("drawer-title").textContent = row ? row.nome : "Detalhes do cliente";
+        $("drawer-sub").textContent = "";
+        drawerLoading();
+        if (!$("drawer").open) {
+          $("drawer").showModal();
+          if (!reduced.matches) {
+            // Mola criticamente amortecida: assenta sem ultrapassar a borda.
+            const frames = Array.from({ length: 31 }, (_, i) => {
+              const t = i / 30;
+              const resto = i === 30 ? 0 : (1 + 10 * t) * Math.exp(-10 * t);
+              return { transform: "translateX(" + resto * 100 + "%)" };
+            });
+            $("drawer").animate(frames, { duration: 500, easing: "linear" });
+          }
+        }
+        loadDetail(id);
+      }
+      async function loadDetail(id) {
+        const request = ++drawerRequest;
+        try {
+          const res = await fetch("/plataforma/api/clientes/" + encodeURIComponent(id), { cache: "no-store" });
+          if (!res.ok) throw { status: res.status };
+          const d = await res.json();
+          if (request !== drawerRequest) return;
+          renderDetail(d);
+        } catch (e) {
+          if (request !== drawerRequest) return;
+          const status = e && e.status;
+          const msg =
+            status === 404
+              ? ["Cliente não encontrado.", "O cadastro pode ter sido removido. Atualize a lista de clientes."]
+              : status === 401
+                ? ["Sua sessão de root expirou.", "Entre novamente para consultar este cliente."]
+                : ["Não foi possível carregar este cliente.", "Verifique a conexão e tente novamente."];
+          $("drawer-body").innerHTML =
+            '<div class="alert" role="alert">' + icon("i-offline") + "<div><strong>" + msg[0] + "</strong><p>" + msg[1] + "</p></div>" +
+            (status === 401
+              ? '<a class="btn btn-primary" href="/login">Entrar novamente</a>'
+              : status === 404
+                ? ""
+                : '<button type="button" class="btn" data-action="retry-detail">Tentar novamente</button>') +
+            "</div>";
+        }
+      }
+      function renderDetail(d) {
+        const hoje = today();
+        const varias = d.instancias.length > 1;
+        const opNome = new Map(d.instancias.map((i) => [i.slug, i.operacao]));
+        const deOp = (slug) => (varias && opNome.has(slug) ? '<span class="cell-sub">' + h(opNome.get(slug)) + "</span>" : "");
+        const planos = new Map(d.contratos.map((c) => [c.id, c.plano]));
+        $("drawer-title").textContent = d.cliente.nome;
+        $("drawer-sub").textContent = "Cliente #" + d.cliente.id + ", código " + d.cliente.codigo;
+
+        const operacoes = d.instancias.length
+          ? d.instancias
+              .map(
+                (i) =>
+                  '<div class="d-card"><div class="d-card-head"><strong>' + h(i.operacao) + '</strong><span class="tag" style="margin:0">' +
+                  h(TIPO[i.tipo] || i.tipo) + '</span></div><dl class="facts"><dt>Hospedagem</dt><dd>' + h(HOSPEDAGEM[i.hospedagem] || i.hospedagem) +
+                  "</dd><dt>Domínio</dt><dd>" + h(i.dominio || "Não cadastrado") + "</dd><dt>Identificador</dt><dd>" + h(i.slug) + "</dd></dl>" +
+                  (i.acesso_url
+                    ? '<a class="btn btn-primary" href="' + h(i.acesso_url) + '">' + icon("i-open") + "Acessar operação</a>"
+                    : '<p class="note">Acesso operacional não vinculado a este painel.</p>') +
+                  "</div>",
+              )
+              .join("")
+          : '<p class="d-empty">Nenhuma operação registrada.</p>';
+
+        const limite = (v) => (v == null ? "Não definido" : number(v));
+        const planoCatalogo = d.catalogo_planos || [];
+        const licencas = d.licencas.length
+          ? d.licencas
+              .map((l) => {
+                const s = licenseSituation(l, hoje);
+                const restante =
+                  s.label === "Vigente" && l.fim ? Math.round((dateOnly(l.fim) - dateOnly(hoje)) / 86400000) : null;
+                return (
+                  '<div class="d-card"><div class="d-card-head"><strong>' + fmtDate(l.inicio) + " até " +
+                  (l.fim ? fmtDate(l.fim) : "prazo indeterminado") + '</strong><span class="badge ' + s.cls + '">' + s.label + "</span></div>" +
+                  deOp(l.instancia_slug) +
+                  '<dl class="facts">' +
+                  (restante !== null ? "<dt>Tempo restante</dt><dd>" + (restante === 0 ? "Vence hoje" : plural(restante, "dia", "dias")) + "</dd>" : "") +
+                  (l.revogada_em ? "<dt>Revogada em</dt><dd>" + fmtDateTime(l.revogada_em) + "</dd>" : "") +
+                  "<dt>Pessoas credenciadas</dt><dd>" + limite(l.limite_usuarios) + "</dd><dt>Dispositivos</dt><dd>" + limite(l.limite_dispositivos) +
+                  "</dd><dt>Gestores</dt><dd>" + limite(l.limite_gestores) + "</dd></dl>" +
+                  (l.observacoes ? '<p class="note">' + h(l.observacoes) + "</p>" : "") +
+                  '<div class="plan-assignment"><label for="plan-' + l.id + '">Plano desta licença<select id="plan-' + l.id + '" data-plan-select>' +
+                  '<option value="">Selecione um plano</option>' + planoCatalogo.map((p) => '<option value="' + h(p.id) + '" ' + (l.plano_json?.id === p.id ? "selected" : "") + '>' + h(p.name) + " · " + money(p.pricing.amount) + "/mês</option>").join("") +
+                  '</select></label><button type="button" class="btn btn-primary" data-action="save-plan" data-license="' + l.id + '">Aplicar plano</button>' +
+                  '<span class="plan-status" id="plan-status-' + l.id + '" role="status">' + (l.plano_json ? 'Plano atual: ' + h(l.plano_json.name) : 'A aplicação atualiza os limites da licença; não gera cobrança.') + '</span></div>' +
+                  "</div>"
+                );
+              })
+              .join("")
+          : '<p class="d-empty">Nenhuma licença cadastrada.</p>';
+
+        const contratos = d.contratos.length
+          ? d.contratos
+              .map((c) => {
+                const vigente = d10(c.inicio) <= hoje && (!c.fim || d10(c.fim) >= hoje);
+                const futuro = d10(c.inicio) > hoje;
+                return (
+                  '<div class="d-card"><div class="d-card-head"><strong>' + h(c.plano) + '</strong><span class="badge ' +
+                  (vigente ? "ok" : "neutral") + '">' + (vigente ? "Vigente" : futuro ? "A iniciar" : "Encerrado") + "</span></div>" +
+                  deOp(c.instancia_slug) +
+                  '<dl class="facts"><dt>Valor mensal</dt><dd class="num">' + money(c.valor_mensal) + "</dd><dt>Vigência</dt><dd>" +
+                  fmtDate(c.inicio) + " até " + (c.fim ? fmtDate(c.fim) : "prazo indeterminado") + "</dd></dl></div>"
+                );
+              })
+              .join("")
+          : '<p class="d-empty">Nenhum contrato de cobrança.</p>';
+
+        const abertas = d.faturas.filter((f) => !f.cancelada_em && !f.paga_em);
+        const vencidas = abertas.filter((f) => d10(f.vencimento) < hoje);
+        const pagas = d.faturas.filter((f) => !f.cancelada_em && f.paga_em);
+        const soma = (l) => l.reduce((n, f) => n + Number(f.valor), 0);
+        const faturas = d.faturas.length
+          ? '<div class="totals"><div><span>Recebido</span><strong>' + money(soma(pagas)) + "</strong></div><div><span>Em aberto</span><strong>" +
+            money(soma(abertas)) + "</strong></div><div><span>Vencidas</span><strong>" + number(vencidas.length) + "</strong></div></div>" +
+            '<div class="d-table stack faturas"><table><thead><tr><th scope="col">Fatura</th><th scope="col">Vencimento</th><th scope="col">Valor</th><th scope="col">Situação</th></tr></thead><tbody>' +
+            d.faturas
+              .map((f) => {
+                const s = invoiceSituation(f, hoje);
+                return (
+                  "<tr><td>#" + h(f.id) + (planos.has(f.contrato_id) ? '<span class="cell-sub">' + h(planos.get(f.contrato_id)) + "</span>" : "") +
+                  '</td><td><span class="nw">' + fmtDate(f.vencimento) + '</span><span class="cell-sub nw">Emitida ' + fmtDate(f.emitida_em) + "</span></td>" +
+                  '<td class="num end">' + money(f.valor) +
+                  '</td><td class="end"><span class="badge ' + s.cls + '">' + h(s.label) + "</span></td></tr>"
+                );
+              })
+              .join("") +
+            "</tbody></table></div>"
+          : '<p class="d-empty">Nenhuma fatura registrada.</p>';
+
+        const verif = d.verificacoes;
+        let verificacoes = '<p class="d-empty">Nenhuma verificação registrada. Sem dados, a disponibilidade é desconhecida.</p>';
+        if (verif.length) {
+          const ordem = [...verif].reverse();
+          const ok = verif.filter((v) => v.disponivel).length;
+          const ultima = verif[0];
+          verificacoes =
+            "<p>" + plural(ok, "verificação disponível", "verificações disponíveis") + " de " + number(verif.length) +
+            '.<span class="cell-sub">Última: ' + (ultima.disponivel ? "disponível" : "indisponível") + " em " + fmtDateTime(ultima.verificada_em) +
+            ", origem " + h(ultima.origem) + "</span></p>" +
+            '<div class="ticks" role="img" aria-label="' + h(ok + " de " + verif.length + " verificações disponíveis, da mais antiga à mais recente") + '" style="margin-top:14px">' +
+            ordem.map((v, i) => '<span class="' + (v.disponivel ? "" : "down") + '" style="--i:' + i + '"></span>').join("") +
+            '</div><div class="ticks-axis" aria-hidden="true"><span>' + fmtDateTime(ordem[0].verificada_em) + "</span><span>" +
+            fmtDateTime(ultima.verificada_em) + "</span></div>" +
+            "<details><summary>Ver as " + number(verif.length) + " verificações</summary>" +
+            '<div class="d-table stack"><table><thead><tr><th scope="col">Data e hora</th>' + (varias ? '<th scope="col">Operação</th>' : "") +
+            '<th scope="col">Resultado</th><th scope="col">Origem</th></tr></thead><tbody>' +
+            verif
+              .map(
+                (v) =>
+                  '<tr><td class="nw">' + fmtDateTime(v.verificada_em) + "</td>" + (varias ? '<td class="full">' + h(opNome.get(v.instancia_slug) || v.instancia_slug) + "</td>" : "") +
+                  '<td class="end"><span class="badge ' + (v.disponivel ? "ok" : "down") + '">' + (v.disponivel ? "Disponível" : "Indisponível") +
+                  '</span></td><td class="full cell-muted">' + h(v.origem) + "</td></tr>",
+              )
+              .join("") +
+            "</tbody></table></div></details>";
+        }
+
+        $("drawer-body").innerHTML =
+          '<section class="d-section"><h3>Operações <small>' + plural(d.instancias.length, "operação", "operações") + "</small></h3>" + operacoes + "</section>" +
+          '<section class="d-section"><h3>Licenças</h3>' + licencas + "</section>" +
+          '<section class="d-section"><h3>Contratos</h3>' + contratos + "</section>" +
+          '<section class="d-section"><h3>Faturas <small>até 100 recentes</small></h3>' + faturas + "</section>" +
+          '<section class="d-section"><h3>Verificações de disponibilidade <small>até 100 recentes</small></h3>' + verificacoes + "</section>";
+      }
+
+      /* ---------- Eventos ---------- */
+      document.addEventListener("click", (e) => {
+        const acao = e.target.closest("[data-action]")?.dataset.action;
+        if (acao === "save-plan") {
+          savePlan(e.target.closest("[data-action='save-plan']"));
+        } else if (acao === "clear-search") {
+          $("search").value = "";
+          renderLedger();
+          $("search").focus();
+        } else if (acao === "all-hosts") {
+          document.querySelector('[data-host="todas"]').click();
+        } else if (acao === "retry-detail" && openId !== null) {
+          drawerLoading();
+          loadDetail(openId);
+        }
+      });
+      async function savePlan(button) {
+        const id = button.dataset.license;
+        const select = button.closest(".plan-assignment").querySelector("[data-plan-select]");
+        const status = $("plan-status-" + id);
+        if (!select.value) { status.textContent = "Selecione Profissional ou Avançado Empresarial."; select.focus(); return; }
+        button.disabled = true;
+        status.textContent = "Salvando configuração do plano…";
+        try {
+          const res = await fetch("/plataforma/api/licencas/" + encodeURIComponent(id) + "/plano", {
+            method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ plano_id: select.value }), cache: "no-store",
+          });
+          if (!res.ok) throw { status: res.status };
+          status.textContent = "Plano aplicado. Atualizando os dados da licença…";
+          loadDetail(openId);
+        } catch (e) {
+          status.textContent = e.status === 401 ? "Sessão root expirada. Entre novamente." : "Não foi possível aplicar o plano. Tente novamente.";
+        } finally { button.disabled = false; }
+      }
+      $("ledger").addEventListener("click", (e) => {
+        const row = e.target.closest("tr[data-id]");
+        if (row) openDrawer(row.dataset.id, row.querySelector(".client-btn"));
+      });
+      $("attention").addEventListener("click", (e) => {
+        const b = e.target.closest("button[data-id]");
+        if (b) openDrawer(b.dataset.id, b);
+      });
+      $("close").onclick = () => $("drawer").close();
+      $("drawer").addEventListener("close", () => {
+        drawerRequest++;
+        openId = null;
+        document.querySelectorAll(".row.is-open").forEach((tr) => tr.classList.remove("is-open"));
+        if (opener && document.contains(opener)) opener.focus();
+        else document.querySelector(".client-btn")?.focus();
+      });
+      $("drawer").addEventListener("click", (e) => {
+        if (e.target === $("drawer") && e.clientX < $("drawer").getBoundingClientRect().left) $("drawer").close();
+      });
+      $("refresh").onclick = () => load();
+      $("retry").onclick = () => load();
+      $("search").oninput = () => data && renderLedger();
+      document.querySelectorAll("[data-days]").forEach((b) => {
+        b.onclick = () => {
+          if (days === b.dataset.days) return;
+          days = b.dataset.days;
+          document.querySelectorAll("[data-days]").forEach((v) => v.setAttribute("aria-pressed", v === b));
+          load();
+        };
+      });
+      document.querySelectorAll("[data-host]").forEach((b) => {
+        b.onclick = () => {
+          if (host === b.dataset.host) return;
+          host = b.dataset.host;
+          document.querySelectorAll("[data-host]").forEach((v) => v.setAttribute("aria-pressed", v === b));
+          load();
+        };
+      });
+
+      load();
+      // Renova a cada 60 s com a página visível e a gaveta fechada.
+      poll = setInterval(() => {
+        if (sessionExpired) return clearInterval(poll);
+        if (!document.hidden && !$("drawer").open) load({ silent: true });
+      }, 60000);
+    </script>
+  </body>
+</html>

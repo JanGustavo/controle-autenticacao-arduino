@@ -82,16 +82,23 @@
   </div>
   @if (isLoggedIn()) {
     <nav
+      #primaryNav
       id="primary-navigation"
       class="primary-navigation"
       [class.is-open]="menuAberto()"
+      [class.has-indicator]="indicatorReady()"
       aria-label="Navegação principal"
+      (pointerleave)="restoreIndicator()"
+      (focusout)="onNavigationFocusOut($event)"
     >
+      <span class="navigation-indicator" aria-hidden="true"></span>
       @for (link of links; track link.path) {
         <a
           [routerLink]="link.path"
           [class.is-active]="linkAtivo(link.path)"
           [attr.aria-current]="linkAtivo(link.path) ? 'page' : null"
+          (pointerenter)="moveIndicator($event)"
+          (focus)="moveIndicator($event)"
           (click)="menuAberto.set(false)"
         >
           <mat-icon>{{ link.icon }}</mat-icon

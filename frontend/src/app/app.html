@@ -1,10 +1,15 @@
-<app-navbar />
+@if (!layoutPublico()) {
+  <app-navbar />
+}
 <main class="app-content">
   <router-outlet />
 </main>
-<footer class="app-footer">
-  <div class="footer-content">
-    <strong>ArdLock</strong>
-    <span>Controle de acesso</span>
-  </div>
-</footer>
+@if (!layoutPublico()) {
+  <app-insights-launcher />
+  <footer class="app-footer">
+    <div class="footer-content">
+      <strong>ArdLock</strong>
+      <span>Controle de acesso</span>
+    </div>
+  </footer>
+}

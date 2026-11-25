@@ -4,9 +4,11 @@
 @include tables.ard-table-pattern;
 
 .page-wrapper {
-  padding: 32px;
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  box-sizing: border-box;
 
   --canvas: #f8fafc;
   --surface: #ffffff;
@@ -157,7 +159,7 @@
 
 :host-context(body.dark-mode) {
   .page-wrapper {
-    --canvas: #0f172a;
+    --canvas: var(--ard-canvas);
     --surface: #1e293b;
     --ink: #f8fafc;
     --muted: #94a3b8;
@@ -181,3 +183,6 @@
 }
 
 @include pages.ard-page-pattern('.page-wrapper');
+
+.page-wrapper { --module-accent: #7e22ce; }
+:host-context(body.dark-mode) .page-wrapper { --module-accent: #c084fc; }

@@ -3,8 +3,12 @@ from unittest.mock import MagicMock
 
 import psycopg
 import pytest
+from fastapi.testclient import TestClient
+from psycopg_pool import PoolTimeout
 
+from app.auth.security import criar_token_jwt
 from app.database import connection as database
+from app.main import app
 
 
 def test_lifespan_pool_reuses_connections_and_closes(monkeypatch):
@@ -82,6 +86,60 @@ def test_limites_invalidos_nao_abrem_pool(monkeypatch):
         database.open_pool()
 
     factory.assert_not_called()
+
+
+def test_timeout_da_pool_em_lista_retorna_503(monkeypatch):
+    from app.api.locais import local_service
+
+    def sem_conexao(*args, **kwargs):
+        raise PoolTimeout("pool esgotada")
+
+    monkeypatch.setattr(local_service, "listar_locais", sem_conexao)
+    token = criar_token_jwt(sub="1", email="admin@ardlock.local")
+    response = TestClient(app).get(
+        "/api/v1/locais", headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "detail": "Banco de dados temporariamente indisponível. Tente novamente."
+    }
+    assert "pool esgotada" not in response.text
+
+
+def test_timeout_da_pool_na_autenticacao_retorna_503(monkeypatch):
+    from app.auth import dependencies
+
+    def sem_conexao():
+        raise PoolTimeout("pool esgotada")
+
+    monkeypatch.setattr(dependencies, "get_connection", sem_conexao)
+    token = criar_token_jwt(sub="1", email="admin@ardlock.local")
+    response = TestClient(app).get(
+        "/api/v1/locais", headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "Banco de dados indisponível."}
+
+
+def test_falha_operacional_em_lista_retorna_503(monkeypatch):
+    from app.api.locais import local_service
+
+    def sem_banco(*args, **kwargs):
+        raise psycopg.OperationalError("conexão interrompida")
+
+    monkeypatch.setattr(local_service, "listar_locais", sem_banco)
+    token = criar_token_jwt(sub="1", email="admin@ardlock.local")
+    response = TestClient(app).get(
+        "/api/v1/locais", headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "detail": "Banco de dados temporariamente indisponível. Tente novamente."
+    }
+    assert "conexão interrompida" not in response.text
 
 
 @pytest.mark.skipif(not os.getenv("DATABASE_URL"), reason="PostgreSQL não configurado")
