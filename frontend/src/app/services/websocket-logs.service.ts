@@ -17,6 +17,8 @@ export interface WebSocketEventData {
   identificador_dispositivo?: string | null;
   tentativa_id?: string | null;
   motivo?: string | null;
+  /** Presente quando a leitura foi reservada por uma tela do painel. */
+  operacao_id?: string | null;
 }
 
 export interface WebSocketLogEvent {

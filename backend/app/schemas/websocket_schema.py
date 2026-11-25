@@ -15,6 +15,36 @@ class ConnectionManager:
         self.capture_revision = int(monotonic() * 1000)
         self.attempt_owners: dict[str, tuple[str | None, float]] = {}
         self.processing: set[str] = set()
+        # Leitores reservados pelo painel para capturar um UID de cartão.
+        # identificador normalizado -> (operacao_id, expira_em monotônico)
+        self.card_captures: dict[str, tuple[str, float]] = {}
+
+    @staticmethod
+    def _reader_key(identificador: str) -> str:
+        return (identificador or "").strip().upper()
+
+    def arm_card_capture(self, identificador: str, operacao_id: str, ttl: float) -> None:
+        """Reserva a próxima leitura do leitor para preencher um formulário.
+
+        Uma nova reserva substitui a anterior do mesmo leitor; o evento
+        carrega o operacao_id, então só a tela que pediu aplica o UID.
+        """
+        self.card_captures[self._reader_key(identificador)] = (str(operacao_id), monotonic() + ttl)
+
+    def cancel_card_capture(self, identificador: str, operacao_id: str) -> bool:
+        key = self._reader_key(identificador)
+        current = self.card_captures.get(key)
+        if current and current[0] == str(operacao_id):
+            del self.card_captures[key]
+            return True
+        return False
+
+    def take_card_capture(self, identificador: str) -> str | None:
+        """Consome a reserva vigente do leitor (uso único)."""
+        current = self.card_captures.pop(self._reader_key(identificador), None)
+        if not current or current[1] <= monotonic():
+            return None
+        return current[0]
 
     def select_capture(self, client):
         self.capture_client = client

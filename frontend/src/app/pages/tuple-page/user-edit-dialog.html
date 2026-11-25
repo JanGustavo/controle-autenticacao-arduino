@@ -152,7 +152,7 @@
 
       <div class="capture-state" role="status">
         <mat-icon>{{ aguardandoRfid ? 'sensors' : uidNovo && uidNovo !== usuario.uid_card ? 'check_circle' : 'info' }}</mat-icon>
-        <span>{{ aguardandoRfid ? 'Pronto para ler: aproxime o novo cartão do leitor.' : uidNovo && uidNovo !== usuario.uid_card ? 'Novo cartão identificado. Confira e salve a troca.' : 'Escolha o leitor, inicie a leitura e aproxime o novo cartão.' }}</span>
+        <span>{{ aguardandoRfid ? 'Pronto para ler: aproxime o novo cartão do leitor' + (operacoes.segundosRestantes() ? ' (' + operacoes.segundosRestantes() + ' s). Esta leitura só preenche o campo.' : '.') : uidNovo && uidNovo !== usuario.uid_card ? 'Novo cartão identificado. Confira e salve a troca.' : 'Escolha o leitor, inicie a leitura e aproxime o novo cartão.' }}</span>
       </div>
 
       <div class="section-actions">

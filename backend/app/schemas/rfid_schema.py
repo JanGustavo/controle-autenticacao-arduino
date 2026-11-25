@@ -102,7 +102,21 @@ class VerificarCartaoResponse(BaseModel):
     usuario_id: Optional[int] = None
     nome: Optional[str] = None
     mensagem: str
-    proxima_etapa: Literal["BIOMETRIA", "NEGADO"] = "NEGADO"
+    # CARTAO_CAPTURADO: a leitura foi reservada pelo painel para preencher um
+    # cadastro. Nenhuma tentativa de acesso foi criada. Firmwares que não
+    # conhecem esse valor tratam a resposta como sem tentativa_id e encerram.
+    proxima_etapa: Literal["BIOMETRIA", "NEGADO", "CARTAO_CAPTURADO"] = "NEGADO"
+
+
+class ReservarCapturaCartaoRequest(BaseModel):
+    identificador_dispositivo: str = Field(..., min_length=1, max_length=100)
+    operacao_id: UUID
+
+
+class ReservarCapturaCartaoResponse(BaseModel):
+    operacao_id: UUID
+    identificador_dispositivo: str
+    expira_em_segundos: int
 
 
 class ResultadoBiometriaRequest(BaseModel):

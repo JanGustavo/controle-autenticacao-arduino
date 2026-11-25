@@ -163,7 +163,7 @@
 
           <div class="capture-state" role="status">
             <mat-icon>{{ aguardandoRfid ? 'sensors' : form.get('uid_card')?.value ? 'check_circle' : 'info' }}</mat-icon>
-            <span>{{ aguardandoRfid ? 'Pronto para ler: aproxime o cartão do leitor selecionado.' : form.get('uid_card')?.value ? 'Cartão identificado. Continue o cadastro.' : 'Selecione um leitor e clique em Iniciar leitura. O cartão será preenchido automaticamente.' }}</span>
+            <span>{{ aguardandoRfid ? 'Pronto para ler: aproxime o cartão do leitor selecionado' + (operacoes.segundosRestantes() ? ' (' + operacoes.segundosRestantes() + ' s). Esta leitura só preenche o campo.' : '.') : form.get('uid_card')?.value ? 'Cartão identificado. Continue o cadastro.' : 'Selecione um leitor e clique em Iniciar leitura. O cartão será preenchido automaticamente.' }}</span>
           </div>
           <details class="demo-tools">
             <summary>Sem o cartão físico? Modo de demonstração</summary>

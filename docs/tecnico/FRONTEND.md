@@ -49,7 +49,8 @@ Dados básicos
   -> nome + ativo
 
 Cartão RFID
-  -> leitura via WebSocket RFID_LIDO ou UID informado
+  -> POST /arduino/captura-cartao reserva o leitor (30 s, operacao_id)
+  -> leitura via WebSocket RFID_LIDO com o mesmo operacao_id, ou UID informado
   -> POST /arduino/cadastrar-cartao
   -> substitui/associa o cartão do usuário
 
@@ -126,10 +127,23 @@ Eventos relevantes:
 
 | Evento | Uso |
 |---|---|
-| RFID_LIDO | leitura detectada |
+| RFID_LIDO | leitura detectada; com `operacao_id`, só preenche o formulário que reservou o leitor |
 | RFID_APROVADO | tentativa criada |
 | RFID_NEGADO | elegibilidade recusada |
 | NOVO_ACESSO | decisão final/histórico atualizado |
+
+### Operação ativa da leitura RFID
+
+O cartão informa qual UID foi aproximado; a finalidade vem da operação ativa
+(`OperacaoRfidService`, ponto único de despacho):
+
+- Cadastro e edição reservam o leitor com `POST /arduino/captura-cartao`. A
+  próxima leitura nesse leitor não cria tentativa, não grava histórico e não
+  emite `RFID_APROVADO`; só envia `RFID_LIDO` com `operacao_id`.
+- A reserva é de uso único, expira (30 s, `CARD_CAPTURE_TIMEOUT_SECONDS`) e é
+  cancelada ao fechar o diálogo ou clicar em Cancelar espera.
+- Com cadastro ou edição aberto, uma tentativa de acesso de outra pessoa não
+  leva este aparelho para `/validar-acesso`; aparece um aviso no rodapé.
 
 O frontend deve tratar HTTP e WebSocket como canais complementares. Durante a simulação, a resposta HTTP é a fonte da tentativa para evitar inicialização duplicada da webcam pelo broadcast da própria requisição.
 

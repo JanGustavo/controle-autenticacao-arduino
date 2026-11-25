@@ -49,7 +49,11 @@ void acenderLedVerde();
 void acenderLedVermelho();
 void animacaoAprovado();
 void animacaoNegado();
+void animacaoCartaoCapturado();
 void acionarServoPorta(bool abrir);
+
+// Verdadeiro quando a última leitura foi reservada pelo painel para cadastro.
+bool ultimaLeituraFoiCaptura = false;
 void emitirBuzzer(int frequencia, int duracaoMs);
 
 // Setup
@@ -162,6 +166,12 @@ void loop()
                 animacaoNegado();
             }
         }
+        else if (ultimaLeituraFoiCaptura)
+        {
+            // Leitura usada só para preencher um cadastro: nenhum acesso foi pedido.
+            Serial.println("Cartao enviado ao painel de cadastro.");
+            animacaoCartaoCapturado();
+        }
         else
         {
             Serial.println("Elegibilidade RFID recusada pelo backend.");
@@ -242,6 +252,18 @@ void animacaoAprovado()
     acionarServoPorta(false); // Fecha novamente
 }
 
+// Cartão lido para cadastro: um bipe curto e o LED verde aceso brevemente.
+// A tranca não é acionada.
+void animacaoCartaoCapturado()
+{
+    Serial.println("[SINALIZACAO] CARTAO CAPTURADO: 1 bipe curto");
+    digitalWrite(LED_VERMELHO, LOW);
+    digitalWrite(LED_VERDE, HIGH);
+    emitirBuzzer(2000, 120);
+    delay(400);
+    digitalWrite(LED_VERDE, LOW);
+}
+
 // Animação Acesso Negado: LED Vermelho e tres bipes (graves no modo passivo)
 void animacaoNegado()
 {
@@ -303,6 +325,7 @@ String extrairCampoJson(const String &json, const String &campo)
 
 bool iniciarTentativaAcesso(const char *uuid, String &tentativaId)
 {
+    ultimaLeituraFoiCaptura = false;
     WiFiClientSecure client;
     client.setInsecure();
     HTTPClient http;
@@ -349,6 +372,15 @@ bool iniciarTentativaAcesso(const char *uuid, String &tentativaId)
     String response = http.getString();
     String proximaEtapa = extrairCampoJson(response, "proxima_etapa");
     String mensagem = extrairCampoJson(response, "mensagem");
+
+    ultimaLeituraFoiCaptura = (proximaEtapa == "CARTAO_CAPTURADO");
+    if (ultimaLeituraFoiCaptura)
+    {
+        Serial.print("RFID reservado pelo painel: ");
+        Serial.println(mensagem);
+        http.end();
+        return false;
+    }
 
     if (proximaEtapa == "NEGADO")
     {

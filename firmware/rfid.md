@@ -43,6 +43,10 @@ Quando elegível, o backend retorna uma tentativa:
 }
 ```
 
+Quando o painel reservou o leitor para cadastrar um cartão, a resposta vem sem
+`tentativa_id` e com `"proxima_etapa": "CARTAO_CAPTURADO"`. O firmware dá um bipe
+curto com o LED verde, não aciona a tranca e volta a aguardar cartões.
+
 ## 2. Consultar decisão
 
 O ESP32 não envia um resultado biométrico. Ele consulta a decisão calculada

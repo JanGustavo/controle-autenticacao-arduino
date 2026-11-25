@@ -1,11 +1,16 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
+from fastapi.responses import JSONResponse
+
+import os
 
 from app.schemas.rfid_schema import (
     CadastrarCartaoRequest,
     CadastrarCartaoResponse,
     ConsultarCartaoResponse,
+    ReservarCapturaCartaoRequest,
+    ReservarCapturaCartaoResponse,
     ResultadoTentativaResponse,
     VerificarBiometriaArduinoResponse,
     VerificarCartaoRequest,
@@ -27,6 +32,55 @@ from app.services.rfid_service import (
 )
 
 router = APIRouter()
+
+
+def _ttl_captura_cartao() -> int:
+    """Prazo da reserva do leitor. Curto: enquanto reservado, o leitor não abre a porta."""
+    try:
+        return max(5, min(120, int(os.getenv("CARD_CAPTURE_TIMEOUT_SECONDS", "30"))))
+    except ValueError:
+        return 30
+
+
+@router.post(
+    "/captura-cartao",
+    response_model=ReservarCapturaCartaoResponse,
+    summary="Reservar a próxima leitura do leitor para um cadastro",
+    responses={401: {"description": "JWT administrativo ausente ou inválido"}},
+)
+async def reservar_captura_cartao(
+    request: ReservarCapturaCartaoRequest,
+    _admin: dict = Depends(obter_administrador_atual),
+):
+    """
+    Separa a leitura física da finalidade dela.
+
+    Enquanto a reserva vale, o próximo cartão aproximado neste leitor só
+    tem o UID enviado ao painel (evento RFID_LIDO com operacao_id). Não é
+    criada tentativa de acesso, não há registro no histórico e nenhuma
+    tela de validação facial é acionada.
+    """
+    ttl = _ttl_captura_cartao()
+    manager.arm_card_capture(request.identificador_dispositivo, str(request.operacao_id), ttl)
+    return ReservarCapturaCartaoResponse(
+        operacao_id=request.operacao_id,
+        identificador_dispositivo=request.identificador_dispositivo,
+        expira_em_segundos=ttl,
+    )
+
+
+@router.delete(
+    "/captura-cartao",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Cancelar a reserva de leitura do cartão",
+    responses={401: {"description": "JWT administrativo ausente ou inválido"}},
+)
+async def cancelar_captura_cartao(
+    identificador_dispositivo: str = Query(..., min_length=1, max_length=100),
+    operacao_id: UUID = Query(...),
+    _admin: dict = Depends(obter_administrador_atual),
+):
+    manager.cancel_card_capture(identificador_dispositivo, str(operacao_id))
 
 
 @router.post(
@@ -53,6 +107,28 @@ async def verificar_cartao(request: VerificarCartaoRequest):
             f"[VERIFICAÇÃO] Dispositivo: {request.identificador_dispositivo} "
             f"| UID: {request.uid_card}"
         )
+
+        operacao_id = manager.take_card_capture(request.identificador_dispositivo)
+        if operacao_id:
+            await manager.broadcast(
+                {
+                    "type": "RFID_LIDO",
+                    "data": {
+                        "uid_card": request.uid_card,
+                        "identificador_dispositivo": request.identificador_dispositivo,
+                        "operacao_id": operacao_id,
+                    },
+                }
+            )
+            # Sem tentativa_id no corpo: o firmware lê `null` como texto e
+            # passaria a consultar uma tentativa inexistente por 18 s.
+            captura = VerificarCartaoResponse(
+                existe=False,
+                mensagem="Cartão lido para cadastro no painel. Nenhum acesso foi iniciado.",
+                proxima_etapa="CARTAO_CAPTURADO",
+            )
+            return JSONResponse(captura.model_dump(mode="json", exclude_none=True))
+
         await manager.broadcast(
             {
                 "type": "RFID_LIDO",

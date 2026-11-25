@@ -15,7 +15,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
-import { Subscription } from 'rxjs';
 import {
   ApiService,
   DispositivoSimplesResponse,
@@ -25,7 +24,7 @@ import {
 import { SpeechService } from '../../services/speech.service';
 import { VisorFacial } from '../../components/visor-facial/visor-facial';
 import { WebcamService } from '../../services/webcam.service';
-import { WebSocketLogsService } from '../../services/websocket-logs.service';
+import { OperacaoRfidService } from '../../services/operacao-rfid.service';
 
 export interface LocalPermissaoItem {
   local_id: number;
@@ -65,7 +64,9 @@ export class CadastrarPage implements OnInit, OnDestroy {
   private snackBar = inject(MatSnackBar);
   private speech = inject(SpeechService);
   public webcam = inject(WebcamService);
-  public wsLogs = inject(WebSocketLogsService);
+  public operacoes = inject(OperacaoRfidService);
+  /** O cadastro é a operação ativa: leituras não abrem a validação facial. */
+  private fecharSessao = this.operacoes.abrirSessao();
 
   modoTotem = signal(true);
   cameraOpened = false;
@@ -73,7 +74,6 @@ export class CadastrarPage implements OnInit, OnDestroy {
   submitted = false;
   saving = false;
   lendoRfidMock = false;
-  aguardandoRfid = false;
   dispositivoRfidSelecionadoId: number | null = null;
   dispositivosCarregando = true;
   dispositivosErro = '';
@@ -85,7 +85,11 @@ export class CadastrarPage implements OnInit, OnDestroy {
   locaisErro = '';
   fotoPreviewUrl: string | null = null;
   private fotoCapturada: Blob | File | null = null;
-  private wsSubscription: Subscription | null = null;
+
+  /** Aguardando o cartão no leitor reservado para este formulário. */
+  get aguardandoRfid(): boolean {
+    return this.operacoes.capturando();
+  }
 
   get dispositivoRfidSelecionado(): DispositivoSimplesResponse | null {
     if (
@@ -157,23 +161,6 @@ export class CadastrarPage implements OnInit, OnDestroy {
       },
     });
 
-    this.wsSubscription = this.wsLogs.obterLogsEmTempoReal().subscribe({
-      next: (evento) => {
-        if (evento.type !== 'RFID_LIDO' || !this.aguardandoRfid || !evento.data.uid_card) {
-          return;
-        }
-
-        const eventoDisp = (evento.data.identificador_dispositivo || '').trim().toUpperCase();
-        const leitorAtual = (this.identificadorRfidSelecionado || '').trim().toUpperCase();
-
-        if (eventoDisp && leitorAtual && eventoDisp !== leitorAtual) {
-          return;
-        }
-
-        this.aplicarLeituraRfid(evento.data.uid_card);
-      },
-    });
-
     await this.webcam.carregarModelos();
   }
 
@@ -184,7 +171,9 @@ export class CadastrarPage implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.pararWebcam();
     this.speech.parar();
-    this.wsSubscription?.unsubscribe();
+    // Fechar o cadastro cancela a leitura pendente e devolve o leitor ao acesso.
+    this.operacoes.cancelarCaptura();
+    this.fecharSessao();
   }
 
   toggleModoTotem(): void {
@@ -239,12 +228,27 @@ export class CadastrarPage implements OnInit, OnDestroy {
     }
 
     this.errorMessage = '';
-    this.aguardandoRfid = true;
     this.speech.falar('Aproxime o cartão do leitor RFID.');
+    this.operacoes
+      .capturarCartao(
+        this.identificadorRfidSelecionado,
+        (uid) => this.aplicarLeituraRfid(uid),
+        () => {
+          this.errorMessage =
+            'O tempo para aproximar o cartão acabou e o leitor voltou ao modo de acesso. Clique em Iniciar leitura para tentar de novo.';
+          this.cdr.markForCheck();
+        },
+      )
+      .catch(() => {
+        this.speech.parar();
+        this.errorMessage =
+          'Não foi possível reservar o leitor para a leitura do cartão. Verifique a conexão e tente novamente.';
+        this.cdr.markForCheck();
+      });
   }
 
   cancelarLeituraRfid(): void {
-    this.aguardandoRfid = false;
+    this.operacoes.cancelarCaptura();
     this.speech.parar();
   }
 
@@ -254,7 +258,7 @@ export class CadastrarPage implements OnInit, OnDestroy {
     this.form.patchValue({ uid_card: uidNormalizado || '' });
     this.form.get('uid_card')?.markAsDirty();
     this.form.get('uid_card')?.markAsTouched();
-    this.aguardandoRfid = false;
+    this.cdr.markForCheck();
 
     this.snackBar.open(`Cartão RFID lido: ${uidNormalizado}`, 'OK', { duration: 3500 });
     this.speech.falar('Cartão identificado.');
@@ -393,7 +397,7 @@ export class CadastrarPage implements OnInit, OnDestroy {
     this.submitted = false;
     this.saving = false;
     this.cdr.markForCheck();
-    this.aguardandoRfid = false;
+    this.operacoes.cancelarCaptura();
     this.dispositivoRfidSelecionadoId = null;
     this.successMessage = '';
     this.errorMessage = '';

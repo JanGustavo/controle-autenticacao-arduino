@@ -81,6 +81,28 @@ Antes de qualquer processamento facial, o backend valida:
 
 Somente quando tudo passa é criada uma `tentativa_id` com status `PENDENTE`.
 
+#### Leitura reservada para cadastro
+
+```http
+POST   /api/v1/arduino/captura-cartao   {"identificador_dispositivo", "operacao_id"}
+DELETE /api/v1/arduino/captura-cartao?identificador_dispositivo=...&operacao_id=...
+```
+
+Rotas administrativas (JWT). Enquanto a reserva vale (30 s por padrão,
+`CARD_CAPTURE_TIMEOUT_SECONDS`), a próxima leitura do leitor só emite
+`RFID_LIDO` com `operacao_id` e responde sem `tentativa_id`:
+
+```json
+{
+  "existe": false,
+  "mensagem": "Cartão lido para cadastro no painel. Nenhum acesso foi iniciado.",
+  "proxima_etapa": "CARTAO_CAPTURADO"
+}
+```
+
+Nenhuma tentativa é criada e nada vai para o histórico. A reserva fica em
+memória e é de uso único.
+
 ### 2. Validação facial 1:1
 
 ```http

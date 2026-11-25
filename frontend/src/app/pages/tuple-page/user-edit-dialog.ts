@@ -15,7 +15,6 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { Subscription } from 'rxjs';
 
 import {
   ApiService,
@@ -26,7 +25,7 @@ import {
 import { SpeechService } from '../../services/speech.service';
 import { VisorFacial } from '../../components/visor-facial/visor-facial';
 import { WebcamService } from '../../services/webcam.service';
-import { WebSocketLogsService } from '../../services/websocket-logs.service';
+import { OperacaoRfidService } from '../../services/operacao-rfid.service';
 
 export interface UserEditDialogData {
   usuario: UsuarioResponse;
@@ -63,7 +62,9 @@ export class UserEditDialog implements OnInit, OnDestroy {
     MatDialogRef<UserEditDialog, UserEditDialogResult>,
   );
   private data = inject<UserEditDialogData>(MAT_DIALOG_DATA);
-  private wsLogs = inject(WebSocketLogsService);
+  public operacoes = inject(OperacaoRfidService);
+  /** A edição é a operação ativa: leituras não abrem a validação facial. */
+  private fecharSessao = this.operacoes.abrirSessao();
   public webcam = inject(WebcamService);
 
   modoTotem = signal(true);
@@ -81,7 +82,6 @@ export class UserEditDialog implements OnInit, OnDestroy {
   dispositivos: DispositivoSimplesResponse[] = [];
   dispositivoSelecionadoId: number | null = null;
   carregandoDispositivos = true;
-  aguardandoRfid = false;
   uidNovo = this.usuario.uid_card ?? '';
   cartaoDisponivel: boolean | null = this.usuario.uid_card ? true : null;
 
@@ -92,7 +92,10 @@ export class UserEditDialog implements OnInit, OnDestroy {
   erro = '';
   alterado = false;
 
-  private wsSubscription: Subscription | null = null;
+  /** Aguardando o novo cartão no leitor reservado para esta edição. */
+  get aguardandoRfid(): boolean {
+    return this.operacoes.capturando();
+  }
 
   get dispositivoSelecionado(): DispositivoSimplesResponse | null {
     if (this.dispositivoSelecionadoId === null || this.dispositivoSelecionadoId === undefined) return null;
@@ -129,34 +132,13 @@ export class UserEditDialog implements OnInit, OnDestroy {
       },
     });
 
-    this.wsSubscription = this.wsLogs.obterLogsEmTempoReal().subscribe({
-      next: (evento) => {
-        if (
-          evento.type !== 'RFID_LIDO'
-          || !this.aguardandoRfid
-          || !evento.data.uid_card
-        ) {
-          return;
-        }
-
-        const eventoDisp = (evento.data.identificador_dispositivo || '').trim().toUpperCase();
-        const leitorAtual = (this.identificadorDispositivo || '').trim().toUpperCase();
-
-        if (eventoDisp && leitorAtual && eventoDisp !== leitorAtual) {
-          return;
-        }
-
-        this.uidNovo = this.normalizarUid(evento.data.uid_card);
-        this.aguardandoRfid = false;
-        this.cdr.detectChanges();
-        this.validarUidAtual();
-      },
-    });
   }
 
   ngOnDestroy(): void {
     this.webcam.pararWebcam();
-    this.wsSubscription?.unsubscribe();
+    // Fechar a edição cancela a leitura pendente e devolve o leitor ao acesso.
+    this.operacoes.cancelarCaptura();
+    this.fecharSessao();
   }
 
   salvarDadosBasicos(): void {
@@ -213,11 +195,32 @@ export class UserEditDialog implements OnInit, OnDestroy {
     this.erro = '';
     this.aviso = 'Aguardando aproximação do cartão no leitor selecionado...';
     this.cartaoDisponivel = null;
-    this.aguardandoRfid = true;
+    this.operacoes
+      .capturarCartao(
+        this.identificadorDispositivo,
+        (uid) => {
+          this.uidNovo = this.normalizarUid(uid);
+          this.aviso = '';
+          this.cdr.detectChanges();
+          this.validarUidAtual();
+        },
+        () => {
+          this.aviso = '';
+          this.erro =
+            'O tempo para aproximar o cartão acabou e o leitor voltou ao modo de acesso. Clique em Iniciar leitura para tentar de novo.';
+          this.cdr.markForCheck();
+        },
+      )
+      .catch(() => {
+        this.aviso = '';
+        this.erro =
+          'Não foi possível reservar o leitor para a leitura do cartão. Verifique a conexão e tente novamente.';
+        this.cdr.markForCheck();
+      });
   }
 
   cancelarLeituraRfid(): void {
-    this.aguardandoRfid = false;
+    this.operacoes.cancelarCaptura();
     this.aviso = '';
   }
 

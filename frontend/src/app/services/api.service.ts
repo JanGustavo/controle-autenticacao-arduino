@@ -159,6 +159,12 @@ export interface VerificarBiometriaResponse {
   tempo_resposta_ms: number | null;
 }
 
+export interface ReservarCapturaCartaoResponse {
+  operacao_id: string;
+  identificador_dispositivo: string;
+  expira_em_segundos: number;
+}
+
 export interface CadastrarCartaoResponse {
   sucesso: boolean;
   usuario_id: number | null;
@@ -338,6 +344,24 @@ export class ApiService {
       `${API_BASE}/arduino/cartao-status`,
       { params },
     );
+  }
+
+  /** Reserva a próxima leitura do leitor só para preencher o UID (sem acesso nem biometria). */
+  reservarCapturaCartao(
+    identificadorDispositivo: string,
+    operacaoId: string,
+  ): Observable<ReservarCapturaCartaoResponse> {
+    return this.http.post<ReservarCapturaCartaoResponse>(`${API_BASE}/arduino/captura-cartao`, {
+      identificador_dispositivo: identificadorDispositivo,
+      operacao_id: operacaoId,
+    });
+  }
+
+  cancelarCapturaCartao(identificadorDispositivo: string, operacaoId: string): Observable<void> {
+    const params = new HttpParams()
+      .set('identificador_dispositivo', identificadorDispositivo)
+      .set('operacao_id', operacaoId);
+    return this.http.delete<void>(`${API_BASE}/arduino/captura-cartao`, { params });
   }
 
   cadastrarCartao(
