@@ -1,10 +1,14 @@
 import re
 
+import re
+
 from fastapi import HTTPException, status
 from psycopg.errors import IntegrityError
 
 from app.database.connection import get_connection
 from app.models.permissao_model import permissao_model
+from app.models.dispositivo_model import dispositivo_model
+from app.services.face_service import FaceService
 from app.models.usuario_model import usuario_model
 from app.schemas.usuario_schema import UsuarioCreate, UsuarioUpdate
 
@@ -77,6 +81,78 @@ class UsuarioService:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="CPF ou cartão informado já está cadastrado.",
+            ) from error
+
+    def criar_usuario_completo(
+        self,
+        usuario: UsuarioCreate,
+        image_bytes: bytes,
+        identificador_dispositivo: str,
+    ):
+        """Valida a face antes de persistir e cria usuário, cartão e permissões em uma transação."""
+        uid = self._normalizar_uid(usuario.uid_card)
+        if not uid or not re.fullmatch(r"(?:[0-9A-F]{8}|[0-9A-F]{14}|[0-9A-F]{20})", uid):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="UID do cartão inválido. Faça uma nova leitura do cartão RFID.",
+            )
+
+        dispositivo = dispositivo_model.buscar_por_identificador(identificador_dispositivo)
+        if dispositivo is None or not dispositivo["ativo"]:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="O leitor RFID selecionado não existe ou está inativo.",
+            )
+
+        # A imagem é analisada antes de abrir a transação. Sem rosto válido,
+        # nenhum registro é criado e o formulário pode ser reenviado.
+        face = FaceService.extract_face_vector_detailed(image_bytes)
+        if not face.success or not face.vector:
+            mensagens = {
+                "FACE_NOT_FOUND": "Nenhum rosto foi identificado. Ajuste a iluminação e enquadre o rosto inteiro.",
+                "FACE_MULTIPLE": "Mais de um rosto foi identificado. Deixe apenas uma pessoa na imagem.",
+                "FACE_TOO_SMALL": "O rosto está muito distante. Aproxime-se da câmera.",
+                "FACE_DECODE_ERROR": "A imagem não pôde ser processada. Capture outra foto.",
+                "FACE_EMBEDDING_ERROR": "Não foi possível gerar a biometria facial. Capture outra foto.",
+            }
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=mensagens.get(face.message, "Não foi possível validar a biometria facial."),
+            )
+
+        try:
+            with get_connection() as connection:
+                with connection.cursor() as cursor:
+                    criado = usuario_model.criar_com_cursor(
+                        cursor,
+                        nome=usuario.nome,
+                        cpf=self._normalizar_cpf(usuario.cpf),
+                        tipo_usuario=usuario.tipo_usuario,
+                        uid_card=uid,
+                        vetor_facial=face.vector,
+                        ativo=usuario.ativo,
+                    )
+                    for permissao in usuario.permissoes:
+                        permissao_model.criar_com_cursor(
+                            cursor,
+                            usuario_id=criado["user_id"],
+                            local_id=permissao.local_id,
+                            horario_inicio=permissao.horario_inicio,
+                            horario_fim=permissao.horario_fim,
+                            dias_semana=permissao.dias_semana,
+                        )
+            return criado
+        except IntegrityError as error:
+            constraint = getattr(getattr(error, "diag", None), "constraint_name", None)
+            if constraint == "uq_usuario_cpf":
+                detalhe = "Este CPF já está cadastrado."
+            elif constraint in {"usuario_uid_card_key", "uq_usuario_uid_card"}:
+                detalhe = "Este cartão RFID já está associado a outro usuário."
+            else:
+                detalhe = "Não foi possível concluir o cadastro. Verifique se o cartão, CPF e permissões já estão cadastrados."
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=detalhe,
             ) from error
 
     def atualizar_usuario(self, usuario_id: int, usuario: UsuarioUpdate):
