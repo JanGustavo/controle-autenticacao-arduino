@@ -2,3 +2,26 @@
 @use '../../styles/auth-form' as auth;
 
 @include auth.base;
+
+.login-adquirir {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 16px 0 0;
+  color: var(--ard-muted);
+  font-size: 0.9rem;
+}
+
+.login-adquirir-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+
+  mat-icon {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+  }
+}

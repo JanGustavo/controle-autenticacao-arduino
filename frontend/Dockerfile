@@ -17,8 +17,10 @@ FROM nginx:alpine
 # Remove o conteúdo padrão do Nginx
 RUN rm -rf /usr/share/nginx/html/*
 
-# Copia o build do Angular
-COPY --from=builder /app/dist/controle-acesso/browser /usr/share/nginx/html
+# Copia o build do Angular (o diretório browser pode ser omitido em versões anteriores)
+RUN mkdir -p /tmp/angular-dist
+COPY --from=builder /app/dist/controle-acesso/browser/ /tmp/angular-dist/
+RUN cp -a /tmp/angular-dist/. /usr/share/nginx/html/
 
 # Configuração versionada, incluindo a política de cache.
 COPY nginx.conf /etc/nginx/conf.d/default.conf

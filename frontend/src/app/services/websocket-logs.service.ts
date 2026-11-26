@@ -19,6 +19,7 @@ export interface WebSocketEventData {
   motivo?: string | null;
   /** Presente quando a leitura foi reservada por uma tela do painel. */
   operacao_id?: string | null;
+  timeout_segundos?: number | null;
 }
 
 export interface WebSocketLogEvent {

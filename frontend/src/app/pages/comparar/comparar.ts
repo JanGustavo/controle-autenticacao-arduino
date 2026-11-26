@@ -102,6 +102,8 @@ export class CompararPage implements OnInit, OnDestroy {
   uidManual = '';
 
   private timeoutOverlay: ReturnType<typeof setTimeout> | null = null;
+  private timerTentativaExpiracao: ReturnType<typeof setTimeout> | null = null;
+  private readonly TIMEOUT_PADRAO_MS = 15000;
   private wsSubscription: Subscription | null = null;
 
   ngOnInit(): void {
@@ -123,7 +125,15 @@ export class CompararPage implements OnInit, OnDestroy {
           this.receberRfid(
             evento.data.tentativa_id,
             evento.data.nome_usuario || null,
+            evento.data.timeout_segundos ? evento.data.timeout_segundos * 1000 : undefined,
           );
+          return;
+        }
+
+        if (evento.type === 'TENTATIVA_EXPIRADA') {
+          if (this.tentativaId() && evento.data?.tentativa_id === this.tentativaId()) {
+            this.expirarTentativaPorTimeout(evento.data?.motivo || undefined);
+          }
           return;
         }
 
@@ -131,6 +141,7 @@ export class CompararPage implements OnInit, OnDestroy {
           if (!this.captura.ativa()) return;
           if (this.iniciandoTentativa()) return;
 
+          this.cancelarTimerExpiracao();
           this.tentativaId.set(null);
           this.pararWebcam();
           this.aprovado.set(false);
@@ -146,6 +157,13 @@ export class CompararPage implements OnInit, OnDestroy {
 
         if (evento.type === 'NOVO_ACESSO') {
           this.carregarHistorico();
+          if (
+            this.tentativaId() &&
+            evento.data?.tentativa_id === this.tentativaId() &&
+            !evento.data?.autorizado
+          ) {
+            this.expirarTentativaPorTimeout(evento.data?.motivo_recusa || undefined);
+          }
         }
       },
     });
@@ -156,9 +174,9 @@ export class CompararPage implements OnInit, OnDestroy {
     }
   }
 
-  private receberRfid(tentativaId: string, nomeUsuario: string | null): void {
+  private receberRfid(tentativaId: string, nomeUsuario: string | null, timeoutMs?: number): void {
     if (this.tentativaId() === tentativaId) return;
-    this.prepararTentativa(tentativaId, nomeUsuario);
+    this.prepararTentativa(tentativaId, nomeUsuario, timeoutMs);
     void this.iniciarWebcam();
     this.speech.falar('Cartão reconhecido. Agora olhe para a câmera.', true);
   }
@@ -264,6 +282,7 @@ export class CompararPage implements OnInit, OnDestroy {
         this.prepararTentativa(
           resultado.tentativa_id,
           resultado.nome || this.usuarioSimulado?.nome || null,
+          resultado.timeout_segundos ? resultado.timeout_segundos * 1000 : undefined,
         );
 
         this.snackBar.open(
@@ -307,7 +326,10 @@ export class CompararPage implements OnInit, OnDestroy {
   private prepararTentativa(
     tentativaId: string,
     nomeUsuario: string | null,
+    timeoutMs?: number,
   ): void {
+    this.cancelarTimerExpiracao();
+
     this.tentativaId.set(tentativaId);
     this.recusaCartao.set(false);
     this.aprovado.set(false);
@@ -317,6 +339,46 @@ export class CompararPage implements OnInit, OnDestroy {
     this.mensagemStatus.set(
       'Cartão reconhecido. Aguardando validação facial 1:1...',
     );
+
+    const duracao = timeoutMs && timeoutMs > 0 ? timeoutMs : this.TIMEOUT_PADRAO_MS;
+    this.timerTentativaExpiracao = setTimeout(() => {
+      this.expirarTentativaPorTimeout();
+    }, duracao);
+  }
+
+  private cancelarTimerExpiracao(): void {
+    if (this.timerTentativaExpiracao) {
+      clearTimeout(this.timerTentativaExpiracao);
+      this.timerTentativaExpiracao = null;
+    }
+  }
+
+  expirarTentativaPorTimeout(motivo?: string): void {
+    this.cancelarTimerExpiracao();
+    if (!this.tentativaId()) return;
+
+    const mensagem = motivo || 'Tempo máximo para validação facial excedido.';
+    this.scanning.set(false);
+    this.aprovado.set(false);
+    this.similaridade.set(0);
+    this.tempoRespostaMs.set(null);
+    this.mensagemStatus.set(mensagem);
+    this.speech.falar(mensagem, true);
+
+    this.tentativaId.set(null);
+    this.carregarHistorico();
+
+    if (this.modoTotem()) {
+      this.exibirOverlayTotem.set(true);
+      if (this.timeoutOverlay) {
+        clearTimeout(this.timeoutOverlay);
+      }
+      this.timeoutOverlay = setTimeout(() => {
+        this.encerrarCicloAcesso();
+      }, 4000);
+    } else {
+      this.pararWebcam();
+    }
   }
 
   private normalizarUid(uid: string): string {
@@ -410,6 +472,7 @@ export class CompararPage implements OnInit, OnDestroy {
     this.api.verificarFace(tentativaAtual, resCapture.blob, this.captura.clienteId).subscribe({
       next: (res) => {
         if (this.tentativaId() !== tentativaAtual) return;
+        this.cancelarTimerExpiracao();
         this.scanning.set(false);
         this.similaridade.set(Number(res.similaridade ?? 0));
         this.tempoRespostaMs.set(res.tempo_resposta_ms ?? null);
@@ -448,6 +511,7 @@ export class CompararPage implements OnInit, OnDestroy {
       },
       error: (error) => {
         if (this.tentativaId() !== tentativaAtual) return;
+        this.cancelarTimerExpiracao();
         this.scanning.set(false);
         this.tentativaId.set(null);
         this.aprovado.set(false);
@@ -557,6 +621,7 @@ export class CompararPage implements OnInit, OnDestroy {
   }
 
   encerrarCicloAcesso(): void {
+    this.cancelarTimerExpiracao();
     if (this.timeoutOverlay) {
       clearTimeout(this.timeoutOverlay);
       this.timeoutOverlay = null;
@@ -591,6 +656,7 @@ export class CompararPage implements OnInit, OnDestroy {
   }
 
   resetar(): void {
+    this.cancelarTimerExpiracao();
     this.recusaCartao.set(false);
     this.limparResultadoPreservandoTentativa();
     this.usuarioEncontrado.set(null);
@@ -598,6 +664,7 @@ export class CompararPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.cancelarTimerExpiracao();
     this.pararWebcam();
     this.wsSubscription?.unsubscribe();
   }

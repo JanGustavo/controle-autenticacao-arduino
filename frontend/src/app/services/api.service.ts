@@ -145,6 +145,7 @@ export interface VerificarCartaoResponse {
   nome: string | null;
   mensagem: string;
   proxima_etapa: 'BIOMETRIA' | 'NEGADO';
+  timeout_segundos?: number;
 }
 
 export interface VerificarBiometriaResponse {

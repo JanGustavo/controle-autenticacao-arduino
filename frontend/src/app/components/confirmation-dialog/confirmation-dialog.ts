@@ -21,9 +21,9 @@ export interface ConfirmationData {
   standalone: true,
   imports: [MatDialogModule, MatIconModule],
   template: `
-    <div class="ard-dialog">
-      <header class="ard-dialog-head">
-        <span class="alerta" aria-hidden="true"><mat-icon>delete</mat-icon></span>
+    <div class="ard-dialog confirm-delete-dialog">
+      <header class="ard-dialog-head confirm-head">
+        <span class="alerta" aria-hidden="true"><mat-icon>delete_forever</mat-icon></span>
         <div>
           <h2 id="confirmation-title">{{ data.title }}</h2>
           <p id="confirmation-message">{{ data.message }}</p>
@@ -33,7 +33,10 @@ export interface ConfirmationData {
       <div class="ard-dialog-body">
         @if (data.items?.length) {
           <section class="impacto" aria-labelledby="impact-title">
-            <h3 id="impact-title">O que será afetado</h3>
+            <h3 id="impact-title">
+              <mat-icon aria-hidden="true">warning_amber</mat-icon>
+              O que será afetado
+            </h3>
             <ul>
               @for (item of data.items; track item.label) {
                 <li>
@@ -48,16 +51,16 @@ export interface ConfirmationData {
           </section>
         }
         <p class="definitivo">
-          <mat-icon aria-hidden="true">info</mat-icon>
-          Esta ação não pode ser desfeita.
+          <mat-icon aria-hidden="true">block</mat-icon>
+          Esta ação é <strong>permanente</strong> e não pode ser desfeita.
         </p>
       </div>
 
-      <footer class="ard-dialog-foot">
-        <button type="button" class="ard-btn" [mat-dialog-close]="false">Cancelar</button>
+      <footer class="ard-dialog-foot confirm-foot">
+        <button type="button" class="ard-btn is-quiet" [mat-dialog-close]="false">Cancelar</button>
         <button type="button" class="ard-btn is-destructive" [mat-dialog-close]="true">
-          <mat-icon aria-hidden="true">delete</mat-icon>
-          {{ data.confirmLabel || 'Excluir' }}
+          <mat-icon aria-hidden="true">delete_forever</mat-icon>
+          {{ data.confirmLabel || 'Excluir definitivamente' }}
         </button>
       </footer>
     </div>
@@ -66,55 +69,81 @@ export interface ConfirmationData {
     :host {
       display: block;
     }
-    // Diálogo curto: cabeçalho sem divisória, texto lido de uma vez.
-    .ard-dialog-head {
-      gap: 14px;
-      padding: 22px 22px 6px;
+
+    .confirm-delete-dialog {
+      border-top: 3px solid var(--ard-danger);
+      border-radius: 0 0 var(--ard-radius) var(--ard-radius);
+    }
+
+    .confirm-head {
+      gap: 16px;
+      padding: 24px 24px 10px;
       border-bottom: 0;
+      background: color-mix(in srgb, var(--ard-danger) 5%, var(--ard-surface));
+
       h2 {
+        font-size: 1.1rem;
+        font-weight: 600;
         overflow-wrap: anywhere;
       }
       p {
         margin-top: 4px;
         color: var(--ard-ink);
-        font-size: 0.95rem;
+        font-size: 0.93rem;
         line-height: 1.5;
         overflow-wrap: anywhere;
       }
     }
+
     .alerta {
       display: grid;
-      flex: 0 0 40px;
+      flex: 0 0 44px;
       place-items: center;
-      width: 40px;
-      height: 40px;
+      width: 44px;
+      height: 44px;
       border-radius: 12px;
-      background: color-mix(in srgb, var(--ard-danger) 14%, transparent);
+      background: color-mix(in srgb, var(--ard-danger) 18%, transparent);
       color: var(--ard-danger);
+      box-shadow: 0 0 0 6px color-mix(in srgb, var(--ard-danger) 8%, transparent);
+
       mat-icon {
-        width: 22px;
-        height: 22px;
-        font-size: 22px;
+        width: 24px;
+        height: 24px;
+        font-size: 24px;
       }
     }
+
     .ard-dialog-body {
       gap: 14px;
-      padding: 12px 22px 20px 76px;
+      padding: 14px 24px 22px 84px;
     }
+
     .impacto {
-      padding: 12px 14px;
-      border: 1px solid var(--ard-line);
+      padding: 14px 16px;
+      border: 1px solid color-mix(in srgb, var(--ard-danger) 25%, var(--ard-line));
       border-radius: var(--ard-radius-sm);
-      background: var(--ard-surface-2);
+      background: color-mix(in srgb, var(--ard-danger) 4%, var(--ard-surface-2));
+
       h3 {
-        margin: 0 0 10px;
-        color: var(--ard-muted);
-        font-size: 0.82rem;
-        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0 0 12px;
+        color: color-mix(in srgb, var(--ard-danger) 80%, var(--ard-muted));
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+
+        mat-icon {
+          width: 15px;
+          height: 15px;
+          font-size: 15px;
+        }
       }
       ul {
         display: grid;
-        gap: 10px;
+        gap: 12px;
         margin: 0;
         padding: 0;
         list-style: none;
@@ -134,7 +163,7 @@ export interface ConfirmationData {
       }
       li span {
         display: grid;
-        gap: 1px;
+        gap: 2px;
         min-width: 0;
       }
       strong {
@@ -148,23 +177,50 @@ export interface ConfirmationData {
         line-height: 1.4;
       }
     }
+
     .definitivo {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 7px;
       margin: 0;
-      color: var(--ard-muted);
+      padding: 10px 14px;
+      border-radius: var(--ard-radius-sm);
+      background: color-mix(in srgb, var(--ard-danger) 7%, transparent);
+      color: color-mix(in srgb, var(--ard-danger) 85%, var(--ard-ink));
       font-size: 0.86rem;
+
       mat-icon {
-        flex: 0 0 16px;
-        width: 16px;
-        height: 16px;
-        font-size: 16px;
+        flex: 0 0 17px;
+        width: 17px;
+        height: 17px;
+        font-size: 17px;
+      }
+
+      strong {
+        font-weight: 600;
       }
     }
+
+    .confirm-foot {
+      padding: 14px 24px 18px;
+      border-top: 1px solid var(--ard-line);
+      gap: 10px;
+
+      .ard-btn.is-destructive {
+        min-width: 180px;
+      }
+    }
+
     @media (max-width: 480px) {
       .ard-dialog-body {
-        padding-left: 22px;
+        padding-left: 24px;
+      }
+      .confirm-foot {
+        flex-direction: column-reverse;
+        .ard-btn {
+          width: 100%;
+          justify-content: center;
+        }
       }
     }
   `,

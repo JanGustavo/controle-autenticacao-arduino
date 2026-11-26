@@ -1,3 +1,4 @@
+import os
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
@@ -144,6 +145,7 @@ async def verificar_cartao(request: VerificarCartaoRequest):
             identificador_dispositivo=request.identificador_dispositivo,
         )
 
+        timeout_segundos = int(os.getenv("ACCESS_ATTEMPT_TIMEOUT_SECONDS", "15"))
         capture_client = manager.bind_capture(resultado.tentativa_id)
         await manager.broadcast(
             {
@@ -154,6 +156,7 @@ async def verificar_cartao(request: VerificarCartaoRequest):
                     "usuario_id": resultado.usuario_id,
                     "nome_usuario": resultado.nome,
                     "identificador_dispositivo": request.identificador_dispositivo,
+                    "timeout_segundos": timeout_segundos,
                 },
             }
         )

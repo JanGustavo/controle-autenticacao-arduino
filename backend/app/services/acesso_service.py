@@ -251,6 +251,7 @@ class AcessoService:
                 "Aguardando validação facial."
             ),
             proxima_etapa="BIOMETRIA",
+            timeout_segundos=timeout_segundos,
         )
 
     @staticmethod
