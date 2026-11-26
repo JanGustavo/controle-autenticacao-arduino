@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile, HTTPException, status
+from pydantic import ValidationError
 
 from app.auth.dependencies import obter_administrador_atual
 from app.schemas.usuario_schema import UsuarioCreate, UsuarioResponse, UsuarioSimplesResponse, UsuarioUpdate
@@ -50,6 +51,48 @@ def criar_usuario(usuario: UsuarioCreate, request: Request, admin: dict = Depend
         resource_id=resultado["user_id"],
         description=f"Usuário {usuario.nome} criado",
         request=request
+    )
+    return resultado
+
+
+@router.post(
+    "/usuarios/cadastro-completo",
+    response_model=UsuarioResponse,
+    summary="Criar usuário com cartão, biometria e permissões de forma atômica",
+    responses={
+        400: {"description": "Nenhum rosto válido foi detectado"},
+        409: {"description": "CPF ou cartão já cadastrado"},
+        422: {"description": "Dados, leitor ou imagem inválidos"},
+    },
+)
+async def criar_usuario_completo(
+    request: Request,
+    dados: str = Form(...),
+    identificador_dispositivo: str = Form(...),
+    file: UploadFile = File(...),
+    admin: dict = Depends(obter_administrador_atual),
+):
+    try:
+        usuario = UsuarioCreate.model_validate_json(dados)
+    except ValidationError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=error.errors(),
+        ) from error
+
+    imagem = await file.read()
+    resultado = usuario_service.criar_usuario_completo(
+        usuario,
+        imagem,
+        identificador_dispositivo,
+    )
+    audit_service.registrar(
+        action="CREATE_USER",
+        admin_id=admin.get("admin_id"),
+        resource_type="USER",
+        resource_id=resultado["user_id"],
+        description=f"Usuário {usuario.nome} criado com cartão e biometria",
+        request=request,
     )
     return resultado
 
