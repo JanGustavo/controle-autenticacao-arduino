@@ -3,6 +3,8 @@ import { MatDialog, MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/d
 import { MatIconModule } from '@angular/material/icon';
 import { firstValueFrom } from 'rxjs';
 
+export type ConfirmationVariant = 'danger' | 'warning';
+
 export interface ConfirmationItem {
   icon: string;
   label: string;
@@ -14,6 +16,10 @@ export interface ConfirmationData {
   message: string;
   items?: ConfirmationItem[];
   confirmLabel?: string;
+  confirmIcon?: string;
+  impactTitle?: string;
+  permanentWarning?: string;
+  variant?: ConfirmationVariant;
 }
 
 @Component({
@@ -21,10 +27,13 @@ export interface ConfirmationData {
   standalone: true,
   imports: [MatDialogModule, MatIconModule],
   template: `
-    <div class="ard-dialog confirm-delete-dialog">
+    <div class="ard-dialog confirm-dialog" [class.is-warning]="data.variant === 'warning'">
       <header class="ard-dialog-head confirm-head">
-        <span class="alerta" aria-hidden="true"><mat-icon>delete_forever</mat-icon></span>
+        <span class="alerta" aria-hidden="true">
+          <mat-icon>{{ data.confirmIcon || (data.variant === 'warning' ? 'warning_amber' : 'delete_forever') }}</mat-icon>
+        </span>
         <div>
+          <span class="eyebrow">{{ data.variant === 'warning' ? 'Confirmação necessária' : 'Ação irreversível' }}</span>
           <h2 id="confirmation-title">{{ data.title }}</h2>
           <p id="confirmation-message">{{ data.message }}</p>
         </div>
@@ -35,7 +44,7 @@ export interface ConfirmationData {
           <section class="impacto" aria-labelledby="impact-title">
             <h3 id="impact-title">
               <mat-icon aria-hidden="true">warning_amber</mat-icon>
-              O que será afetado
+              {{ data.impactTitle || 'O que será afetado' }}
             </h3>
             <ul>
               @for (item of data.items; track item.label) {
@@ -50,16 +59,17 @@ export interface ConfirmationData {
             </ul>
           </section>
         }
+
         <p class="definitivo">
-          <mat-icon aria-hidden="true">block</mat-icon>
-          Esta ação é <strong>permanente</strong> e não pode ser desfeita.
+          <mat-icon aria-hidden="true">{{ data.variant === 'warning' ? 'info' : 'block' }}</mat-icon>
+          {{ data.permanentWarning || 'Esta ação é permanente e não pode ser desfeita.' }}
         </p>
       </div>
 
       <footer class="ard-dialog-foot confirm-foot">
         <button type="button" class="ard-btn is-quiet" [mat-dialog-close]="false">Cancelar</button>
         <button type="button" class="ard-btn is-destructive" [mat-dialog-close]="true">
-          <mat-icon aria-hidden="true">delete_forever</mat-icon>
+          <mat-icon aria-hidden="true">{{ data.confirmIcon || 'delete_forever' }}</mat-icon>
           {{ data.confirmLabel || 'Excluir definitivamente' }}
         </button>
       </footer>
@@ -70,9 +80,13 @@ export interface ConfirmationData {
       display: block;
     }
 
-    .confirm-delete-dialog {
+    .confirm-dialog {
       border-top: 3px solid var(--ard-danger);
       border-radius: 0 0 var(--ard-radius) var(--ard-radius);
+    }
+
+    .confirm-dialog.is-warning {
+      border-top-color: var(--ard-warning);
     }
 
     .confirm-head {
@@ -81,17 +95,36 @@ export interface ConfirmationData {
       border-bottom: 0;
       background: color-mix(in srgb, var(--ard-danger) 5%, var(--ard-surface));
 
+      .is-warning & {
+        background: color-mix(in srgb, var(--ard-warning) 6%, var(--ard-surface));
+      }
+
       h2 {
+        margin: 2px 0 0;
         font-size: 1.1rem;
         font-weight: 600;
         overflow-wrap: anywhere;
       }
+
       p {
-        margin-top: 4px;
+        margin-top: 5px;
         color: var(--ard-ink);
         font-size: 0.93rem;
         line-height: 1.5;
         overflow-wrap: anywhere;
+      }
+    }
+
+    .eyebrow {
+      display: block;
+      color: var(--ard-danger);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+
+      .is-warning & {
+        color: var(--ard-warning);
       }
     }
 
@@ -105,6 +138,12 @@ export interface ConfirmationData {
       background: color-mix(in srgb, var(--ard-danger) 18%, transparent);
       color: var(--ard-danger);
       box-shadow: 0 0 0 6px color-mix(in srgb, var(--ard-danger) 8%, transparent);
+
+      .is-warning & {
+        background: color-mix(in srgb, var(--ard-warning) 18%, transparent);
+        color: var(--ard-warning);
+        box-shadow: 0 0 0 6px color-mix(in srgb, var(--ard-warning) 8%, transparent);
+      }
 
       mat-icon {
         width: 24px;
@@ -124,6 +163,11 @@ export interface ConfirmationData {
       border-radius: var(--ard-radius-sm);
       background: color-mix(in srgb, var(--ard-danger) 4%, var(--ard-surface-2));
 
+      .is-warning & {
+        border-color: color-mix(in srgb, var(--ard-warning) 30%, var(--ard-line));
+        background: color-mix(in srgb, var(--ard-warning) 5%, var(--ard-surface-2));
+      }
+
       h3 {
         display: flex;
         align-items: center;
@@ -135,12 +179,17 @@ export interface ConfirmationData {
         text-transform: uppercase;
         letter-spacing: 0.04em;
 
+        .is-warning & {
+          color: color-mix(in srgb, var(--ard-warning) 85%, var(--ard-muted));
+        }
+
         mat-icon {
           width: 15px;
           height: 15px;
           font-size: 15px;
         }
       }
+
       ul {
         display: grid;
         gap: 12px;
@@ -148,11 +197,13 @@ export interface ConfirmationData {
         padding: 0;
         list-style: none;
       }
+
       li {
         display: flex;
         align-items: flex-start;
         gap: 10px;
       }
+
       li > mat-icon {
         flex: 0 0 18px;
         width: 18px;
@@ -161,16 +212,19 @@ export interface ConfirmationData {
         color: var(--ard-muted);
         font-size: 18px;
       }
+
       li span {
         display: grid;
         gap: 2px;
         min-width: 0;
       }
+
       strong {
         font-size: 0.9rem;
         font-weight: 500;
         overflow-wrap: anywhere;
       }
+
       small {
         color: var(--ard-muted);
         font-size: 0.82rem;
@@ -188,6 +242,11 @@ export interface ConfirmationData {
       background: color-mix(in srgb, var(--ard-danger) 7%, transparent);
       color: color-mix(in srgb, var(--ard-danger) 85%, var(--ard-ink));
       font-size: 0.86rem;
+
+      .is-warning & {
+        background: color-mix(in srgb, var(--ard-warning) 8%, transparent);
+        color: color-mix(in srgb, var(--ard-warning) 85%, var(--ard-ink));
+      }
 
       mat-icon {
         flex: 0 0 17px;
@@ -215,8 +274,10 @@ export interface ConfirmationData {
       .ard-dialog-body {
         padding-left: 24px;
       }
+
       .confirm-foot {
         flex-direction: column-reverse;
+
         .ard-btn {
           width: 100%;
           justify-content: center;
@@ -232,13 +293,22 @@ export class ConfirmationDialog {
 @Injectable({ providedIn: 'root' })
 export class ConfirmationService {
   private dialog = inject(MatDialog);
+
   async excluir(
     title: string,
     message: string,
-    options: Pick<ConfirmationData, 'items' | 'confirmLabel'> = {},
+    options: Pick<
+      ConfirmationData,
+      'items' | 'confirmLabel' | 'confirmIcon' | 'impactTitle' | 'permanentWarning' | 'variant'
+    > = {},
   ): Promise<boolean> {
     const ref = this.dialog.open(ConfirmationDialog, {
-      data: { title, message, ...options },
+      data: {
+        title,
+        message,
+        variant: 'danger',
+        ...options,
+      },
       width: '480px',
       maxWidth: 'calc(100vw - 32px)',
       // O foco começa em Cancelar: a opção segura numa ação definitiva.
@@ -249,6 +319,7 @@ export class ConfirmationService {
       ariaDescribedBy: 'confirmation-message',
       panelClass: 'ard-confirmation-dialog',
     });
+
     return (await firstValueFrom(ref.afterClosed())) === true;
   }
 }
