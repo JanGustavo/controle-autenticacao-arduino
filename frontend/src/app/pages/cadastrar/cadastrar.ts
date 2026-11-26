@@ -345,6 +345,13 @@ export class CadastrarPage implements OnInit, OnDestroy {
       return;
     }
 
+    const fotoParaCadastro = this.fotoCapturada;
+    if (!fotoParaCadastro) {
+      this.errorMessage = 'Conclua a captura facial antes de cadastrar o usuário.';
+      this.irPara('secao-rosto');
+      return;
+    }
+
     this.saving = true;
 
     const permissoesPayload: PermissaoCreateRequest[] = locaisSelecionados.map((item) => ({
@@ -368,7 +375,7 @@ export class CadastrarPage implements OnInit, OnDestroy {
           permissoes: permissoesPayload,
         },
         this.identificadorRfidSelecionado,
-        this.fotoCapturada,
+        fotoParaCadastro,
       )
       .subscribe({
         next: (usuario) => {
