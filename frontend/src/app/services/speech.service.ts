@@ -45,7 +45,7 @@ export class SpeechService {
 
     if (caminho) {
       this.audio = new Audio(caminho);
-      this.audio.volume = 1.0;
+      this.audio.volume = 0.38;
       this.audio.play().catch((err) => {
         console.warn('[SpeechService] MP3 falhou/bloqueado, acionando Bip:', err);
         this.tocarSomBiometrico(chave);
@@ -83,6 +83,16 @@ export class SpeechService {
       if (!this.audioCtx) return;
       const now = this.audioCtx.currentTime;
       this.emitirTom(1046.5, now, 0.04, 0.05); // Nota C6 bem curta e suave
+    } catch {}
+  }
+
+  /** Sinal curto e discreto quando a câmera começa a transmitir. */
+  tocarBipAberturaCamera(): void {
+    try {
+      this.garantirAudioContext();
+      if (!this.audioCtx) return;
+      const now = this.audioCtx.currentTime;
+      this.emitirTom(660, now, 0.07, 0.055);
     } catch {}
   }
 
