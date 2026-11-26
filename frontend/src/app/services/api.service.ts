@@ -301,6 +301,19 @@ export class ApiService {
     return this.http.post<UsuarioResponse>(`${API_BASE}/usuarios`, usuario);
   }
 
+  cadastrarUsuarioCompleto(
+    usuario: UsuarioCreateRequest,
+    identificadorDispositivo: string,
+    foto: File | Blob,
+  ): Observable<UsuarioResponse> {
+    const dados = new FormData();
+    dados.append('dados', JSON.stringify(usuario));
+    dados.append('identificador_dispositivo', identificadorDispositivo);
+    const nomeArquivo = foto instanceof File ? foto.name : 'biometria.jpg';
+    dados.append('file', foto, nomeArquivo);
+    return this.http.post<UsuarioResponse>(`${API_BASE}/usuarios/cadastro-completo`, dados);
+  }
+
   cadastrarBiometria(usuarioId: number, foto: File | Blob): Observable<BiometriaResponse> {
     const dados = new FormData();
     const nomeArquivo = foto instanceof File ? foto.name : `biometria_${usuarioId}.jpg`;
