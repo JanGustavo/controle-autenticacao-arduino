@@ -95,10 +95,6 @@ export interface ConfirmationData {
       border-bottom: 0;
       background: color-mix(in srgb, var(--ard-danger) 5%, var(--ard-surface));
 
-      .is-warning & {
-        background: color-mix(in srgb, var(--ard-warning) 6%, var(--ard-surface));
-      }
-
       h2 {
         margin: 2px 0 0;
         font-size: 1.1rem;
@@ -122,10 +118,6 @@ export interface ConfirmationData {
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-
-      .is-warning & {
-        color: var(--ard-warning);
-      }
     }
 
     .alerta {
@@ -138,12 +130,6 @@ export interface ConfirmationData {
       background: color-mix(in srgb, var(--ard-danger) 18%, transparent);
       color: var(--ard-danger);
       box-shadow: 0 0 0 6px color-mix(in srgb, var(--ard-danger) 8%, transparent);
-
-      .is-warning & {
-        background: color-mix(in srgb, var(--ard-warning) 18%, transparent);
-        color: var(--ard-warning);
-        box-shadow: 0 0 0 6px color-mix(in srgb, var(--ard-warning) 8%, transparent);
-      }
 
       mat-icon {
         width: 24px;
@@ -163,11 +149,6 @@ export interface ConfirmationData {
       border-radius: var(--ard-radius-sm);
       background: color-mix(in srgb, var(--ard-danger) 4%, var(--ard-surface-2));
 
-      .is-warning & {
-        border-color: color-mix(in srgb, var(--ard-warning) 30%, var(--ard-line));
-        background: color-mix(in srgb, var(--ard-warning) 5%, var(--ard-surface-2));
-      }
-
       h3 {
         display: flex;
         align-items: center;
@@ -178,10 +159,6 @@ export interface ConfirmationData {
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.04em;
-
-        .is-warning & {
-          color: color-mix(in srgb, var(--ard-warning) 85%, var(--ard-muted));
-        }
 
         mat-icon {
           width: 15px;
@@ -242,11 +219,6 @@ export interface ConfirmationData {
       background: color-mix(in srgb, var(--ard-danger) 7%, transparent);
       color: color-mix(in srgb, var(--ard-danger) 85%, var(--ard-ink));
       font-size: 0.86rem;
-
-      .is-warning & {
-        background: color-mix(in srgb, var(--ard-warning) 8%, transparent);
-        color: color-mix(in srgb, var(--ard-warning) 85%, var(--ard-ink));
-      }
 
       mat-icon {
         flex: 0 0 17px;
