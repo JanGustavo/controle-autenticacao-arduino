@@ -2,18 +2,22 @@ import { ConfirmationService } from '../../components/confirmation-dialog/confir
 import {
   ChangeDetectorRef,
   Component,
+  ElementRef,
   inject,
   input,
   OnInit,
   OnDestroy,
   signal,
+  ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { TuplePageConfig } from '../../models/tuple-page.model';
 import {
@@ -32,7 +36,15 @@ import { WebSocketLogsService, WebSocketLogEvent } from '../../services/websocke
 @Component({
   selector: 'app-tuple-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatButtonModule, MatIconModule, MatDialogModule, RouterLink],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatButtonModule,
+    MatIconModule,
+    MatDialogModule,
+    MatTooltipModule,
+    RouterLink,
+  ],
   templateUrl: './tuple-page.html',
   styleUrl: './tuple-page.scss',
 })
@@ -52,7 +64,22 @@ export class TuplePage implements OnInit, OnDestroy {
   locais: LocalResponse[] = [];
   editandoPermissaoId: number | null = null;
   permissaoForm: PermissaoRequest = this.novaPermissaoForm();
+  /** Erro ao salvar no editor de permissão (sucessos vão para o snackbar). */
   acaoNotice = '';
+  salvandoPermissao = false;
+  /** Linha recém-criada ou alterada, destacada por um instante. */
+  destacado: unknown = null;
+  private destaqueTimer?: ReturnType<typeof setTimeout>;
+  private snackBar = inject(MatSnackBar);
+  private router = inject(Router);
+  /** Pessoas ou locais não carregaram: filtros e editor ficam incompletos. */
+  erroReferencias = false;
+  /** Texto lido por leitores de tela quando chega uma tentativa em tempo real. */
+  anuncio = signal('');
+  /** Tentativas recebidas agora pelo WebSocket, destacadas por um instante. */
+  private idsNovos = new Set<number>();
+  @ViewChild('editorPermissao') private editorPermissao?: ElementRef<HTMLElement>;
+  @ViewChild('localPermissao') private localPermissao?: ElementRef<HTMLSelectElement>;
   private historico: HistoricoAcessoResponse[] = [];
   private permissoes: PermissaoResponse[] = [];
   private wsSubscription: Subscription | null = null;
@@ -77,9 +104,14 @@ export class TuplePage implements OnInit, OnDestroy {
 
     const termo = this.filtroTexto().trim().toLowerCase();
     if (termo) {
+      // Campos internos (prefixo _) não entram na busca.
       rows = rows.filter((row) =>
-        Object.values(row).some(
-          (val) => val !== null && val !== undefined && String(val).toLowerCase().includes(termo),
+        Object.entries(row).some(
+          ([chave, val]) =>
+            !chave.startsWith('_') &&
+            val !== null &&
+            val !== undefined &&
+            String(val).toLowerCase().includes(termo),
         ),
       );
     }
@@ -122,21 +154,109 @@ export class TuplePage implements OnInit, OnDestroy {
     return rows;
   }
 
+  /** Estado real do WebSocket do histórico (o serviço reconecta sozinho a cada 5 s). */
+  get tempoReal(): boolean {
+    return this.wsLogs.conectado();
+  }
+
+  get filtrando(): boolean {
+    return (
+      !!this.filtroTexto().trim() ||
+      this.filtroAtivo() !== 'todos' ||
+      this.filtroUsuarioId() !== null ||
+      this.filtroLocalId() !== null ||
+      this.filtroAutorizado() !== 'todos'
+    );
+  }
+
+  /** Pessoas e locais usados nos filtros, no editor de permissão e nos nomes das linhas. */
+  carregarReferencias(): void {
+    this.erroReferencias = false;
+    const falhou = () => {
+      this.erroReferencias = true;
+      this.cdr.markForCheck();
+    };
+    this.api.getUsuariosSimples().subscribe({
+      next: (usuarios) => {
+        this.usuarios = usuarios;
+        if (this.config?.resource === 'historico') this.atualizarLinhasHistorico();
+        if (this.config?.resource === 'permissoes') this.atualizarLinhasPermissoes();
+        this.cdr.markForCheck();
+      },
+      error: falhou,
+    });
+    this.api.getLocais().subscribe({
+      next: (locais) => {
+        this.locais = locais;
+        if (this.config?.resource === 'historico') this.atualizarLinhasHistorico();
+        if (this.config?.resource === 'permissoes') this.atualizarLinhasPermissoes();
+        this.cdr.markForCheck();
+      },
+      error: falhou,
+    });
+  }
+
+  private destacar(chave: unknown): void {
+    clearTimeout(this.destaqueTimer);
+    this.destacado = chave;
+    this.destaqueTimer = setTimeout(() => {
+      this.destacado = null;
+      this.cdr.markForCheck();
+    }, 2000);
+  }
+
+  private avisar(mensagem: string): void {
+    this.snackBar.open(mensagem, 'Fechar', { duration: 4000 });
+  }
+
+  /** Chave estável por registro: linhas novas ganham elemento novo (e o destaque). */
+  chaveLinha(row: Record<string, unknown>, indice: number): unknown {
+    return row['_id'] ?? row['user_id'] ?? row['permissao_id'] ?? indice;
+  }
+
+  contarResultado(valor: 'Sim' | 'Não'): number {
+    return this.displayedRows.filter((row) => row['autorizado'] === valor).length;
+  }
+
+  /** Dias numéricos (1 = domingo) da permissão de uma linha, para a faixa da semana. */
+  diasDaPermissao(row: Record<string, unknown>): number[] {
+    const id = Number(row['permissao_id']);
+    return this.permissoes.find((permissao) => permissao.permissao_id === id)?.dias_semana ?? [];
+  }
+
+  horaCurta(valor: unknown): string {
+    return String(valor ?? '').slice(0, 5);
+  }
+
+  /** "dd/mm/aaaa hh:mm:ss" em data e hora separadas, para a coluna Quando. */
+  partesDataHora(valor: unknown): { data: string; hora: string } {
+    const [data = '', hora = ''] = String(valor ?? '').split(' ');
+    return { data, hora };
+  }
+
+  get permissaoValida(): boolean {
+    return (
+      !!this.permissaoForm.usuario_id &&
+      !!this.permissaoForm.local_id &&
+      this.permissaoForm.dias_semana.length > 0
+    );
+  }
+
   cadastrarUsuario(): void {
     const ref = this.dialog.open(CadastrarPage, {
       width: '1000px',
       maxWidth: '96vw',
       maxHeight: '92dvh',
-      autoFocus: false,
+      // A primeira ação do cadastro é digitar o nome.
+      autoFocus: '#cad-nome',
       restoreFocus: true,
       disableClose: true,
       ariaLabelledBy: 'user-create-title',
       panelClass: 'ard-user-create-dialog',
     });
+    // O próprio cadastro confirma o resultado (snackbar e voz); aqui só atualiza a lista.
     ref.afterClosed().subscribe((resultado) => {
       if (!resultado?.criado) return;
-      this.acaoNotice =
-        resultado.mensagem || 'Lista atualizada. Confira os dados do usuário criado.';
       this.carregarDados();
       this.cdr.markForCheck();
     });
@@ -146,7 +266,6 @@ export class TuplePage implements OnInit, OnDestroy {
     const usuarioId = Number(row['user_id']);
     if (!usuarioId) return;
 
-    this.acaoNotice = '';
     this.api.getUsuario(usuarioId).subscribe({
       next: (usuario) => {
         const ref = this.dialog.open(UserEditDialog, {
@@ -157,21 +276,20 @@ export class TuplePage implements OnInit, OnDestroy {
           autoFocus: false,
           restoreFocus: true,
           disableClose: true,
+          ariaLabelledBy: 'user-edit-title',
           panelClass: 'ard-user-edit-dialog',
         });
 
+        // O diálogo confirma cada alteração; na lista, a linha alterada pisca.
         ref.afterClosed().subscribe((resultado) => {
           if (!resultado?.atualizado) return;
-          this.acaoNotice = 'Usuário atualizado com sucesso.';
+          this.destacar(usuarioId);
           this.carregarDados();
           this.cdr.markForCheck();
         });
       },
       error: (error) => {
-        this.dataNotice.set(
-          error.error?.detail || 'Não foi possível carregar o usuário para edição.',
-        );
-        this.cdr.markForCheck();
+        this.avisar(error.error?.detail || `Não foi possível abrir ${row['nome']} para edição. Tente novamente.`);
       },
     });
   }
@@ -203,12 +321,11 @@ export class TuplePage implements OnInit, OnDestroy {
     this.api.deletarUsuario(id).subscribe({
       next: () => {
         this.carregarDados();
-        this.acaoNotice = 'Usuário excluído com sucesso.';
+        this.avisar(`Usuário ${row['nome']} excluído.`);
       },
       error: (err) => {
         console.error('Erro ao excluir usuário:', err);
-        this.dataNotice.set('Não foi possível excluir o usuário.');
-        this.cdr.markForCheck();
+        this.avisar(`Não foi possível excluir ${row['nome']}. Tente novamente.`);
       },
     });
   }
@@ -224,24 +341,8 @@ export class TuplePage implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     if (this.config?.resource === 'historico' || this.config?.resource === 'permissoes') {
-      this.api.getUsuariosSimples().subscribe({
-        next: (usuarios) => {
-          this.usuarios = usuarios;
-          if (this.config?.resource === 'historico') this.atualizarLinhasHistorico();
-          if (this.config?.resource === 'permissoes') this.atualizarLinhasPermissoes();
-          this.cdr.markForCheck();
-        },
-      });
-      this.api.getLocais().subscribe({
-        next: (locais) => {
-          this.locais = locais;
-          if (this.config?.resource === 'historico') this.atualizarLinhasHistorico();
-          if (this.config?.resource === 'permissoes') this.atualizarLinhasPermissoes();
-          this.cdr.markForCheck();
-        },
-      });
+      this.carregarReferencias();
     }
-
     // Subscribe to WebSocket for real-time historico updates
     if (this.config?.resource === 'historico') {
       this.wsSubscription = this.wsLogs.obterLogsEmTempoReal().subscribe({
@@ -253,7 +354,8 @@ export class TuplePage implements OnInit, OnDestroy {
               usuario_id: evento.data.usuario_id ?? null,
               local_id: evento.data.local_id ?? null,
               uid_card_lido: null, // not in WebSocket event
-              data_hora: new Date().toISOString(), // real-time timestamp
+              // Horário do servidor (ISO com fuso); sem ele, o momento da chegada.
+              data_hora: evento.data.data_hora ?? new Date().toISOString(),
               autorizado: evento.data.autorizado ?? false,
               percentual_similaridade: evento.data.percentual_similaridade ?? null,
               motivo_recusa: evento.data.motivo_recusa ?? null,
@@ -261,8 +363,18 @@ export class TuplePage implements OnInit, OnDestroy {
               nome_local: null, // will be resolved via this.locais
             };
             this.historico.unshift(novoRegistro);
+            this.idsNovos.add(novoRegistro.id);
+            this.anuncio.set(
+              `Nova tentativa: ${novoRegistro.autorizado ? 'autorizada' : 'negada'}` +
+                `${novoRegistro.nome_usuario ? `, ${novoRegistro.nome_usuario}` : ''}.`,
+            );
             this.atualizarLinhasHistorico();
             this.cdr.markForCheck();
+            setTimeout(() => {
+              this.idsNovos.delete(novoRegistro.id);
+              this.atualizarLinhasHistorico();
+              this.cdr.markForCheck();
+            }, 2000);
           }
         },
       });
@@ -273,6 +385,7 @@ export class TuplePage implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.wsSubscription?.unsubscribe();
+    clearTimeout(this.destaqueTimer);
   }
 
   carregarDados(): void {
@@ -425,6 +538,8 @@ export class TuplePage implements OnInit, OnDestroy {
         : '-';
 
     return {
+      _id: registro.id,
+      _novo: this.idsNovos.has(registro.id),
       usuario_id:
         registro.usuario_id === null ? 'Não identificado' : this.nomeUsuario(registro.usuario_id),
       local_id: registro.local_id === null ? 'Não identificado' : this.nomeLocal(registro.local_id),
@@ -451,15 +566,24 @@ export class TuplePage implements OnInit, OnDestroy {
     this.editandoPermissaoId = permissaoId;
     this.permissaoForm = { ...original, dias_semana: [...original.dias_semana] };
     this.acaoNotice = '';
+    setTimeout(() => {
+      const reduzir = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      this.editorPermissao?.nativeElement.scrollIntoView({ block: 'nearest', behavior: reduzir ? 'auto' : 'smooth' });
+      this.localPermissao?.nativeElement.focus({ preventScroll: true });
+    });
   }
 
   cancelarEdicao(): void {
     this.editandoPermissaoId = null;
+    this.acaoNotice = '';
     this.permissaoForm = this.novaPermissaoForm();
   }
 
   salvarPermissao(): void {
+    if (this.salvandoPermissao) return;
     this.acaoNotice = '';
+    this.salvandoPermissao = true;
+    const criando = this.editandoPermissaoId === null;
     const request = { ...this.permissaoForm, dias_semana: this.permissaoForm.dias_semana };
     const chamada =
       this.editandoPermissaoId === null
@@ -475,11 +599,21 @@ export class TuplePage implements OnInit, OnDestroy {
           (a, b) => a.permissao_id - b.permissao_id,
         );
         this.rowsFromApi.set(this.permissoes.map((item) => this.toPermissionRow(item)));
-        this.acaoNotice = 'Permissão salva com sucesso.';
+        this.salvandoPermissao = false;
+        const mensagem = criando
+          ? `Permissão criada: ${this.nomeUsuario(permissao.usuario_id)} em ${this.nomeLocal(permissao.local_id)}.`
+          : `Alterações na permissão de ${this.nomeUsuario(permissao.usuario_id)} salvas.`;
+        // Próximo passo natural: testar o acesso com o cartão da pessoa.
+        this.snackBar
+          .open(mensagem, 'Validar acesso', { duration: 6000 })
+          .onAction()
+          .subscribe(() => this.router.navigateByUrl('/validar-acesso'));
+        this.destacar(permissao.permissao_id);
         this.cancelarEdicao();
         this.cdr.markForCheck();
       },
       error: (error) => {
+        this.salvandoPermissao = false;
         this.acaoNotice =
           error.status === 409
             ? 'Já existe uma permissão para este usuário e local.'
@@ -516,12 +650,13 @@ export class TuplePage implements OnInit, OnDestroy {
       next: () => {
         this.permissoes = this.permissoes.filter((item) => item.permissao_id !== id);
         this.rowsFromApi.set(this.permissoes.map((item) => this.toPermissionRow(item)));
-        this.acaoNotice = 'Permissão excluída com sucesso.';
+        // Se era a permissão aberta no editor, o editor volta para "Criar".
+        if (this.editandoPermissaoId === id) this.cancelarEdicao();
+        this.avisar(`Permissão de ${row['usuario_id']} em ${row['local_id']} excluída.`);
         this.cdr.markForCheck();
       },
       error: () => {
-        this.acaoNotice = 'Não foi possível excluir a permissão.';
-        this.cdr.markForCheck();
+        this.avisar(`Não foi possível excluir a permissão de ${row['usuario_id']}. Tente novamente.`);
       },
     });
   }

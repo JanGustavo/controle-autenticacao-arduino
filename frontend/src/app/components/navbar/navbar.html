@@ -1,86 +1,77 @@
-<header class="app-header" (keydown.escape)="menuAberto.set(false)">
-  <div class="header-container">
-    <!-- NOME DO APP / BRAND -->
-    <a routerLink="/adm-page" class="brand">
-      <div class="brand-icon">
-        <img src="ard-lock-icon.svg" alt="ArdLock Icon" class="brand-logo-img" />
-      </div>
-      <div class="brand-text">
-        <h1>ArdLock</h1>
-        <span class="brand-tag">Controle de Acesso</span>
-      </div>
+<header class="app-header" (keydown.escape)="fecharMenu()">
+  <div class="header-bar">
+    @if (isLoggedIn()) {
+      <button
+        type="button"
+        class="ard-icon-btn menu-toggle"
+        (click)="alternarMenu()"
+        [attr.aria-label]="menuAberto() ? 'Fechar menu de navegação' : 'Abrir menu de navegação'"
+        aria-controls="primary-navigation"
+        [attr.aria-expanded]="menuAberto()"
+      >
+        <mat-icon aria-hidden="true">{{ menuAberto() ? 'close' : 'menu' }}</mat-icon>
+      </button>
+    }
+
+    <a [routerLink]="isLoggedIn() ? '/adm-page' : '/'" class="brand" aria-label="ArdLock, início">
+      <img src="ard-lock-icon.svg" alt="" width="38" height="22" />
+      <span>ArdLock</span>
     </a>
 
-    <!-- ACOES HEADER (DARK MODE & LOGOFF) -->
     <div class="header-actions">
-      @if (isLoggedIn()) {
-        <button
-          mat-icon-button
-          class="menu-toggle"
-          (click)="menuAberto.set(!menuAberto())"
-          aria-label="Menu de navegação"
-          aria-controls="primary-navigation"
-          [attr.aria-expanded]="menuAberto()"
-        >
-          <mat-icon>{{ menuAberto() ? 'close' : 'menu' }}</mat-icon>
-        </button>
-      }
       <button
-        mat-icon-button
-        class="action-btn theme-btn"
+        type="button"
+        class="ard-icon-btn theme-btn"
         [attr.aria-label]="darkMode() ? 'Ativar tema claro' : 'Ativar tema escuro'"
         (click)="toggleDarkMode()"
-        [matTooltip]="darkMode() ? 'Modo Claro' : 'Modo Escuro'"
+        [matTooltip]="darkMode() ? 'Tema claro' : 'Tema escuro'"
       >
-        <mat-icon>{{ darkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+        <mat-icon aria-hidden="true">{{ darkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
       </button>
 
       @if (isLoggedIn()) {
         <div class="user-profile">
-          <div
-            class="user-avatar"
-            [class.clickable]="userDisplay.foto_url && isImgValid(userDisplay.foto_url)"
-            (click)="expandirFoto(userDisplay.foto_url)"
-            [matTooltip]="
-              userDisplay.foto_url && isImgValid(userDisplay.foto_url)
-                ? 'Clique para expandir a foto'
-                : ''
-            "
-          >
-            @if (userDisplay.foto_url && isImgValid(userDisplay.foto_url)) {
+          @if (userDisplay.foto_url && isImgValid(userDisplay.foto_url)) {
+            <button
+              type="button"
+              class="user-avatar"
+              (click)="expandirFoto(userDisplay.foto_url)"
+              matTooltip="Ampliar foto"
+              [attr.aria-label]="'Ampliar a foto de ' + userDisplay.name"
+            >
               <img
                 [src]="userDisplay.foto_url"
-                [alt]="userDisplay.name"
+                alt=""
                 class="avatar-img"
                 (error)="onImgError(userDisplay.foto_url)"
               />
-            } @else {
-              <span class="avatar-initial">{{ avatarInitial }}</span>
-            }
-          </div>
-          <div class="user-info">
+            </button>
+          } @else {
+            <span class="user-avatar" aria-hidden="true">{{ avatarInitial }}</span>
+          }
+          <span class="user-info">
             <span class="user-name">{{ userDisplay.name }}</span>
-            <span class="user-meta">
-              <span class="status-dot"></span>
-              Logado
-            </span>
-          </div>
+            <span class="user-meta">{{ userDisplay.email }}</span>
+          </span>
         </div>
 
         <button
-          mat-icon-button
-          color="warn"
-          class="action-btn logoff-btn"
+          type="button"
+          class="ard-icon-btn is-danger logoff-btn"
           (click)="logoff()"
           matTooltip="Sair"
           aria-label="Sair da conta"
         >
-          <mat-icon>logout</mat-icon>
+          <mat-icon aria-hidden="true">logout</mat-icon>
         </button>
       }
     </div>
   </div>
+
   @if (isLoggedIn()) {
+    @if (menuAberto()) {
+      <div class="nav-backdrop" (click)="fecharMenu()" aria-hidden="true"></div>
+    }
     <nav
       #primaryNav
       id="primary-navigation"
@@ -92,35 +83,40 @@
       (focusout)="onNavigationFocusOut($event)"
     >
       <span class="navigation-indicator" aria-hidden="true"></span>
-      @for (link of links; track link.path) {
-        <a
-          [routerLink]="link.path"
-          [class.is-active]="linkAtivo(link.path)"
-          [attr.aria-current]="linkAtivo(link.path) ? 'page' : null"
-          (pointerenter)="moveIndicator($event)"
-          (focus)="moveIndicator($event)"
-          (click)="menuAberto.set(false)"
-        >
-          <mat-icon>{{ link.icon }}</mat-icon
-          ><span>{{ link.label }}</span>
-        </a>
+      @for (grupo of grupos; track grupo.rotulo) {
+        <div class="nav-group" role="group" [attr.aria-label]="grupo.rotulo">
+          <span class="nav-group-label" aria-hidden="true">{{ grupo.rotulo }}</span>
+          @for (link of grupo.links; track link.path) {
+            <a
+              [routerLink]="link.path"
+              [class.is-active]="linkAtivo(link.path)"
+              [attr.aria-current]="linkAtivo(link.path) ? 'page' : null"
+              (pointerenter)="moveIndicator($event)"
+              (focus)="moveIndicator($event)"
+              (click)="menuAberto.set(false)"
+            >
+              <span class="nav-icon" [attr.data-tone]="link.tone" aria-hidden="true">
+                <mat-icon>{{ link.icon }}</mat-icon>
+              </span>
+              <span>{{ link.label }}</span>
+            </a>
+          }
+        </div>
       }
     </nav>
   }
 </header>
 
-<!-- MODAL DE EXPANSÃO DA FOTO -->
+<!-- Foto do administrador ampliada -->
 @if (fotoModalUrl()) {
-  <div class="photo-modal-backdrop" (click)="fecharFotoModal()">
-    <div class="photo-modal-card" (click)="$event.stopPropagation()">
-      <button class="modal-close-btn" (click)="fecharFotoModal()" title="Fechar (Esc)">
-        <mat-icon>close</mat-icon>
+  <div class="photo-modal-backdrop" (click)="fecharFotoModal()" (keydown.escape)="fecharFotoModal()">
+    <div class="photo-modal-card" role="dialog" aria-modal="true" [attr.aria-label]="'Foto de ' + userDisplay.name" (click)="$event.stopPropagation()">
+      <button type="button" class="ard-icon-btn modal-close-btn" (click)="fecharFotoModal()" aria-label="Fechar foto">
+        <mat-icon aria-hidden="true">close</mat-icon>
       </button>
-      <div class="modal-image-wrapper">
-        <img [src]="fotoModalUrl()!" [alt]="userDisplay.name" />
-      </div>
+      <img [src]="fotoModalUrl()!" [alt]="userDisplay.name" />
       @if (userDisplay.name) {
-        <div class="modal-caption">{{ userDisplay.name }}</div>
+        <p class="modal-caption">{{ userDisplay.name }}</p>
       }
     </div>
   </div>

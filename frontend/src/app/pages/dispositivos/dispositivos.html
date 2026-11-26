@@ -1,172 +1,237 @@
-<main class="locations-page" data-module="devices">
-  <header class="page-header">
-    <a routerLink="/adm-page" class="back-link">
-      <mat-icon>arrow_back</mat-icon> Painel administrativo
-    </a>
-
-    <div class="module-heading">
-      <span class="module-icon"><mat-icon>memory</mat-icon></span>
-      <div><h1>Dispositivos</h1><p>Gerencie os ESP32/RC522 vinculados aos locais físicos.</p></div>
+<div class="ard-page">
+  <a routerLink="/adm-page" class="ard-back"><mat-icon aria-hidden="true">arrow_back</mat-icon>Painel administrativo</a>
+  <header class="ard-head">
+    <div class="ard-head-main">
+      <span class="ard-module-icon" data-tone="dispositivos" aria-hidden="true"><mat-icon>memory</mat-icon></span>
+      <div>
+        <h1>Dispositivos</h1>
+        <p>Leitores ESP32 com RC522. Cada leitor fica em um local e envia as leituras de cartão ao servidor.</p>
+      </div>
     </div>
   </header>
 
-  <section class="editor">
-    <div class="editor-heading">
-      <div>
-        <span class="eyebrow">{{ editandoId === null ? 'Novo dispositivo' : 'Edição' }}</span>
-        <h2>{{ editandoId === null ? 'Cadastrar dispositivo' : 'Editar dispositivo' }}</h2>
+  <div class="ard-workspace">
+    <section class="ard-panel is-editor" #editor aria-labelledby="editor-titulo">
+      <div class="ard-panel-head">
+        <div>
+          <h2 id="editor-titulo">{{ editandoId === null ? 'Cadastrar dispositivo' : 'Editar dispositivo' }}</h2>
+          <p>
+            {{
+              editandoId === null
+                ? 'Vincule um leitor a um local para começar a receber leituras.'
+                : 'O identificador precisa continuar igual ao do firmware.'
+            }}
+          </p>
+        </div>
       </div>
-      @if (erro) {
-        <span class="error" role="alert">{{ erro }}</span>
-      }
-    </div>
 
-    <div class="form-grid">
-      <label>
-        <span class="floating-label">Local</span>
-        <select [(ngModel)]="form.local_id">
-          <option [ngValue]="0" disabled>Selecione...</option>
-          @for (local of locais; track local.local_id) {
-            <option [ngValue]="local.local_id">{{ local.nome }}</option>
+      @if (!carregandoLocais && !locais.length) {
+        <div class="ard-state is-info">
+          <mat-icon aria-hidden="true">location_on</mat-icon>
+          <div>
+            <strong>Cadastre um local primeiro</strong>
+            <p>Todo leitor fica em um local. Depois de criar o local, volte aqui para vincular o dispositivo.</p>
+            <div class="ard-state-actions">
+              <a routerLink="/locais" class="ard-btn is-primary">Cadastrar local</a>
+            </div>
+          </div>
+        </div>
+      } @else {
+        <form class="ard-panel-body ard-form" (ngSubmit)="salvar()" novalidate>
+          <div class="ard-field">
+            <label for="disp-local">Local</label>
+            <select id="disp-local" name="local_id" #localSelect [(ngModel)]="form.local_id" [disabled]="carregandoLocais">
+              <option [ngValue]="0" disabled>{{ carregandoLocais ? 'Carregando locais' : 'Escolha um local' }}</option>
+              @for (local of locaisDoFormulario; track local.local_id) {
+                <option [ngValue]="local.local_id">{{ local.nome }}{{ local.ativo ? '' : ' (inativo)' }}</option>
+              }
+            </select>
+          </div>
+          <div class="ard-field">
+            <label for="disp-nome">Nome do dispositivo</label>
+            <input id="disp-nome" name="nome" [(ngModel)]="form.nome" maxlength="255" placeholder="Ex.: Leitor da porta principal" autocomplete="off" />
+          </div>
+          <div class="ard-field">
+            <label for="disp-identificador">Identificador</label>
+            <input
+              id="disp-identificador"
+              name="identificador"
+              [(ngModel)]="form.identificador"
+              maxlength="100"
+              placeholder="ESP32-ENTRADA-01"
+              autocomplete="off"
+              spellcheck="false"
+              aria-describedby="disp-identificador-dica"
+            />
+            <span class="ard-hint" id="disp-identificador-dica">O mesmo DEVICE_ID gravado no firmware. É salvo em maiúsculas.</span>
+          </div>
+          <label class="ard-check">
+            <input type="checkbox" name="ativo" [(ngModel)]="form.ativo" />
+            <span>Dispositivo ativo</span>
+          </label>
+          <p class="ard-hint cadastro-dica">Leituras de um dispositivo inativo são recusadas.</p>
+
+          @if (erro) {
+            <p class="ard-notice is-error" role="alert">
+              <mat-icon aria-hidden="true">error</mat-icon><span>{{ erro }}</span>
+            </p>
           }
-        </select>
-      </label>
 
-      <label>
-        <span class="floating-label">Nome do dispositivo</span>
-        <input [(ngModel)]="form.nome" maxlength="255" placeholder="Leitor principal" />
-      </label>
-
-      <label>
-        <span class="floating-label">Identificador</span>
-        <input [(ngModel)]="form.identificador" maxlength="100" placeholder="ESP32-ENTRADA-01" />
-      </label>
-
-      <label class="status">
-        <input type="checkbox" [(ngModel)]="form.ativo" />
-        <span>Dispositivo ativo</span>
-      </label>
-    </div>
-
-    <div class="actions">
-      <button mat-flat-button color="primary" [disabled]="salvando" (click)="salvar()">
-        <mat-icon>save</mat-icon>
-        {{ salvando ? 'Salvando...' : 'Salvar dispositivo' }}
-      </button>
-
-      @if (editandoId !== null) {
-        <button mat-button (click)="cancelar()">Cancelar</button>
+          <div class="ard-form-actions">
+            @if (editandoId !== null) {
+              <button type="button" class="ard-btn is-quiet" (click)="cancelar()">Cancelar edição</button>
+            }
+            <button type="submit" class="ard-btn is-primary" [disabled]="salvando" [attr.aria-busy]="salvando">
+              @if (salvando) {
+                <span class="ard-spinner" aria-hidden="true"></span>
+                Salvando
+              } @else {
+                <mat-icon aria-hidden="true">{{ editandoId === null ? 'add' : 'save' }}</mat-icon>
+                {{ editandoId === null ? 'Cadastrar dispositivo' : 'Salvar alterações' }}
+              }
+            </button>
+          </div>
+        </form>
       }
-    </div>
-  </section>
+    </section>
 
-  <section class="table-card">
-    <div class="filter-bar">
-      <div class="search-box">
-        <mat-icon>search</mat-icon>
-        <input
-          type="text"
-          [(ngModel)]="filtroTexto"
-          placeholder="Pesquisar por nome, identificador ou local..."
-        />
+    <section class="ard-panel is-list" aria-labelledby="lista-titulo" [attr.aria-busy]="carregando">
+      <div class="ard-panel-head">
+        <div>
+          <h2 id="lista-titulo">Dispositivos cadastrados</h2>
+          <p>
+            @if (carregando) {
+              Carregando os dispositivos.
+            } @else if (!erroLista) {
+              {{ dispositivos.length }} {{ dispositivos.length === 1 ? 'dispositivo' : 'dispositivos' }},
+              {{ ativos }} {{ ativos === 1 ? 'ativo' : 'ativos' }}
+            }
+          </p>
+        </div>
       </div>
 
-      <div class="filter-group">
-        <label>Local</label>
-        <select [(ngModel)]="filtroLocalId">
-          <option [ngValue]="null">Todos</option>
-          @for (local of locais; track local.local_id) {
-            <option [ngValue]="local.local_id">{{ local.nome }}</option>
+      <div class="ard-toolbar">
+        <label class="ard-search">
+          <span class="ard-sr-only">Buscar por nome, identificador ou local</span>
+          <mat-icon aria-hidden="true">search</mat-icon>
+          <input type="search" [(ngModel)]="filtroTexto" placeholder="Nome, identificador ou local" autocomplete="off" />
+        </label>
+        <div class="ard-filter">
+          <label for="filtro-local">Local</label>
+          <select id="filtro-local" [(ngModel)]="filtroLocalId">
+            <option [ngValue]="null">Todos</option>
+            @for (local of locais; track local.local_id) {
+              <option [ngValue]="local.local_id">{{ local.nome }}</option>
+            }
+          </select>
+        </div>
+        <div class="ard-filter">
+          <label for="filtro-status">Status</label>
+          <select id="filtro-status" [(ngModel)]="filtroAtivo">
+            <option value="todos">Todos</option>
+            <option value="ativo">Ativos</option>
+            <option value="inativo">Inativos</option>
+          </select>
+        </div>
+      </div>
+
+      @if (erroLista) {
+        <div class="ard-state is-error" role="alert">
+          <mat-icon aria-hidden="true">cloud_off</mat-icon>
+          <div>
+            <strong>{{ erroLista }}</strong>
+            <p>Verifique a conexão com o servidor e tente de novo.</p>
+            <div class="ard-state-actions">
+              <button type="button" class="ard-btn" (click)="carregar()">Tentar novamente</button>
+            </div>
+          </div>
+        </div>
+      } @else if (carregando) {
+        <div class="ard-sk-rows" aria-hidden="true">
+          @for (linha of [1, 2, 3, 4]; track linha) {
+            <div><span class="ard-sk"></span><span class="ard-sk"></span><span class="ard-sk"></span><span class="ard-sk"></span></div>
           }
-        </select>
-      </div>
-
-      <div class="filter-group">
-        <label>Status</label>
-        <select [(ngModel)]="filtroAtivo">
-          <option value="todos">Todos</option>
-          <option value="ativo">Ativos</option>
-          <option value="inativo">Inativos</option>
-        </select>
-      </div>
-    </div>
-
-    @if (carregando) {
-      <div class="skeleton-table" aria-label="Carregando dispositivos">
-        @for (item of [1, 2, 3, 4, 5]; track item) {
-          <div class="skeleton-row">
-            <span class="skeleton-cell"></span>
-            <span class="skeleton-cell"></span>
-            <span class="skeleton-cell"></span>
-            <span class="skeleton-cell"></span>
-            <span class="skeleton-cell"></span>
+        </div>
+      } @else if (!displayedDispositivos.length) {
+        <div class="ard-state">
+          <mat-icon aria-hidden="true">{{ filtrando ? 'search_off' : 'developer_board_off' }}</mat-icon>
+          <div>
+            @if (filtrando) {
+              <strong>Nenhum dispositivo corresponde aos filtros</strong>
+              <p>A busca considera nome, identificador e local.</p>
+              <div class="ard-state-actions">
+                <button type="button" class="ard-btn" (click)="limparFiltros()">Limpar filtros</button>
+              </div>
+            } @else {
+              <strong>Nenhum dispositivo cadastrado</strong>
+              <p>Cadastre o leitor instalado em cada local para que as leituras de cartão cheguem ao servidor.</p>
+            }
+          </div>
+        </div>
+      } @else {
+        <div class="ard-table-wrap">
+          <table class="ard-table">
+            <thead>
+              <tr>
+                <th scope="col">Dispositivo</th>
+                <th scope="col">Identificador</th>
+                <th scope="col">Local</th>
+                <th scope="col">Status</th>
+                <th scope="col"><span class="ard-sr-only">Ações</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (dispositivo of displayedDispositivos; track dispositivo.dispositivo_id) {
+                <tr
+                  [class.is-editing]="editandoId === dispositivo.dispositivo_id"
+                  [class.is-new]="destacadoId === dispositivo.dispositivo_id"
+                  [class.is-inactive]="!dispositivo.ativo"
+                >
+                  <td class="is-lead">
+                    <span class="ard-cell-title">{{ dispositivo.nome }}</span>
+                    <span class="ard-cell-sub">#{{ dispositivo.dispositivo_id }}</span>
+                  </td>
+                  <td data-label="Identificador" class="is-wide"><code class="ard-code">{{ dispositivo.identificador }}</code></td>
+                  <td data-label="Local">{{ nomeLocal(dispositivo.local_id) }}</td>
+                  <td data-label="Status">
+                    <span class="ard-badge" [class.is-ok]="dispositivo.ativo" [class.is-neutral]="!dispositivo.ativo">
+                      {{ dispositivo.ativo ? 'Ativo' : 'Inativo' }}
+                    </span>
+                  </td>
+                  <td class="is-actions">
+                    <div class="ard-row-actions">
+                      <button
+                        type="button"
+                        class="ard-icon-btn"
+                        (click)="editar(dispositivo)"
+                        [attr.aria-label]="'Editar ' + dispositivo.nome"
+                        matTooltip="Editar"
+                      >
+                        <mat-icon aria-hidden="true">edit</mat-icon>
+                      </button>
+                      <button
+                        type="button"
+                        class="ard-icon-btn is-danger"
+                        (click)="excluir(dispositivo)"
+                        [attr.aria-label]="'Excluir ' + dispositivo.nome"
+                        matTooltip="Excluir"
+                      >
+                        <mat-icon aria-hidden="true">delete</mat-icon>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        @if (filtrando) {
+          <div class="ard-panel-foot">
+            <span>{{ displayedDispositivos.length }} de {{ dispositivos.length }} dispositivos</span>
+            <button type="button" class="ard-btn is-quiet is-compact" (click)="limparFiltros()">Limpar filtros</button>
           </div>
         }
-      </div>
-    } @else if (!displayedDispositivos.length) {
-      <div class="empty-state">
-        <mat-icon>devices_off</mat-icon>
-        <strong>Nenhum dispositivo encontrado</strong>
-        <span>{{
-          dispositivos.length === 0
-            ? 'Cadastre o primeiro dispositivo para começar.'
-            : 'Ajuste os filtros para ver outros resultados.'
-        }}</span>
-      </div>
-    } @else {
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Nome</th>
-            <th>Identificador</th>
-            <th>Local</th>
-            <th>Status</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (dispositivo of displayedDispositivos; track dispositivo.dispositivo_id) {
-            <tr>
-              <td>{{ dispositivo.dispositivo_id }}</td>
-              <td>{{ dispositivo.nome }}</td>
-              <td>
-                <code>{{ dispositivo.identificador }}</code>
-              </td>
-              <td>{{ nomeLocal(dispositivo.local_id) }}</td>
-              <td>
-                <span
-                  class="status-badge"
-                  [class.active]="dispositivo.ativo"
-                  [class.inactive]="!dispositivo.ativo"
-                >
-                  {{ dispositivo.ativo ? 'Ativo' : 'Inativo' }}
-                </span>
-              </td>
-              <td class="row-actions">
-                <div class="record-actions">
-                  <button
-                    mat-icon-button
-                    title="Editar"
-                    aria-label="Editar"
-                    (click)="editar(dispositivo)"
-                  >
-                    <mat-icon>edit</mat-icon>
-                  </button>
-                  <button
-                    mat-icon-button
-                    title="Excluir"
-                    aria-label="Excluir"
-                    (click)="excluir(dispositivo)"
-                  >
-                    <mat-icon>delete</mat-icon>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    }
-  </section>
-</main>
+      }
+    </section>
+  </div>
+</div>

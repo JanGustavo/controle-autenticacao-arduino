@@ -1,24 +1,15 @@
-@use '../../styles/page-pattern' as pages;
-
-@include pages.ard-page-pattern('.adm-wrapper');
-
+// Painel do gestor. Estrutura da página em app/styles/_ui.scss (ard-page, ard-head).
+// Os apelidos abaixo apontam para os tokens globais, que já trocam no tema escuro.
 .adm-wrapper {
-  --module-accent: #2563eb;
+  --module-accent: var(--ard-primary);
   --adm-success: var(--ard-success);
   --adm-danger: var(--ard-danger);
   --adm-warning: var(--ard-warning);
-  --adm-on-accent: #ffffff;
-  --adm-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
-}
-:host-context(body.dark-mode) .adm-wrapper {
-  --module-accent: #60a5fa;
-  --adm-success: #4ade80;
-  --adm-danger: #fb7185;
-  --adm-warning: #fbbf24;
-  --adm-on-accent: #0b1220;
+  --adm-on-accent: var(--ard-on-primary);
+  --adm-ease: var(--ard-ease);
 }
 
-h3,
+h2,
 p,
 ul,
 ol {
@@ -45,14 +36,12 @@ mat-icon {
   white-space: nowrap;
 }
 
-// ---------- Cabeçalho e estado do servidor ----------
-.adm-wrapper > .adm-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 16px 24px;
+// O reset acima não vale para o subtítulo do cabeçalho comum.
+.ard-head-main p {
+  margin-top: 4px;
 }
+
+// ---------- Estado do servidor ----------
 .server-status {
   --tom: var(--ard-muted);
   display: inline-flex;
@@ -176,7 +165,7 @@ mat-icon {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 16px;
-  h3 {
+  h2 {
     font-size: 1.1rem;
     font-weight: 500;
     letter-spacing: -0.01em;
@@ -487,7 +476,7 @@ mat-icon {
 }
 .group-heading {
   margin-bottom: 12px;
-  h3 {
+  h2 {
     font-size: 1.1rem;
     font-weight: 500;
     letter-spacing: -0.01em;

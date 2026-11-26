@@ -1,79 +1,261 @@
-<main class="license-page">
-  <header class="page-header">
-    <a routerLink="/adm-page" class="back-link"><mat-icon>arrow_back</mat-icon>Painel do gestor</a>
-    <div class="heading-row">
-      <div class="module-heading">
-        <span class="module-icon"><mat-icon>verified</mat-icon></span>
-        <div><h1>Licença e cobrança</h1><p>Vigência, capacidade e faturas da sua operação.</p></div>
+<main class="ard-page licenca">
+  <a routerLink="/adm-page" class="ard-back"><mat-icon aria-hidden="true">arrow_back</mat-icon>Painel administrativo</a>
+  <header class="ard-head">
+    <div class="ard-head-main">
+      <span class="ard-module-icon" data-tone="licenca" aria-hidden="true"><mat-icon>verified</mat-icon></span>
+      <div>
+        <h1>Licença e cobrança</h1>
+        <p>Vigência, capacidade e faturas da sua operação.</p>
       </div>
-      <button type="button" (click)="carregar()" [disabled]="carregando()">Atualizar dados</button>
+    </div>
+    <div class="ard-head-actions">
+      <button type="button" class="ard-btn" (click)="carregar()" [disabled]="carregando()" [attr.aria-busy]="carregando()">
+        @if (carregando()) {
+          <span class="ard-spinner" aria-hidden="true"></span>
+        } @else {
+          <mat-icon aria-hidden="true">refresh</mat-icon>
+        }
+        Atualizar dados
+      </button>
     </div>
   </header>
-  @if (erro()) { <div role="alert" class="notice error">{{ erro() }}</div> }
-  @if (carregando()) { <p role="status" class="notice">Consultando licença e cobranças…</p> }
+
+  @if (erro()) {
+    <div class="ard-panel ard-state is-error" role="alert">
+      <mat-icon aria-hidden="true">cloud_off</mat-icon>
+      <div>
+        <strong>{{ erro() }}</strong>
+        <div class="ard-state-actions">
+          <button type="button" class="ard-btn" (click)="carregar()" [disabled]="carregando()">Tentar novamente</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (carregando() && !dados()) {
+    <div class="ard-panel carregando" aria-hidden="true">
+      <div class="ard-sk-rows">
+        @for (linha of [1, 2, 3]; track linha) {
+          <div><span class="ard-sk"></span><span class="ard-sk"></span><span class="ard-sk"></span></div>
+        }
+      </div>
+    </div>
+    <span class="ard-sr-only" role="status">Consultando licença e cobranças…</span>
+  }
+
   @if (dados(); as d) {
-    <div class="identity"><strong>{{ d.instancia.cliente }}</strong><span>{{ d.instancia.operacao }}</span></div>
-    <div class="summary">
-      <section class="panel">
-        <h2>Vigência da licença</h2>
-        @if (d.licenca; as l) {
-          <p class="metric" [class.expired]="l.situacao === 'expirada' || l.situacao === 'revogada'">{{ situacoes[l.situacao] }}</p>
-          <dl><dt>Início</dt><dd>{{ data(l.inicio) }}</dd><dt>Validade</dt><dd>{{ l.fim ? data(l.fim) : 'Sem vencimento definido' }}</dd>
-          @if (l.fim && l.situacao === 'vigente') { <dt>Tempo restante</dt><dd>{{ l.dias_restantes === 0 ? 'Vence hoje' : l.dias_restantes + ' dias' }}</dd> }
+    <p class="identidade" [class.is-atualizando]="carregando()">
+      <strong>{{ d.instancia.cliente }}</strong>
+      <span>{{ d.instancia.operacao }}</span>
+    </p>
+
+    <div class="licenca-corpo" [class.is-atualizando]="carregando()">
+      <!-- Resumo -->
+      <div class="ard-metrics resumo">
+        <div class="ard-metric">
+          <span>Licença</span>
+          @if (d.licenca; as l) {
+            <strong>
+              <span class="ard-badge" [class.is-ok]="tomLicenca(l) === 'ok'" [class.is-info]="tomLicenca(l) === 'info'" [class.is-warn]="tomLicenca(l) === 'warn'" [class.is-bad]="tomLicenca(l) === 'bad'">
+                {{ situacoes[l.situacao] || l.situacao }}
+              </span>
+            </strong>
+            <small>
+              @if (l.fim && l.situacao === 'vigente') {
+                {{ l.dias_restantes === 0 ? 'Vence hoje' : l.dias_restantes + ' dias restantes, até ' + data(l.fim) }}
+              } @else if (l.fim) {
+                Validade: {{ data(l.fim) }}
+              } @else {
+                Sem vencimento definido
+              }
+            </small>
+          } @else {
+            <strong class="ard-muted">Sem licença</strong>
+            <small>Nenhuma licença cadastrada para esta operação.</small>
+          }
+        </div>
+        <div class="ard-metric">
+          <span>Próxima cobrança</span>
+          @if (d.proxima_fatura; as f) {
+            <strong>{{ valor(f.valor) }}</strong>
+            <small>
+              Vence em {{ data(f.vencimento) }}
+              <span class="ard-badge" [class.is-info]="tomFatura(f, d.data_referencia) === 'info'" [class.is-bad]="tomFatura(f, d.data_referencia) === 'bad'" [class.is-ok]="tomFatura(f, d.data_referencia) === 'ok'" [class.is-neutral]="tomFatura(f, d.data_referencia) === 'neutral'">
+                {{ status(f, d.data_referencia) }}
+              </span>
+            </small>
+          } @else {
+            <strong class="ard-muted">Nada em aberto</strong>
+            <small>Nenhuma fatura em aberto.</small>
+          }
+        </div>
+        <div class="ard-metric capacidade">
+          <span>Capacidade contratada</span>
+          <dl>
+            <div>
+              <dt>Pessoas credenciadas</dt>
+              <dd class="ard-num">{{ d.licenca?.limite_usuarios ?? 'Não definido' }}</dd>
+            </div>
+            <div>
+              <dt>Dispositivos</dt>
+              <dd class="ard-num">{{ d.licenca?.limite_dispositivos ?? 'Não definido' }}</dd>
+            </div>
+            <div>
+              <dt>Gestores</dt>
+              <dd class="ard-num">{{ d.licenca?.limite_gestores ?? 'Não definido' }}</dd>
+            </div>
           </dl>
-          @if (l.observacoes) { <p class="notice">{{ l.observacoes }}</p> }
-        } @else { <p class="empty">Nenhuma licença cadastrada para esta operação.</p> }
-      </section>
-      <section class="panel">
-        <h2>Próxima cobrança</h2>
-        @if (d.proxima_fatura; as f) {
-          <p class="metric">{{ valor(f.valor) }}</p>
-          <dl><dt>Vencimento</dt><dd>{{ data(f.vencimento) }}</dd><dt>Situação</dt><dd>{{ status(f, d.data_referencia) }}</dd><dt>Plano</dt><dd>{{ f.plano }}</dd></dl>
-        } @else { <p class="empty">Nenhuma fatura em aberto.</p> }
+          <small>Os limites exibidos correspondem ao cadastro da licença.</small>
+        </div>
+      </div>
+
+      <div class="paineis">
+        <!-- Vigência e plano -->
+        <section class="ard-panel" aria-labelledby="lic-vigencia">
+          <div class="ard-panel-head">
+            <div>
+              <h2 id="lic-vigencia">Vigência e plano</h2>
+              <p>O que está contratado e por quanto tempo.</p>
+            </div>
+          </div>
+          <div class="ard-panel-body">
+            @if (d.licenca; as l) {
+              <dl class="ard-facts">
+                <dt>Início</dt>
+                <dd>{{ data(l.inicio) }}</dd>
+                <dt>Validade</dt>
+                <dd>{{ l.fim ? data(l.fim) : 'Sem vencimento definido' }}</dd>
+                @if (l.fim && l.situacao === 'vigente') {
+                  <dt>Tempo restante</dt>
+                  <dd>{{ l.dias_restantes === 0 ? 'Vence hoje' : l.dias_restantes + ' dias' }}</dd>
+                }
+              </dl>
+              @if (l.observacoes) {
+                <p class="ard-notice is-info"><mat-icon aria-hidden="true">info</mat-icon><span>{{ l.observacoes }}</span></p>
+              }
+              @if (l.plano_json; as plano) {
+                <div class="plano">
+                  <div class="plano-topo">
+                    <h3>{{ plano.name }}</h3>
+                    <span class="ard-tag">{{ plano.id }}</span>
+                  </div>
+                  <p>{{ plano.description }}</p>
+                  <dl class="ard-facts">
+                    <dt>Valor de referência</dt>
+                    <dd>{{ valor(plano.pricing.amount) }} / mês</dd>
+                  </dl>
+                  @if (plano.features.length) {
+                    <ul class="recursos">
+                      @for (recurso of plano.features; track recurso) {
+                        <li><mat-icon aria-hidden="true">check</mat-icon>{{ recurso }}</li>
+                      }
+                    </ul>
+                  }
+                  <p class="ard-hint">Preço informativo. Nenhuma cobrança é gerada por esta configuração.</p>
+                </div>
+              }
+            } @else {
+              <p class="ard-muted">Nenhuma licença cadastrada para esta operação.</p>
+            }
+          </div>
+        </section>
+
+        <!-- Contrato e hospedagem -->
+        <section class="ard-panel" aria-labelledby="lic-contrato">
+          <div class="ard-panel-head">
+            <div>
+              <h2 id="lic-contrato">Contrato e hospedagem</h2>
+              <p>Onde o ArdLock roda e como é cobrado.</p>
+            </div>
+          </div>
+          <div class="ard-panel-body">
+            <dl class="ard-facts">
+              <dt>Hospedagem</dt>
+              <dd>{{ d.instancia.hospedagem === 'gerenciada' ? 'Gerenciada' : 'Própria' }}</dd>
+              <dt>Domínio</dt>
+              <dd>
+                @if (d.instancia.dominio) {
+                  <code class="ard-code">{{ d.instancia.dominio }}</code>
+                } @else {
+                  <span class="ard-muted">Não cadastrado</span>
+                }
+              </dd>
+            </dl>
+            <ul class="contratos">
+              @for (c of d.contratos; track c.id) {
+                <li>
+                  <div>
+                    <strong>{{ c.plano }}</strong>
+                    <span class="ard-muted">{{ data(c.inicio) }} até {{ c.fim ? data(c.fim) : 'prazo indeterminado' }}</span>
+                  </div>
+                  <span class="ard-num valor">{{ valor(c.valor_mensal) }} / mês</span>
+                </li>
+              } @empty {
+                <li class="ard-muted vazio">Nenhum contrato de cobrança vigente.</li>
+              }
+            </ul>
+          </div>
+        </section>
+      </div>
+
+      <!-- Faturas -->
+      <section class="ard-panel" aria-labelledby="lic-faturas">
+        <div class="ard-panel-head">
+          <div>
+            <h2 id="lic-faturas">Histórico de faturas</h2>
+            <p>Até 50 faturas recentes.</p>
+          </div>
+        </div>
+        @if (d.faturas.length) {
+          <div class="ard-table-wrap">
+            <table class="ard-table">
+              <thead>
+                <tr>
+                  <th scope="col">Fatura</th>
+                  <th scope="col">Emissão</th>
+                  <th scope="col">Vencimento</th>
+                  <th scope="col" class="is-num">Valor</th>
+                  <th scope="col">Situação</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (f of d.faturas; track f.id) {
+                  <tr>
+                    <td class="is-lead">
+                      <span class="ard-cell-title">{{ f.plano }}</span>
+                      <span class="ard-cell-sub ard-num">Fatura #{{ f.id }}</span>
+                    </td>
+                    <td data-label="Emissão" class="ard-num">{{ data(f.emitida_em) }}</td>
+                    <td data-label="Vencimento" class="ard-num">{{ data(f.vencimento) }}</td>
+                    <td data-label="Valor" class="is-num">{{ valor(f.valor) }}</td>
+                    <td data-label="Situação" class="is-corner">
+                      <span class="ard-badge" [class.is-ok]="tomFatura(f, d.data_referencia) === 'ok'" [class.is-info]="tomFatura(f, d.data_referencia) === 'info'" [class.is-bad]="tomFatura(f, d.data_referencia) === 'bad'" [class.is-neutral]="tomFatura(f, d.data_referencia) === 'neutral'">
+                        {{ status(f, d.data_referencia) }}
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="ard-state">
+            <mat-icon aria-hidden="true">receipt_long</mat-icon>
+            <div>
+              <strong>Nenhuma fatura registrada</strong>
+              <p>As faturas aparecem aqui assim que forem emitidas.</p>
+            </div>
+          </div>
+        }
       </section>
     </div>
-    <section class="panel">
-      <h2>Capacidade contratada</h2>
-      <div class="capacity">
-        <div><span>Pessoas credenciadas</span><strong>{{ d.licenca?.limite_usuarios ?? 'Não definido' }}</strong></div>
-        <div><span>Dispositivos</span><strong>{{ d.licenca?.limite_dispositivos ?? 'Não definido' }}</strong></div>
-        <div><span>Gestores</span><strong>{{ d.licenca?.limite_gestores ?? 'Não definido' }}</strong></div>
+  } @else if (!carregando() && !erro()) {
+    <div class="ard-panel ard-state">
+      <mat-icon aria-hidden="true">info</mat-icon>
+      <div>
+        <strong>Nenhuma informação de licença disponível</strong>
+        <p>Quando a licença desta operação for cadastrada, ela aparece aqui.</p>
       </div>
-      <p class="muted">Os limites exibidos correspondem ao cadastro da licença.</p>
-    </section>
-    @if (d.licenca?.plano_json; as plano) {
-      <section class="panel">
-        <h2>Plano da licença</h2>
-        <p class="metric">{{ plano.name }}</p>
-        <p>{{ plano.description }}</p>
-        <dl>
-          <dt>Valor de referência</dt><dd>{{ valor(plano.pricing.amount) }} / mês</dd>
-          <dt>Plano</dt><dd>{{ plano.id }}</dd>
-        </dl>
-        @if (plano.features.length) {
-          <ul class="plan-features">
-            @for (recurso of plano.features; track recurso) { <li>{{ recurso }}</li> }
-          </ul>
-        }
-        <p class="muted">Preço informativo. Nenhuma cobrança é gerada por esta configuração.</p>
-      </section>
-    }
-    <section class="panel">
-      <h2>Contrato e hospedagem</h2>
-      <dl><dt>Hospedagem</dt><dd>{{ d.instancia.hospedagem === 'gerenciada' ? 'Gerenciada' : 'Própria' }}</dd><dt>Domínio</dt><dd>{{ d.instancia.dominio || 'Não cadastrado' }}</dd></dl>
-      @for (c of d.contratos; track c.id) {
-        <div class="contract"><strong>{{ c.plano }}</strong><span>{{ valor(c.valor_mensal) }} / mês</span><small>{{ data(c.inicio) }} até {{ c.fim ? data(c.fim) : 'prazo indeterminado' }}</small></div>
-      } @empty { <p class="empty">Nenhum contrato de cobrança vigente.</p> }
-    </section>
-    <section class="panel ledger">
-      <h2>Histórico de faturas</h2>
-      @if (d.faturas.length) {
-        <div class="table-scroll"><table><thead><tr><th>Fatura / plano</th><th>Emissão</th><th>Vencimento</th><th>Valor</th><th>Situação</th></tr></thead><tbody>
-        @for (f of d.faturas; track f.id) {
-          <tr><td>#{{ f.id }} · {{ f.plano }}</td><td>{{ data(f.emitida_em) }}</td><td>{{ data(f.vencimento) }}</td><td>{{ valor(f.valor) }}</td><td>{{ status(f, d.data_referencia) }}</td></tr>
-        }
-        </tbody></table></div><p class="muted">Até 50 faturas recentes.</p>
-      } @else { <p class="empty">Ainda não há faturas registradas.</p> }
-    </section>
-  } @else if (!carregando() && !erro()) { <p class="notice">Nenhuma informação de licença disponível.</p> }
+    </div>
+  }
 </main>

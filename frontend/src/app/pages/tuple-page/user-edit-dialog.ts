@@ -11,11 +11,8 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { Subscription } from 'rxjs';
 
 import {
   ApiService,
@@ -26,7 +23,7 @@ import {
 import { SpeechService } from '../../services/speech.service';
 import { VisorFacial } from '../../components/visor-facial/visor-facial';
 import { WebcamService } from '../../services/webcam.service';
-import { WebSocketLogsService } from '../../services/websocket-logs.service';
+import { OperacaoRfidService } from '../../services/operacao-rfid.service';
 
 export interface UserEditDialogData {
   usuario: UsuarioResponse;
@@ -44,9 +41,7 @@ export interface UserEditDialogResult {
     CommonModule,
     VisorFacial,
     FormsModule,
-    MatButtonModule,
     MatIconModule,
-    MatProgressSpinnerModule,
     MatSnackBarModule,
   ],
   templateUrl: './user-edit-dialog.html',
@@ -63,7 +58,9 @@ export class UserEditDialog implements OnInit, OnDestroy {
     MatDialogRef<UserEditDialog, UserEditDialogResult>,
   );
   private data = inject<UserEditDialogData>(MAT_DIALOG_DATA);
-  private wsLogs = inject(WebSocketLogsService);
+  public operacoes = inject(OperacaoRfidService);
+  /** A edição é a operação ativa: leituras não abrem a validação facial. */
+  private fecharSessao = this.operacoes.abrirSessao();
   public webcam = inject(WebcamService);
 
   modoTotem = signal(true);
@@ -81,7 +78,6 @@ export class UserEditDialog implements OnInit, OnDestroy {
   dispositivos: DispositivoSimplesResponse[] = [];
   dispositivoSelecionadoId: number | null = null;
   carregandoDispositivos = true;
-  aguardandoRfid = false;
   uidNovo = this.usuario.uid_card ?? '';
   cartaoDisponivel: boolean | null = this.usuario.uid_card ? true : null;
 
@@ -92,7 +88,10 @@ export class UserEditDialog implements OnInit, OnDestroy {
   erro = '';
   alterado = false;
 
-  private wsSubscription: Subscription | null = null;
+  /** Aguardando o novo cartão no leitor reservado para esta edição. */
+  get aguardandoRfid(): boolean {
+    return this.operacoes.capturando();
+  }
 
   get dispositivoSelecionado(): DispositivoSimplesResponse | null {
     if (this.dispositivoSelecionadoId === null || this.dispositivoSelecionadoId === undefined) return null;
@@ -105,6 +104,11 @@ export class UserEditDialog implements OnInit, OnDestroy {
 
   get identificadorDispositivo(): string {
     return this.dispositivoSelecionado?.identificador ?? '';
+  }
+
+  /** Escolhe o modo de captura facial sem alternar quando já está nele. */
+  definirModoTotem(automatico: boolean): void {
+    if (this.modoTotem() !== automatico) this.toggleModoTotem();
   }
 
   get temBiometria(): boolean {
@@ -129,34 +133,13 @@ export class UserEditDialog implements OnInit, OnDestroy {
       },
     });
 
-    this.wsSubscription = this.wsLogs.obterLogsEmTempoReal().subscribe({
-      next: (evento) => {
-        if (
-          evento.type !== 'RFID_LIDO'
-          || !this.aguardandoRfid
-          || !evento.data.uid_card
-        ) {
-          return;
-        }
-
-        const eventoDisp = (evento.data.identificador_dispositivo || '').trim().toUpperCase();
-        const leitorAtual = (this.identificadorDispositivo || '').trim().toUpperCase();
-
-        if (eventoDisp && leitorAtual && eventoDisp !== leitorAtual) {
-          return;
-        }
-
-        this.uidNovo = this.normalizarUid(evento.data.uid_card);
-        this.aguardandoRfid = false;
-        this.cdr.detectChanges();
-        this.validarUidAtual();
-      },
-    });
   }
 
   ngOnDestroy(): void {
     this.webcam.pararWebcam();
-    this.wsSubscription?.unsubscribe();
+    // Fechar a edição cancela a leitura pendente e devolve o leitor ao acesso.
+    this.operacoes.cancelarCaptura();
+    this.fecharSessao();
   }
 
   salvarDadosBasicos(): void {
@@ -193,8 +176,8 @@ export class UserEditDialog implements OnInit, OnDestroy {
           this.ativo = usuario.ativo;
           this.salvandoDados = false;
           this.alterado = true;
-          this.aviso = 'Dados do usuário atualizados.';
-          this.snackBar.open(this.aviso, 'OK', { duration: 3000 });
+          this.aviso = '';
+          this.snackBar.open('Dados salvos.', 'Fechar', { duration: 4000 });
         },
         error: (error) => {
           this.salvandoDados = false;
@@ -213,11 +196,32 @@ export class UserEditDialog implements OnInit, OnDestroy {
     this.erro = '';
     this.aviso = 'Aguardando aproximação do cartão no leitor selecionado...';
     this.cartaoDisponivel = null;
-    this.aguardandoRfid = true;
+    this.operacoes
+      .capturarCartao(
+        this.identificadorDispositivo,
+        (uid) => {
+          this.uidNovo = this.normalizarUid(uid);
+          this.aviso = '';
+          this.cdr.detectChanges();
+          this.validarUidAtual();
+        },
+        () => {
+          this.aviso = '';
+          this.erro =
+            'O tempo para aproximar o cartão acabou e o leitor voltou ao modo de acesso. Clique em Iniciar leitura para tentar de novo.';
+          this.cdr.markForCheck();
+        },
+      )
+      .catch(() => {
+        this.aviso = '';
+        this.erro =
+          'Não foi possível reservar o leitor para a leitura do cartão. Verifique a conexão e tente novamente.';
+        this.cdr.markForCheck();
+      });
   }
 
   cancelarLeituraRfid(): void {
-    this.aguardandoRfid = false;
+    this.operacoes.cancelarCaptura();
     this.aviso = '';
   }
 
@@ -304,9 +308,9 @@ export class UserEditDialog implements OnInit, OnDestroy {
           this.uidNovo = resultado.uid_card ?? uid;
           this.usuario = { ...this.usuario, uid_card: this.uidNovo };
           this.cartaoDisponivel = true;
-          this.aviso = resultado.mensagem || 'Cartão atualizado com sucesso.';
-          this.snackBar.open('Cartão RFID atualizado.', 'OK', {
-            duration: 3500,
+          this.aviso = '';
+          this.snackBar.open(resultado.mensagem || 'Novo cartão salvo.', 'Fechar', {
+            duration: 4000,
           });
         },
         error: (error) => {
@@ -393,20 +397,21 @@ export class UserEditDialog implements OnInit, OnDestroy {
     this.salvandoBiometria = true;
     this.erro = '';
     this.aviso = '';
-
+    const substituindo = this.temBiometria;
     this.api
       .cadastrarBiometria(this.usuario.user_id, this.fotoCapturada)
       .subscribe({
-        next: (resultado) => {
+        next: () => {
           this.salvandoBiometria = false;
           this.alterado = true;
           this.fotoCapturada = null;
           this.fotoPreviewUrl = null;
-          this.aviso =
-            `Biometria cadastrada com sucesso (${resultado.vector_length} dimensões).`;
-          this.snackBar.open('Biometria facial atualizada.', 'OK', {
-            duration: 3500,
-          });
+          this.aviso = '';
+          this.snackBar.open(
+            substituindo ? 'Biometria substituída.' : 'Biometria cadastrada.',
+            'Fechar',
+            { duration: 4000 },
+          );
 
           // Recarrega o usuário real para atualizar o estado do modal sem
           // fabricar um vetor placeholder no frontend.

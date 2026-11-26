@@ -1,95 +1,67 @@
-<div class="login-container">
-  <mat-card class="login-card">
-    <div class="login-card-topbar">
-      <a routerLink="/" class="back-link" aria-label="Voltar para a página inicial">
-        <mat-icon>arrow_back</mat-icon>
-        <span>Voltar para o início</span>
-      </a>
+<app-auth-frame
+  titulo="Cada acesso passa por quatro verificações"
+  texto="No painel você define quem entra, onde e quando, e acompanha cada decisão."
+  rotuloTrilha="Como o ArdLock decide um acesso"
+  [etapas]="etapas"
+>
+  <a routerLink="/" class="ard-back"><mat-icon aria-hidden="true">arrow_back</mat-icon>Voltar para o início</a>
+  <h1>Acesso do gestor</h1>
+  <p class="auth-sub">Digite suas credenciais para acessar o painel.</p>
+
+  <form (ngSubmit)="onSubmit()" class="ard-form auth-campos" novalidate>
+    @if (erro()) {
+      <p class="ard-notice is-error" role="alert">
+        <mat-icon aria-hidden="true">error</mat-icon><span>{{ erro() }}</span>
+      </p>
+    }
+
+    <div class="ard-field">
+      <label for="login-email">E-mail</label>
+      <input id="login-email" type="email" [(ngModel)]="usuario" name="usuario" required autocomplete="username" />
     </div>
 
-    <mat-card-header class="login-header">
-      <div class="header-icon">
-        <img src="ard-lock-icon.svg" alt="" aria-hidden="true" />
+    <div class="ard-field">
+      <div class="rotulo-linha">
+        <label for="login-senha">Senha</label>
+        <a routerLink="/forgot-password" class="ard-link">Esqueceu a senha?</a>
       </div>
-      <mat-card-title>Acesso do gestor</mat-card-title>
-      <mat-card-subtitle>Digite suas credenciais para acessar o painel</mat-card-subtitle>
-    </mat-card-header>
-
-    <mat-card-content>
-      <form (ngSubmit)="onSubmit()" class="login-form">
-        @if (erro()) {
-          <div class="error-banner" role="alert">
-            <mat-icon>error_outline</mat-icon>
-            <span>{{ erro() }}</span>
-          </div>
-        }
-
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>E-mail</mat-label>
-          <input
-            matInput
-            type="email"
-            [(ngModel)]="usuario"
-            name="usuario"
-            placeholder="Digite seu e-mail"
-            required
-            autocomplete="username"
-          />
-          <mat-icon matSuffix>person</mat-icon>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Senha</mat-label>
-          <input
-            matInput
-            [type]="hidePassword() ? 'password' : 'text'"
-            [(ngModel)]="senha"
-            name="senha"
-            placeholder="Digite sua senha"
-            required
-            autocomplete="current-password"
-          />
-          <button
-            type="button"
-            mat-icon-button
-            matSuffix
-            (click)="togglePassword($event)"
-            [attr.aria-label]="hidePassword() ? 'Mostrar senha' : 'Ocultar senha'"
-            [attr.aria-pressed]="hidePassword()"
-          >
-            <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
-          </button>
-        </mat-form-field>
-
-        <div
-          style="
-            display: flex;
-            justify-content: flex-end;
-            width: 100%;
-            margin-top: -8px;
-            margin-bottom: 8px;
-          "
-        >
-          <a routerLink="/forgot-password" mat-button color="primary">Esqueceu a senha?</a>
-        </div>
-
+      <div class="ard-input-wrap">
+        <input
+          id="login-senha"
+          [type]="hidePassword() ? 'password' : 'text'"
+          [(ngModel)]="senha"
+          name="senha"
+          required
+          autocomplete="current-password"
+        />
         <button
-          mat-raised-button
-          color="primary"
-          type="submit"
-          class="login-btn"
-          [disabled]="carregando()"
+          type="button"
+          class="ard-icon-btn"
+          (click)="togglePassword($event)"
+          aria-label="Mostrar senha"
+          [attr.aria-pressed]="!hidePassword()"
         >
-          <span class="login-btn-content">
-            @if (carregando()) {
-              <mat-spinner diameter="24" class="btn-spinner"></mat-spinner>
-            } @else {
-              <span>Entrar</span>
-              <mat-icon>login</mat-icon>
-            }
-          </span>
+          <mat-icon aria-hidden="true">{{ hidePassword() ? 'visibility' : 'visibility_off' }}</mat-icon>
         </button>
-      </form>
-    </mat-card-content>
-  </mat-card>
-</div>
+      </div>
+    </div>
+
+    <button type="submit" class="ard-btn is-primary auth-enviar login-btn" [disabled]="carregando()" [attr.aria-busy]="carregando()">
+      @if (carregando()) {
+        <span class="ard-spinner" aria-hidden="true"></span>
+        Entrando
+      } @else {
+        <mat-icon aria-hidden="true">login</mat-icon>
+        Entrar
+      }
+    </button>
+  </form>
+
+  <p class="login-adquirir">
+    Ainda não tem uma licença?
+    <a routerLink="/checkout" class="ard-link login-adquirir-link">
+      <mat-icon aria-hidden="true">storefront</mat-icon>
+      Adquirir licença
+    </a>
+  </p>
+</app-auth-frame>

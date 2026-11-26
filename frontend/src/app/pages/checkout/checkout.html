@@ -1,141 +1,109 @@
 <div class="checkout-wrapper">
-  <!-- Barra superior de navegação -->
-  <header class="checkout-header">
-    <div class="container header-content">
-      <a routerLink="/" class="brand-link" aria-label="Ir para a página inicial">
+  <!-- Barra superior (página pública, fora do painel) -->
+  <header class="ck-topo">
+    <div class="ck-container ck-topo-inner">
+      <a routerLink="/" class="ck-marca" aria-label="Ir para a página inicial">
         <img src="ard-lock-icon.svg" alt="" width="36" height="24" />
-        <span class="brand-name">ArdLock</span>
+        <span>ArdLock</span>
       </a>
-
-      <div class="header-actions">
+      <div class="ck-topo-acoes">
         <button
           type="button"
-          class="theme-toggle-btn"
+          class="ard-icon-btn theme-toggle-btn"
           (click)="alternarTema()"
           [attr.aria-label]="temaEscuro() ? 'Ativar tema claro' : 'Ativar tema escuro'"
         >
-          <mat-icon>{{ temaEscuro() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+          <mat-icon aria-hidden="true">{{ temaEscuro() ? 'light_mode' : 'dark_mode' }}</mat-icon>
         </button>
-        <a routerLink="/" class="nav-back-link">
-          <mat-icon>arrow_back</mat-icon>
+        <a routerLink="/" class="ard-btn is-quiet ck-voltar" aria-label="Voltar para o início">
+          <mat-icon aria-hidden="true">arrow_back</mat-icon>
           <span>Voltar para o início</span>
         </a>
-        <a routerLink="/login" class="nav-login-link">
-          <mat-icon>login</mat-icon>
-          <span>Painel do gestor</span>
+        <a routerLink="/login" class="ard-btn is-compact nav-login-link">
+          <mat-icon aria-hidden="true">login</mat-icon>
+          Painel do gestor
         </a>
       </div>
     </div>
   </header>
 
-  <main class="container checkout-main">
-    <!-- Cabeçalho da página -->
-    <section class="checkout-intro">
-      <div class="intro-badge">
-        <mat-icon>verified</mat-icon>
-        <span>Licenciamento Oficial ArdLock</span>
-      </div>
-      <h1 class="intro-title">Escolha o plano ideal para a sua infraestrutura</h1>
-      <p class="intro-subtitle">
+  <main class="ck-container ck-main">
+    <section class="ck-intro" aria-labelledby="ck-titulo">
+      <h1 id="ck-titulo">Escolha o plano ideal para a sua infraestrutura</h1>
+      <p>
         Controle de acesso físico com cartão RFID, reconhecimento facial 1:1 e servidores com alta disponibilidade.
         Planos flexíveis com ativação e garantia técnica de hardware.
       </p>
     </section>
 
-    <!-- Grid de Planos (4 Cards) -->
-    <section class="plans-grid" aria-label="Planos de licença disponíveis">
+    <!-- Planos -->
+    <section class="ck-planos" aria-label="Planos de licença disponíveis" [attr.aria-busy]="carregando()">
       @for (plano of planos(); track plano.id) {
+        @let selecionado = planoSelecionado()?.id === plano.id;
         <article
-          class="plan-card"
-          [class.plan-featured]="plano.destaque"
+          class="ard-panel plano"
+          [class.is-destaque]="plano.destaque"
+          [class.is-selecionado]="selecionado"
           [class.plan-decoy]="plano.decoy"
-          [class.plan-selected]="planoSelecionado()?.id === plano.id"
-          [class.plan-custom]="plano.id === 'personalizado'"
+          [class.is-custom]="plano.id === 'personalizado'"
         >
-          <!-- Badge de Destaque / Tipo -->
-          @if (plano.badge) {
-            <div class="card-badge" [class.badge-featured]="plano.destaque" [class.badge-decoy]="plano.decoy">
-              @if (plano.destaque) {
-                <mat-icon>star</mat-icon>
-              }
-              <span>{{ plano.badge }}</span>
-            </div>
-          }
-
-          <div class="card-header">
-            <h2 class="card-title">{{ plano.nome }}</h2>
-            <p class="card-desc">{{ plano.descricao }}</p>
+          <div class="plano-topo">
+            <h2>{{ plano.nome }}</h2>
+            @if (plano.badge) {
+              <span class="ard-tag" [class.is-accent]="plano.destaque">{{ plano.badge }}</span>
+            }
           </div>
+          <p class="plano-desc">{{ plano.descricao }}</p>
 
-          <div class="card-price-block">
-            <div class="price-value">
-              <span class="amount">{{ plano.preco_formatado }}</span>
-              @if (plano.periodo) {
-                <span class="period">{{ plano.periodo }}</span>
-              }
+          <p class="plano-preco">
+            <strong>{{ plano.preco_formatado }}</strong>
+            @if (plano.periodo) {
+              <span>{{ plano.periodo }}</span>
+            }
+          </p>
+          <p class="plano-suporte">
+            <mat-icon aria-hidden="true">support_agent</mat-icon>
+            <span>{{ plano.tipo_suporte }}</span>
+          </p>
+
+          <dl class="plano-capacidade">
+            <div>
+              <dt>Dispositivos</dt>
+              <dd>{{ plano.dispositivos }}</dd>
             </div>
-            <p class="support-tag">
-              <mat-icon>support_agent</mat-icon>
-              <span>{{ plano.tipo_suporte }}</span>
-            </p>
-          </div>
-
-          <!-- Métricas de capacidade do plano -->
-          <div class="card-capacity">
-            <div class="capacity-item">
-              <span class="cap-label">Dispositivos</span>
-              <strong class="cap-val">{{ plano.dispositivos }}</strong>
+            <div>
+              <dt>Pessoas autorizadas</dt>
+              <dd>{{ plano.usuarios }}</dd>
             </div>
-            <div class="capacity-divider"></div>
-            <div class="capacity-item">
-              <span class="cap-label">Pessoas autorizadas</span>
-              <strong class="cap-val">{{ plano.usuarios }}</strong>
-            </div>
-          </div>
+          </dl>
 
-          <!-- Lista de Vantagens estilo Netflix -->
-          <div class="card-benefits">
-            <span class="benefits-title">O que está incluso:</span>
-            <ul class="benefits-list">
-              @for (v of plano.vantagens; track v.texto) {
-                <li class="benefit-item" [class.highlighted]="v.destaque" [class.not-included]="v.incluido === false">
-                  <span class="benefit-icon" aria-hidden="true">
-                    @if (v.incluido === false) {
-                      <mat-icon class="icon-negative">close</mat-icon>
-                    } @else {
-                      <mat-icon [class.icon-check]="v.destaque">{{ v.icone }}</mat-icon>
-                    }
-                  </span>
-                  <span class="benefit-text">{{ v.texto }}</span>
-                </li>
-              }
-            </ul>
-          </div>
+          <ul class="plano-itens" [attr.aria-label]="'O que está incluso no plano ' + plano.nome">
+            @for (v of plano.vantagens; track v.texto) {
+              <li [class.is-fora]="v.incluido === false" [class.is-destaque]="v.destaque">
+                <mat-icon aria-hidden="true">{{ v.incluido === false ? 'remove' : 'check' }}</mat-icon>
+                <span>
+                  {{ v.texto }}
+                  @if (v.incluido === false) {
+                    <span class="ard-sr-only">(não incluso)</span>
+                  }
+                </span>
+              </li>
+            }
+          </ul>
 
-          <!-- Ação do Card -->
-          <div class="card-action">
+          <div class="plano-acao">
             @if (plano.id === 'personalizado') {
-              <a
-                [href]="obterLinkEmail(plano)"
-                class="btn-plan btn-demand"
-                aria-label="Solicitar proposta personalizada por e-mail"
-              >
-                <mat-icon>mail</mat-icon>
-                <span>Solicitar proposta</span>
+              <a [href]="obterLinkEmail(plano)" class="ard-btn" aria-label="Solicitar proposta personalizada por e-mail">
+                <mat-icon aria-hidden="true">mail</mat-icon>
+                Solicitar proposta
               </a>
             } @else {
-              <button
-                type="button"
-                class="btn-plan"
-                [class.btn-featured]="plano.destaque"
-                [class.btn-selected]="planoSelecionado()?.id === plano.id"
-                (click)="selecionarPlano(plano)"
-              >
-                @if (planoSelecionado()?.id === plano.id) {
-                  <mat-icon>check_circle</mat-icon>
-                  <span>Plano Selecionado</span>
+              <button type="button" class="ard-btn" [class.is-primary]="selecionado" [attr.aria-pressed]="selecionado" (click)="selecionarPlano(plano)">
+                @if (selecionado) {
+                  <mat-icon aria-hidden="true">check_circle</mat-icon>
+                  Plano selecionado
                 } @else {
-                  <span>Escolher {{ plano.nome }}</span>
+                  Escolher {{ plano.nome }}
                 }
               </button>
             }
@@ -144,257 +112,148 @@
       }
     </section>
 
-    <!-- Seção de Checkout / Simulação de Transação Revalidada -->
     @if (planoSelecionado(); as plano) {
       @if (plano.id !== 'personalizado') {
-        <section id="painel-checkout" class="checkout-panel" aria-labelledby="checkout-panel-title">
-          <div class="panel-header">
-            <div class="panel-tag">Finalização da Licença</div>
-            <h2 id="checkout-panel-title">Assinatura do Plano {{ plano.nome }}</h2>
-            <p>
-              Preencha os dados da sua instituição para simular a contratação.
-              A transação é revalidada diretamente com o backend com emissão de código de licença.
-            </p>
+        <!-- Assinatura (simulação revalidada pelo servidor) -->
+        <section id="painel-checkout" class="ard-panel ck-assinatura" aria-labelledby="checkout-panel-title">
+          <div class="ard-panel-head">
+            <div>
+              <h2 id="checkout-panel-title">Assinatura do plano {{ plano.nome }}</h2>
+              <p>
+                Simulação: preencha os dados da sua instituição. O servidor confere o preço do plano e emite um código de
+                autorização de teste. Nenhum pagamento é processado.
+              </p>
+            </div>
           </div>
 
           @if (transacaoConcluida(); as tx) {
-            <!-- Sucesso após Revalidação no Backend -->
-            <div class="checkout-success" role="status" aria-live="polite">
-              <div class="success-icon">
-                <mat-icon>verified</mat-icon>
-              </div>
-              <h3 class="success-title">Transação Validada e Licença Ativada!</h3>
-              <p class="success-message">{{ tx.mensagem }}</p>
-
-              <div class="tx-receipt">
-                <div class="receipt-row">
-                  <span>Código de Autorização:</span>
-                  <strong class="receipt-code">{{ tx.codigo_transacao }}</strong>
-                </div>
-                <div class="receipt-row">
-                  <span>Plano Contratado:</span>
-                  <strong>{{ tx.plano_nome }}</strong>
-                </div>
-                <div class="receipt-row">
-                  <span>Valor Cobrado:</span>
-                  <strong>{{ tx.valor_formatado }} / mês</strong>
-                </div>
-                <div class="receipt-row">
-                  <span>Data e Hora:</span>
-                  <span>{{ tx.data_autorizacao }}</span>
-                </div>
-                <div class="receipt-row">
-                  <span>Status:</span>
-                  <span class="badge-approved">Ativo / Aprovado</span>
-                </div>
-              </div>
-
-              <div class="success-actions">
-                <a routerLink="/login" class="btn-primary-action">
-                  <mat-icon>login</mat-icon>
-                  <span>Acessar o Painel do Gestor</span>
+            <div class="ck-sucesso" role="status" aria-live="polite">
+              <span class="ck-sucesso-icone" aria-hidden="true"><mat-icon>task_alt</mat-icon></span>
+              <h3>Simulação concluída</h3>
+              <p>
+                O servidor conferiu o preço do plano {{ tx.plano_nome }} e emitiu um código de autorização de teste. Nenhum
+                pagamento foi processado e nenhuma licença foi ativada.
+              </p>
+              <dl class="ard-facts ck-recibo">
+                <dt>Código de autorização</dt>
+                <dd><code class="ard-code receipt-code">{{ tx.codigo_transacao }}</code></dd>
+                <dt>Plano</dt>
+                <dd>{{ tx.plano_nome }}</dd>
+                <dt>Valor do plano</dt>
+                <dd>{{ tx.valor_formatado }} / mês</dd>
+                <dt>Data e hora</dt>
+                <dd>{{ tx.data_autorizacao }}</dd>
+              </dl>
+              <div class="ck-sucesso-acoes">
+                <button type="button" class="ard-btn" (click)="novaSimulacao()">Simular outro plano</button>
+                <a routerLink="/login" class="ard-btn is-primary">
+                  <mat-icon aria-hidden="true">login</mat-icon>
+                  Acessar o painel do gestor
                 </a>
-                <button type="button" class="btn-secondary-action" (click)="novaSimulacao()">
-                  <span>Simular outro plano</span>
-                </button>
               </div>
             </div>
           } @else {
-            <!-- Formulário de Finalização -->
-            <form (ngSubmit)="confirmarCheckout()" class="checkout-form">
+            <form (ngSubmit)="confirmarCheckout()" class="ck-form" novalidate>
               @if (erroValidacao()) {
-                <div class="form-error-banner" role="alert">
-                  <mat-icon>error_outline</mat-icon>
-                  <span>{{ erroValidacao() }}</span>
-                </div>
+                <p class="ard-notice is-error ck-form-erro" role="alert">
+                  <mat-icon aria-hidden="true">error</mat-icon><span>{{ erroValidacao() }}</span>
+                </p>
               }
 
-              <div class="form-grid">
-                <!-- Coluna de Dados Cadastrais -->
-                <div class="form-section">
-                  <h3 class="form-section-title">
-                    <mat-icon>business</mat-icon>
-                    <span>Dados da Organização</span>
-                  </h3>
-
-                  <div class="form-group">
-                    <label for="orgName">Nome da Empresa / Instituição *</label>
-                    <input
-                      id="orgName"
-                      type="text"
-                      class="form-control"
-                      placeholder="Ex: Faculdade Central ou Empresa S/A"
-                      [(ngModel)]="nomeOrganizacao"
-                      name="nomeOrganizacao"
-                      required
-                    />
-                  </div>
-
-                  <div class="form-group">
-                    <label for="gestorEmail">E-mail do Gestor Responsável *</label>
-                    <input
-                      id="gestorEmail"
-                      type="email"
-                      class="form-control"
-                      placeholder="gestor@empresa.com.br"
-                      [(ngModel)]="emailGestor"
-                      name="emailGestor"
-                      required
-                    />
-                  </div>
-
-                  <div class="form-group">
-                    <label for="docOrg">CNPJ ou CPF (Opcional)</label>
-                    <input
-                      id="docOrg"
-                      type="text"
-                      class="form-control"
-                      placeholder="00.000.000/0001-00"
-                      [(ngModel)]="documento"
-                      name="documento"
-                    />
-                  </div>
+              <div class="ck-coluna">
+                <h3>Dados da organização</h3>
+                <div class="ard-field">
+                  <label for="orgName">Nome da empresa ou instituição</label>
+                  <input id="orgName" type="text" [(ngModel)]="nomeOrganizacao" name="nomeOrganizacao" required autocomplete="organization" />
                 </div>
+                <div class="ard-field">
+                  <label for="gestorEmail">E-mail do gestor responsável</label>
+                  <input id="gestorEmail" type="email" [(ngModel)]="emailGestor" name="emailGestor" required autocomplete="email" />
+                </div>
+                <div class="ard-field">
+                  <label for="docOrg">CNPJ ou CPF <span class="opcional">opcional</span></label>
+                  <input id="docOrg" type="text" inputmode="numeric" [(ngModel)]="documento" name="documento" autocomplete="off" />
+                </div>
+              </div>
 
-                <!-- Coluna de Pagamento e Resumo -->
-                <div class="form-section payment-section">
-                  <h3 class="form-section-title">
-                    <mat-icon>credit_card</mat-icon>
-                    <span>Forma de Pagamento</span>
-                  </h3>
-
-                  <div class="payment-tabs" role="radiogroup" aria-label="Opções de pagamento">
-                    <button
-                      type="button"
-                      class="payment-tab"
-                      [class.active]="formaPagamento === 'cartao'"
-                      (click)="formaPagamento = 'cartao'"
-                    >
-                      <mat-icon>credit_card</mat-icon>
-                      <span>Cartão</span>
-                    </button>
-                    <button
-                      type="button"
-                      class="payment-tab"
-                      [class.active]="formaPagamento === 'pix'"
-                      (click)="formaPagamento = 'pix'"
-                    >
-                      <mat-icon>qr_code_2</mat-icon>
-                      <span>PIX</span>
-                    </button>
-                    <button
-                      type="button"
-                      class="payment-tab"
-                      [class.active]="formaPagamento === 'boleto'"
-                      (click)="formaPagamento = 'boleto'"
-                    >
-                      <mat-icon>receipt</mat-icon>
-                      <span>Boleto</span>
-                    </button>
-                  </div>
-
-                  @if (formaPagamento === 'cartao') {
-                    <div class="card-fields">
-                      <div class="form-group">
-                        <label>Número do Cartão (Simulação)</label>
-                        <input
-                          type="text"
-                          class="form-control font-mono"
-                          [(ngModel)]="numeroCartao"
-                          name="numeroCartao"
-                        />
-                      </div>
-                      <div class="form-row">
-                        <div class="form-group">
-                          <label>Validade</label>
-                          <input
-                            type="text"
-                            class="form-control font-mono"
-                            [(ngModel)]="validadeCartao"
-                            name="validadeCartao"
-                          />
-                        </div>
-                        <div class="form-group">
-                          <label>CVV</label>
-                          <input
-                            type="text"
-                            class="form-control font-mono"
-                            [(ngModel)]="cvvCartao"
-                            name="cvvCartao"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  } @else if (formaPagamento === 'pix') {
-                    <div class="payment-instruction">
-                      <mat-icon>qr_code_scanner</mat-icon>
-                      <p>Liberação instantânea após validação no backend via chave PIX.</p>
-                    </div>
-                  } @else {
-                    <div class="payment-instruction">
-                      <mat-icon>calendar_today</mat-icon>
-                      <p>Vencimento para 3 dias úteis com envio de NF-e para o e-mail do gestor.</p>
-                    </div>
-                  }
-
-                  <!-- Resumo financeiro -->
-                  <div class="order-summary">
-                    <div class="summary-line">
-                      <span>Plano Selecionado:</span>
-                      <strong>{{ plano.nome }}</strong>
-                    </div>
-                    <div class="summary-line">
-                      <span>Ciclo de Faturamento:</span>
-                      <span>Mensal</span>
-                    </div>
-                    <div class="summary-line total-line">
-                      <span>Total Hoje:</span>
-                      <strong class="total-price">{{ plano.preco_formatado }}</strong>
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    class="btn-submit-checkout"
-                    [disabled]="processando()"
-                  >
-                    @if (processando()) {
-                      <mat-spinner diameter="20" class="spinner-inline"></mat-spinner>
-                      <span>Revalidando com o Servidor…</span>
-                    } @else {
-                      <mat-icon>lock</mat-icon>
-                      <span>Confirmar Assinatura ({{ plano.preco_formatado }})</span>
-                    }
+              <div class="ck-coluna">
+                <h3>Forma de pagamento</h3>
+                <div class="ard-segmented ck-formas" role="group" aria-label="Forma de pagamento">
+                  <button type="button" [attr.aria-pressed]="formaPagamento === 'cartao'" (click)="formaPagamento = 'cartao'">
+                    <mat-icon aria-hidden="true">credit_card</mat-icon>
+                    Cartão
                   </button>
-                  <p class="security-note">
-                    <mat-icon>shield</mat-icon>
-                    <span>Ambiente criptografado. Transação revalidada em conformidade com o backend.</span>
-                  </p>
+                  <button type="button" [attr.aria-pressed]="formaPagamento === 'pix'" (click)="formaPagamento = 'pix'">
+                    <mat-icon aria-hidden="true">qr_code_2</mat-icon>
+                    PIX
+                  </button>
+                  <button type="button" [attr.aria-pressed]="formaPagamento === 'boleto'" (click)="formaPagamento = 'boleto'">
+                    <mat-icon aria-hidden="true">receipt</mat-icon>
+                    Boleto
+                  </button>
                 </div>
+                <p class="ck-forma-nota">
+                  <mat-icon aria-hidden="true">info</mat-icon>
+                  <span>
+                    @switch (formaPagamento) {
+                      @case ('cartao') {
+                        A simulação usa um cartão de teste ({{ numeroCartao }}, validade {{ validadeCartao }}). Não digite dados de cartão reais.
+                      }
+                      @case ('pix') {
+                        Na simulação, nenhum QR Code é gerado: a forma de pagamento só fica registrada no pedido.
+                      }
+                      @default {
+                        Na simulação, nenhum boleto é emitido: a forma de pagamento só fica registrada no pedido.
+                      }
+                    }
+                  </span>
+                </p>
+
+                <dl class="ck-resumo">
+                  <div>
+                    <dt>Plano</dt>
+                    <dd>{{ plano.nome }}</dd>
+                  </div>
+                  <div>
+                    <dt>Ciclo de faturamento</dt>
+                    <dd>Mensal</dd>
+                  </div>
+                  <div class="ck-total">
+                    <dt>Total por mês</dt>
+                    <dd>{{ plano.preco_formatado }}</dd>
+                  </div>
+                </dl>
+
+                <button type="submit" class="ard-btn is-primary btn-submit-checkout" [disabled]="processando()" [attr.aria-busy]="processando()">
+                  @if (processando()) {
+                    <span class="ard-spinner" aria-hidden="true"></span>
+                    Conferindo com o servidor
+                  } @else {
+                    <mat-icon aria-hidden="true">task_alt</mat-icon>
+                    Simular assinatura ({{ plano.preco_formatado }})
+                  }
+                </button>
+                <p class="ard-hint ck-nota">Simulação: nenhum pagamento é processado e nenhum dado de cartão é enviado.</p>
               </div>
             </form>
           }
         </section>
       } @else {
-        <!-- Caixa de Apoio para Plano Sob Demanda -->
-        <section id="painel-checkout" class="custom-plan-panel">
-          <div class="custom-content">
-            <div class="custom-badge">Projeto Customizado</div>
-            <h2>Plano Personalizado & Infraestrutura Sob Demanda</h2>
+        <!-- Plano personalizado: contato por e-mail -->
+        <section id="painel-checkout" class="ard-panel ck-personalizado" aria-labelledby="ck-personalizado-titulo">
+          <div class="ard-panel-body">
+            <h2 id="ck-personalizado-titulo">Plano personalizado e infraestrutura sob demanda</h2>
             <p>
-              Projetos corporativos exigem adequação de hardware, catracas de alta rotação, câmeras biométricas dedicadas
-              e visitas presenciais prioritárias. Nossa equipe de engenharia estrutura o projeto completo para a sua demanda.
+              Projetos corporativos exigem adequação de hardware, catracas de alta rotação, câmeras biométricas dedicadas e
+              visitas presenciais prioritárias. Nossa equipe de engenharia estrutura o projeto completo para a sua demanda.
             </p>
-            <div class="contact-card">
-              <mat-icon>alternate_email</mat-icon>
-              <div>
-                <strong>Envie sua proposta para:</strong>
-                <a [href]="obterLinkEmail(plano)" class="email-link">{{ emailDemanda }}</a>
-              </div>
-            </div>
-            <a [href]="obterLinkEmail(plano)" class="btn-primary-action">
-              <mat-icon>send</mat-icon>
-              <span>Abrir e-mail para {{ emailDemanda }}</span>
+            <p class="ck-contato">
+              <mat-icon aria-hidden="true">alternate_email</mat-icon>
+              <span>Envie sua proposta para <a [href]="obterLinkEmail(plano)" class="ard-link">{{ emailDemanda }}</a></span>
+            </p>
+            <a [href]="obterLinkEmail(plano)" class="ard-btn is-primary">
+              <mat-icon aria-hidden="true">send</mat-icon>
+              Escrever para {{ emailDemanda }}
             </a>
           </div>
         </section>
@@ -402,15 +261,14 @@
     }
   </main>
 
-  <!-- Rodapé do Checkout -->
-  <footer class="checkout-footer">
-    <div class="container footer-content">
+  <footer class="ck-rodape">
+    <div class="ck-container ck-rodape-inner">
       <p>© ArdLock. Controle de acesso físico biométrico RFID. Todos os direitos reservados.</p>
-      <div class="footer-links">
-        <a routerLink="/">Página Inicial</a>
+      <nav aria-label="Links do rodapé">
+        <a routerLink="/">Página inicial</a>
         <a routerLink="/login">Painel</a>
         <a href="mailto:janderson.gustavo1@gmail.com">Suporte: janderson.gustavo1@gmail.com</a>
-      </div>
+      </nav>
     </div>
   </footer>
 </div>

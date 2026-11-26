@@ -207,10 +207,11 @@ mat-icon {
 }
 .lp-nav {
   display: flex;
-  gap: 4px;
+  gap: 2px;
   margin-left: auto;
   a {
-    padding: 10px 12px;
+    padding: 10px 10px;
+    white-space: nowrap;
     border-radius: var(--ard-radius-sm);
     color: var(--l-muted);
     font-size: 0.92rem;
@@ -1348,13 +1349,17 @@ mat-icon {
   }
 }
 
-@media (max-width: 900px) {
+// O menu de seções só aparece quando cabe numa linha, ao lado das ações.
+@media (max-width: 1180px) {
   .lp-nav {
     display: none;
   }
   .lp-header-actions {
     margin-left: auto;
   }
+}
+
+@media (max-width: 900px) {
   .hero-grid {
     grid-template-columns: 1fr;
   }
@@ -1399,6 +1404,10 @@ mat-icon {
   }
   .btn-compact {
     padding: 0 12px;
+  }
+  // No celular o hero já leva aos planos; no topo ficam o tema e a entrada no painel.
+  .lp-acao-licenca {
+    display: none;
   }
   // No celular cada registro vira um bloco: data e resultado em cima, motivo embaixo.
   .demo-historico table {

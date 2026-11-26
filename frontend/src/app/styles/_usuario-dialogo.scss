@@ -1,0 +1,218 @@
+// Partes comuns aos diálogos de usuário (cadastro e edição).
+// Incluído em cada componente: os nomes ficam encapsulados no diálogo.
+@mixin base {
+  :host {
+    display: block;
+  }
+  // Cabeçalho e rodapé fixos; só o corpo rola.
+  .ard-dialog {
+    max-height: 92dvh;
+  }
+  .corpo {
+    gap: 0;
+    padding: 0 20px;
+  }
+  .secao {
+    display: grid;
+    gap: 14px;
+    padding: 22px 0;
+    & + & {
+      border-top: 1px solid var(--ard-line);
+    }
+    h3 {
+      margin: 0;
+      font-size: 1.02rem;
+      font-weight: 500;
+      scroll-margin-top: 12px;
+      &:focus {
+        outline: none;
+      }
+      &:focus-visible {
+        border-radius: 4px;
+        outline: 3px solid var(--ard-primary);
+        outline-offset: 4px;
+      }
+    }
+  }
+  .secao-texto {
+    margin: -8px 0 0;
+    color: var(--ard-muted);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  .secao-topo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+  }
+  .secao-acoes {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .campo-inteiro {
+    grid-column: 1 / -1;
+  }
+  .pessoa-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .opcional {
+    margin-left: 4px;
+    color: var(--ard-muted);
+    font-size: 0.8rem;
+    font-weight: 400;
+  }
+  .status-campo {
+    display: grid;
+    .ard-check {
+      min-height: 36px;
+    }
+    .ard-hint {
+      padding-left: 28px;
+    }
+  }
+
+  // ---------- Cartão ----------
+  .cartao-uid {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+    letter-spacing: 0.04em;
+    &::placeholder {
+      font-family: var(--ard-font);
+      letter-spacing: 0;
+    }
+  }
+  // Estado da leitura: espera (o ícone pulsa), cartão lido (verde) ou orientação.
+  .capture-state {
+    --tom: var(--ard-muted);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid color-mix(in srgb, var(--tom) 30%, var(--ard-line));
+    border-radius: var(--ard-radius-sm);
+    background: color-mix(in srgb, var(--tom) 8%, transparent);
+    font-size: 0.9rem;
+    line-height: 1.45;
+    mat-icon {
+      flex: 0 0 20px;
+      width: 20px;
+      height: 20px;
+      font-size: 20px;
+      color: var(--tom);
+    }
+    &[data-state='active'] {
+      --tom: var(--ard-primary);
+      mat-icon {
+        animation: ard-pulse 1.4s ease-in-out infinite;
+      }
+    }
+    &[data-state='ok'] {
+      --tom: var(--ard-success);
+    }
+  }
+  .nota {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 0;
+    color: var(--ard-muted);
+    font-size: 0.86rem;
+    line-height: 1.5;
+    mat-icon {
+      flex: 0 0 18px;
+      width: 18px;
+      height: 18px;
+      margin-top: 1px;
+      font-size: 18px;
+    }
+  }
+
+  // ---------- Rosto ----------
+  .captura {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    border: 1px dashed var(--ard-line-strong);
+    border-radius: var(--ard-radius-md);
+    &.tem-foto {
+      border-style: solid;
+      border-color: color-mix(in srgb, var(--ard-success) 45%, var(--ard-line));
+    }
+  }
+  .captura-icone {
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--ard-surface-2);
+    color: var(--ard-muted);
+    mat-icon {
+      width: 32px;
+      height: 32px;
+      font-size: 32px;
+    }
+  }
+  .captura-foto {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0 0 0 2px var(--ard-success);
+    animation: ard-pop 260ms var(--ard-ease);
+  }
+  .captura-texto {
+    display: grid;
+    gap: 2px;
+    strong {
+      font-weight: 500;
+    }
+    span {
+      color: var(--ard-muted);
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+  }
+  .captura-acoes,
+  .camera-acoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .camera-acoes {
+    justify-content: flex-end;
+  }
+
+  // ---------- Rodapé ----------
+  .rodape-aviso {
+    flex: 1 1 100%;
+    margin: 0 0 4px;
+  }
+
+  @media (max-width: 640px) {
+    .corpo {
+      padding: 0 16px;
+    }
+    .pessoa-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .captura {
+      grid-template-columns: auto minmax(0, 1fr);
+    }
+    .captura-acoes {
+      grid-column: 1 / -1;
+    }
+    .captura-acoes,
+    .secao-acoes,
+    .camera-acoes {
+      .ard-btn {
+        flex: 1 1 auto;
+      }
+    }
+  }
+}

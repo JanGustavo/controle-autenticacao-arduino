@@ -3,8 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import {
   ApiService,
   CheckoutValidacaoRequest,
@@ -123,8 +121,6 @@ const PLANOS_FALLBACK: PlanoItem[] = [
     FormsModule,
     RouterLink,
     MatIconModule,
-    MatButtonModule,
-    MatProgressSpinnerModule,
   ],
   templateUrl: './checkout.html',
   styleUrl: './checkout.scss',

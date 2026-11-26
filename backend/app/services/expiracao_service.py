@@ -14,7 +14,7 @@ from app.models.tentativa_acesso_model import tentativa_acesso_model
 
 logger = logging.getLogger(__name__)
 
-INTERVALO_VARREDURA_SEGUNDOS = 30
+INTERVALO_VARREDURA_SEGUNDOS = 5
 
 _MOTIVO_EXPIRACAO_AUTOMATICA = (
     "Tempo máximo para validação facial excedido "
@@ -22,9 +22,10 @@ _MOTIVO_EXPIRACAO_AUTOMATICA = (
 )
 
 
-def expirar_tentativas_pendentes() -> int:
+def expirar_tentativas_pendentes() -> list[dict]:
     """
     Expira tentativas vencidas e grava o histórico na mesma transação.
+    Retorna a lista de tentativas expiradas.
     """
     agora = agora_acesso()
 
@@ -57,7 +58,7 @@ def expirar_tentativas_pendentes() -> int:
                     tentativa["local_id"],
                 )
 
-    return len(expiradas)
+    return expiradas
 
 
 async def loop_expiracao_periodica() -> None:
@@ -67,17 +68,48 @@ async def loop_expiracao_periodica() -> None:
     Um erro de banco não derruba a task. A próxima execução tentará
     novamente após o intervalo configurado.
     """
+    from app.schemas.websocket_schema import manager
+    from app.utils.access_time import iso_acesso
+
     while True:
         try:
-            quantidade = await asyncio.to_thread(
+            expiradas = await asyncio.to_thread(
                 expirar_tentativas_pendentes
             )
 
-            if quantidade:
+            if expiradas:
                 logger.info(
                     "[Expiracao] %d tentativa(s) marcada(s) como EXPIRADO.",
-                    quantidade,
+                    len(expiradas),
                 )
+                agora = agora_acesso()
+                for tentativa in expiradas:
+                    await manager.broadcast(
+                        {
+                            "type": "TENTATIVA_EXPIRADA",
+                            "data": {
+                                "tentativa_id": str(tentativa["tentativa_id"]),
+                                "motivo": _MOTIVO_EXPIRACAO_AUTOMATICA,
+                            },
+                        }
+                    )
+                    await manager.broadcast(
+                        {
+                            "type": "NOVO_ACESSO",
+                            "data": {
+                                "id": None,
+                                "usuario_id": tentativa["usuario_id"],
+                                "nome_usuario": None,
+                                "local_id": tentativa["local_id"],
+                                "autorizado": False,
+                                "percentual_similaridade": None,
+                                "motivo_recusa": _MOTIVO_EXPIRACAO_AUTOMATICA,
+                                "data_hora": iso_acesso(agora),
+                                "tentativa_id": str(tentativa["tentativa_id"]),
+                                "tempo_resposta_ms": None,
+                            },
+                        }
+                    )
 
         except asyncio.CancelledError:
             logger.info("[Expiracao] Task encerrada.")

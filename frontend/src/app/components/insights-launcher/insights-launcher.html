@@ -1,26 +1,46 @@
 @if (auth.isLoggedIn() && rotaAtual() !== '/ia') {
-  <aside class="insights-launcher" aria-label="Assistente de análises">
+  <aside class="insights-launcher" aria-label="Assistente de análises iArdLock">
     @if (aberto()) {
-      <div class="launcher-panel">
+      <div class="launcher-panel" data-tone="ia">
         <div class="launcher-header">
-          <div><span>iArdLock</span><strong>O que você quer analisar?</strong></div>
-          <button type="button" class="close-launcher" (click)="aberto.set(false)" aria-label="Fechar assistente"><mat-icon>close</mat-icon></button>
-        </div>
-        <p>Faça uma pergunta sobre os dados do sistema. A resposta abrirá na página de análises.</p>
-        <label for="launcher-question" class="sr-only">Sua pergunta</label>
-        <textarea id="launcher-question" [(ngModel)]="pergunta" maxlength="500" rows="3" placeholder="Ex.: Quantos acessos tivemos hoje?"
-          (keydown)="tratarAtalhoEnvio($event)"></textarea>
-        <div class="launcher-actions">
-          <button type="button" class="open-page" (click)="abrirPagina()">Abrir análises</button>
-          <button type="button" class="send-question" [disabled]="pergunta.trim().length < 3" (click)="enviar()">
-            <mat-icon>arrow_upward</mat-icon> Perguntar
+          <span class="launcher-icon" aria-hidden="true"><mat-icon>auto_awesome</mat-icon></span>
+          <div>
+            <strong>Pergunte aos dados</strong>
+            <p>A resposta abre na página do iArdLock.</p>
+          </div>
+          <button type="button" class="ard-icon-btn" (click)="aberto.set(false)" aria-label="Fechar assistente">
+            <mat-icon aria-hidden="true">close</mat-icon>
           </button>
         </div>
-        <span class="keyboard-hint">Shift+Enter ou Ctrl+Enter para enviar</span>
+        <label for="launcher-question" class="ard-sr-only">Sua pergunta</label>
+        <textarea
+          id="launcher-question"
+          class="ard-input"
+          [(ngModel)]="pergunta"
+          maxlength="500"
+          rows="3"
+          placeholder="Ex.: Quantos acessos foram negados hoje?"
+          (keydown)="tratarAtalhoEnvio($event)"
+        ></textarea>
+        <span class="ard-hint">Ctrl+Enter ou Shift+Enter envia.</span>
+        <div class="launcher-actions">
+          <button type="button" class="ard-btn is-quiet is-compact" (click)="abrirPagina()">Abrir o iArdLock</button>
+          <button type="button" class="ard-btn is-primary is-compact" [disabled]="pergunta.trim().length < 3" (click)="enviar()">
+            <mat-icon aria-hidden="true">arrow_upward</mat-icon>
+            Perguntar
+          </button>
+        </div>
       </div>
     }
-    <button type="button" class="launcher-fab" (click)="aberto.set(!aberto())" [attr.aria-expanded]="aberto()" aria-label="Abrir assistente de análises">
-      <mat-icon>{{ aberto() ? 'close' : 'auto_awesome' }}</mat-icon>
+    <button
+      type="button"
+      class="launcher-fab"
+      data-tone="ia"
+      (click)="aberto.set(!aberto())"
+      [attr.aria-expanded]="aberto()"
+      [attr.aria-label]="aberto() ? 'Fechar assistente de análises' : 'Abrir assistente de análises'"
+    >
+      <mat-icon aria-hidden="true">{{ aberto() ? 'close' : 'auto_awesome' }}</mat-icon>
       <span>{{ aberto() ? 'Fechar' : 'Pergunte aos dados' }}</span>
     </button>
   </aside>

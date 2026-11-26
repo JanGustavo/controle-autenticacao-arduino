@@ -1,122 +1,166 @@
-<div class="page-wrapper">
-  <div class="page-header">
-    <div class="header-titles">
-      <a routerLink="/adm-page" class="back-link">
-        <mat-icon>arrow_back</mat-icon>
-        Voltar
-      </a>
-      <div class="module-heading">
-        <span class="module-icon"><mat-icon>fact_check</mat-icon></span>
-        <div><h2>Logs de Auditoria</h2><p>Histórico de ações realizadas pelos administradores</p></div>
+<div class="ard-page">
+  <a routerLink="/adm-page" class="ard-back"><mat-icon aria-hidden="true">arrow_back</mat-icon>Painel administrativo</a>
+  <header class="ard-head">
+    <div class="ard-head-main">
+      <span class="ard-module-icon" data-tone="auditoria" aria-hidden="true"><mat-icon>fact_check</mat-icon></span>
+      <div>
+        <h1>Auditoria</h1>
+        <p>Quem fez o quê no painel, quando e de onde.</p>
       </div>
     </div>
-  </div>
+  </header>
 
-  <div class="content-grid">
-    <div class="list-card">
-      @if (erro) {
-        <div class="error-banner">
-          <mat-icon>error_outline</mat-icon>
-          <span>{{ erro }}</span>
-        </div>
-      } @else if (carregando) {
-        <div class="skeleton-table" aria-label="Carregando logs de auditoria">
-          @for (item of [1, 2, 3, 4, 5]; track item) {
-            <div class="skeleton-row">
-              <span class="skeleton-cell"></span>
-              <span class="skeleton-cell"></span>
-              <span class="skeleton-cell"></span>
-              <span class="skeleton-cell"></span>
-              <span class="skeleton-cell"></span>
-            </div>
+  <section class="ard-panel" aria-labelledby="aud-titulo" [attr.aria-busy]="carregando">
+    <div class="ard-panel-head">
+      <div>
+        <h2 id="aud-titulo">Registro de ações</h2>
+        <p>
+          @if (carregando) {
+            Carregando.
+          } @else if (erro) {
+            Registro indisponível.
+          } @else {
+            {{ logs.length }} {{ logs.length === 1 ? 'ação registrada' : 'ações registradas' }}
           }
-        </div>
-      } @else if (logs.length === 0) {
-        <div class="empty-state">
-          <mat-icon>history</mat-icon>
-          <p>Nenhum log de auditoria encontrado.</p>
-        </div>
-      } @else {
-        <div class="table-container" tabindex="0" role="region" aria-label="Tabela de registros; deslize para ver todas as colunas">
-          <table class="locais-table">
-            <thead>
-              <tr>
-                <th>Data</th>
-                <th>Administrador</th>
-                <th>Ação</th>
-                <th>Recurso</th>
-                <th>Detalhes</th>
-                <th>IP</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (log of logs; track log.id) {
-                <tr>
-                  <td>{{ formatDate(log.created_at) }}</td>
-                  <td>
-                    <strong>{{ log.admin_nome }}</strong
-                    ><br />
-                    <small style="color: #aeee00">ID: {{ log.admin_id }}</small>
-                  </td>
-                  <td>
-                    <span
-                      class="badge"
-                      style="
-                        background: #3636ac;
-                        color: #fafafa;
-                        padding: 4px 8px;
-                        border-radius: 4px;
-                        font-size: 12px;
-                        font-weight: 500;
-                      "
-                    >
-                      {{ log.action }}
-                    </span>
-                  </td>
-                  <td>
-                    {{ log.resource_type }}
-                    @if (log.resource_id) {
-                      <strong>#{{ log.resource_id }}</strong>
-                    }
-                  </td>
-                  <td
-                    style="
-                      max-width: 200px;
-                      white-space: nowrap;
-                      overflow: hidden;
-                      text-overflow: ellipsis;
-                    "
-                    [title]="log.description"
-                  >
-                    {{ log.description }}
-                  </td>
-                  <td>
-                    <small>{{ log.ip_address }}</small>
-                  </td>
-                  <td>
-                    <span
-                      class="status-pill"
-                      [ngStyle]="{
-                        'background-color':
-                          log.status?.toUpperCase() === 'SUCCESS' ? '#2e7d32' : '#d32f2f',
-                        color: '#ffffff',
-                        padding: '4px 8px',
-                        'border-radius': '4px',
-                        'font-size': '12px',
-                        'font-weight': '500',
-                        display: 'inline-block',
-                      }"
-                    >
-                      {{ log.status?.toUpperCase() === 'SUCCESS' ? 'Sucesso' : log.status }}
-                    </span>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
+        </p>
+      </div>
+      @if (!carregando && !erro && totalFalhas) {
+        <button type="button" class="ard-badge is-bad falhas" (click)="resultadoFiltro.set('falha')" matTooltip="Mostrar só as falhas">
+          {{ totalFalhas }} {{ totalFalhas === 1 ? 'falha' : 'falhas' }}
+        </button>
       }
     </div>
-  </div>
+
+    <div class="ard-toolbar">
+      <label class="ard-search">
+        <span class="ard-sr-only">Buscar na auditoria</span>
+        <mat-icon aria-hidden="true">search</mat-icon>
+        <input
+          type="search"
+          [value]="busca()"
+          (input)="busca.set($any($event.target).value)"
+          placeholder="Administrador, descrição ou IP"
+          autocomplete="off"
+        />
+      </label>
+      <div class="ard-filter">
+        <label for="aud-acao">Ação</label>
+        <select id="aud-acao" [value]="categoriaFiltro()" (change)="categoriaFiltro.set($any($event.target).value)">
+          <option value="todas">Todas</option>
+          <option value="criacao">Criação</option>
+          <option value="alteracao">Alteração</option>
+          <option value="exclusao">Exclusão</option>
+          <option value="acesso">Acesso ao painel</option>
+        </select>
+      </div>
+      <div class="ard-filter">
+        <label for="aud-resultado">Resultado</label>
+        <select id="aud-resultado" [value]="resultadoFiltro()" (change)="resultadoFiltro.set($any($event.target).value)">
+          <option value="todos">Todos</option>
+          <option value="sucesso">Sucesso</option>
+          <option value="falha">Falha</option>
+        </select>
+      </div>
+    </div>
+
+    @if (carregando) {
+      <div class="ard-sk-rows" aria-hidden="true">
+        @for (item of [1, 2, 3, 4, 5]; track item) {
+          <div><span class="ard-sk"></span><span class="ard-sk"></span><span class="ard-sk"></span><span class="ard-sk"></span></div>
+        }
+      </div>
+    } @else if (erro) {
+      <div class="ard-state is-error" role="alert">
+        <mat-icon aria-hidden="true">cloud_off</mat-icon>
+        <div>
+          <strong>{{ erro }}</strong>
+          <p>Verifique a conexão com o servidor e tente de novo.</p>
+          <div class="ard-state-actions">
+            <button type="button" class="ard-btn" (click)="carregar()">Tentar novamente</button>
+          </div>
+        </div>
+      </div>
+    } @else if (!logs.length) {
+      <div class="ard-state">
+        <mat-icon aria-hidden="true">history</mat-icon>
+        <div>
+          <strong>Nenhuma ação registrada</strong>
+          <p>Entradas no painel e alterações em usuários, permissões, locais e dispositivos aparecem aqui.</p>
+        </div>
+      </div>
+    } @else if (!exibidos.length) {
+      <div class="ard-state">
+        <mat-icon aria-hidden="true">search_off</mat-icon>
+        <div>
+          <strong>Nenhuma ação para estes filtros</strong>
+          <p>Limpe os filtros para ver o registro completo.</p>
+          <div class="ard-state-actions">
+            <button type="button" class="ard-btn" (click)="limparFiltros()">Limpar filtros</button>
+          </div>
+        </div>
+      </div>
+    } @else {
+      <div class="ard-table-wrap">
+        <table class="ard-table">
+          <thead>
+            <tr>
+              <th scope="col">Quando</th>
+              <th scope="col">Administrador</th>
+              <th scope="col">Ação</th>
+              <th scope="col">Recurso</th>
+              <th scope="col">Detalhes</th>
+              <th scope="col">Origem</th>
+              <th scope="col">Resultado</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (log of exibidos; track log.id) {
+              @let quando = partesData(log.created_at);
+              <tr>
+                <td class="is-lead ard-num">
+                  <span class="ard-cell-title">{{ quando.hora }}</span>
+                  <span class="ard-cell-sub">{{ quando.data }}</span>
+                </td>
+                <td data-label="Administrador">
+                  <span class="ard-cell-title">{{ log.admin_nome }}</span>
+                  <span class="ard-cell-sub">ID {{ log.admin_id }}</span>
+                </td>
+                <td data-label="Ação">
+                  <span class="acao" [attr.data-categoria]="categoria(log.action)">
+                    <mat-icon aria-hidden="true">{{ icone(log) }}</mat-icon>{{ verbo(log) }}
+                  </span>
+                  <span class="ard-cell-sub"><code class="codigo">{{ log.action }}</code></span>
+                </td>
+                <td data-label="Recurso">
+                  {{ recurso(log) }}
+                  @if (log.resource_id) {
+                    <span class="ard-muted ard-num">#{{ log.resource_id }}</span>
+                  }
+                </td>
+                <td data-label="Detalhes" class="is-wide detalhes">{{ log.description }}</td>
+                <td data-label="Origem">
+                  @if (log.ip_address) {
+                    <code class="ard-code" [matTooltip]="log.user_agent || ''">{{ log.ip_address }}</code>
+                  } @else {
+                    <span class="ard-muted">Sem IP</span>
+                  }
+                </td>
+                <td data-label="Resultado" class="is-corner">
+                  <span class="ard-badge" [class.is-ok]="sucesso(log)" [class.is-bad]="!sucesso(log)" [attr.title]="log.status">
+                    {{ sucesso(log) ? 'Sucesso' : (log.status || '').toUpperCase() === 'FAILURE' ? 'Falha' : log.status }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      @if (filtrando) {
+        <div class="ard-panel-foot">
+          <span>Exibindo {{ exibidos.length }} de {{ logs.length }} ações</span>
+          <button type="button" class="ard-btn is-quiet is-compact" (click)="limparFiltros()">Limpar filtros</button>
+        </div>
+      }
+    }
+  </section>
 </div>

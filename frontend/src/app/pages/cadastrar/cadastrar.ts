@@ -10,12 +10,9 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
-import { Subscription } from 'rxjs';
 import {
   ApiService,
   DispositivoSimplesResponse,
@@ -25,7 +22,7 @@ import {
 import { SpeechService } from '../../services/speech.service';
 import { VisorFacial } from '../../components/visor-facial/visor-facial';
 import { WebcamService } from '../../services/webcam.service';
-import { WebSocketLogsService } from '../../services/websocket-logs.service';
+import { OperacaoRfidService } from '../../services/operacao-rfid.service';
 
 export interface LocalPermissaoItem {
   local_id: number;
@@ -44,9 +41,7 @@ export interface LocalPermissaoItem {
     CommonModule,
     VisorFacial,
     FormsModule,
-    MatButtonModule,
     MatIconModule,
-    MatProgressSpinnerModule,
     MatSnackBarModule,
     ReactiveFormsModule,
     MatDialogModule,
@@ -65,7 +60,9 @@ export class CadastrarPage implements OnInit, OnDestroy {
   private snackBar = inject(MatSnackBar);
   private speech = inject(SpeechService);
   public webcam = inject(WebcamService);
-  public wsLogs = inject(WebSocketLogsService);
+  public operacoes = inject(OperacaoRfidService);
+  /** O cadastro é a operação ativa: leituras não abrem a validação facial. */
+  private fecharSessao = this.operacoes.abrirSessao();
 
   modoTotem = signal(true);
   cameraOpened = false;
@@ -73,7 +70,6 @@ export class CadastrarPage implements OnInit, OnDestroy {
   submitted = false;
   saving = false;
   lendoRfidMock = false;
-  aguardandoRfid = false;
   dispositivoRfidSelecionadoId: number | null = null;
   dispositivosCarregando = true;
   dispositivosErro = '';
@@ -85,7 +81,11 @@ export class CadastrarPage implements OnInit, OnDestroy {
   locaisErro = '';
   fotoPreviewUrl: string | null = null;
   private fotoCapturada: Blob | File | null = null;
-  private wsSubscription: Subscription | null = null;
+
+  /** Aguardando o cartão no leitor reservado para este formulário. */
+  get aguardandoRfid(): boolean {
+    return this.operacoes.capturando();
+  }
 
   get dispositivoRfidSelecionado(): DispositivoSimplesResponse | null {
     if (
@@ -104,6 +104,31 @@ export class CadastrarPage implements OnInit, OnDestroy {
 
   get identificadorRfidSelecionado(): string {
     return this.dispositivoRfidSelecionado?.identificador ?? '';
+  }
+
+  /** Etapas obrigatórias do cadastro, na ordem do formulário, com o estado real de cada uma. */
+  get etapas(): { rotulo: string; secao: string; ok: boolean }[] {
+    const { nome, cpf, uid_card } = this.form.controls;
+    return [
+      { rotulo: 'Pessoa', secao: 'secao-pessoa', ok: nome.valid && cpf.valid },
+      { rotulo: 'Cartão', secao: 'secao-cartao', ok: !!uid_card.value },
+      { rotulo: 'Rosto', secao: 'secao-rosto', ok: !!this.fotoCapturada },
+      { rotulo: 'Locais', secao: 'secao-locais', ok: this.locaisPermissao.some((item) => item.selecionado) },
+    ];
+  }
+
+  /** Rola o formulário até uma seção e leva o foco para o título dela. */
+  irPara(secao: string): void {
+    const alvo = document.getElementById(secao);
+    if (!alvo) return;
+    const reduzir = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    alvo.scrollIntoView({ behavior: reduzir ? 'auto' : 'smooth', block: 'start' });
+    alvo.focus({ preventScroll: true });
+  }
+
+  /** Escolhe o modo de captura facial sem alternar quando já está nele. */
+  definirModoTotem(automatico: boolean): void {
+    if (this.modoTotem() !== automatico) this.toggleModoTotem();
   }
 
   form = this.formBuilder.nonNullable.group({
@@ -157,23 +182,6 @@ export class CadastrarPage implements OnInit, OnDestroy {
       },
     });
 
-    this.wsSubscription = this.wsLogs.obterLogsEmTempoReal().subscribe({
-      next: (evento) => {
-        if (evento.type !== 'RFID_LIDO' || !this.aguardandoRfid || !evento.data.uid_card) {
-          return;
-        }
-
-        const eventoDisp = (evento.data.identificador_dispositivo || '').trim().toUpperCase();
-        const leitorAtual = (this.identificadorRfidSelecionado || '').trim().toUpperCase();
-
-        if (eventoDisp && leitorAtual && eventoDisp !== leitorAtual) {
-          return;
-        }
-
-        this.aplicarLeituraRfid(evento.data.uid_card);
-      },
-    });
-
     await this.webcam.carregarModelos();
   }
 
@@ -184,7 +192,9 @@ export class CadastrarPage implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.pararWebcam();
     this.speech.parar();
-    this.wsSubscription?.unsubscribe();
+    // Fechar o cadastro cancela a leitura pendente e devolve o leitor ao acesso.
+    this.operacoes.cancelarCaptura();
+    this.fecharSessao();
   }
 
   toggleModoTotem(): void {
@@ -239,12 +249,27 @@ export class CadastrarPage implements OnInit, OnDestroy {
     }
 
     this.errorMessage = '';
-    this.aguardandoRfid = true;
     this.speech.falar('Aproxime o cartão do leitor RFID.');
+    this.operacoes
+      .capturarCartao(
+        this.identificadorRfidSelecionado,
+        (uid) => this.aplicarLeituraRfid(uid),
+        () => {
+          this.errorMessage =
+            'O tempo para aproximar o cartão acabou e o leitor voltou ao modo de acesso. Clique em Iniciar leitura para tentar de novo.';
+          this.cdr.markForCheck();
+        },
+      )
+      .catch(() => {
+        this.speech.parar();
+        this.errorMessage =
+          'Não foi possível reservar o leitor para a leitura do cartão. Verifique a conexão e tente novamente.';
+        this.cdr.markForCheck();
+      });
   }
 
   cancelarLeituraRfid(): void {
-    this.aguardandoRfid = false;
+    this.operacoes.cancelarCaptura();
     this.speech.parar();
   }
 
@@ -254,9 +279,9 @@ export class CadastrarPage implements OnInit, OnDestroy {
     this.form.patchValue({ uid_card: uidNormalizado || '' });
     this.form.get('uid_card')?.markAsDirty();
     this.form.get('uid_card')?.markAsTouched();
-    this.aguardandoRfid = false;
+    this.cdr.markForCheck();
 
-    this.snackBar.open(`Cartão RFID lido: ${uidNormalizado}`, 'OK', { duration: 3500 });
+    this.snackBar.open(`Cartão RFID lido: ${uidNormalizado}`, 'Fechar', { duration: 3500 });
     this.speech.falar('Cartão identificado.');
   }
 
@@ -286,11 +311,13 @@ export class CadastrarPage implements OnInit, OnDestroy {
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.irPara('secao-pessoa');
       return;
     }
 
     if (!this.identificadorRfidSelecionado) {
       this.errorMessage = 'Selecione o dispositivo que fará a leitura do cartão.';
+      this.irPara('secao-cartao');
       return;
     }
 
@@ -298,11 +325,13 @@ export class CadastrarPage implements OnInit, OnDestroy {
 
     if (!locaisSelecionados.length) {
       this.errorMessage = 'Selecione pelo menos um local e configure seu horário de acesso.';
+      this.irPara('secao-locais');
       return;
     }
 
     if (!this.fotoCapturada) {
-      this.errorMessage = 'Conclua a captura facial antes de criar o usuário.';
+      this.errorMessage = 'Conclua a captura facial antes de cadastrar o usuário.';
+      this.irPara('secao-rosto');
       return;
     }
 
@@ -312,6 +341,7 @@ export class CadastrarPage implements OnInit, OnDestroy {
 
     if (!uidNormalizado) {
       this.errorMessage = 'Faça a leitura do cartão RFID antes de salvar.';
+      this.irPara('secao-cartao');
       return;
     }
 
@@ -347,7 +377,8 @@ export class CadastrarPage implements OnInit, OnDestroy {
                   next: () => {
                     this.saving = false;
                     this.cdr.markForCheck();
-                    this.successMessage = `Usuário ${usuario.nome} cadastrado com cartão, biometria e ${locaisSelecionados.length} permissões.`;
+                    const total = locaisSelecionados.length;
+                    this.successMessage = `Usuário ${usuario.nome} cadastrado com cartão, biometria e ${total} ${total === 1 ? 'permissão' : 'permissões'}.`;
                     this.snackBar.open(this.successMessage, 'Fechar', { duration: 6000 });
                     this.speech.falar('Usuário cadastrado com sucesso.');
                     this.dialogRef.close({ criado: true, mensagem: this.successMessage });
@@ -393,7 +424,7 @@ export class CadastrarPage implements OnInit, OnDestroy {
     this.submitted = false;
     this.saving = false;
     this.cdr.markForCheck();
-    this.aguardandoRfid = false;
+    this.operacoes.cancelarCaptura();
     this.dispositivoRfidSelecionadoId = null;
     this.successMessage = '';
     this.errorMessage = '';
@@ -440,6 +471,10 @@ export class CadastrarPage implements OnInit, OnDestroy {
 
   toggleLocal(item: LocalPermissaoItem): void {
     item.selecionado = !item.selecionado;
+    // O aviso de "selecione um local" deixa de valer assim que um local é marcado.
+    if (item.selecionado && this.errorMessage.startsWith('Selecione pelo menos um local')) {
+      this.errorMessage = '';
+    }
   }
 
   toggleDiaLocal(item: LocalPermissaoItem, dia: number): void {

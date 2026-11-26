@@ -151,6 +151,7 @@ que permanece como hardening posterior.
 - `GET /api/v1/health`: aplicação
 - `GET /api/v1/health/db`: PostgreSQL
 - `POST /api/v1/arduino/verificar-cartao`: inicia tentativa
+- `POST /api/v1/arduino/captura-cartao`: reserva a próxima leitura só para preencher um cadastro
 - `POST /api/v1/arduino/verificar-face`: fecha biometria 1:1
 - `GET /api/v1/arduino/resultado-acesso`: decisão para o ESP32
 

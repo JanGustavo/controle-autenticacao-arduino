@@ -1,132 +1,321 @@
-<main class="ia-page">
-  <header class="ia-heading">
-    <div class="ia-mark"><mat-icon>auto_awesome</mat-icon></div>
-    <div>
-      <h1>iArdLock <span class="heading-accent">Insights</span></h1>
-      <p>Pergunte sobre acessos, logins, usuários e o que acontece no seu sistema.</p>
+<main class="ia-page ard-page">
+  <a routerLink="/adm-page" class="ard-back"><mat-icon aria-hidden="true">arrow_back</mat-icon>Painel administrativo</a>
+  <header class="ard-head">
+    <div class="ard-head-main">
+      <span class="ard-module-icon" data-tone="ia" aria-hidden="true"><mat-icon>auto_awesome</mat-icon></span>
+      <div>
+        <h1>iArdLock</h1>
+        <p>Pergunte sobre acessos, logins, usuários e o que acontece no seu sistema.</p>
+      </div>
     </div>
   </header>
 
-  <section class="ia-composer" aria-label="Perguntar à IA">
-    <div class="composer-title"><mat-icon>chat_bubble_outline</mat-icon><label for="ia-pergunta">O que você quer descobrir?</label></div>
-    <textarea id="ia-pergunta" [(ngModel)]="pergunta" maxlength="500" rows="3"
-      placeholder="Escreva uma pergunta sobre os dados do ArdLock..." (keydown)="tratarAtalhoEnvio($event)"></textarea>
-    <div class="composer-footer">
-      <span class="helper-text">Uma pergunta clara ajuda a encontrar o insight certo. Shift+Enter ou Ctrl+Enter para enviar.</span>
-      <button class="primary-button" type="button" (click)="consultar()" [disabled]="consultando() || pergunta.trim().length < 3">
-        <mat-icon>{{ consultando() ? 'hourglass_top' : 'arrow_upward' }}</mat-icon>
-        {{ consultando() ? 'Analisando...' : 'Perguntar' }}
-      </button>
-    </div>
-    <div class="suggestions" aria-label="Sugestões de perguntas">
-      <span>Experimente perguntar</span>
-      @for (sugestao of sugestoes; track sugestao) {
-        <button class="suggestion" type="button" (click)="preencher(sugestao)">{{ sugestao }}</button>
+  <div class="ia-grid">
+    <!-- Conversa -->
+    <div class="ia-conversa">
+      <section class="ard-panel ia-composer" aria-label="Perguntar à IA">
+        <div class="ard-field">
+          <label for="ia-pergunta">O que você quer descobrir?</label>
+          <textarea
+            id="ia-pergunta"
+            [(ngModel)]="pergunta"
+            maxlength="500"
+            rows="3"
+            placeholder="Escreva uma pergunta sobre os dados do ArdLock..."
+            (keydown)="tratarAtalhoEnvio($event)"
+            aria-describedby="ia-dica"
+          ></textarea>
+        </div>
+        <div class="composer-rodape">
+          <span id="ia-dica" class="ard-hint">
+            Uma pergunta clara ajuda a encontrar o insight certo. <kbd>Ctrl</kbd> + <kbd>Enter</kbd> ou
+            <kbd>Shift</kbd> + <kbd>Enter</kbd> envia.
+          </span>
+          <span class="contador ard-num" aria-hidden="true">{{ pergunta.length }}/500</span>
+          <button
+            class="ard-btn is-primary"
+            type="button"
+            (click)="consultar()"
+            [disabled]="consultando() || pergunta.trim().length < 3"
+            [attr.aria-busy]="consultando()"
+          >
+            @if (consultando()) {
+              <span class="ard-spinner" aria-hidden="true"></span>
+              Analisando
+            } @else {
+              <mat-icon aria-hidden="true">arrow_upward</mat-icon>
+              Perguntar
+            }
+          </button>
+        </div>
+        <div class="sugestoes" role="group" aria-labelledby="ia-sugestoes-rotulo">
+          <span id="ia-sugestoes-rotulo">Experimente perguntar</span>
+          @for (sugestao of sugestoes; track sugestao) {
+            <button class="sugestao" type="button" (click)="preencher(sugestao)">{{ sugestao }}</button>
+          }
+        </div>
+      </section>
+
+      @if (erro()) {
+        <p class="ard-notice is-error" role="alert">
+          <mat-icon aria-hidden="true">error</mat-icon><span>{{ erro() }}</span>
+        </p>
       }
-    </div>
-  </section>
 
-  @if (erro()) { <p class="ia-error" role="alert">{{ erro() }}</p> }
-
-  @if (historico().length) {
-    <section class="answers" aria-label="Respostas salvas">
-      <div class="answers-heading">
-        <div><span class="eyebrow">SUA CONVERSA</span><h2>Respostas salvas</h2></div>
-        <span class="saved-count">{{ historico().length }} {{ historico().length === 1 ? 'resposta' : 'respostas' }}</span>
-      </div>
-      @for (item of historico(); track item.id) {
-        <article class="ia-response">
-          <div class="response-header">
-            <div class="response-title"><span class="response-icon"><mat-icon>auto_awesome</mat-icon></span>
-              <div><span class="eyebrow">RESPOSTA · {{ item.criado_em | date:'dd/MM/yyyy, HH:mm' }}</span><h3>{{ item.titulo || 'Análise de acessos' }}</h3></div>
-            </div>
-            <div class="response-actions">
-            <button class="refresh-button" type="button" (click)="atualizar(item.id)" [disabled]="atualizando() !== null || apagando() !== null"
-              [attr.aria-label]="'Atualizar análise: ' + item.pergunta" title="Refazer a pergunta com os dados atuais">
-              <mat-icon>{{ atualizando() === item.id ? 'hourglass_top' : 'refresh' }}</mat-icon><span>{{ atualizando() === item.id ? 'Atualizando...' : 'Atualizar' }}</span>
-            </button>
-            <button class="delete-button" type="button" (click)="apagar(item.id)" [disabled]="apagando() !== null || atualizando() !== null"
-              [attr.aria-label]="'Apagar resposta: ' + item.pergunta" title="Apagar resposta">
-              <mat-icon>delete_outline</mat-icon><span>Apagar</span>
-            </button>
+      @if (consultando()) {
+        <article class="ard-panel resposta is-pendente" aria-live="polite">
+          <div class="resposta-topo">
+            <span class="resposta-icone" aria-hidden="true"><mat-icon>auto_awesome</mat-icon></span>
+            <div class="resposta-titulo">
+              <h3>Analisando sua pergunta</h3>
+              <p class="ard-muted">{{ pergunta }}</p>
             </div>
           </div>
-          <details class="response-question">
-            <summary>Ver pergunta original</summary>
-            <p>{{ item.pergunta }}</p>
-          </details>
-          <div class="markdown-body" [innerHTML]="renderizar(item.resposta)"></div>
+          <div class="pendente-linhas" aria-hidden="true">
+            <span class="ard-sk"></span><span class="ard-sk"></span><span class="ard-sk"></span>
+          </div>
         </article>
       }
-    </section>
-  }
 
-  @if (carregando()) {
-    <p class="ia-loading">Preparando insights...</p>
-  } @else if (resumo(); as dados) {
-    <section class="insights" aria-label="Insights de acesso">
-      <div class="insights-heading">
-        <div><span class="eyebrow">PANORAMA</span><h2>Insights de acesso</h2></div>
-        <span>Atualizados com os registros do sistema</span>
-      </div>
-      <div class="insight-grid">
-        <article class="insight-card blue">
-          <div class="card-top"><span>Acessos hoje</span><span class="metric-icon"><mat-icon>today</mat-icon></span></div>
-          <strong>{{ dados.insights.acessos_hoje }}</strong>
-          <p>
-            @if (dados.insights.variacao_hoje !== null) {
-              <span class="trend" [class.up]="dados.insights.variacao_hoje! > 0" [class.down]="dados.insights.variacao_hoje! < 0">
-                {{ dados.insights.variacao_hoje! > 0 ? '+' : '' }}{{ dados.insights.variacao_hoje }}%
-              </span> em relação a ontem
-            } @else { Sem base de comparação ontem }
-          </p>
-        </article>
-        <article class="insight-card violet">
-          <div class="card-top"><span>Média diária</span><span class="metric-icon"><mat-icon>monitoring</mat-icon></span></div>
-          <strong>{{ dados.insights.media_diaria_7_dias }}</strong>
-          <p>tentativas por dia nos últimos 7 dias</p>
-        </article>
-        <article class="insight-card green">
-          <div class="card-top"><span>Aceitos · 7 dias</span><span class="metric-icon"><mat-icon>check_circle_outline</mat-icon></span></div>
-          <strong>{{ dados.insights.percentual_aceitos_7_dias }}%</strong>
-          <div class="meter" role="img" [attr.aria-label]="dados.insights.aceitos_7_dias + ' acessos aceitos nos últimos 7 dias'">
-            <span [style.width.%]="dados.insights.percentual_aceitos_7_dias"></span>
+      @if (historico().length) {
+        <section class="respostas" aria-labelledby="ia-respostas-titulo">
+          <div class="respostas-topo">
+            <h2 id="ia-respostas-titulo">Respostas salvas</h2>
+            <span class="ard-muted">{{ historico().length }} {{ historico().length === 1 ? 'resposta' : 'respostas' }}</span>
           </div>
-          <p>{{ dados.insights.aceitos_7_dias }} de {{ dados.insights.acessos_7_dias }} tentativas</p>
-        </article>
-        <article class="insight-card red">
-          <div class="card-top"><span>Negados · 7 dias</span><span class="metric-icon"><mat-icon>block</mat-icon></span></div>
-          <strong>{{ dados.insights.negados_7_dias }}</strong>
-          <p>tentativas que merecem atenção</p>
-        </article>
-      </div>
-      <div class="insight-details">
-        <article class="chart-card">
-          <div class="detail-heading"><div><h3>Ritmo da semana</h3><p>Volume diário de tentativas de acesso</p></div><span>7 dias</span></div>
-          <div class="daily-chart" role="img" aria-label="Tentativas de acesso por dia nos últimos sete dias">
-            @for (dia of dados.insights.serie_7_dias; track dia.dia) {
-              <div class="day-column" [title]="dia.dia + ': ' + dia.total + ' tentativas, ' + dia.aceitos + ' aceitas, ' + dia.negados + ' negadas'">
-                <span class="bar-value">{{ dia.total }}</span>
-                <div class="bar-track"><span class="bar-fill" [style.height.%]="alturaBarra(dia.total)"></span></div>
-                <span class="day-label">{{ diaLabel(dia.dia) }}</span>
+          @for (item of historico(); track item.id) {
+            <article class="ard-panel resposta" [class.is-atualizando]="atualizando() === item.id">
+              <div class="resposta-topo">
+                <span class="resposta-icone" aria-hidden="true"><mat-icon>auto_awesome</mat-icon></span>
+                <div class="resposta-titulo">
+                  <h3>{{ item.titulo || 'Análise de acessos' }}</h3>
+                  <time class="ard-muted" [attr.datetime]="item.criado_em">{{ item.criado_em | date: 'dd/MM/yyyy, HH:mm' }}</time>
+                </div>
+                <div class="resposta-acoes">
+                  <button
+                    class="ard-btn is-compact"
+                    type="button"
+                    (click)="atualizar(item.id)"
+                    [disabled]="atualizando() !== null || apagando() !== null"
+                    [attr.aria-label]="'Atualizar análise: ' + item.pergunta"
+                    title="Refazer a pergunta com os dados atuais"
+                  >
+                    @if (atualizando() === item.id) {
+                      <span class="ard-spinner" aria-hidden="true"></span>
+                      Atualizando
+                    } @else {
+                      <mat-icon aria-hidden="true">refresh</mat-icon>
+                      Atualizar
+                    }
+                  </button>
+                  <button
+                    class="ard-btn is-compact is-danger"
+                    type="button"
+                    (click)="apagar(item.id)"
+                    [disabled]="apagando() !== null || atualizando() !== null"
+                    [attr.aria-label]="'Apagar resposta: ' + item.pergunta"
+                    title="Apagar resposta"
+                  >
+                    @if (apagando() === item.id) {
+                      <span class="ard-spinner" aria-hidden="true"></span>
+                    } @else {
+                      <mat-icon aria-hidden="true">delete</mat-icon>
+                    }
+                    Apagar
+                  </button>
+                </div>
               </div>
+              <details class="resposta-pergunta">
+                <summary>Ver pergunta original</summary>
+                <p>{{ item.pergunta }}</p>
+              </details>
+              <div class="markdown-body" [innerHTML]="renderizar(item.resposta)"></div>
+            </article>
+          }
+        </section>
+      } @else if (!consultando()) {
+        <div class="ard-panel ard-state">
+          <mat-icon aria-hidden="true">forum</mat-icon>
+          <div>
+            <strong>Nenhuma resposta salva</strong>
+            <p>Faça uma pergunta ou escolha uma sugestão acima. Cada resposta fica salva aqui para você atualizar depois.</p>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Panorama -->
+    <aside class="ia-panorama" aria-labelledby="ia-panorama-titulo">
+      <section class="ard-panel" [attr.aria-busy]="carregando()">
+        <div class="ard-panel-head">
+          <div>
+            <h2 id="ia-panorama-titulo">Panorama de acesso</h2>
+            <p>Calculado com os registros do sistema.</p>
+          </div>
+        </div>
+
+        @if (carregando()) {
+          <div class="ard-sk-rows" aria-hidden="true">
+            @for (linha of [1, 2, 3, 4]; track linha) {
+              <div><span class="ard-sk"></span><span class="ard-sk"></span></div>
             }
           </div>
-        </article>
-        <article class="people-card">
-          <div class="detail-heading"><div><h3>Mais movimentados</h3><p>Usuários com mais tentativas no histórico</p></div><mat-icon>groups</mat-icon></div>
-          @for (usuario of usuariosDestaque(); track usuario.id) {
-            <div class="person-row">
-              <div class="person-line"><strong>{{ usuario.nome }}</strong><span>{{ usuario.total }} tentativas</span></div>
-              <div class="split-meter" [attr.aria-label]="usuario.aceitos + ' aceitos e ' + usuario.negados + ' negados'">
-                <span class="accepted" [style.width.%]="usuario.percentual_aceitos"></span>
-                <span class="denied" [style.width.%]="usuario.percentual_negados"></span>
-              </div>
-              <small><span class="dot accepted-dot"></span>{{ usuario.percentual_aceitos }}% aceitos <span class="dot denied-dot"></span>{{ usuario.percentual_negados }}% negados</small>
+          <span class="ard-sr-only" role="status">Preparando insights...</span>
+        } @else if (resumo(); as dados) {
+          <div class="ard-metrics ia-metricas">
+            <div class="ard-metric">
+              <span>Acessos hoje</span>
+              <strong>{{ dados.insights.acessos_hoje }}</strong>
+              <small>
+                @if (dados.insights.variacao_hoje !== null) {
+                  {{ dados.insights.variacao_hoje! > 0 ? '+' : '' }}{{ dados.insights.variacao_hoje }}% em relação a ontem
+                } @else {
+                  Sem base de comparação ontem
+                }
+              </small>
             </div>
-          } @empty { <p class="empty-insight">Ainda não há tentativas registradas.</p> }
-        </article>
-      </div>
-    </section>
-  }
+            <div class="ard-metric">
+              <span>Média diária</span>
+              <strong>{{ dados.insights.media_diaria_7_dias }}</strong>
+              <small>tentativas por dia nos últimos 7 dias</small>
+            </div>
+            <div class="ard-metric">
+              <span>Aceitos em 7 dias</span>
+              <strong>{{ dados.insights.percentual_aceitos_7_dias }}%</strong>
+              <span
+                class="medidor"
+                role="img"
+                [attr.aria-label]="dados.insights.aceitos_7_dias + ' de ' + dados.insights.acessos_7_dias + ' tentativas aceitas'"
+              >
+                <span [style.width.%]="dados.insights.percentual_aceitos_7_dias"></span>
+              </span>
+              <small>{{ dados.insights.aceitos_7_dias }} de {{ dados.insights.acessos_7_dias }} tentativas</small>
+            </div>
+            <div class="ard-metric">
+              <span>Negados em 7 dias</span>
+              <strong>{{ dados.insights.negados_7_dias }}</strong>
+              <small>tentativas que merecem atenção</small>
+            </div>
+          </div>
+
+          <!-- Ritmo da semana: colunas empilhadas, aceitos na base -->
+          <div class="ia-bloco">
+            <div class="bloco-topo">
+              <div>
+                <h3>Ritmo da semana</h3>
+                <p>Tentativas por dia</p>
+              </div>
+              <ul class="legenda" aria-label="Legenda">
+                <li><span class="amostra is-ok" aria-hidden="true"></span>Aceitos</li>
+                <li><span class="amostra is-bad" aria-hidden="true"></span>Negados</li>
+              </ul>
+            </div>
+            <div class="colunas" role="list" aria-label="Tentativas de acesso por dia nos últimos sete dias">
+              @for (dia of dados.insights.serie_7_dias; track dia.dia) {
+                <div
+                  class="coluna"
+                  role="listitem"
+                  tabindex="0"
+                  [attr.aria-label]="diaCompleto(dia.dia) + ': ' + dia.total + ' tentativas, ' + dia.aceitos + ' aceitas e ' + dia.negados + ' negadas'"
+                >
+                  <span class="coluna-total ard-num" aria-hidden="true">{{ dia.total }}</span>
+                  <span class="coluna-trilho" aria-hidden="true">
+                    @if (dia.total) {
+                      <span class="coluna-pilha" [style.height.%]="alturaBarra(dia.total)">
+                        @if (dia.negados) {
+                          <span class="segmento is-bad" [style.flex-grow]="dia.negados"></span>
+                        }
+                        @if (dia.aceitos) {
+                          <span class="segmento is-ok" [style.flex-grow]="dia.aceitos"></span>
+                        }
+                      </span>
+                    }
+                  </span>
+                  <span class="coluna-dia" aria-hidden="true">{{ diaLabel(dia.dia) }}</span>
+                  <span class="dica" aria-hidden="true">
+                    <strong>{{ dia.total }} tentativas</strong>
+                    <span><i class="chave is-ok"></i>{{ dia.aceitos }} aceitas</span>
+                    <span><i class="chave is-bad"></i>{{ dia.negados }} negadas</span>
+                    <small>{{ diaCompleto(dia.dia) }}</small>
+                  </span>
+                </div>
+              }
+            </div>
+            <details class="tabela-dados">
+              <summary>Ver em tabela</summary>
+              <table class="ard-table is-fixed">
+                <thead>
+                  <tr>
+                    <th scope="col">Dia</th>
+                    <th scope="col" class="is-num">Tentativas</th>
+                    <th scope="col" class="is-num">Aceitas</th>
+                    <th scope="col" class="is-num">Negadas</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (dia of dados.insights.serie_7_dias; track dia.dia) {
+                    <tr>
+                      <td>{{ diaCompleto(dia.dia) }}</td>
+                      <td class="is-num">{{ dia.total }}</td>
+                      <td class="is-num">{{ dia.aceitos }}</td>
+                      <td class="is-num">{{ dia.negados }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </details>
+          </div>
+
+          <!-- Mais movimentados: barra fina dividida em aceitos e negados -->
+          <div class="ia-bloco">
+            <div class="bloco-topo">
+              <div>
+                <h3>Mais movimentados</h3>
+                <p>Usuários com mais tentativas no histórico</p>
+              </div>
+            </div>
+            <ul class="pessoas">
+              @for (usuario of usuariosDestaque(); track usuario.id) {
+                <li class="pessoa">
+                  <div class="pessoa-linha">
+                    <strong>{{ usuario.nome }}</strong>
+                    <span class="ard-num">{{ usuario.total }} tentativas</span>
+                  </div>
+                  <span
+                    class="divisao"
+                    role="img"
+                    [attr.aria-label]="usuario.aceitos + ' aceitos e ' + usuario.negados + ' negados'"
+                  >
+                    @if (usuario.percentual_aceitos) {
+                      <span class="is-ok" [style.flex-grow]="usuario.percentual_aceitos"></span>
+                    }
+                    @if (usuario.percentual_negados) {
+                      <span class="is-bad" [style.flex-grow]="usuario.percentual_negados"></span>
+                    }
+                  </span>
+                  <span class="pessoa-numeros">
+                    <span>{{ usuario.percentual_aceitos }}% aceitos</span>
+                    <span>{{ usuario.percentual_negados }}% negados</span>
+                  </span>
+                </li>
+              } @empty {
+                <li class="ard-muted vazio">Ainda não há tentativas registradas.</li>
+              }
+            </ul>
+          </div>
+        } @else {
+          <div class="ard-state is-error" role="alert">
+            <mat-icon aria-hidden="true">cloud_off</mat-icon>
+            <div>
+              <strong>{{ erroResumo() || 'Não foi possível carregar os indicadores.' }}</strong>
+              <p>Os números voltam assim que o servidor responder.</p>
+              <div class="ard-state-actions">
+                <button type="button" class="ard-btn" (click)="carregarResumo()">Tentar novamente</button>
+              </div>
+            </div>
+          </div>
+        }
+      </section>
+    </aside>
+  </div>
 </main>

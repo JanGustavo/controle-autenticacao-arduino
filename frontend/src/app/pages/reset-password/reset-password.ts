@@ -2,12 +2,8 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { AuthFrame, EtapaAuth } from '../../components/auth-frame/auth-frame';
 import { ApiService } from '../../services/api.service';
 
 @Component({
@@ -17,12 +13,8 @@ import { ApiService } from '../../services/api.service';
     CommonModule,
     FormsModule,
     RouterModule,
-    MatCardModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
     MatIconModule,
-    MatProgressSpinnerModule,
+    AuthFrame,
   ],
   templateUrl: './reset-password.html',
   styleUrl: './reset-password.scss'
@@ -31,6 +23,23 @@ export class ResetPassword implements OnInit {
   private api = inject(ApiService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+
+  /** Etapas da recuperação vistas desta tela: o link já foi aberto; falta a senha nova. */
+  get etapas(): EtapaAuth[] {
+    const salva = !!this.sucesso();
+    return [
+      { titulo: 'Informe seu e-mail', texto: 'O mesmo usado para entrar no painel.', icone: 'alternate_email', estado: 'done' },
+      this.token
+        ? { titulo: 'Abra o link recebido', texto: 'Link aberto.', icone: 'mark_email_read', estado: 'done' }
+        : { titulo: 'Abra o link recebido', texto: 'Link incompleto: peça um novo.', icone: 'link_off', estado: 'fail' },
+      { titulo: 'Crie uma nova senha', texto: salva ? 'Senha salva.' : 'E entre de novo no painel.', icone: 'password', estado: salva ? 'ok' : this.token ? 'active' : null },
+    ];
+  }
+
+  /** As duas senhas foram digitadas e não coincidem (aviso antes de enviar). */
+  get senhasDiferentes(): boolean {
+    return !!this.nova_senha && !!this.confirmar_senha && this.nova_senha !== this.confirmar_senha;
+  }
 
   token: string | null = null;
   nova_senha = '';

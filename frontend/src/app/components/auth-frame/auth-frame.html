@@ -1,0 +1,23 @@
+<div class="auth">
+  <section class="auth-lado" [attr.aria-label]="titulo()">
+    <img class="auth-marca" src="ard-lock-icon.svg" alt="" aria-hidden="true" />
+    <h2>{{ titulo() }}</h2>
+    @if (texto()) {
+      <p>{{ texto() }}</p>
+    }
+    <ol class="ard-trail auth-trilha" [attr.aria-label]="rotuloTrilha()">
+      @for (etapa of etapas(); track etapa.titulo; let i = $index) {
+        <li [attr.data-state]="etapa.estado" [style.--ordem]="i">
+          <span class="ard-trail-node" aria-hidden="true"><mat-icon>{{ etapa.icone }}</mat-icon></span>
+          <span class="ard-trail-text">
+            <strong>{{ etapa.titulo }}</strong>
+            <span>{{ etapa.texto }}</span>
+          </span>
+        </li>
+      }
+    </ol>
+  </section>
+  <section class="auth-form">
+    <ng-content />
+  </section>
+</div>

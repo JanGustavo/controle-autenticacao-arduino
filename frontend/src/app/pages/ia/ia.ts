@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { MatIconModule } from '@angular/material/icon';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { RouterLink } from '@angular/router';
 import { DomSanitizer } from '@angular/platform-browser';
 import { Marked } from 'marked';
 import { IAService, RespostaIA, ResumoIA } from '../../services/ia.service';
@@ -18,7 +20,7 @@ const markdown = new Marked({
 @Component({
   selector: 'app-ia',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule],
+  imports: [CommonModule, FormsModule, MatIconModule, RouterLink],
   templateUrl: './ia.html',
   styleUrl: './ia.scss',
   encapsulation: ViewEncapsulation.None,
@@ -27,6 +29,7 @@ export class IAPage implements OnInit {
   private ia = inject(IAService);
   private sanitizer = inject(DomSanitizer);
   private confirmation = inject(ConfirmationService);
+  private snackBar = inject(MatSnackBar);
   pergunta = '';
   readonly sugestoes = [
     'Quais foram os acessos aceitos e negados nesta semana?',
@@ -42,6 +45,8 @@ export class IAPage implements OnInit {
       .sort((a, b) => b.total - a.total).slice(0, 3)
   );
   erro = signal('');
+  /** Falha ao carregar o panorama (separada dos erros da conversa). */
+  erroResumo = signal('');
   carregando = signal(false);
   consultando = signal(false);
   atualizando = signal<number | null>(null);
@@ -53,17 +58,7 @@ export class IAPage implements OnInit {
       this.pergunta = perguntaPendente;
       this.consultar();
     }
-    this.carregando.set(true);
-    this.ia.resumo().subscribe({
-      next: (resumo) => {
-        this.resumo.set(resumo);
-        this.carregando.set(false);
-      },
-      error: () => {
-        this.erro.set('Não foi possível carregar os indicadores.');
-        this.carregando.set(false);
-      },
-    });
+    this.carregarResumo();
     this.ia.historico().subscribe({
       next: (itens) => {
         this.historico.update((atuais) => [
@@ -74,6 +69,27 @@ export class IAPage implements OnInit {
       },
       error: () => this.erro.set('Não foi possível carregar as perguntas anteriores.'),
     });
+  }
+
+  carregarResumo(): void {
+    this.carregando.set(true);
+    this.erroResumo.set('');
+    this.ia.resumo().subscribe({
+      next: (resumo) => {
+        this.resumo.set(resumo);
+        this.carregando.set(false);
+      },
+      error: () => {
+        this.erroResumo.set('Não foi possível carregar os indicadores.');
+        this.carregando.set(false);
+      },
+    });
+  }
+
+  /** Nome completo do dia, para o rótulo acessível e a dica de cada coluna. */
+  diaCompleto(dia: string): string {
+    return new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', timeZone: 'UTC' })
+      .format(new Date(`${dia}T12:00:00Z`));
   }
 
   renderizar(resposta: string): string {
@@ -126,6 +142,7 @@ export class IAPage implements OnInit {
         this.historico.update((itens) => itens.filter((item) => item.id !== itemId));
         if (this.pergunta.trim() === removido?.pergunta) this.pergunta = this.historico()[0]?.pergunta ?? '';
         this.apagando.set(null);
+        this.snackBar.open('Resposta apagada.', 'Fechar', { duration: 4000 });
       },
       error: () => {
         this.erro.set('Não foi possível apagar a resposta.');
@@ -143,6 +160,7 @@ export class IAPage implements OnInit {
         this.historico.update((itens) => itens.map((atual) => atual.id === itemId ? item : atual));
         this.resumo.set(resumo);
         this.atualizando.set(null);
+        this.snackBar.open('Resposta atualizada com os dados atuais.', 'Fechar', { duration: 4000 });
       },
       error: (error: HttpErrorResponse) => {
         this.erro.set(typeof error.error?.detail === 'string'

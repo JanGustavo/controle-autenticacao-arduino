@@ -1,0 +1,1491 @@
+// Camada visual compartilhada do ArdLock.
+//
+// Mesma linguagem da landing e do painel root: navy e slate, bordas finas,
+// sem sombras nem gradientes decorativos, pesos 400/500, rótulos em caixa
+// normal. A cor do módulo aparece só no ícone; a ação principal é sempre azul;
+// verde, vermelho e âmbar são reservados para estados.
+//
+// Uso: classes globais `ard-*` nos templates. Estilos de página ficam apenas
+// para o que é específico da tela.
+
+// ---------- Tipografia e utilitários ----------
+.ard-num {
+  font-variant-numeric: tabular-nums;
+}
+.ard-muted {
+  color: var(--ard-muted);
+}
+.ard-sr-only {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+.ard-code {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--ard-surface-2);
+  color: var(--ard-ink);
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: 0.86em;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.ard-link {
+  color: var(--ard-primary);
+  font-weight: 500;
+  text-underline-offset: 3px;
+  &:where(button) {
+    padding: 4px 2px;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+// ---------- Página ----------
+.ard-page {
+  width: 100%;
+  max-width: 1328px;
+  margin: 0 auto;
+  // O espaço inferior evita que o botão flutuante do iArdLock cubra a última linha.
+  padding: 28px clamp(16px, 3vw, 32px) 104px;
+  color: var(--ard-ink);
+  :where(h1, h2, h3, h4, p, ul, ol, dl, dd, figure) {
+    margin: 0;
+  }
+  :where(ul, ol) {
+    padding: 0;
+    list-style: none;
+  }
+  :where(h1, h2, h3, h4) {
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  mat-icon {
+    flex-shrink: 0;
+  }
+}
+.ard-stack {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.ard-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  gap: 20px;
+  align-items: start;
+  @media (max-width: 1100px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+// Lista + formulário: a lista ocupa o centro, o formulário fica ao lado e
+// acompanha a rolagem. No celular o formulário vem primeiro.
+.ard-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+  grid-template-areas: 'lista editor';
+  gap: 20px;
+  align-items: start;
+  > .is-list {
+    grid-area: lista;
+  }
+  > .is-editor {
+    grid-area: editor;
+    position: sticky;
+    top: 128px;
+    scroll-margin-top: 128px;
+    // Nunca invade a faixa do botão flutuante do iArdLock, no canto inferior.
+    max-height: calc(100vh - 128px - 96px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  @media (max-width: 1099px) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'editor'
+      'lista';
+    > .is-editor {
+      position: static;
+      scroll-margin-top: 80px;
+      max-height: none;
+      overflow: visible;
+    }
+  }
+}
+
+// ---------- Cabeçalho da página ----------
+.ard-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  margin: -6px 0 6px;
+  color: var(--ard-muted);
+  font-size: 0.88rem;
+  text-decoration: none;
+  mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    transition: transform 160ms ease;
+  }
+  &:hover {
+    color: var(--ard-ink);
+    mat-icon {
+      transform: translateX(-3px);
+    }
+  }
+}
+.ard-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  margin-bottom: 24px;
+}
+.ard-head-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1 1 420px;
+  min-width: 0;
+  h1 {
+    font-size: clamp(1.55rem, 2.4vw, 2rem);
+    font-weight: 500;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    overflow-wrap: anywhere;
+  }
+  p {
+    max-width: 64ch;
+    margin-top: 4px;
+    color: var(--ard-muted);
+    line-height: 1.5;
+  }
+}
+.ard-head-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ard-module-icon {
+  --tone: var(--ard-primary);
+  display: grid;
+  place-items: center;
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--tone) 14%, var(--ard-surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tone) 32%, transparent);
+  color: var(--tone);
+  mat-icon {
+    width: 26px;
+    height: 26px;
+    font-size: 26px;
+  }
+}
+
+// Tons de módulo: identificam o destino (navegação, cabeçalho, atalhos).
+[data-tone='painel'] { --tone: #2563eb; }
+[data-tone='usuarios'] { --tone: #1d4ed8; }
+[data-tone='permissoes'] { --tone: #a16207; }
+[data-tone='validacao'] { --tone: #15803d; }
+[data-tone='historico'] { --tone: #0e7490; }
+[data-tone='ia'] { --tone: #be418c; }
+[data-tone='locais'] { --tone: #c2410c; }
+[data-tone='dispositivos'] { --tone: #0f766e; }
+[data-tone='administradores'] { --tone: #b91c1c; }
+[data-tone='auditoria'] { --tone: #7e22ce; }
+[data-tone='licenca'] { --tone: #4f46e5; }
+[data-tone='entidades'] { --tone: #475569; }
+body.dark-mode {
+  [data-tone='painel'] { --tone: #60a5fa; }
+  [data-tone='usuarios'] { --tone: #60a5fa; }
+  [data-tone='permissoes'] { --tone: #fbbf24; }
+  [data-tone='validacao'] { --tone: #4ade80; }
+  [data-tone='historico'] { --tone: #38bdf8; }
+  [data-tone='ia'] { --tone: #f472b6; }
+  [data-tone='locais'] { --tone: #fb923c; }
+  [data-tone='dispositivos'] { --tone: #2dd4bf; }
+  [data-tone='administradores'] { --tone: #fb7185; }
+  [data-tone='auditoria'] { --tone: #c084fc; }
+  [data-tone='licenca'] { --tone: #a5b4fc; }
+  [data-tone='entidades'] { --tone: #94a3b8; }
+}
+
+// ---------- Botões ----------
+.ard-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--ard-line-strong);
+  border-radius: var(--ard-radius-sm);
+  background: var(--ard-surface);
+  color: var(--ard-ink);
+  font: inherit;
+  font-weight: 500;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+  mat-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+  }
+  &:hover:not(:disabled) {
+    border-color: var(--ard-primary);
+    background: color-mix(in srgb, var(--ard-primary) 8%, var(--ard-surface));
+  }
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  &[aria-busy='true'] {
+    cursor: progress;
+  }
+  &.is-primary {
+    border-color: var(--ard-primary);
+    background: var(--ard-primary);
+    color: var(--ard-on-primary);
+    &:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--ard-primary) 86%, var(--ard-ink));
+    }
+  }
+  &.is-danger {
+    border-color: color-mix(in srgb, var(--ard-danger) 45%, var(--ard-line));
+    color: var(--ard-danger);
+    &:hover:not(:disabled) {
+      border-color: var(--ard-danger);
+      background: color-mix(in srgb, var(--ard-danger) 10%, var(--ard-surface));
+    }
+  }
+  &.is-destructive {
+    border-color: var(--ard-danger);
+    background: var(--ard-danger);
+    color: var(--ard-on-danger);
+    &:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--ard-danger) 86%, var(--ard-ink));
+    }
+  }
+  &.is-quiet {
+    border-color: transparent;
+    background: transparent;
+    &:hover:not(:disabled) {
+      border-color: transparent;
+      background: color-mix(in srgb, var(--ard-ink) 7%, transparent);
+    }
+  }
+  &.is-compact {
+    min-height: 38px;
+    padding: 0 12px;
+    font-size: 0.9rem;
+  }
+}
+.ard-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ard-muted);
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+  mat-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+  }
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--ard-ink) 8%, transparent);
+    color: var(--ard-ink);
+  }
+  &.is-danger:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--ard-danger) 12%, transparent);
+    color: var(--ard-danger);
+  }
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}
+.ard-spinner {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: ard-spin 700ms linear infinite;
+}
+
+// Atalho de teclado dentro de um botão (some em telas de toque).
+.ard-btn kbd {
+  padding: 1px 6px;
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+  border-radius: 5px;
+  font: inherit;
+  font-size: 0.74rem;
+  line-height: 1.4;
+  opacity: 0.8;
+  @media (pointer: coarse) {
+    display: none;
+  }
+}
+
+// ---------- Painéis ----------
+.ard-panel {
+  min-width: 0;
+  border: 1px solid var(--ard-line);
+  border-radius: var(--ard-radius-md);
+  background: var(--ard-surface);
+}
+.ard-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  padding: 18px 20px 14px;
+  h2,
+  h3 {
+    font-size: 1.08rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  p {
+    margin-top: 2px;
+    color: var(--ard-muted);
+    font-size: 0.9rem;
+  }
+}
+.ard-panel-body {
+  padding: 0 20px 20px;
+}
+.ard-panel-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--ard-line);
+  color: var(--ard-muted);
+  font-size: 0.88rem;
+}
+
+// ---------- Barra de filtros ----------
+.ard-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  padding: 0 20px 16px;
+}
+.ard-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 260px;
+  max-width: 380px;
+  > mat-icon {
+    position: absolute;
+    left: 12px;
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+    color: var(--ard-muted);
+    pointer-events: none;
+  }
+}
+.ard-filter {
+  display: inline-flex;
+  align-items: center;
+  flex: 1 1 200px;
+  gap: 8px;
+  min-width: 0;
+  max-width: 320px;
+  > label,
+  > span {
+    color: var(--ard-muted);
+    font-size: 0.88rem;
+    white-space: nowrap;
+  }
+}
+.ard-toolbar-end {
+  margin-left: auto;
+  color: var(--ard-muted);
+  font-size: 0.88rem;
+}
+
+// ---------- Campos ----------
+.ard-input,
+.ard-field :where(input:not([type='checkbox']):not([type='radio']):not([type='file']), select, textarea),
+.ard-search input,
+.ard-filter select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--ard-line-strong);
+  border-radius: var(--ard-radius-sm);
+  background: var(--ard-canvas);
+  color: var(--ard-ink);
+  font: inherit;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+  &::placeholder {
+    color: color-mix(in srgb, var(--ard-muted) 80%, transparent);
+  }
+  &:focus {
+    border-color: var(--ard-primary);
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ard-primary) 22%, transparent);
+  }
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+.ard-search input {
+  padding-left: 42px;
+}
+// Depois da regra comum de campos: o seletor divide a linha com o rótulo.
+.ard-filter select {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.ard-field textarea,
+textarea.ard-input {
+  min-height: 104px;
+  padding: 10px 12px;
+  line-height: 1.5;
+  resize: vertical;
+}
+.ard-form {
+  display: grid;
+  gap: 16px;
+}
+.ard-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.ard-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  > label,
+  > .ard-label {
+    color: var(--ard-ink);
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  &.is-invalid :where(input, select, textarea) {
+    border-color: var(--ard-danger);
+  }
+}
+.ard-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  > :where(input) {
+    padding-right: 48px;
+  }
+  > .ard-icon-btn,
+  > .ard-input-icon {
+    position: absolute;
+    right: 2px;
+  }
+  > .ard-input-icon {
+    right: 12px;
+    color: var(--ard-muted);
+    pointer-events: none;
+  }
+}
+.ard-hint {
+  color: var(--ard-muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+.ard-error-text {
+  color: var(--ard-danger);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+.ard-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  color: var(--ard-ink);
+  cursor: pointer;
+  input[type='checkbox'],
+  input[type='radio'] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--ard-primary);
+    cursor: pointer;
+  }
+}
+.ard-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+// Seleção múltipla em pílulas (dias da semana, por exemplo).
+.ard-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  button,
+  label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 52px;
+    min-height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--ard-line-strong);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ard-muted);
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+      background-color 140ms ease,
+      border-color 140ms ease,
+      color 140ms ease;
+    &:hover {
+      color: var(--ard-ink);
+    }
+  }
+  // :is() (e não :where()) para vencer a regra comum dos botões acima.
+  :is(button[aria-pressed='true'], label.is-on, label:has(input:checked)) {
+    border-color: var(--ard-primary);
+    background: color-mix(in srgb, var(--ard-primary) 16%, transparent);
+    color: var(--ard-ink);
+  }
+  label input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  label:has(input:focus-visible) {
+    outline: 3px solid var(--ard-primary);
+    outline-offset: 2px;
+  }
+  // Semana inteira numa linha: sete colunas iguais.
+  &.is-week {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 4px;
+    button,
+    label {
+      min-width: 0;
+      padding: 0;
+      border-radius: var(--ard-radius-sm);
+    }
+  }
+}
+
+// ---------- Tabelas ----------
+.ard-table-wrap {
+  overflow-x: auto;
+}
+.ard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.93rem;
+  th {
+    padding: 10px 14px;
+    border-block: 1px solid var(--ard-line);
+    background: transparent;
+    color: var(--ard-muted);
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-align: left;
+    white-space: nowrap;
+  }
+  td {
+    padding: 14px;
+    border-bottom: 1px solid var(--ard-line);
+    background: transparent;
+    color: var(--ard-ink);
+    vertical-align: middle;
+  }
+  th:first-child,
+  td:first-child {
+    padding-left: 20px;
+  }
+  th:last-child,
+  td:last-child {
+    padding-right: 16px;
+  }
+  tbody tr {
+    transition: background-color 140ms ease;
+  }
+  tbody tr:hover > td {
+    background: color-mix(in srgb, var(--ard-primary) 5%, transparent);
+  }
+  tbody tr:last-child > td {
+    border-bottom: 0;
+  }
+  .is-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  tr.is-new > td {
+    animation: ard-row-new 1600ms ease;
+  }
+  tr.is-new > td:first-child {
+    animation-name: ard-row-new-bar;
+  }
+  // Linha aberta no formulário de edição.
+  tr.is-editing > td {
+    background: color-mix(in srgb, var(--ard-primary) 9%, transparent);
+  }
+  tr.is-editing > td:first-child {
+    box-shadow: inset 3px 0 0 var(--ard-primary);
+  }
+  tr.is-inactive .ard-cell-title {
+    color: var(--ard-muted);
+  }
+}
+.ard-cell-title {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.ard-cell-sub {
+  display: block;
+  margin-top: 2px;
+  color: var(--ard-muted);
+  font-size: 0.86rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.ard-row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+// No celular, cada linha vira um bloco: título em cima, campos em duas colunas.
+@media (max-width: 760px) {
+  .ard-table:not(.is-fixed) {
+    &,
+    tbody {
+      display: block;
+    }
+    thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+    }
+    tr {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px 16px;
+      padding: 16px;
+      border-top: 1px solid var(--ard-line);
+    }
+    td,
+    td:first-child,
+    td:last-child {
+      min-width: 0;
+      padding: 0;
+      border: 0;
+    }
+    td[data-label]::before {
+      content: attr(data-label);
+      display: block;
+      margin-bottom: 2px;
+      color: var(--ard-muted);
+      font-size: 0.78rem;
+    }
+    td.is-lead,
+    td.is-wide {
+      grid-column: 1 / -1;
+    }
+    td.is-lead {
+      padding-right: 92px;
+    }
+    td.is-lead[data-label]::before {
+      display: none;
+    }
+    td.is-actions {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+    }
+    // Um selo de estado que resume a linha vai para o canto do cartão.
+    td.is-corner {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      &::before {
+        display: none;
+      }
+    }
+    // Sem valor, o rótulo não aparece sozinho no cartão.
+    td.is-empty {
+      display: none;
+    }
+    .is-num {
+      text-align: left;
+    }
+    // No cartão, o destaque vale para o cartão inteiro, não para cada célula.
+    tr.is-new {
+      animation: ard-row-new-bar 1600ms ease;
+    }
+    tr.is-editing {
+      background: color-mix(in srgb, var(--ard-primary) 9%, transparent);
+      box-shadow: inset 3px 0 0 var(--ard-primary);
+    }
+    tr.is-new > td,
+    tr.is-new > td:first-child,
+    tr.is-editing > td,
+    tr.is-editing > td:first-child {
+      animation: none;
+      background: none;
+      box-shadow: none;
+    }
+  }
+}
+
+// ---------- Selos de estado ----------
+.ard-badge {
+  --tone: var(--ard-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--tone);
+  font-size: 0.88rem;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+  &::before {
+    content: '';
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--tone);
+  }
+  &.is-ok {
+    --tone: var(--ard-success);
+  }
+  // Forma diferente além da cor: quadrado para recusa ou erro.
+  &.is-bad {
+    --tone: var(--ard-danger);
+    &::before {
+      border-radius: 2px;
+    }
+  }
+  &.is-warn {
+    --tone: var(--ard-warning);
+  }
+  &.is-info {
+    --tone: var(--ard-primary);
+  }
+  &.is-neutral::before {
+    background: transparent;
+    box-shadow: inset 0 0 0 1.5px var(--tone);
+  }
+  &.is-live::before {
+    animation: ard-live 2s ease-out infinite;
+  }
+}
+.ard-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 9px;
+  border: 1px solid var(--ard-line-strong);
+  border-radius: 999px;
+  color: var(--ard-muted);
+  font-size: 0.8rem;
+  line-height: 1.6;
+  white-space: nowrap;
+  mat-icon {
+    width: 14px;
+    height: 14px;
+    font-size: 14px;
+  }
+  &.is-accent {
+    border-color: color-mix(in srgb, var(--ard-primary) 45%, transparent);
+    color: var(--ard-primary);
+  }
+}
+
+// ---------- Estados ----------
+.ard-state {
+  --tone: var(--ard-muted);
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 24px 20px;
+  border-top: 1px solid var(--ard-line);
+  &.is-bare {
+    border-top: 0;
+  }
+  > mat-icon,
+  .ard-state-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--tone) 12%, transparent);
+    color: var(--tone);
+    font-size: 22px;
+    line-height: 40px;
+    text-align: center;
+  }
+  > div {
+    min-width: 0;
+  }
+  strong {
+    display: block;
+    font-weight: 500;
+  }
+  p {
+    max-width: 60ch;
+    margin-top: 2px;
+    color: var(--ard-muted);
+    font-size: 0.92rem;
+  }
+  .ard-state-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  &.is-error {
+    --tone: var(--ard-danger);
+  }
+  &.is-success {
+    --tone: var(--ard-success);
+  }
+  &.is-info {
+    --tone: var(--ard-primary);
+  }
+}
+.ard-sk {
+  display: block;
+  height: 14px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ard-muted) 18%, transparent);
+  animation: ard-pulse 900ms ease-in-out infinite alternate;
+}
+.ard-sk-rows {
+  > div {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: 60px;
+    padding: 0 20px;
+    border-top: 1px solid var(--ard-line);
+  }
+  .ard-sk:nth-child(1) { width: 26%; }
+  .ard-sk:nth-child(2) { width: 18%; }
+  .ard-sk:nth-child(3) { width: 14%; }
+  .ard-sk:nth-child(4) { width: 10%; margin-left: auto; }
+}
+
+// Aviso no próprio fluxo, depois de uma ação.
+.ard-notice {
+  --tone: var(--ard-primary);
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--tone) 38%, var(--ard-line));
+  border-radius: var(--ard-radius-sm);
+  background: color-mix(in srgb, var(--tone) 8%, var(--ard-surface));
+  color: var(--ard-ink);
+  font-size: 0.92rem;
+  line-height: 1.45;
+  animation: ard-rise 220ms var(--ard-ease);
+  > mat-icon {
+    width: 20px;
+    height: 20px;
+    margin-top: 1px;
+    font-size: 20px;
+    color: var(--tone);
+  }
+  > span,
+  > div {
+    flex: 1;
+    min-width: 0;
+  }
+  &.is-info {
+    --tone: var(--ard-primary);
+  }
+  &.is-success {
+    --tone: var(--ard-success);
+  }
+  &.is-error {
+    --tone: var(--ard-danger);
+  }
+  &.is-warning {
+    --tone: var(--ard-warning);
+  }
+}
+
+// ---------- Indicadores ----------
+.ard-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--ard-line);
+  border-radius: var(--ard-radius-md);
+  background: var(--ard-line);
+}
+.ard-metric {
+  min-width: 0;
+  padding: 18px 20px;
+  background: var(--ard-surface);
+  > span {
+    color: var(--ard-muted);
+    font-size: 0.88rem;
+  }
+  > strong {
+    display: block;
+    margin: 6px 0 2px;
+    font-size: clamp(1.45rem, 2.2vw, 1.85rem);
+    font-weight: 500;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    // Número grande isolado: algarismos proporcionais (tabulares só em colunas).
+    overflow-wrap: anywhere;
+  }
+  > small {
+    display: block;
+    color: var(--ard-muted);
+    font-size: 0.84rem;
+    line-height: 1.4;
+  }
+}
+.ard-facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 8px 20px;
+  font-size: 0.93rem;
+  dt {
+    color: var(--ard-muted);
+  }
+  dd {
+    overflow-wrap: anywhere;
+  }
+}
+
+// ---------- Pessoa (avatar + nome) ----------
+.ard-person {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  > span:last-child {
+    min-width: 0;
+  }
+}
+.ard-avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ard-primary) 16%, var(--ard-surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ard-primary) 30%, transparent);
+  color: var(--ard-primary);
+  font-weight: 500;
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  &.is-large {
+    flex-basis: 56px;
+    width: 56px;
+    height: 56px;
+    font-size: 1.3rem;
+  }
+}
+
+// ---------- Diálogos (Material) ----------
+.ard-dialog {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 24px);
+  color: var(--ard-ink);
+}
+.ard-dialog-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--ard-line);
+  > div {
+    flex: 1;
+    min-width: 0;
+  }
+  h2 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  p {
+    margin: 2px 0 0;
+    color: var(--ard-muted);
+    font-size: 0.9rem;
+  }
+  > .ard-icon-btn {
+    margin: -6px -8px 0 0;
+  }
+}
+.ard-dialog-body {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 16px;
+  min-height: 0;
+  padding: 18px 20px 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.ard-dialog-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--ard-line);
+  @media (max-width: 640px) {
+    .ard-btn {
+      flex: 1 1 auto;
+    }
+  }
+}
+
+// ---------- Trilha de verificação (elemento da marca) ----------
+// cartão → permissão → rosto → decisão
+.ard-trail {
+  display: grid;
+  gap: 0;
+  > li {
+    --node: var(--ard-line-strong);
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding-bottom: 18px;
+    &:last-child {
+      padding-bottom: 0;
+    }
+    &:not(:last-child)::before {
+      content: '';
+      position: absolute;
+      left: 17px;
+      top: 38px;
+      bottom: 2px;
+      width: 2px;
+      background: var(--ard-line);
+      transition: background-color 300ms ease;
+    }
+    &[data-state='done']:not(:last-child)::before {
+      background: var(--ard-primary);
+    }
+    &[data-state='active'] {
+      --node: var(--ard-primary);
+    }
+    &[data-state='done'] {
+      --node: var(--ard-primary);
+    }
+    &[data-state='fail'] {
+      --node: var(--ard-danger);
+    }
+    &[data-state='ok'] {
+      --node: var(--ard-success);
+    }
+  }
+  .ard-trail-node {
+    position: relative;
+    display: grid;
+    place-items: center;
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    overflow: hidden;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 2px var(--node);
+    background: color-mix(in srgb, var(--node) 12%, transparent);
+    color: var(--node);
+    transition:
+      box-shadow 260ms ease,
+      background-color 260ms ease,
+      color 260ms ease;
+    mat-icon {
+      width: 18px;
+      height: 18px;
+      font-size: 18px;
+    }
+  }
+  [data-state='active'] .ard-trail-node::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 2px;
+    background: currentColor;
+    animation: ard-scan 900ms ease-in-out infinite alternate;
+  }
+  .ard-trail-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding-top: 6px;
+    strong {
+      font-weight: 500;
+      line-height: 1.3;
+    }
+    span {
+      color: var(--ard-muted);
+      font-size: 0.86rem;
+      line-height: 1.4;
+    }
+  }
+}
+
+// Trilha na horizontal (estação de validação): nó em cima, texto embaixo.
+.ard-trail.is-row {
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  > li {
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 16px 0 0;
+    &:not(:last-child)::before {
+      left: 46px;
+      right: 10px;
+      top: 17px;
+      bottom: auto;
+      width: auto;
+      height: 2px;
+    }
+  }
+  .ard-trail-text {
+    padding-top: 0;
+  }
+  @media (max-width: 640px) {
+    > li {
+      padding-right: 8px;
+      &:not(:last-child)::before {
+        left: 42px;
+        right: 4px;
+      }
+    }
+    .ard-trail-text span {
+      display: none;
+    }
+  }
+}
+
+// ---------- Escolha entre duas ou três opções (modo de captura) ----------
+.ard-segmented {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--ard-line-strong);
+  border-radius: var(--ard-radius-sm);
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 34px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 7px;
+    background: none;
+    color: var(--ard-muted);
+    font: inherit;
+    font-size: 0.86rem;
+    cursor: pointer;
+    transition:
+      background-color 140ms ease,
+      color 140ms ease;
+    mat-icon {
+      width: 18px;
+      height: 18px;
+      font-size: 18px;
+    }
+    &:hover {
+      color: var(--ard-ink);
+    }
+    &[aria-pressed='true'] {
+      background: color-mix(in srgb, var(--ard-primary) 16%, transparent);
+      color: var(--ard-ink);
+    }
+  }
+}
+
+// ---------- Etapas de um fluxo (cadastro) ----------
+// A trilha na horizontal: nó vazio = pendente, nó preenchido = concluída.
+// Cada etapa é um botão que leva à seção correspondente do formulário.
+.ard-steps {
+  ol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  li {
+    display: flex;
+    align-items: center;
+    &:not(:last-child)::after {
+      content: '';
+      width: 20px;
+      height: 1px;
+      margin: 0 2px;
+      background: var(--ard-line-strong);
+    }
+    &[data-state='done']:not(:last-child)::after {
+      background: color-mix(in srgb, var(--ard-success) 55%, transparent);
+    }
+  }
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 36px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: var(--ard-radius-sm);
+    background: none;
+    color: var(--ard-muted);
+    font: inherit;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition:
+      background-color 140ms ease,
+      color 140ms ease;
+    &:hover {
+      background: var(--ard-surface-2);
+      color: var(--ard-ink);
+    }
+  }
+  [data-state='done'] button {
+    color: var(--ard-ink);
+  }
+  @media (max-width: 480px) {
+    li:not(:last-child)::after {
+      width: 10px;
+      margin: 0;
+    }
+    button {
+      gap: 6px;
+      padding: 0 4px;
+    }
+  }
+}
+.ard-steps-node {
+  display: grid;
+  flex: 0 0 18px;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid var(--ard-line-strong);
+  border-radius: 50%;
+  mat-icon {
+    width: 14px;
+    height: 14px;
+    font-size: 14px;
+  }
+  [data-state='done'] & {
+    border-color: var(--ard-success);
+    background: var(--ard-success);
+    color: var(--ard-on-primary);
+    animation: ard-pop 260ms var(--ard-ease);
+  }
+}
+
+// ---------- Movimento ----------
+:root {
+  --ard-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+@keyframes ard-pulse {
+  from {
+    opacity: 0.45;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes ard-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes ard-rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+@keyframes ard-pop {
+  from {
+    transform: scale(0.55);
+  }
+}
+@keyframes ard-row-new {
+  from {
+    background: color-mix(in srgb, var(--ard-primary) 16%, transparent);
+  }
+}
+@keyframes ard-row-new-bar {
+  from {
+    background: color-mix(in srgb, var(--ard-primary) 16%, transparent);
+    box-shadow: inset 3px 0 0 var(--ard-primary);
+  }
+}
+@keyframes ard-live {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--tone) 60%, transparent);
+  }
+  to {
+    box-shadow: 0 0 0 7px transparent;
+  }
+}
+@keyframes ard-scan {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(34px);
+  }
+}
+
+// ---------- Responsivo comum ----------
+@media (max-width: 640px) {
+  .ard-head-main {
+    gap: 12px;
+    flex-basis: 100%;
+  }
+  .ard-module-icon {
+    flex-basis: 40px;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    mat-icon {
+      width: 22px;
+      height: 22px;
+      font-size: 22px;
+    }
+  }
+  .ard-head-actions {
+    width: 100%;
+    .ard-btn {
+      flex: 1 1 auto;
+    }
+  }
+  .ard-panel-head,
+  .ard-toolbar {
+    padding-inline: 16px;
+  }
+  .ard-panel-body {
+    padding: 0 16px 16px;
+  }
+  .ard-panel-foot {
+    padding-inline: 16px;
+  }
+  .ard-search {
+    max-width: none;
+    flex-basis: 100%;
+  }
+  .ard-filter {
+    flex: 1 1 100%;
+    max-width: none;
+    // Rótulos com a mesma largura alinham os seletores empilhados.
+    > label,
+    > span {
+      flex: 0 0 76px;
+    }
+  }
+  .ard-form-actions .ard-btn {
+    flex: 1 1 auto;
+  }
+  .ard-state {
+    padding: 20px 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ard-sk,
+  .ard-badge.is-live::before,
+  .ard-trail [data-state='active'] .ard-trail-node::after {
+    animation: none !important;
+  }
+  // A linha nova continua marcada (sem esmaecer) pelos mesmos 2 s da classe.
+  .ard-table tr.is-new > td {
+    background: color-mix(in srgb, var(--ard-primary) 12%, transparent);
+  }
+  .ard-table tr.is-new > td:first-child {
+    box-shadow: inset 3px 0 0 var(--ard-primary);
+  }
+}
+@media (prefers-reduced-motion: reduce) and (max-width: 760px) {
+  .ard-table:not(.is-fixed) tr.is-new {
+    background: color-mix(in srgb, var(--ard-primary) 12%, transparent);
+    box-shadow: inset 3px 0 0 var(--ard-primary);
+  }
+}

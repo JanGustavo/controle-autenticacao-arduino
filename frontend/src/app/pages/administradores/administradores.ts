@@ -16,6 +16,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs/operators';
 
@@ -39,6 +40,7 @@ import { AuthService } from '../../services/auth.service';
     MatSnackBarModule,
     RouterLink,
     MatDialogModule,
+    MatTooltipModule,
   ],
   templateUrl: './administradores.html',
   styleUrl: './administradores.scss',
@@ -94,6 +96,19 @@ export class AdministradoresPage implements OnInit, OnDestroy {
   // Filtros de busca
   filtroTexto = '';
   filtroAtivo = 'todos'; // 'todos' | 'ativo' | 'inativo'
+
+  get ativos(): number {
+    return this.administradores.filter((admin) => admin.ativo !== false).length;
+  }
+
+  get filtrando(): boolean {
+    return !!this.filtroTexto.trim() || this.filtroAtivo !== 'todos';
+  }
+
+  limparFiltros(): void {
+    this.filtroTexto = '';
+    this.filtroAtivo = 'todos';
+  }
 
   get displayedAdmins(): AdministradorResponse[] {
     return this.administradores.filter((admin) => {
@@ -190,7 +205,8 @@ export class AdministradoresPage implements OnInit, OnDestroy {
       maxWidth: 'calc(100vw - 24px)',
       maxHeight: 'calc(100dvh - 24px)',
       ariaLabelledBy: 'admin-dialog-title',
-      autoFocus: 'first-tabbable',
+      panelClass: 'ard-form-dialog',
+      autoFocus: '#nome',
       restoreFocus: true,
     });
     this.dialogRef.afterClosed().subscribe(() => {
@@ -209,13 +225,16 @@ export class AdministradoresPage implements OnInit, OnDestroy {
     const nomeLimpo = this.form.nome.trim();
     const emailLimpo = this.form.email.trim();
 
+    // Em cada erro, o foco vai para o campo que precisa de ajuste, como em Locais e Dispositivos.
     if (nomeLimpo.length < 2 || emailLimpo.length < 5) {
-      this.erro = 'Informe o nome (mín. 2 caracteres) e um e-mail válido.';
+      this.erro = 'Informe o nome, com pelo menos 2 caracteres, e um e-mail válido.';
+      document.getElementById(nomeLimpo.length < 2 ? 'nome' : 'email')?.focus();
       return;
     }
 
     if (this.form.senha && this.form.senha.length < 6) {
       this.erro = 'A senha deve ter no mínimo 6 caracteres.';
+      document.getElementById('senha')?.focus();
       return;
     }
 
@@ -224,6 +243,7 @@ export class AdministradoresPage implements OnInit, OnDestroy {
       if (!this.form.senha || this.form.senha.length < 6) {
         this.erro = 'A senha para o novo administrador deve ter no mínimo 6 caracteres.';
         this.definirSalvando(false);
+        document.getElementById('senha')?.focus();
         return;
       }
 
@@ -245,7 +265,7 @@ export class AdministradoresPage implements OnInit, OnDestroy {
             this.administradores = [...this.administradores, admin].sort(
               (a, b) => a.admin_id - b.admin_id,
             );
-            this.snackBar.open('Administrador criado com sucesso.', 'Fechar', { duration: 4000 });
+            this.snackBar.open(`Administrador ${nomeLimpo} cadastrado.`, 'Fechar', { duration: 4000 });
             this.cancelar();
           },
           error: (err) => {
@@ -280,7 +300,7 @@ export class AdministradoresPage implements OnInit, OnDestroy {
               item.admin_id === admin.admin_id ? admin : item,
             );
             this.sincronizarSessaoSeUsuarioAtual(admin);
-            this.snackBar.open('Administrador atualizado com sucesso.', 'Fechar', {
+            this.snackBar.open(`Alterações em ${nomeLimpo} salvas.`, 'Fechar', {
               duration: 4000,
             });
             this.cancelar();
@@ -313,7 +333,7 @@ export class AdministradoresPage implements OnInit, OnDestroy {
 
   async excluir(admin: AdministradorResponse): Promise<void> {
     if (admin.principal) {
-      this.snackBar.open('A conta principal do ArdLock não pode ser excluída.', 'Entendi', {
+      this.snackBar.open('A conta principal do ArdLock não pode ser excluída.', 'Fechar', {
         duration: 4000,
       });
       return;
@@ -350,7 +370,7 @@ export class AdministradoresPage implements OnInit, OnDestroy {
             (item) => item.admin_id !== admin.admin_id,
           );
           this.cdr.markForCheck();
-          this.snackBar.open('Administrador excluído com sucesso.', 'Fechar', { duration: 4000 });
+          this.snackBar.open(`Administrador ${admin.nome} excluído.`, 'Fechar', { duration: 4000 });
         },
         error: (err) => {
           this.snackBar.open(

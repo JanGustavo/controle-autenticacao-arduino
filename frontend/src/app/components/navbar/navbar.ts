@@ -84,9 +84,13 @@ export class NavbarComponent implements OnInit {
 
   private positionIndicator(link: HTMLElement): void {
     const indicator = this.nav?.nativeElement.querySelector<HTMLElement>('.navigation-indicator');
-    if (!indicator || !link.offsetWidth) return;
-    indicator.style.width = `${Math.max(0, link.offsetWidth - 24)}px`;
-    indicator.style.transform = `translate3d(${link.offsetLeft + 12}px, ${link.offsetTop + link.offsetHeight - 6}px, 0)`;
+    const nav = this.nav?.nativeElement;
+    if (!indicator || !nav || !link.offsetWidth) return;
+    // Medido em relação à barra: os grupos de links não alteram a posição.
+    const barra = nav.getBoundingClientRect();
+    const alvo = link.getBoundingClientRect();
+    indicator.style.width = `${Math.max(0, alvo.width - 24)}px`;
+    indicator.style.transform = `translate3d(${alvo.left - barra.left + 12}px, ${alvo.bottom - barra.top - 2}px, 0)`;
     this.indicatorReady.set(true);
   }
 
@@ -97,19 +101,58 @@ export class NavbarComponent implements OnInit {
   }
 
   menuAberto = signal(false);
-  readonly links = [
-    { path: '/adm-page', label: 'Painel', icon: 'space_dashboard' },
-    { path: '/ia', label: 'iArdLock', icon: 'auto_awesome' },
-    { path: '/usuarios', label: 'Usuários', icon: 'group' },
-    { path: '/permissoes', label: 'Permissões', icon: 'vpn_key' },
-    { path: '/validar-acesso', label: 'Validar acesso', icon: 'face' },
-    { path: '/dashboard', label: 'Histórico', icon: 'history' },
-    { path: '/locais', label: 'Locais', icon: 'location_on' },
-    { path: '/dispositivos', label: 'Dispositivos', icon: 'memory' },
-    { path: '/administradores', label: 'Administradores', icon: 'verified_user' },
-    { path: '/audit-logs', label: 'Auditoria', icon: 'fact_check' },
-    { path: '/licenca', label: 'Licença', icon: 'verified' },
+
+  /** Mesmos grupos do painel root: o que acontece agora, o que é cadastrado, quem administra. */
+  readonly grupos = [
+    {
+      rotulo: 'Início',
+      links: [{ path: '/adm-page', label: 'Painel', icon: 'space_dashboard', tone: 'painel' }],
+    },
+    {
+      rotulo: 'Operação',
+      links: [
+        { path: '/validar-acesso', label: 'Validar acesso', icon: 'face', tone: 'validacao' },
+        { path: '/dashboard', label: 'Histórico', icon: 'history', tone: 'historico' },
+        { path: '/ia', label: 'iArdLock', icon: 'auto_awesome', tone: 'ia' },
+      ],
+    },
+    {
+      rotulo: 'Cadastros',
+      links: [
+        { path: '/usuarios', label: 'Usuários', icon: 'group', tone: 'usuarios' },
+        { path: '/permissoes', label: 'Permissões', icon: 'vpn_key', tone: 'permissoes' },
+        { path: '/locais', label: 'Locais', icon: 'location_on', tone: 'locais' },
+        { path: '/dispositivos', label: 'Dispositivos', icon: 'memory', tone: 'dispositivos' },
+      ],
+    },
+    {
+      rotulo: 'Gestão',
+      links: [
+        { path: '/administradores', label: 'Administradores', icon: 'verified_user', tone: 'administradores' },
+        { path: '/audit-logs', label: 'Auditoria', icon: 'fact_check', tone: 'auditoria' },
+        { path: '/licenca', label: 'Licença', icon: 'verified', tone: 'licenca' },
+      ],
+    },
   ];
+  readonly links = this.grupos.flatMap((grupo) => grupo.links);
+
+  alternarMenu(): void {
+    const abrir = !this.menuAberto();
+    this.menuAberto.set(abrir);
+    // Na gaveta, o foco vai para o item atual (ou o primeiro) ao abrir.
+    if (abrir) {
+      requestAnimationFrame(() => {
+        const nav = this.nav?.nativeElement;
+        (nav?.querySelector<HTMLElement>('a[aria-current="page"]') ?? nav?.querySelector<HTMLElement>('a'))?.focus();
+      });
+    }
+  }
+
+  fecharMenu(): void {
+    if (!this.menuAberto()) return;
+    this.menuAberto.set(false);
+    document.querySelector<HTMLElement>('app-navbar .menu-toggle')?.focus();
+  }
 
   darkMode = signal<boolean>(false);
   failedUrls = new Set<string>();
