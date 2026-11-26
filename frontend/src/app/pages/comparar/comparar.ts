@@ -1,5 +1,6 @@
 import {
   Component,
+  ElementRef,
   effect,
   untracked,
   HostListener,
@@ -71,6 +72,7 @@ export class CompararPage implements OnInit, OnDestroy {
   private rfidAccess = inject(RfidAccessService);
 
   @ViewChild(VisorFacial) visorFacial?: VisorFacial;
+  @ViewChild('estacao') private estacaoRef?: ElementRef<HTMLElement>;
 
   scanning = signal(false);
   iniciandoTentativa = signal(false);
@@ -437,6 +439,16 @@ export class CompararPage implements OnInit, OnDestroy {
       this.modoTotem(),
       () => this.capturarEValidar(),
     );
+
+    if (this.webcam.webcamAtiva()) {
+      this.speech.tocarBipAberturaCamera();
+      requestAnimationFrame(() => {
+        this.estacaoRef?.nativeElement.scrollIntoView({
+          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+          block: 'start',
+        });
+      });
+    }
   }
 
   pararWebcam(): void {
