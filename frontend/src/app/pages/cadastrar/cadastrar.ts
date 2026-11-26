@@ -354,64 +354,45 @@ export class CadastrarPage implements OnInit, OnDestroy {
       dias_semana: item.dias_semana,
     }));
 
-    // O usuário é criado sem o UID. O vínculo do cartão passa pelo endpoint
-    // específico de RFID, usando o dispositivo que realizou a leitura.
+    // Um único endpoint valida a foto e só então grava usuário, cartão e permissões.
+    // Se qualquer etapa falhar, a transação do backend é revertida por completo.
     this.api
-      .criarUsuario({
-        nome,
-        cpf: cpfNormalizado,
-        tipo_usuario,
-        uid_card: null,
-        vetor_facial: null,
-        ativo,
-        permissoes: permissoesPayload,
-      })
+      .cadastrarUsuarioCompleto(
+        {
+          nome,
+          cpf: cpfNormalizado,
+          tipo_usuario,
+          uid_card: uidNormalizado,
+          vetor_facial: null,
+          ativo,
+          permissoes: permissoesPayload,
+        },
+        this.identificadorRfidSelecionado,
+        this.fotoCapturada,
+      )
       .subscribe({
         next: (usuario) => {
           this.usuarioCriado = true;
-          this.api
-            .cadastrarCartao(this.identificadorRfidSelecionado, uidNormalizado, usuario.user_id)
-            .subscribe({
-              next: () => {
-                this.api.cadastrarBiometria(usuario.user_id, this.fotoCapturada!).subscribe({
-                  next: () => {
-                    this.saving = false;
-                    this.cdr.markForCheck();
-                    const total = locaisSelecionados.length;
-                    this.successMessage = `Usuário ${usuario.nome} cadastrado com cartão, biometria e ${total} ${total === 1 ? 'permissão' : 'permissões'}.`;
-                    this.snackBar.open(this.successMessage, 'Fechar', { duration: 6000 });
-                    this.speech.falar('Usuário cadastrado com sucesso.');
-                    this.dialogRef.close({ criado: true, mensagem: this.successMessage });
-                  },
-                  error: (error) => {
-                    this.saving = false;
-                    this.cdr.markForCheck();
-                    this.errorMessage =
-                      error.error?.detail ||
-                      'Usuário e cartão foram cadastrados, mas não foi possível cadastrar a biometria.';
-                    this.snackBar.open(this.errorMessage, 'Fechar', { duration: 7000 });
-                  },
-                });
-              },
-              error: (error) => {
-                this.saving = false;
-                this.cdr.markForCheck();
-                this.errorMessage =
-                  error.status === 400
-                    ? error.error?.detail || 'Este cartão já está cadastrado.'
-                    : 'Usuário criado, mas não foi possível associar o cartão RFID.';
-                this.snackBar.open(this.errorMessage, 'Fechar', { duration: 7000 });
-              },
-            });
+          this.saving = false;
+          this.cdr.markForCheck();
+          const total = locaisSelecionados.length;
+          this.successMessage = `Usuário ${usuario.nome} cadastrado com cartão, biometria e ${total} ${total === 1 ? 'permissão' : 'permissões'}.`;
+          this.snackBar.open(this.successMessage, 'Fechar', { duration: 6000 });
+          this.speech.falar('Usuário cadastrado com sucesso.');
+          this.dialogRef.close({ criado: true, mensagem: this.successMessage });
         },
         error: (error) => {
           this.saving = false;
           this.cdr.markForCheck();
           this.errorMessage =
-            error.status === 409
-              ? error.error?.detail || 'CPF ou cartão já está cadastrado.'
-              : 'Não foi possível criar o usuário. Verifique se o backend está disponível.';
-          this.snackBar.open(this.errorMessage, 'Fechar', { duration: 6000 });
+            error.error?.detail ||
+            (error.status === 409
+              ? 'CPF ou cartão já cadastrado. Nenhum novo usuário foi criado.'
+              : 'Não foi possível concluir o cadastro. Nenhum dado parcial foi salvo.');
+          this.snackBar.open(this.errorMessage, 'Fechar', { duration: 7000 });
+          if (error.status === 400 || error.status === 422) {
+            this.irPara(error.status === 400 ? 'secao-rosto' : 'secao-cartao');
+          }
         },
       });
   }
