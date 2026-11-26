@@ -88,6 +88,8 @@ export class SpeechService {
 
   /** Sinal curto e discreto quando a câmera começa a transmitir. */
   tocarBipAberturaCamera(): void {
+    // A instrução falada já sinaliza a abertura; não sobrepõe outro som.
+    if (this.audio && !this.audio.ended) return;
     try {
       this.garantirAudioContext();
       if (!this.audioCtx) return;
