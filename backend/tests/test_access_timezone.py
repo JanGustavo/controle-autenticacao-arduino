@@ -39,3 +39,41 @@ def test_local_day_is_used_near_utc_midnight():
 
 def test_iso_access_converts_aware_utc_instant():
     assert iso_acesso(datetime(2026, 10, 2, 20, 10, tzinfo=timezone.utc)) == '2026-10-02T17:10:00-03:00'
+
+
+
+def test_overnight_window_uses_start_day_after_midnight():
+    # Sexta-feira (6), 22:00 até sábado, 06:00.
+    assert AcessoService._permissao_valida(
+        time(22), time(6), [6], datetime(2026, 10, 3, 5, 30)
+    )[0]
+    assert not AcessoService._permissao_valida(
+        time(22), time(6), [7], datetime(2026, 10, 3, 5, 30)
+    )[0]
+
+
+def test_overnight_window_does_not_extend_into_next_day_start():
+    # A janela de sexta termina sábado às 06:00.
+    assert not AcessoService._permissao_valida(
+        time(22), time(6), [6], datetime(2026, 10, 3, 6, 1)
+    )[0]
+
+
+def test_0800_to_0759_covers_the_full_start_day_window():
+    # Sexta 08:00 até sábado 07:59, inclusive o último segundo do minuto.
+    assert AcessoService._permissao_valida(
+        time(8), time(7, 59), [6], datetime(2026, 10, 2, 8, 0)
+    )[0]
+    assert AcessoService._permissao_valida(
+        time(8), time(7, 59), [6], datetime(2026, 10, 3, 7, 59, 59)
+    )[0]
+    assert not AcessoService._permissao_valida(
+        time(8), time(7, 59), [6], datetime(2026, 10, 3, 8, 0)
+    )[0]
+
+
+def test_overnight_window_before_start_time_is_denied():
+    # Sexta-feira 07:59 ainda não pertence à janela que começa às 08:00.
+    assert not AcessoService._permissao_valida(
+        time(8), time(7, 59), [6], datetime(2026, 10, 2, 7, 59)
+    )[0]
