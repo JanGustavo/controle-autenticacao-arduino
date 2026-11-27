@@ -75,20 +75,37 @@ class AcessoService:
         dias_semana: list[int],
         agora: datetime,
     ) -> tuple[bool, str | None]:
+        # O sistema representa os dias como: domingo=1, segunda=2, ..., sábado=7.
         dia_atual = (agora.isoweekday() % 7) + 1
+        dia_anterior = ((dia_atual - 2) % 7) + 1
 
-        if dia_atual not in dias_semana:
+        # Os campos de horário têm precisão de minuto. Considerar o minuto
+        # inteiro evita negar, por exemplo, às 07:59:35 quando o fim é 07:59.
+        minuto_atual = agora.hour * 60 + agora.minute
+        minuto_inicio = horario_inicio.hour * 60 + horario_inicio.minute
+        minuto_fim = horario_fim.hour * 60 + horario_fim.minute
+
+        if minuto_inicio <= minuto_fim:
+            # Janela dentro do mesmo dia: o dia atual precisa estar autorizado.
+            dia_permitido = dia_atual in dias_semana
+            dentro_horario = minuto_inicio <= minuto_atual <= minuto_fim
+        elif minuto_atual >= minuto_inicio:
+            # Trecho antes da meia-noite: pertence ao dia em que a janela começa.
+            dia_permitido = dia_atual in dias_semana
+            dentro_horario = True
+        elif minuto_atual <= minuto_fim:
+            # Trecho depois da meia-noite: pertence ao dia anterior.
+            dia_permitido = dia_anterior in dias_semana
+            dentro_horario = True
+        else:
+            dia_permitido = False
+            dentro_horario = False
+
+        if not dia_permitido:
             return False, (
                 "Cartão válido, mas fora dos dias de acesso permitidos "
                 "para este usuário."
             )
-
-        hora_atual = agora.time()
-
-        if horario_inicio <= horario_fim:
-            dentro_horario = horario_inicio <= hora_atual <= horario_fim
-        else:
-            dentro_horario = hora_atual >= horario_inicio or hora_atual <= horario_fim
 
         if not dentro_horario:
             return False, (
