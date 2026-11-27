@@ -24,6 +24,7 @@ import { SpeechService } from '../../services/speech.service';
 import { VisorFacial } from '../../components/visor-facial/visor-facial';
 import { WebcamService } from '../../services/webcam.service';
 import { OperacaoRfidService } from '../../services/operacao-rfid.service';
+import { finalize, timeout } from 'rxjs/operators';
 
 export interface UserEditDialogData {
   usuario: UsuarioResponse;
@@ -400,9 +401,17 @@ export class UserEditDialog implements OnInit, OnDestroy {
     const substituindo = this.temBiometria;
     this.api
       .cadastrarBiometria(this.usuario.user_id, this.fotoCapturada)
+      .pipe(
+        // Evita que uma requisição sem resposta deixe o botão carregando indefinidamente.
+        timeout(120_000),
+        // Encerra o estado de carregamento em sucesso, erro ou cancelamento.
+        finalize(() => {
+          this.salvandoBiometria = false;
+          this.cdr.markForCheck();
+        }),
+      )
       .subscribe({
         next: () => {
-          this.salvandoBiometria = false;
           this.alterado = true;
           this.fotoCapturada = null;
           this.fotoPreviewUrl = null;
@@ -418,13 +427,20 @@ export class UserEditDialog implements OnInit, OnDestroy {
           this.api.getUsuario(this.usuario.user_id).subscribe({
             next: (usuario) => {
               this.usuario = usuario;
+              this.cdr.markForCheck();
+            },
+            error: () => {
+              this.aviso = 'Biometria salva, mas não foi possível atualizar os dados exibidos. Reabra a edição para conferir.';
+              this.cdr.markForCheck();
             },
           });
         },
         error: (error) => {
-          this.salvandoBiometria = false;
-          this.erro =
-            error.error?.detail || 'Não foi possível cadastrar a biometria.';
+          const expirou = error?.name === 'TimeoutError';
+          this.erro = expirou
+            ? 'A API não respondeu em até 2 minutos. Verifique se a biometria foi salva antes de tentar novamente.'
+            : error.error?.detail || 'Não foi possível cadastrar a biometria.';
+          this.cdr.markForCheck();
         },
       });
   }
